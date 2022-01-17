@@ -1,0 +1,53 @@
+load("@px//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+
+
+pl_cc_binary(
+    name = "qianlu",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "*_main.cc",
+        ],
+    ),
+    copts = ["-Wno-unused-parameter","-Wno-unused-variable","-Wno-mismatched-tags"],
+    deps = [
+        "//src/probe/utils:cc_library",
+        "@px//src/common/signal:cc_library",
+        "@px//src/stirling:cc_library",
+	    "@px//:px_headers",
+    ],
+)
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+container_image(
+   # name = "kp_cc_base_image",
+    name = "qianlu_standalone_image",
+    base = "@px//:pl_cc_bpf_image",
+    directory = "/pl",
+    files = [
+	"@kindling_probes_tar_gz//file:file",
+	"//deploy:scripts",
+	":qianlu",
+    ],
+    cmd = ["/pl/docker-entrypoint.sh"],
+    visibility = ["//visibility:public"],
+)
+
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+cc_image(
+    name = "qianlu_standalone_image_old",
+    base = ":kp_cc_base_image",
+    binary = ":qianlu",
+)
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+container_push(
+    name = "push_probe_image",
+    format = "Docker",
+    image = ":qianlu_standalone_image",
+    registry = "registry.us-west-1.aliyuncs.com",
+    repository = "arms-docker-repo/arms-bpf-agent",
+    tag = "pixie-standalone",
+)

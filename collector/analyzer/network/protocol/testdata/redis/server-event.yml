@@ -1,0 +1,25 @@
+# localhost:39130 -> http://localhost:6379
+eventCommon:
+  # SYSCALL_EXIT
+  source: 2
+  # CAT_NET
+  category: 3
+  ctx:
+    thread_info:
+      pid: 817
+      tid: 817
+      uid: 126
+      gid: 132
+      comm: "redis-server"
+    fd_info:
+        num: 9
+        # FD_IPV4_SOCK
+        type_fd: 3
+        # TCP
+        protocol: 1
+        # IsServer
+        role: true
+        sip: [16777343]
+        sport: 39130
+        dip: [16777343]
+        dport: 6379
