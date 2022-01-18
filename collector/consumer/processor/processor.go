@@ -1,7 +1,7 @@
 package processor
 
 import (
-	"github.com/dxsup/kindling-collector/consumer"
+	"github.com/Kindling-project/kindling/collector/consumer"
 )
 
 type Processor interface {

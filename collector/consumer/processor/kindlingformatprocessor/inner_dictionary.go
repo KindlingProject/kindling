@@ -1,9 +1,9 @@
 package kindlingformatprocessor
 
 import (
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constlabels"
-	"github.com/dxsup/kindling-collector/model/constvalues"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 )
 
 const (

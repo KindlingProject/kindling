@@ -1,10 +1,10 @@
 package otelexporter
 
 import (
-	"github.com/dxsup/kindling-collector/consumer/exporter"
-	"github.com/dxsup/kindling-collector/logger"
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter"
+	"github.com/Kindling-project/kindling/collector/logger"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/spf13/viper"
 	"testing"
 	"time"

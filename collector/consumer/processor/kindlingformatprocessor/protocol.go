@@ -1,7 +1,7 @@
 package kindlingformatprocessor
 
 import (
-	"github.com/dxsup/kindling-collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"strconv"
 	"strings"
 )

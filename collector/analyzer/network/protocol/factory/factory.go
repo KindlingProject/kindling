@@ -3,13 +3,13 @@ package factory
 import (
 	"sync"
 
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/dns"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/generic"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/http"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/kafka"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/mysql"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/redis"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/dns"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/generic"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/http"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/kafka"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/mysql"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/redis"
 )
 
 var (
