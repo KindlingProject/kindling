@@ -1,0 +1,57 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "app",
+  "name": "kindling App",
+  "id": "thousand-kindling-app",
+
+  "info": {
+    "description": "Grafana App Plugin Template",
+    "author": {
+      "name": "thousand"
+    },
+    "keywords": ["panel", "template"],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [
+      { "name": "Website", "url": "https://github.com/grafana/grafana-starter-app" },
+      { "name": "License", "url": "https://github.com/grafana/grafana-starter-app/blob/master/LICENSE" }
+    ],
+    "screenshots": [],
+    "version": "1.0.0",
+    "updated": "2022-01-18"
+  },
+
+  "includes": [
+    {
+      "type": "dashboard",
+      "name": "Topologres",
+      "path": "dashboards/topology.json"
+    },
+    {
+      "type": "dashboard",
+      "name": "Workload Detail",
+      "path": "dashboards/workload.json"
+    },
+    {
+      "type": "dashboard",
+      "name": "Network Detail",
+      "path": "dashboards/network.json"
+    },
+    {
+      "type": "dashboard",
+      "name": "DNS Request Detail",
+      "path": "dashboards/dns.json"
+    },
+    {
+      "type": "panel",
+      "name": "antv-plugin"
+    }
+  ],
+  "dependencies": {
+    "grafanaDependency": ">=7.0.0",
+    "grafanaVersion": "7.0.0",
+    "plugins": []
+  }
+}
