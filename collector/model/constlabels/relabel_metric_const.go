@@ -1,6 +1,6 @@
 package constlabels
 
-import "github.com/dxsup/kindling-collector/model/constvalues"
+import "github.com/Kindling-project/kindling/collector/model/constvalues"
 
 // key1: originName key2: isServer
 var metricNameDictionary = map[string]map[bool]string{

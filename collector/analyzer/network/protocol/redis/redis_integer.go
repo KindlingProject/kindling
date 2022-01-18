@@ -3,7 +3,7 @@ package redis
 import (
 	"strconv"
 
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 )
 
 /*

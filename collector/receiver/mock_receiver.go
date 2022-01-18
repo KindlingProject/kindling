@@ -2,8 +2,8 @@ package receiver
 
 import (
 	"errors"
-	analyzerpackage "github.com/dxsup/kindling-collector/analyzer"
-	"github.com/dxsup/kindling-collector/model"
+	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/model"
 	"go.uber.org/zap"
 )
 

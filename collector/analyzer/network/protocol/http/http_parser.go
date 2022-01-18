@@ -3,7 +3,7 @@ package http
 import (
 	"strings"
 
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 )
 
 func NewHttpParser() *protocol.ProtocolParser {

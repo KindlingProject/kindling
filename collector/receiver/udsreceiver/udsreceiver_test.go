@@ -1,8 +1,8 @@
 package udsreceiver
 
 import (
-	"github.com/dxsup/kindling-collector/analyzer"
-	"github.com/dxsup/kindling-collector/logger"
+	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/logger"
 	"testing"
 )
 

@@ -7,10 +7,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dxsup/kindling-collector/consumer"
-	"github.com/dxsup/kindling-collector/logger"
+	"github.com/Kindling-project/kindling/collector/consumer"
+	"github.com/Kindling-project/kindling/collector/logger"
 
-	"github.com/dxsup/kindling-collector/model"
+	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/spf13/viper"
 )
 

@@ -1,10 +1,10 @@
 package kindlingformatprocessor
 
 import (
-	"github.com/dxsup/kindling-collector/consumer"
-	"github.com/dxsup/kindling-collector/consumer/processor"
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/consumer"
+	"github.com/Kindling-project/kindling/collector/consumer/processor"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
