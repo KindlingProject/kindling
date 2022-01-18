@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/dxsup/kindling-collector/model"
+	"github.com/Kindling-project/kindling/collector/model"
 
 	cmap "github.com/orcaman/concurrent-map"
 )

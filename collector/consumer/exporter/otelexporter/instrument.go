@@ -2,7 +2,7 @@ package otelexporter
 
 import (
 	"context"
-	"github.com/dxsup/kindling-collector/model"
+	"github.com/Kindling-project/kindling/collector/model"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"sync"

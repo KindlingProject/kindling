@@ -3,9 +3,9 @@ package http
 import (
 	"strings"
 
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/http/tools"
-	"github.com/dxsup/kindling-collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/http/tools"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 )
 
 var httpMerger = tools.NewHttpMergeCache()

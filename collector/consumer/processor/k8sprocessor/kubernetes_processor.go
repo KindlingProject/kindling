@@ -1,12 +1,12 @@
 package k8sprocessor
 
 import (
-	"github.com/dxsup/kindling-collector/consumer"
-	"github.com/dxsup/kindling-collector/consumer/processor"
-	"github.com/dxsup/kindling-collector/metadata/kubernetes"
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constlabels"
-	"github.com/dxsup/kindling-collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/consumer"
+	"github.com/Kindling-project/kindling/collector/consumer/processor"
+	"github.com/Kindling-project/kindling/collector/metadata/kubernetes"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.uber.org/zap"
 )
 

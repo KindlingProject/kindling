@@ -1,12 +1,12 @@
 package application
 
 import (
-	"github.com/dxsup/kindling-collector/analyzer"
-	"github.com/dxsup/kindling-collector/consumer"
-	"github.com/dxsup/kindling-collector/consumer/exporter"
-	"github.com/dxsup/kindling-collector/consumer/processor"
-	"github.com/dxsup/kindling-collector/logger"
-	"github.com/dxsup/kindling-collector/receiver"
+	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/consumer"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter"
+	"github.com/Kindling-project/kindling/collector/consumer/processor"
+	"github.com/Kindling-project/kindling/collector/logger"
+	"github.com/Kindling-project/kindling/collector/receiver"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
