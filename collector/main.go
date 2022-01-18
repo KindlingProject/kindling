@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/dxsup/kindling-collector/application"
+	"github.com/Kindling-project/kindling/collector/application"
 	"log"
 )
 

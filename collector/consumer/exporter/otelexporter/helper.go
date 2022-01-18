@@ -2,7 +2,7 @@ package otelexporter
 
 import (
 	"fmt"
-	"github.com/dxsup/kindling-collector/model"
+	"github.com/Kindling-project/kindling/collector/model"
 	"go.uber.org/zap"
 	"os"
 
