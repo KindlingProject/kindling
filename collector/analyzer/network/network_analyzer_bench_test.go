@@ -3,8 +3,8 @@ package network
 import (
 	"testing"
 
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol"
-	"github.com/dxsup/kindling-collector/model"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/model"
 )
 
 type benchCase struct {

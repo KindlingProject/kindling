@@ -1,13 +1,13 @@
 package uprobeanalyzer
 
 import (
-	"github.com/dxsup/kindling-collector/analyzer"
-	"github.com/dxsup/kindling-collector/consumer"
-	conntrackerpackge "github.com/dxsup/kindling-collector/metadata/conntracker"
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constlabels"
-	"github.com/dxsup/kindling-collector/model/constnames"
-	"github.com/dxsup/kindling-collector/model/constvalues"
+	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/consumer"
+	conntrackerpackge "github.com/Kindling-project/kindling/collector/metadata/conntracker"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/hashicorp/go-multierror"
 	"go.uber.org/zap"
 )

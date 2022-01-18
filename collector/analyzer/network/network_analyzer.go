@@ -8,15 +8,15 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dxsup/kindling-collector/consumer"
+	"github.com/Kindling-project/kindling/collector/consumer"
 
-	"github.com/dxsup/kindling-collector/analyzer"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol"
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol/factory"
-	"github.com/dxsup/kindling-collector/metadata/conntracker"
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constlabels"
-	"github.com/dxsup/kindling-collector/model/constvalues"
+	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/factory"
+	"github.com/Kindling-project/kindling/collector/metadata/conntracker"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 )
 
 const (

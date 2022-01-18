@@ -1,4 +1,4 @@
-module github.com/dxsup/kindling-collector
+module github.com/Kindling-project/kindling/collector
 
 go 1.16
 

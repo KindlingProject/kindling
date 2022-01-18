@@ -1,13 +1,13 @@
 package udsreceiver
 
 import (
-	analyzerpackage "github.com/dxsup/kindling-collector/analyzer"
-	"github.com/dxsup/kindling-collector/analyzer/network"
-	"github.com/dxsup/kindling-collector/analyzer/tcpmetricanalyzer"
-	"github.com/dxsup/kindling-collector/analyzer/uprobeanalyzer"
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constnames"
-	"github.com/dxsup/kindling-collector/receiver"
+	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/analyzer/network"
+	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
+	"github.com/Kindling-project/kindling/collector/analyzer/uprobeanalyzer"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/receiver"
 	"github.com/golang/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
 	"go.uber.org/zap"

@@ -1,8 +1,8 @@
 package dns
 
 import (
-	"github.com/dxsup/kindling-collector/analyzer/network/protocol"
-	"github.com/dxsup/kindling-collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 )
 
 func fastfailDnsRequest() protocol.FastFailFn {

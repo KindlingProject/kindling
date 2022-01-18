@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dxsup/kindling-collector/metadata/conntracker"
-	"github.com/dxsup/kindling-collector/model"
+	"github.com/Kindling-project/kindling/collector/metadata/conntracker"
+	"github.com/Kindling-project/kindling/collector/model"
 )
 
 const (

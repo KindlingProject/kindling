@@ -3,9 +3,9 @@ package kindlingformatprocessor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dxsup/kindling-collector/model"
-	"github.com/dxsup/kindling-collector/model/constlabels"
-	"github.com/dxsup/kindling-collector/model/constvalues"
+	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"reflect"
 	"testing"
 )
