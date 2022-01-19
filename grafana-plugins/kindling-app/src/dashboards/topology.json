@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 4,
-  "iteration": 1642507317503,
+  "iteration": 1642583007324,
   "links": [],
   "panels": [
     {
@@ -51,7 +51,7 @@
           "refId": "A"
         },
         {
-          "expr": "increase(kindling_topology_request_duration_nanoseconds_sum[$__interval]) / increase(kindling_topology_request_duration_nanoseconds_count[$__interval])",
+          "expr": "increase(kindling_topology_request_duration_nanoseconds_sum[$__interval])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -81,7 +81,7 @@
           "refId": "D"
         },
         {
-          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=~\"$namespace\", workload_name=~\"$workload\"}[$__interval])) by (namespace, workload_name, pod) /\nsum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=~\"$namespace\",\nworkload_name=~\"$workload\"}[$__interval])) by(namespace, workload_name, pod)",
+          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=~\"$namespace\", workload_name=~\"$workload\"}[$__interval])) by (namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -138,20 +138,20 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "text": "test-ns",
+          "value": "test-ns"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_topology_request_duration_nanoseconds_count",
+        "definition": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
         "hide": 0,
         "includeAll": true,
         "label": "Namespace",
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "kindling_topology_request_duration_nanoseconds_count",
+        "query": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
         "refresh": 1,
-        "regex": "/namespace=\"(.+?)\\\"/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 2,
         "tagValuesQuery": "",
@@ -168,16 +168,16 @@
           "value": "$__all"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_topology_request_duration_nanoseconds_count",
+        "definition": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
         "hide": 0,
         "includeAll": true,
         "label": "Workload",
         "multi": false,
         "name": "workload",
         "options": [],
-        "query": "kindling_topology_request_duration_nanoseconds_count",
-        "refresh": 1,
-        "regex": "/workload_name=\"(.+?)\\\"/",
+        "query": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
+        "refresh": 2,
+        "regex": ".*workload_name=\"(.*?)\".*",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
@@ -189,7 +189,7 @@
     ]
   },
   "time": {
-    "from": "now-2d",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {
@@ -208,5 +208,5 @@
   "timezone": "",
   "title": "antv-topology",
   "uid": "MiIYJE57k",
-  "version": 40
+  "version": 43
 }

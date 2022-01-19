@@ -39,6 +39,7 @@ const nodeImgHandle = (node: any) => {
                     return namespacePng;
             }
         case 'workload':
+        case 'node':
             switch (node.status) {
                 case 'green':
                     return workloadPng;

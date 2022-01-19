@@ -1,43 +1,102 @@
 import * as G6 from '@antv/g6';
 
+interface Size {
+    width: number;
+    height: number;
+}
+/**
+ * 
+ * @param textLng 
+ * @param height LabelHeight
+ * @param paddingLR paddingLeft与paadingRight
+ * @param spacingLeft 文本与图片间的间距
+ * @param imgWidth 
+ */
+ export const setLabelSize = ( textLng: number, 
+    height: number,
+    paddingLR: number,
+    spacingLeft?: number, 
+    imgWidth?: number
+): Size => {
+    return {
+        width: textLng + (spacingLeft || 0) + (imgWidth || 0) + 2 * paddingLR,
+        height
+    }
+}
+interface Point {
+    x: number;
+    y: number;
+}
+export const isShowLabel = (path: any, labelWidth: number): boolean => {
+    const startPoint: Point = path.getPoint(0)
+    const endPoint: Point = path.getPoint(1)
+    const lineLng: number = G6.Util.distance(startPoint, endPoint)
+    return !(labelWidth > lineLng ? false : true)
+}
 // custom the edge with an extra rect
 G6.registerEdge('service-edge', {
-    afterDraw(cfg: any, group: any) {
-        // get the first shape in the graphics group of this edge, it is the path of the edge here
-        // 获取图形组中的第一个图形，在这里就是边的路径图形
-        const shape = group.get('children')[0];
-        // get the coordinate of the mid point on the path
-        // 获取路径图形的中点坐标
-        const midPoint = shape.getPoint(0.5);
-        const rectColor = cfg.midPointColor || '#FFF';
-        // add a rect on the mid point of the path. note that the origin of a rect shape is on its lefttop
-        // 在中点增加一个矩形，注意矩形的原点在其左上角
-        group.addShape('rect', {
-            attrs: {
-                width: 120,
-                height: 20,
-                fill: rectColor,
-                // x and y should be minus width / 2 and height / 2 respectively to translate the center of the rect to the midPoint
-                // x 和 y 分别减去 width / 2 与 height / 2，使矩形中心在 midPoint 上
-                x: midPoint.x - 5,
-                y: midPoint.y - 5,
-            },
-        });
-  
-        // // get the coordinate of the quatile on the path
-        // // 获取路径上的四分位点坐标
-        // const quatile = shape.getPoint(0.25);
-        // const quatileColor = cfg.quatileColor || '#FFF';
-        // // add a circle on the quatile of the path
-        // // 在四分位点上放置一个圆形
-        // group.addShape('circle', {
-        //     attrs: {
-        //         r: 5,
-        //         fill: quatileColor || '#333',
-        //         x: quatile.x,
-        //         y: quatile.y,
-        //     },
-        // });
+    lebelPosition: 'center',
+    labelAutoRotate: true,
+    afterDraw: (cfg: any, group: any) => {
+        // 获取路径中点坐标
+        const edge = group.get('children')[0]
+        const midPoint = edge.getPoint(0.4)
+        const flowLabel = group.addGroup({ id: 'flowLabel' })
+        
+        if (midPoint.x) {
+            let text = `service`
+            const [textWidth] = G6.Util.getTextSize(text, 12)  // flow.attr('fontSize')
+            const { width: labelWidth, height: labelHeight } = setLabelSize(textWidth, 20, 5, 10, 15)
+            let flow = flowLabel.addShape('text', {
+                attrs: {
+                    x: midPoint.x + 10,
+                    y: midPoint.y + 7,
+                    fill: '#000',
+                    textAlign: 'center',
+                    text: 'service'
+                },
+                name: 'service-node-text',
+                zIndex: 1000
+            })
+            // let image = flowLabel.addShape('image', {
+            //     name: 'image-shape',
+            //     attrs: {
+            //         x: midPoint.x - labelWidth / 2 + 5,
+            //         y: midPoint.y - nodeImgHeight / 2,
+            //         width: nodeImgWidth,
+            //         height: nodeImgHeight,
+            //         img: require('@/images/business/service.svg')
+            //     },
+            //     zIndex: 1000
+            // })
+            let labelBg = flowLabel.addShape('rect', {
+                attrs: {
+                    // label 在线中点
+                    x: midPoint.x - labelWidth / 2,
+                    y: midPoint.y - labelHeight / 2,
+                    width: labelWidth,
+                    height: labelHeight,
+                    radius: [10],
+                    fill: '#f0f0f0',
+                    stroke: '#d9d9d9'
+                },
+                id: 'service-node-rect',
+                name: 'service-node-rect',
+                draggable: true,
+                zIndex: 10
+            })      
+            const offsetStyle = G6.Util.getLabelPosition(edge, 0.5, 0, 0, true);
+            labelBg.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
+            // const { x, y } = labelBg.getBBox()
+            // image.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate)
+            flow.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
+            flowLabel.sort()
+            if (isShowLabel(edge, labelWidth)) {
+                // 慎用destroy()
+                group.removeChild(group.findById('flowLabel'))
+            }
+        }
     },
+    // * 为了获取到midPoint
     update: undefined,
-}, 'cubic');
+}, 'line');
