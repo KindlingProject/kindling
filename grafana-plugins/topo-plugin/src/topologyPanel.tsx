@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import * as G6 from '@antv/g6';
 import _ from 'lodash';
 import './topology/node';
+// import './topology/edge';
 import { formatTime, formatCount, formatKMBT, formatPercent, nodeTooltip } from './topology/tooltip';
 import { nsRelationHandle, detailRelationHandle, detailNodesHandle, detailEdgesHandle } from './topology/services'; 
 import { PanelProps } from '@grafana/data';
@@ -185,7 +186,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       },
       // defaultEdge: {
       //   type: 'service-edge'
-      // }
+      // },
       defaultEdge: {
         size: 1,
         type: 'cubic-horizontal',
@@ -218,14 +219,14 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     // 处理grafana查询数据生成对应的拓扑调用数据结构
     let nodes: any[] = [], edges: any[] = [];
     let topoData: any = _.filter(data.series, (item: any) => item.refId === 'A');
-    let edgeLatencyData: any = _.filter(data.series, (item: any) => item.refId === 'I');
+    let edgeTimeData: any = _.filter(data.series, (item: any) => item.refId === 'I');
     let edgeSendVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'B');
     let edgeReceiveVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'C');
     let edgeRetransmitData: any = _.filter(data.series, (item: any) => item.refId === 'J');
     let edgeRTTData: any = _.filter(data.series, (item: any) => item.refId === 'K');
     const edgeData = {
       edgeCallData: topoData,
-      edgeLatencyData,
+      edgeTimeData,
       edgeSendVolumeData,
       edgeReceiveVolumeData,
       edgeRetransmitData,
@@ -233,13 +234,13 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     };
     
     let nodeCallsData: any = _.filter(data.series, (item: any) => item.refId === 'D'); // 次数调用增长
-    let nodeLatencyData: any = _.filter(data.series, (item: any) => item.refId === 'E');
+    let nodeTimeData: any = _.filter(data.series, (item: any) => item.refId === 'E');
     let nodeErrorRateData: any = _.filter(data.series, (item: any) => item.refId === 'F');
     let nodeSendVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'G');
     let nodeReceiveVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'H');
     const nodeData = {
       nodeCallsData,
-      nodeLatencyData,
+      nodeTimeData,
       nodeErrorRateData,
       nodeSendVolumeData,
       nodeReceiveVolumeData
@@ -307,6 +308,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     }
     setVolumes(volumeData);
   }
+
   useEffect(() => {
     if (data.state === 'Done') {
       initData();
