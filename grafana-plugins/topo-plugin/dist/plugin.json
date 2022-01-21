@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "panel",
-  "name": "antv-plugin",
-  "id": "thousand-antv-plugin",
+  "name": "Topo-plugin",
+  "id": "thousand-topo-plugin",
   "info": {
     "description": "",
     "author": {
@@ -28,7 +28,7 @@
     ],
     "screenshots": [],
     "version": "1.0.0",
-    "updated": "2022-01-19"
+    "updated": "2022-01-21"
   },
   "dependencies": {
     "grafanaDependency": ">=7.0.0",
