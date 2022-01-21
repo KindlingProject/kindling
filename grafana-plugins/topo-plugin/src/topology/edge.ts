@@ -22,7 +22,7 @@ interface Size {
         width: textLng + (spacingLeft || 0) + (imgWidth || 0) + 2 * paddingLR,
         height
     }
-}
+} 
 interface Point {
     x: number;
     y: number;
@@ -40,16 +40,16 @@ G6.registerEdge('service-edge', {
     afterDraw: (cfg: any, group: any) => {
         // 获取路径中点坐标
         const edge = group.get('children')[0]
-        const midPoint = edge.getPoint(0.4)
+        const midPoint = edge.getPoint(0.5)
         const flowLabel = group.addGroup({ id: 'flowLabel' })
         
         if (midPoint.x) {
             let text = `service`
             const [textWidth] = G6.Util.getTextSize(text, 12)  // flow.attr('fontSize')
-            const { width: labelWidth, height: labelHeight } = setLabelSize(textWidth, 20, 5, 10, 15)
+            const { width: labelWidth, height: labelHeight } = setLabelSize(textWidth, 16, 5, 5, 10)
             let flow = flowLabel.addShape('text', {
                 attrs: {
-                    x: midPoint.x + 10,
+                    x: midPoint.x + 6,
                     y: midPoint.y + 7,
                     fill: '#000',
                     textAlign: 'center',
@@ -58,17 +58,16 @@ G6.registerEdge('service-edge', {
                 name: 'service-node-text',
                 zIndex: 1000
             })
-            // let image = flowLabel.addShape('image', {
-            //     name: 'image-shape',
-            //     attrs: {
-            //         x: midPoint.x - labelWidth / 2 + 5,
-            //         y: midPoint.y - nodeImgHeight / 2,
-            //         width: nodeImgWidth,
-            //         height: nodeImgHeight,
-            //         img: require('@/images/business/service.svg')
-            //     },
-            //     zIndex: 1000
-            // })
+            let pointShape = flowLabel.addShape('circle', {
+                name: 'circle-shape',
+                attrs: {
+                    x: midPoint.x - labelWidth / 2 + 8,
+                    y: midPoint.y,
+                    r: 4,
+                    fill: '#333333'
+                },
+                zIndex: 1000
+            })
             let labelBg = flowLabel.addShape('rect', {
                 attrs: {
                     // label 在线中点
@@ -76,7 +75,7 @@ G6.registerEdge('service-edge', {
                     y: midPoint.y - labelHeight / 2,
                     width: labelWidth,
                     height: labelHeight,
-                    radius: [10],
+                    radius: [4],
                     fill: '#f0f0f0',
                     stroke: '#d9d9d9'
                 },
@@ -87,8 +86,7 @@ G6.registerEdge('service-edge', {
             })      
             const offsetStyle = G6.Util.getLabelPosition(edge, 0.5, 0, 0, true);
             labelBg.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
-            // const { x, y } = labelBg.getBBox()
-            // image.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate)
+            pointShape.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
             flow.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
             flowLabel.sort()
             if (isShowLabel(edge, labelWidth)) {
