@@ -20,6 +20,8 @@ import podPng from '../img/pod.png';
 import podYPng from '../img/pod-yellow.png';
 import podRPng from '../img/pod-red.png';
 
+import { nodeTextHandle } from './services';
+
 const ImgW = 40, ImgH = 40;
 const nodeImgHandle = (node: any) => {
     switch (node.nodeType) {
@@ -98,17 +100,17 @@ const nodeImgHandle = (node: any) => {
             return externalPng;
     }
 };
-// text overFlow处理
-const nodeTextHandle = (text: string, num = 11) => {
-    if (text.length > num) {
-        return text.substring(0, num) + '...';
-    } else {
-        return text;
-    }
-};
 
 // 注册自定义节点
 G6.registerNode('custom-node', {
+    getAnchorPoints() {
+        return [
+            [0.5, 0],
+            [0, 0.5], // 左侧中间
+            [1, 0.5], // 右侧中间
+            [0.5, 1]
+        ];
+    },
     draw: (node: any, group: any) => {
 
         let shape = group.addShape('image', {

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "panel",
-  "name": "Topo-plugin",
+  "name": "topo-plugin",
   "id": "thousand-topo-plugin",
   "info": {
     "description": "",
@@ -28,7 +28,7 @@
     ],
     "screenshots": [],
     "version": "1.0.0",
-    "updated": "2022-01-21"
+    "updated": "2022-01-24"
   },
   "dependencies": {
     "grafanaDependency": ">=7.0.0",

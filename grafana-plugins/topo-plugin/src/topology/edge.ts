@@ -1,4 +1,5 @@
 import * as G6 from '@antv/g6';
+import { nodeTextHandle } from './services';
 
 interface Size {
     width: number;
@@ -43,17 +44,18 @@ G6.registerEdge('service-edge', {
         const midPoint = edge.getPoint(0.5)
         const flowLabel = group.addGroup({ id: 'flowLabel' })
         
-        if (midPoint.x) {
-            let text = `service`
+        if (midPoint.x && cfg.service) {
+            let text = nodeTextHandle(cfg.service, 10);
+            const rectColor = cfg.rectColor || '#d9d9d9';
             const [textWidth] = G6.Util.getTextSize(text, 12)  // flow.attr('fontSize')
             const { width: labelWidth, height: labelHeight } = setLabelSize(textWidth, 16, 5, 5, 10)
             let flow = flowLabel.addShape('text', {
                 attrs: {
                     x: midPoint.x + 6,
-                    y: midPoint.y + 7,
-                    fill: '#000',
+                    y: midPoint.y + 6,
+                    fill: '#FFFFFF',
                     textAlign: 'center',
-                    text: 'service'
+                    text: text
                 },
                 name: 'service-node-text',
                 zIndex: 1000
@@ -63,8 +65,8 @@ G6.registerEdge('service-edge', {
                 attrs: {
                     x: midPoint.x - labelWidth / 2 + 8,
                     y: midPoint.y,
-                    r: 4,
-                    fill: '#333333'
+                    r: 3.5,
+                    fill: '#dcdcdc'
                 },
                 zIndex: 1000
             })
@@ -76,8 +78,8 @@ G6.registerEdge('service-edge', {
                     width: labelWidth,
                     height: labelHeight,
                     radius: [4],
-                    fill: '#f0f0f0',
-                    stroke: '#d9d9d9'
+                    fill: '#141619',
+                    stroke: rectColor
                 },
                 id: 'service-node-rect',
                 name: 'service-node-rect',
@@ -98,3 +100,69 @@ G6.registerEdge('service-edge', {
     // * 为了获取到midPoint
     update: undefined,
 }, 'line');
+
+G6.registerEdge('service-edge2', {
+    lebelPosition: 'center',
+    labelAutoRotate: true,
+    afterDraw: (cfg: any, group: any) => {
+        // 获取路径中点坐标
+        const edge = group.get('children')[0]
+        const midPoint = edge.getPoint(0.5)
+        const flowLabel = group.addGroup({ id: 'flowLabel' })
+        
+        if (midPoint.x && cfg.service) {
+            let text = nodeTextHandle(cfg.service, 10);
+            const rectColor = cfg.rectColor || '#d9d9d9';
+            const [textWidth] = G6.Util.getTextSize(text, 12)  // flow.attr('fontSize')
+            const { width: labelWidth, height: labelHeight } = setLabelSize(textWidth, 16, 5, 5, 10)
+            let flow = flowLabel.addShape('text', {
+                attrs: {
+                    x: midPoint.x + 6,
+                    y: midPoint.y + 6,
+                    fill: '#FFFFFF',
+                    textAlign: 'center',
+                    text: text
+                },
+                name: 'service-node-text',
+                zIndex: 1000
+            })
+            let pointShape = flowLabel.addShape('circle', {
+                name: 'circle-shape',
+                attrs: {
+                    x: midPoint.x - labelWidth / 2 + 8,
+                    y: midPoint.y,
+                    r: 3.5,
+                    fill: '#dcdcdc'
+                },
+                zIndex: 1000
+            })
+            let rectShape = flowLabel.addShape('rect', {
+                attrs: {
+                    // label 在线中点
+                    x: midPoint.x - labelWidth / 2,
+                    y: midPoint.y - labelHeight / 2,
+                    width: labelWidth,
+                    height: labelHeight,
+                    radius: [4],
+                    fill: '#141619',
+                    stroke: rectColor
+                },
+                id: 'service-node-rect',
+                name: 'service-node-rect',
+                draggable: true,
+                zIndex: 10
+            })      
+            const offsetStyle = G6.Util.getLabelPosition(edge, 0.5, 0, 0, true);
+            rectShape.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
+            pointShape.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
+            flow.rotateAtPoint(midPoint.x, midPoint.y, offsetStyle.rotate);
+            flowLabel.sort()
+            if (isShowLabel(edge, labelWidth)) {
+                // 慎用destroy()
+                group.removeChild(group.findById('flowLabel'))
+            }
+        }
+    },
+    // * 为了获取到midPoint
+    update: undefined,
+}, 'quadratic');

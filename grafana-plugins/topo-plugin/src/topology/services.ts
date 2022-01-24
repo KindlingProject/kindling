@@ -7,7 +7,7 @@ export interface TopologyProps {
     nodes: NodeProps[];
     edges: EdgeProps[];
 }
-interface NodeProps {
+export interface NodeProps {
     id: string;
     name: string;
     nodeType: string;
@@ -19,9 +19,11 @@ interface NodeProps {
     receiveVolume?: number;
     status?: string;
 }
-interface EdgeProps {
+export interface EdgeProps {
     source: string;
     target: string;
+    service?: string;
+    opposite?: boolean;
     dnsEdge?: boolean;
     calls?: number;
     latency?: number;
@@ -31,14 +33,14 @@ interface EdgeProps {
     rtt?: number;
     retransmit?: number;
 }
-interface NodeDataProps {
+export interface NodeDataProps {
     nodeCallsData: any[];
     nodeTimeData: any[];
     nodeErrorRateData: any[];
     nodeSendVolumeData: any[];
     nodeReceiveVolumeData: any[];
 }
-interface EdgeDataProps {
+export interface EdgeDataProps {
     edgeCallData: any[];
     edgeTimeData: any[];
     edgeSendVolumeData: any[];
@@ -46,6 +48,15 @@ interface EdgeDataProps {
     edgeRetransmitData: any[];
     edgeRTTData: any[];
 }
+
+// text overFlow处理
+export const nodeTextHandle = (text: string, num = 11) => {
+    if (text.length > num) {
+        return text.substring(0, num) + '...';
+    } else {
+        return text;
+    }
+};
 
 const edgeFilter = (item: any, edge: EdgeProps) => {
     if (edge.dnsEdge) {
@@ -156,24 +167,25 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
  * @param showPod 是否为单个workload下显示pod视图
  * @returns node：当前构造的节点数据、source：tdata的调用方、target：tdata的被调用方
  */
-export const detailRelationHandle = (nodes: any[], edges: any[], namespace: string, tdata: any, pre: string, showPod: boolean, workload = '') => {
-    let source, target;
+export const detailRelationHandle = (nodes: any[], edges: any[], namespace: string, tdata: any, pre: string, showPod: boolean, showService: boolean) => {
+    let source, target, service;
     let node: any = undefined;
     if (externalTypes.indexOf(tdata[`${pre}_namespace`]) > -1) {
         if (_.findIndex(nodes, node => node.namespace === tdata[`${pre}_namespace`] && node.id.indexOf(tdata[`${pre}_ip`]) > -1) > -1) {
             let tnode = _.find(nodes, node => node.namespace === tdata[`${pre}_namespace`] && node.id.indexOf(tdata[`${pre}_ip`]) > -1);
-            let prots = tnode.id.substring(tnode.id.indexOf(':') + 1).split('%');
-            if (tdata[`${pre}_port`] && prots.indexOf(tdata[`${pre}_port`]) === -1) {
+            let prots = tnode.id.indexOf(':') > -1 ? tnode.id.substring(tnode.id.indexOf(':') + 1).split('%') : [];
+            if (tdata[`${pre}_port`] && tdata[`${pre}_port`] > 0 && prots.indexOf(tdata[`${pre}_port`]) === -1) {
                 let needRenameEdges = _.filter(edges, edge => edge.source === tnode.id || edge.target === tnode.id);
                 needRenameEdges.forEach(edge => {
                     if (edge.source === tnode.id) {
-                        edge.source = `${tnode.id}%${tdata[`${pre}_port`]}`;
+                        edge.source = `${tnode.id}${prots.length > 0 ? '%' : ':'}${tdata[`${pre}_port`]}`;
                     } else {
-                        edge.target = `${tnode.id}%${tdata[`${pre}_port`]}`;
+                        edge.target = `${tnode.id}${prots.length > 0 ? '%' : ':'}${tdata[`${pre}_port`]}`;
                     }   
+                    edge.id = `edge_${edge.source}_${edge.target}${edge.service ? '_' + edge.service : ''}`
                 });
-                tnode.id = `${tnode.id}%${tdata[`${pre}_port`]}`;
-                tnode.name = `${tnode.name}%${tdata[`${pre}_port`]}`;
+                tnode.id = `${tnode.id}${prots.length > 0 ? '%' : ':'}${tdata[`${pre}_port`]}`;
+                tnode.name = `${tnode.name}${prots.length > 0 ? '%' : ':'}${tdata[`${pre}_port`]}`;
             }
             if (pre === 'dst') {
                 target = tnode.id;
@@ -181,10 +193,11 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
                 source = tnode.id;
             }
         } else {
-            let nodeId = `${tdata[`${pre}_namespace`]}_${tdata[`${pre}_ip`]}` + (tdata[`${pre}_port`] ? `:${tdata[`${pre}_port`]}` : '');
+            let IPPort = `${tdata[`${pre}_ip`]}` + (tdata[`${pre}_port`] && tdata[`${pre}_port`] > 0 ? `:${tdata[`${pre}_port`]}` : ''); //:${tdata[`${pre}_port`]}
+            let nodeId = `${tdata[`${pre}_namespace`]}_${IPPort}`;
             node = {
                 id: nodeId,
-                name: `${tdata[`${pre}_ip`]}:${tdata[`${pre}_port`]}`,
+                name: IPPort,
                 namespace: tdata[`${pre}_namespace`],
                 nodeType: 'external',
                 showNamespace: false
@@ -198,6 +211,9 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
     } else {
         if (pre === 'dst') {
             target = `${tdata[`${pre}_namespace`]}_${tdata[`${pre}_workload_name`]}`;
+            if (showService) {
+                service = tdata[`${pre}_service`];
+            }
         } else {
             source = `${tdata[`${pre}_namespace`]}_${tdata[`${pre}_workload_name`]}`;
         }
@@ -240,8 +256,7 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
             }
         }
     }
-    // console.log(node, source, target);
-    return { node, source, target }
+    return { node, source, target, service }
 }
 
 /**
@@ -289,17 +304,15 @@ export const detailNodesHandle = (nodes: any[], nodeData: any) => {
     return nodelist;
 }
 
-export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any) => {
+export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any, showService: boolean) => {
     let edgelist = _.cloneDeep(edges);
     edgelist.forEach((edge: EdgeProps) => {
         let sourceNode = _.find(nodes, {id: edge.source});
         let targteNode = _.find(nodes, {id: edge.target});
 
         let callsList = [], timeList = [], sendVolumeList = [], receiveVolumeList = [], retransmitList = [], rttList = [];
-        // let retransmitList = _.filter(edgeData.edgeRetransmitData, item => edgeFilter(item, edge));
-        // let rttList = _.filter(edgeData.edgeRTTData, item => edgeFilter(item, edge));
         if (externalTypes.indexOf(sourceNode.nodeType) > -1) {
-            let ip = sourceNode.id.substring(sourceNode.id.indexOf('_') + 1, sourceNode.id.indexOf(':'));
+            let ip = sourceNode.id.substring(sourceNode.id.indexOf('_') + 1, sourceNode.id.indexOf(':') > -1 ? sourceNode.id.indexOf(':') : sourceNode.id.length);
             callsList = _.filter(edgeData.edgeCallData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_ip === ip);
             timeList = _.filter(edgeData.edgeTimeData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_ip === ip);
             sendVolumeList = _.filter(edgeData.edgeSendVolumeData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_ip === ip);
@@ -323,7 +336,7 @@ export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any) => 
         }
 
         if (externalTypes.indexOf(targteNode.nodeType) > -1) {
-            let ip = targteNode.id.substring(targteNode.id.indexOf('_') + 1, targteNode.id.indexOf(':'));
+            let ip = targteNode.id.substring(targteNode.id.indexOf('_') + 1, targteNode.id.indexOf(':') > -1 ? targteNode.id.indexOf(':') : targteNode.id.length);
             callsList = _.filter(callsList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_ip === ip);
             timeList = _.filter(timeList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_ip === ip);
             sendVolumeList = _.filter(sendVolumeList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_ip === ip);
@@ -345,6 +358,15 @@ export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any) => 
             retransmitList = _.filter(edgeData.edgeRetransmitData, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name);
             rttList = _.filter(edgeData.edgeRTTData, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name);
         }
+
+        if (showService && edge.service) {
+            callsList = _.filter(callsList, item => item.fields[1].labels.dst_service === edge.service);
+            timeList = _.filter(timeList, item => item.fields[1].labels.dst_service === edge.service);
+            sendVolumeList = _.filter(sendVolumeList, item => item.fields[1].labels.dst_service === edge.service);
+            receiveVolumeList = _.filter(receiveVolumeList, item => item.fields[1].labels.dst_service === edge.service);
+            retransmitList = _.filter(edgeData.edgeRetransmitData, item => item.fields[1].labels.dst_service === edge.service);
+            rttList = _.filter(edgeData.edgeRTTData, item => item.fields[1].labels.dst_service === edge.service);
+        }
         let errorList = _.filter(callsList, item => {
             if (item.fields[1].labels.protocol === 'http') {
                 return parseInt(item.fields[1].labels.status_code, 10) >= 400;
@@ -365,7 +387,7 @@ export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any) => 
         edge.rtt = rttList.length > 0 ? _.chain(rttList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
         edge.retransmit = retransmitList.length > 0 ? _.chain(retransmitList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
     
-        console.log(edge);
+        // console.log(edge);
     });
     return edgelist;
 }
