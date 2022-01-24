@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Report a bug encountered while
 title: ''
 labels: ''
 assignees: ''
@@ -24,6 +24,7 @@ kubectl logs -f kindling-agent-xxx(replace with your podname) -n kindling -c kin
 ```
 **Environment (please complete the following information):**
 - kindling agent version
+- Kindlinng-falconlib version
 - Node OS version
 - K8s cluster version
 - Node Kernel version
