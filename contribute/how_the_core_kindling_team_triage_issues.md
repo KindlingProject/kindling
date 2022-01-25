@@ -120,7 +120,7 @@ If the author provides the standard information but you are still unable to tria
 
 If the author does not respond to the requested information within the timespan of a week, close the issue with a kind note stating that the author can request for the issue to be reopened when the necessary information is provided.
 
-When you feel you have all the information needed you're ready to [categorizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#3-categorizing-an-issue).
+When you feel you have all the information needed you're ready to [categorizing the issue](how_the_core_kindling_team_triage_issues.md#3-categorizing-an-issue).
 
 If you receive a notification with additional information provided but you are not anymore on issue triage and you feel you do not have time to handle it, you should delegate it to the current person on issue triage.
 
@@ -159,7 +159,7 @@ If it's not perfectly clear that it's an actual bug, quickly try to reproduce it
 1. Add a comment describing detailed steps for how to reproduce it, if applicable.
 2. Label the issue `type/bug` and  add any related area/* labels .
 3. If you know that maintainers wont be able to put any resources into it for some time then label the issue with  `beginner friendly`  on which code to update to fix the bug. This should signal to the community that we would appreciate any help we can get to resolve this.
-4. Move on to [prioritizing the issue](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+4. Move on to [prioritizing the issue](how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
 
 **It can't be reproduced:**
 
@@ -174,7 +174,7 @@ If it's not perfectly clear that it's an actual bug, quickly try to reproduce it
 ### Enhancement/feature?
 
 1. Label the issue `type/feature-request` and at least one `area/*` label.
-2. Move on to [prioritizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+2. Move on to [prioritizing the issue](how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
 
 ### Documentation issue?
 
@@ -196,7 +196,7 @@ There's a minor typo/error/lack of information that adds a lot of confusion for 
 **Major error/lack of information:**
 
 1. Label the issue with  `beginner friendly`, if applicable, to signal that we find this important to fix and we would appreciate any help we can get from the community.
-2. Move on to [prioritizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+2. Move on to [prioritizing the issue](how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
 
 ### Support requests
 
