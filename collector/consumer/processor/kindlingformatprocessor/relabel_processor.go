@@ -1,12 +1,12 @@
 package kindlingformatprocessor
 
 import (
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 )
 
 const ProcessorName = "kindlingformatprocessor"
@@ -14,15 +14,15 @@ const ProcessorName = "kindlingformatprocessor"
 // RelabelProcessor generates new model.GaugeGroup according to the documentation.
 type RelabelProcessor struct {
 	cfg          *Config
-	logger       *zap.Logger
 	nextConsumer consumer.Consumer
+	telemetry    *component.TelemetryTools
 }
 
-func NewRelabelProcessor(cfg interface{}, logger *zap.Logger, nextConsumer consumer.Consumer) processor.Processor {
+func NewRelabelProcessor(cfg interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
 	return &RelabelProcessor{
 		cfg:          cfg.(*Config),
-		logger:       logger,
 		nextConsumer: nextConsumer,
+		telemetry:    telemetry,
 	}
 }
 

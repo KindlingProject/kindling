@@ -3,6 +3,7 @@ package tcpmetricanalyzer
 import (
 	"fmt"
 	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	conntrackerpackge "github.com/Kindling-project/kindling/collector/metadata/conntracker"
 	"github.com/Kindling-project/kindling/collector/model"
@@ -30,17 +31,17 @@ var consumableEvents = map[string]bool{
 type TcpMetricAnalyzer struct {
 	consumers   []consumer.Consumer
 	conntracker *conntrackerpackge.Conntracker
-	logger      *zap.Logger
+	telemetry   *component.TelemetryTools
 }
 
-func NewTcpMetricAnalyzer(cfg interface{}, logger *zap.Logger, nextConsumers []consumer.Consumer) analyzer.Analyzer {
+func NewTcpMetricAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, nextConsumers []consumer.Consumer) analyzer.Analyzer {
 	retAnalyzer := &TcpMetricAnalyzer{
 		consumers: nextConsumers,
-		logger:    logger,
+		telemetry: telemetry,
 	}
 	conntracker, err := conntrackerpackge.NewConntracker(10000)
 	if err != nil {
-		logger.Panic("Failed to create TcpMetricAnalyzer: ", zap.Error(err))
+		telemetry.Logger.Panic("Failed to create TcpMetricAnalyzer: ", zap.Error(err))
 	}
 	retAnalyzer.conntracker = conntracker
 	return retAnalyzer
@@ -68,7 +69,7 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		gaugeGroup, err = a.generateRetransmit(event)
 	}
 	if err != nil {
-		a.logger.Error("Event Skip,", zap.Error(err))
+		a.telemetry.Logger.Debug("Event Skip,", zap.Error(err))
 		return nil
 	}
 	if gaugeGroup == nil {
