@@ -57,7 +57,7 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 	dstNodeIp := labels.GetStringValue(constlabels.DstNodeIp)
 	srcNodeIp := labels.GetStringValue(constlabels.SrcNodeIp)
 	if dstNodeIp == "" || srcNodeIp == "" {
-		p.telemetry.Logger.Info("dstNodeIp or srcNodeIp is empty which is not expected, skip: ", zap.String("gaugeGroup", gaugeGroup.String()))
+		p.telemetry.Logger.Debug("dstNodeIp or srcNodeIp is empty which is not expected, skip: ", zap.String("gaugeGroup", gaugeGroup.String()))
 		return nil
 	}
 	// NodeName could be empty

@@ -69,7 +69,7 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		gaugeGroup, err = a.generateRetransmit(event)
 	}
 	if err != nil {
-		a.telemetry.Logger.Info("Event Skip,", zap.Error(err))
+		a.telemetry.Logger.Debug("Event Skip,", zap.Error(err))
 		return nil
 	}
 	if gaugeGroup == nil {
