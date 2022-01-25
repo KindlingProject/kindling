@@ -1,4 +1,4 @@
-# **Contributing to kindling**
+# Contributing to kindling**
 Thank you for you interest in contributing to kindling! We welcome all people who want to contribute in a healthy and constructive manner within our community. 
 ​
 
@@ -35,7 +35,35 @@ The first step to getting starting contribute to kindling is to find something t
 If you are ready to contribute code changes, review the [developer guide](https://github.com/Kindling-project/kindling/DEVELOPER GUIDE) for how to set up local environment.
 When you want to submit your local changes , read about [create pull request](https://github.com/Kindling-project/kindling/contribute/Create pull request.md).
 
-## Code of conduct
+## Sign your commits
 
-Kindling project  follows the Apache software Foundation's [Code of Conduct](http://www.apache.org/foundation/policies/conduct.html)
+The sign-off is a simple line at the end of the explanation for a commit. All commits needs to be signed. Your signature certifies that you wrote the patch or otherwise have the right to contribute the material. The rules are pretty simple, if you can certify the rules (from [developercertificate.org](https://developercertificate.org/)),then you just need add a line to every git commit message, like:
+
+```
+Signed-off-by: lina <lina@example.cn>
+```
+
+### configuring automation  commit signing in git 
+
+1) set your user.name and user.email using following commands:
+
+   ```
+   git config --global user.name lina
+   
+   git config --global user.email  lina@example.cn
+   ```
+
+2. sign your commit with git commit -s, then use`git log `to verify that the signed-off message is added.
+
+   ```
+   Author: lina <lina@example.cn>
+   
+   Date:  Tue Jan 25 09:42:40 2022 +0800
+   
+     add content
+   
+     Signed-off-by: lina <lina@example.cn>
+   ```
+
+   
 
