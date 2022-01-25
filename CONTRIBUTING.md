@@ -19,7 +19,7 @@ Before submitting a new issue, try to make sure someone hasn’t already reporte
 
 ## **Triage issues**
 If you don't have the knowledge or time to code, consider helping with issue triage. The community will thank you for saving them time by spending some of yours.
-Read more about the ways you can [Triage issues](https://github.com/Kindling-project/kindling/contribute/triage_issues.md).
+Read more about the ways you can [Triage issues](contribute/triage_issues.md).
 
 ## **Answering questions**
 It's important to us to help these users who has problem about kindlings, and we’d love you help. Go to [disscussions](https://github.com/Kindling-project/kindling/discussions), you can find unanswered questions and you can answer thoes questions.
@@ -33,7 +33,7 @@ The first step to getting starting contribute to kindling is to find something t
 + How to find documents improving issues? Kindling has doc improvement label for issues that you can improve kinding docs.
 
 If you are ready to contribute code changes, review the [developer guide](https://github.com/Kindling-project/kindling/DEVELOPER_GUIDE) for how to set up local environment.
-When you want to submit your local changes , read about [create pull request](https://github.com/Kindling-project/kindling/contribute/create_pull_request.md).
+When you want to submit your local changes , read about [create pull request](contribute/create_pull_request.md).
 
 ## Sign your commits
 
