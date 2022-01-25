@@ -1,0 +1,21 @@
+load("@px//bazel:pl_build_system.bzl", "pl_cc_library")
+
+package(default_visibility = ["//src:__subpackages__"])
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.h",
+            "*.cc",
+            "*.cpp",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    copts = ["-Wno-error=implicit-fallthrough"],
+    hdrs = glob(["*.h"]),
+    deps = ["//src/userspace/libsinsp/third-party/jsoncpp/json:cc_library"],
+)

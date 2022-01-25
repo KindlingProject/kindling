@@ -1,0 +1,8 @@
+load("@px//bazel:pl_build_system.bzl", "pl_cc_library")
+
+package(default_visibility = ["//src:__subpackages__"])
+
+pl_cc_library(
+    name = "cc_library",
+    hdrs = glob(["*.h"]),
+)

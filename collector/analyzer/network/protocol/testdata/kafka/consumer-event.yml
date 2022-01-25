@@ -1,0 +1,25 @@
+# localhost:38970 -> kafka://localhost:9092
+eventCommon:
+  # SYSCALL_EXIT
+  source: 2
+  # CAT_NET
+  category: 3
+  ctx:
+    thread_info:
+      pid: 925
+      tid: 937
+      uid: 1000
+      gid: 1000
+      comm: "rdk:broker1"
+    fd_info:
+        num: 17
+        # FD_IPV4_SOCK
+        type_fd: 3
+        # TCP
+        protocol: 1
+        # IsServer
+        role: false
+        sip: [16777343]
+        sport: 38970
+        dip: [16777343]
+        dport: 9092

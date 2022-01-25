@@ -1,0 +1,23 @@
+load("@px//bazel:pl_build_system.bzl", "pl_cc_library")
+
+package(default_visibility = ["//src:__subpackages__"])
+
+pl_cc_library(
+    name = "scap_cc_library",
+    srcs = glob(
+        [
+            "dynamic_params_table.c",
+            "event_table.c",
+            "flags_table.c",
+	    "syscall_table.c",
+	    "fillers_table.c",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    copts = ["-Wno-missing-field-initializers"],
+    hdrs = glob(["*.h"]),
+    deps = ["//src/userspace/common:cc_library"],
+)

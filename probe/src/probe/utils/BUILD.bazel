@@ -1,0 +1,24 @@
+load("@px//bazel:pl_build_system.bzl", "pl_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.h",
+            "*.cc",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    hdrs = ["shared_unordered_map.h"],
+    copts = ["-Wno-mismatched-tags"],
+    deps = [
+        "@px//src/common/signal:cc_library",
+        "@px//:px_headers",
+        "//src/userspace/libsinsp:cc_library",
+    ],
+)
