@@ -120,7 +120,7 @@ If the author provides the standard information but you are still unable to tria
 
 If the author does not respond to the requested information within the timespan of a week, close the issue with a kind note stating that the author can request for the issue to be reopened when the necessary information is provided.
 
-When you feel you have all the information needed you're ready to [categorizing the issue](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues#categorizing-an-issue).
+When you feel you have all the information needed you're ready to [categorizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#3-categorizing-an-issue).
 
 If you receive a notification with additional information provided but you are not anymore on issue triage and you feel you do not have time to handle it, you should delegate it to the current person on issue triage.
 
@@ -174,7 +174,7 @@ If it's not perfectly clear that it's an actual bug, quickly try to reproduce it
 ### Enhancement/feature?
 
 1. Label the issue `type/feature-request` and at least one `area/*` label.
-2. Move on to [prioritizing the issue](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+2. Move on to [prioritizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
 
 ### Documentation issue?
 
@@ -196,14 +196,14 @@ There's a minor typo/error/lack of information that adds a lot of confusion for 
 **Major error/lack of information:**
 
 1. Label the issue with  `beginner friendly`, if applicable, to signal that we find this important to fix and we would appreciate any help we can get from the community.
-2. Move on to [prioritizing the issue](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+2. Move on to [prioritizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
 
 ### Support requests
 
 1. Kindly and politely direct the issue author to the [github discussion](https://github.com/Kindling-project/kindling/discussions) and explain that GitHub is mainly used for tracking bugs and feature requests. If possible, it's usually a good idea to add some pointers to the issue author's question.
 2. Close the issue and label it with `type/question`.
 
-##  Prioritization of issues
+##  4. Prioritization of issues
 
 In general bugs and enhancement issues should be labeled with a priority.
 
