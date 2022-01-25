@@ -19,6 +19,7 @@ import statefulsetRPng from '../img/statefulset-red.png';
 import podPng from '../img/pod.png';
 import podYPng from '../img/pod-yellow.png';
 import podRPng from '../img/pod-red.png';
+import unkonwPng from '../img/unknown.png';
 
 import { nodeTextHandle } from './services';
 
@@ -96,21 +97,23 @@ const nodeImgHandle = (node: any) => {
                 default:
                     return podPng;
             }
+        case 'unknow': 
+            return unkonwPng;
         default:
-            return externalPng;
+            return unkonwPng;
     }
 };
 
 // 注册自定义节点
 G6.registerNode('custom-node', {
-    getAnchorPoints() {
-        return [
-            [0.5, 0],
-            [0, 0.5], // 左侧中间
-            [1, 0.5], // 右侧中间
-            [0.5, 1]
-        ];
-    },
+    // getAnchorPoints() {
+    //     return [
+    //         [0.5, 0],
+    //         [0, 0.5], // 左侧中间
+    //         [1, 0.5], // 右侧中间
+    //         [0.5, 1]
+    //     ];
+    // },
     draw: (node: any, group: any) => {
 
         let shape = group.addShape('image', {

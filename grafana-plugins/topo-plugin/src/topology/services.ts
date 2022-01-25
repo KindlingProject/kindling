@@ -239,7 +239,7 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
                         id: `${tdata[`${pre}_namespace`]}_${tdata[`${pre}_workload_name`]}`,
                         name: tdata[`${pre}_workload_name`],
                         namespace: tdata[`${pre}_namespace`],
-                        nodeType: tdata[`${pre}_workload_kind`],
+                        nodeType: 'unknow',
                         showNamespace: tdata[`${pre}_namespace`] !== namespace
                     };
                 }
@@ -267,36 +267,45 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
 export const detailNodesHandle = (nodes: any[], nodeData: any) => {
     let nodelist = _.cloneDeep(nodes);
     nodelist.forEach(node => {
+        let callsList = [], timeList = [], sendVolumeList = [], receiveVolumeList = []; 
         if (externalTypes.indexOf(node.nodeType) === -1) {
-            if (node.nodeType === 'pod') {
-                let callsList = _.filter(nodeData.nodeCallsData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
-                let timeList = _.filter(nodeData.nodeTimeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
-                let errorRateList = _.filter(nodeData.nodeErrorRateData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
-                let sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
-                let receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
-
-                node.calls = callsList.length > 0 ? _.chain(callsList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
-                let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
-                node.latency = node.calls ? timeValue / node.calls / 1000000 : 0;
-                
-                node.errorRate = errorRateList.length > 0 ? _.chain(errorRateList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() / errorRateList.length : 0;
-                node.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
-                node.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
+            if (workloadTypes.indexOf(node.nodeType) > -1) {
+                callsList = _.filter(nodeData.nodeCallsData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
+                timeList = _.filter(nodeData.nodeTimeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
+                // errorRateList = _.filter(nodeData.nodeErrorRateData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
+                sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
+                receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
+            } else if (node.nodeType === 'pod') {
+                callsList = _.filter(nodeData.nodeCallsData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
+                timeList = _.filter(nodeData.nodeTimeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
+                // errorRateList = _.filter(nodeData.nodeErrorRateData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
+                sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
+                receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.pod);
             } else {
-                let callsList = _.filter(nodeData.nodeCallsData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
-                let timeList = _.filter(nodeData.nodeTimeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
-                let errorRateList = _.filter(nodeData.nodeErrorRateData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
-                let sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
-                let receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name);
-    
-                node.calls = callsList.length > 0 ? _.chain(callsList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
-                let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
-                node.latency = node.calls ? timeValue / node.calls / 1000000 : 0;
-                node.errorRate = errorRateList.length > 0 ? _.chain(errorRateList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() / errorRateList.length : 0;
-                node.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
-                node.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
+                callsList = _.filter(nodeData.nodeCallsData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name && !item.fields[1].labels.pod);
+                timeList = _.filter(nodeData.nodeTimeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name && !item.fields[1].labels.pod);
+                // errorRateList = _.filter(nodeData.nodeErrorRateData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name && !item.fields[1].labels.pod);
+                sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name && !item.fields[1].labels.pod);
+                receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.fields[1].labels.namespace === node.namespace && node.name === item.fields[1].labels.workload_name && !item.fields[1].labels.pod);
             }
+            let errorList = _.filter(callsList, item => {
+                if (item.fields[1].labels.protocol === 'http') {
+                    return parseInt(item.fields[1].labels.status_code, 10) >= 400;
+                } else if (item.fields[1].labels.protocol === 'dns') {
+                    return parseInt(item.fields[1].labels.status_code, 10) > 0;
+                } else {
+                    return false
+                }
+            });
 
+            node.calls = callsList.length > 0 ? _.chain(callsList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
+            let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
+            node.latency = node.calls ? timeValue / node.calls / 1000000 : 0;
+            let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
+            node.errorRate = node.calls ? errorValue / node.calls * 100 : 0;
+            // node.errorRate = errorRateList.length > 0 ? _.chain(errorRateList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() / errorRateList.length : 0;
+            node.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
+            node.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => _.compact(item.fields[1].values.buffer).pop()).sum().value() : 0;
             node.status = 'green';
         }
         node.status = 'green';
@@ -326,6 +335,13 @@ export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any, sho
             receiveVolumeList = _.filter(edgeData.edgeReceiveVolumeData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_pod === sourceNode.name);
             retransmitList = _.filter(edgeData.edgeRetransmitData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_pod === sourceNode.name);
             rttList = _.filter(edgeData.edgeRTTData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_pod === sourceNode.name);
+        } else if (sourceNode.nodeType === 'unknow') {
+            callsList = _.filter(edgeData.edgeCallData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name && !item.fields[1].labels.src_pod);
+            timeList = _.filter(edgeData.edgeTimeData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name && !item.fields[1].labels.src_pod);
+            sendVolumeList = _.filter(edgeData.edgeSendVolumeData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name && !item.fields[1].labels.src_pod);
+            receiveVolumeList = _.filter(edgeData.edgeReceiveVolumeData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name && !item.fields[1].labels.src_pod);
+            retransmitList = _.filter(edgeData.edgeRetransmitData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name && !item.fields[1].labels.src_pod);
+            rttList = _.filter(edgeData.edgeRTTData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name && !item.fields[1].labels.src_pod);
         } else if (workloadTypes.indexOf(sourceNode.nodeType) > -1) {
             callsList = _.filter(edgeData.edgeCallData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name);
             timeList = _.filter(edgeData.edgeTimeData, item => item.fields[1].labels.src_namespace === sourceNode.namespace && item.fields[1].labels.src_workload_name === sourceNode.name);
@@ -350,6 +366,13 @@ export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any, sho
             receiveVolumeList = _.filter(receiveVolumeList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_pod === targteNode.name);
             retransmitList = _.filter(edgeData.edgeRetransmitData, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_pod === targteNode.name);
             rttList = _.filter(edgeData.edgeRTTData, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_pod === targteNode.name);
+        } else if (targteNode.nodeType === 'unknow') {
+            callsList = _.filter(callsList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name && !item.fields[1].labels.dst_pod);
+            timeList = _.filter(timeList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name && !item.fields[1].labels.dst_pod);
+            sendVolumeList = _.filter(sendVolumeList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name && !item.fields[1].labels.dst_pod);
+            receiveVolumeList = _.filter(receiveVolumeList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name && !item.fields[1].labels.dst_pod);
+            retransmitList = _.filter(edgeData.edgeRetransmitData, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name && !item.fields[1].labels.dst_pod);
+            rttList = _.filter(edgeData.edgeRTTData, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name && !item.fields[1].labels.dst_pod);
         } else if (workloadTypes.indexOf(targteNode.nodeType) > -1)  {
             callsList = _.filter(callsList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name);
             timeList = _.filter(timeList, item => item.fields[1].labels.dst_namespace === targteNode.namespace && item.fields[1].labels.dst_workload_name === targteNode.name);
