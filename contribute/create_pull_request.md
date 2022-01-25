@@ -3,7 +3,7 @@ We’re excited that you want to join us. This doc explains the process for crea
 ​
 
 ## **Before you submit a pull request**
-Fist-time contributors shuld read the [Contributor Guide](CONTRIBUTING.md) to get started.
+Fist-time contributors shuld read the [Contributor Guide](../CONTRIBUTING.md) to get started.
 Make sure your pull request adheres to relevant code conventions.
 
 ## Your first pull request
