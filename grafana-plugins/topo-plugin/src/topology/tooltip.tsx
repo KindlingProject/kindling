@@ -131,7 +131,7 @@ export const nodeTooltip = new G6.Tooltip({
         let elem = document.createElement("div");
         elem.setAttribute('id', 'nodeTooltip');
         ReactDOM.render(tooltipDom, elem);
-        return ['external', 'dns', 'default'].indexOf(model.nodeType) > -1 ? model.name : elem;
+        return ['external', 'dns', 'default', 'unknow'].indexOf(model.nodeType) > -1 ? model.name : elem;
     }
 });
 
