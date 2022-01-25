@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kindling-k8s
+  namespace: kindling
+spec:
+  endpoints:
+  - interval: 15s
+    port: metrics
+    path: /metrics
+  namespaceSelector:
+    matchNames:
+    - kindling
+  selector:
+    matchLabels:
+      k8s-app: kindling-agent
