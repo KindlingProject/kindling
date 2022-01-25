@@ -1,8 +1,8 @@
 package otelexporter
 
 import (
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
-	"github.com/Kindling-project/kindling/collector/logger"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/spf13/viper"
@@ -22,7 +22,7 @@ func InitOtelExporter(t *testing.T) exporter.Exporter {
 	if err != nil {
 		t.Fatalf("error happened when unmarshaling config: %v", err)
 	}
-	return NewExporter(config, logger.CreateDefaultLogger())
+	return NewExporter(config, component.NewDefaultTelemetryTools())
 }
 
 func TestConsumeGaugeGroup(t *testing.T) {

@@ -1,15 +1,18 @@
 package udsreceiver
 
 import (
+	"context"
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
 	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/uprobeanalyzer"
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/receiver"
 	"github.com/golang/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -32,7 +35,8 @@ type UdsReceiver struct {
 	zmqReqSocket    Socket
 	shutdownWG      sync.WaitGroup
 	shutdwonState   bool
-	logger          *zap.Logger
+	telemetry       *component.TelemetryTools
+	selfMetrics     *selfMetrics
 }
 
 type Config struct {
@@ -96,21 +100,26 @@ func (soc Socket) connect(endpoint string) error {
 	return err
 }
 
-func NewUdsReceiver(config interface{}, logger *zap.Logger, analyzerManager analyzerpackage.Manager) receiver.Receiver {
+func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager analyzerpackage.Manager) receiver.Receiver {
 	cfg, ok := config.(*Config)
 	if !ok {
-		logger.Sugar().Panicf("Cannot convert [%s] config", Uds)
+		telemetry.Logger.Sugar().Panicf("Cannot convert [%s] config", Uds)
 	}
-	return &UdsReceiver{cfg: cfg, analyzerManager: analyzerManager, logger: logger}
+	return &UdsReceiver{
+		cfg:             cfg,
+		analyzerManager: analyzerManager,
+		telemetry:       telemetry,
+		selfMetrics:     NewSelfMetrics(telemetry.MeterProvider),
+	}
 }
 
 func (r *UdsReceiver) startZeroMqPull() error {
 	cfg := r.cfg.ZEROMQPULL
-	r.logger.Info("Starting ZeroMq Pull connect on endpoint", zap.String("endpoint", cfg.Endpoint))
+	r.telemetry.Logger.Info("Starting ZeroMq Pull connect on endpoint", zap.String("endpoint", cfg.Endpoint))
 	pullSocket := r.zmqPullSocket
 	err := pullSocket.connect(cfg.Endpoint)
 	if err != nil {
-		r.logger.Panic("Connecting ZeroMq Pull failed on endpoint", zap.String("endpoint", cfg.Endpoint))
+		r.telemetry.Logger.Panic("Connecting ZeroMq Pull failed on endpoint", zap.String("endpoint", cfg.Endpoint))
 	}
 	r.shutdownWG.Add(1)
 	go func() {
@@ -129,12 +138,12 @@ func (r *UdsReceiver) startZeroMqPull() error {
 				events := &model.KindlingEventList{}
 				err = proto.Unmarshal([]byte(req[0]), events)
 				if err != nil {
-					r.logger.Error("Error unmarshalling event: %v", zap.Error(err))
+					r.telemetry.Logger.Error("Error unmarshalling event: %v", zap.Error(err))
 					continue
 				}
 				err = r.SendToNextConsumer(events)
 				if err != nil {
-					r.logger.Error("Error sending event to next consumer: %v", zap.Error(err))
+					r.telemetry.Logger.Error("Error sending event to next consumer: %v", zap.Error(err))
 					continue
 				}
 				//r.logger.Info("name"+data.HcmineEvent[0].GetName())
@@ -152,7 +161,7 @@ func (r *UdsReceiver) startZeroMqReq() error {
 	reqSocket := r.zmqReqSocket
 	err := reqSocket.connect(cfg.Endpoint)
 	if err != nil {
-		r.logger.Error("Connecting ZeroMq Req failed on endpoint " + cfg.Endpoint)
+		r.telemetry.Logger.Error("Connecting ZeroMq Req failed on endpoint " + cfg.Endpoint)
 		return err
 	}
 	labels := make([]*model.Label, len(cfg.SubcribeInfo))
@@ -167,14 +176,14 @@ func (r *UdsReceiver) startZeroMqReq() error {
 	}
 	p, err := proto.Marshal(subEvent)
 	if err != nil {
-		r.logger.Error("subscribe events marshal failed.")
+		r.telemetry.Logger.Error("subscribe events marshal failed.")
 	}
 	_, err = reqSocket.SendMessage(p)
 	if err != nil {
-		r.logger.Error("subscribe request failed")
+		r.telemetry.Logger.Error("subscribe request failed")
 	}
 	rep, err := reqSocket.RecvMessage(8)
-	if ce := r.logger.Check(zapcore.DebugLevel, "Receiver Message"); ce != nil {
+	if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, "Receiver Message"); ce != nil {
 		ce.Write(
 			zap.String("rep", rep[0]),
 		)
@@ -190,12 +199,12 @@ func (r *UdsReceiver) Start() error {
 	if r.cfg.ZEROMQPULL != nil {
 		r.zmqPullSocket = r.newPullSocket(r.cfg.ZEROMQPULL)
 	}
-	r.logger.Info("startZeroMqReq")
+	r.telemetry.Logger.Info("startZeroMqReq")
 	err = r.startZeroMqReq()
 	if err != nil {
 		return err
 	}
-	r.logger.Info("startZeroMqPull")
+	r.telemetry.Logger.Info("startZeroMqPull")
 	err = r.startZeroMqPull()
 	if err != nil {
 		return err
@@ -219,6 +228,7 @@ func (r *UdsReceiver) Shutdown() error {
 func (r *UdsReceiver) SendToNextConsumer(events *model.KindlingEventList) error {
 	// TODO: Decouple dispatching logic from receiver and conduct it at analyzerManager via configuration
 	for _, evt := range events.KindlingEventList {
+		r.selfMetrics.eventSentCounter.Add(context.Background(), 1, attribute.String("name", evt.Name))
 		var analyzer analyzerpackage.Analyzer
 		var isFound bool
 		switch evt.Name {
@@ -236,10 +246,10 @@ func (r *UdsReceiver) SendToNextConsumer(events *model.KindlingEventList) error 
 			analyzer, isFound = r.analyzerManager.GetAnalyzer(network.Network)
 		}
 		if !isFound {
-			r.logger.Info("analyzer not found for event %s", zap.String("eventName", evt.Name))
+			r.telemetry.Logger.Info("analyzer not found for event %s", zap.String("eventName", evt.Name))
 			continue
 		}
-		if ce := r.logger.Check(zapcore.DebugLevel, "Receive Event"); ce != nil {
+		if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, "Receive Event"); ce != nil {
 			ce.Write(
 				zap.String("event", evt.String()),
 			)

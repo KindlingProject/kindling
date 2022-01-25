@@ -1,6 +1,7 @@
 package network
 
 import (
+	"github.com/Kindling-project/kindling/collector/component"
 	"math/rand"
 	"sync"
 	"time"
@@ -37,15 +38,15 @@ type NetworkAnalyzer struct {
 	parsers          []*protocol.ProtocolParser
 
 	requestMonitor sync.Map
-	logger         *zap.Logger
+	telemetry      *component.TelemetryTools
 }
 
-func NewNetworkAnalyzer(cfg interface{}, logger *zap.Logger, consumers []consumer.Consumer) analyzer.Analyzer {
+func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
 	return &NetworkAnalyzer{
 		cfg:           config,
 		nextConsumers: consumers,
-		logger:        logger,
+		telemetry:     telemetry,
 	}
 }
 
@@ -269,7 +270,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	records := na.parseProtocols(oldPairs)
 
 	for _, record := range records {
-		if ce := na.logger.Check(zapcore.DebugLevel, "NetworkAnalyzer To NextProcess: "); ce != nil {
+		if ce := na.telemetry.Logger.Check(zapcore.DebugLevel, "NetworkAnalyzer To NextProcess: "); ce != nil {
 			ce.Write(
 				zap.String("record", record.String()),
 			)

@@ -2,7 +2,7 @@ package udsreceiver
 
 import (
 	"github.com/Kindling-project/kindling/collector/analyzer"
-	"github.com/Kindling-project/kindling/collector/logger"
+	"github.com/Kindling-project/kindling/collector/component"
 	"testing"
 )
 
@@ -34,6 +34,6 @@ func TestUdsReceiver_Start(t *testing.T) {
 		},
 	}
 	am, _ := analyzer.NewManager()
-	r := NewUdsReceiver(cfg, logger.CreateDefaultLogger(), am)
+	r := NewUdsReceiver(cfg, component.NewDefaultTelemetryTools(), am)
 	r.Start()
 }
