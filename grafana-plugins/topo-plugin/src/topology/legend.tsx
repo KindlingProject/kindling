@@ -38,12 +38,12 @@ function ColorLegend(props: CProps) {
         <span>{title}</span>
     </div>)
 }
-interface IProps {
+interface LProps {
     typeList: string[];
     metric: string;
     volumes: any;
 }
-function TopoLegend(props: IProps) {
+function TopoLegend(props: LProps) {
     const { typeList, metric, volumes } = props;
     const styles = getStyles();
 

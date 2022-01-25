@@ -364,6 +364,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     if (SGraph) {
       updateLinesAndNodes();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [volumes]);
   useEffect(() => {
     if (namespace.split(',').length === 1) {
