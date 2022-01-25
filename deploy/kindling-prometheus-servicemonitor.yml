@@ -8,6 +8,9 @@ spec:
   - interval: 15s
     port: metrics
     path: /metrics
+    relabelings:
+    - regex: '(container|endpoint|namespace|pod|service)'
+      action: labeldrop
   namespaceSelector:
     matchNames:
     - kindling
