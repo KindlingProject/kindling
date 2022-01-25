@@ -27,8 +27,8 @@ spec:
         env:
         - name: HOST_PROC
           value: /host/proc
-        - name: HCMINE_BPF_PROBE
-          value: /opt/probe.o
+        - name: PREFER_KERNEL_PROBE
+          value: "1"
         securityContext:
           privileged: true
         volumeMounts:
