@@ -1,0 +1,38 @@
+load("@px//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("@px//bazel:pl_build_system.bzl", "pl_cc_library")
+
+package(default_visibility = ["//src:__subpackages__"])
+
+pl_proto_library(
+    name = "kindling_pl_proto",
+    srcs = ["kindling_event.proto"],
+    visibility = ["//src:__subpackages__"],
+)
+
+pl_cc_proto_library(
+    name = "kindling_event_pl_cc_proto",
+    proto = ":kindling_pl_proto",
+    visibility = ["//src:__subpackages__"],
+)
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.h",
+            "*.cc",
+            "*.cpp",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    copts = ["-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-sign-compare","-Wno-unused-private-field","-Wno-mismatched-tags"],
+    hdrs = glob(["*.h"]),
+    deps = [
+        ":kindling_event_pl_cc_proto",
+        "//src/userspace/libsinsp:cc_library",
+        "@px//:px_headers",
+    ],
+)

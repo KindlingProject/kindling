@@ -1,0 +1,5 @@
+filegroup(
+    name = "scripts",
+    srcs = ["docker-entrypoint.sh","kindling-probe-loader","gdb_print.sh"],
+    visibility = ["//visibility:public"],
+)
