@@ -3,13 +3,12 @@ package network
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/component"
 	"reflect"
 	"sync"
 	"testing"
 
 	"github.com/Kindling-project/kindling/collector/consumer"
-	"github.com/Kindling-project/kindling/collector/logger"
-
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/spf13/viper"
 )
@@ -67,14 +66,10 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 		}
 		viper.UnmarshalKey("analyzers.networkanalyzer", config)
 
-		var loggerConfig = logger.Config{
-			ConsoleLogLevel: "none",
-			FileLogLevel:    "none",
-		}
 		na = &NetworkAnalyzer{
 			cfg:           config,
 			nextConsumers: []consumer.Consumer{&NopProcessor{}},
-			logger:        logger.InitLogger(loggerConfig),
+			telemetry:     component.NewDefaultTelemetryTools(),
 		}
 		na.Start()
 	}

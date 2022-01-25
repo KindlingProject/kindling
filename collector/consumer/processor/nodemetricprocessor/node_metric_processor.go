@@ -1,6 +1,7 @@
 package nodemetricprocessor
 
 import (
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
 	"github.com/Kindling-project/kindling/collector/model"
@@ -18,19 +19,20 @@ const (
 
 type NodeMetricProcessor struct {
 	cfg          *Config
-	logger       *zap.Logger
 	nextConsumer consumer.Consumer
+
+	telemetry *component.TelemetryTools
 }
 
-func New(config interface{}, logger *zap.Logger, nextConsumer consumer.Consumer) processor.Processor {
+func New(config interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
 	cfg, ok := config.(*Config)
 	if !ok {
-		logger.Error("Cannot convert Component config", zap.String("componentType", Type))
+		telemetry.Logger.Error("Cannot convert Component config", zap.String("componentType", Type))
 	}
 	return &NodeMetricProcessor{
-		logger:       logger,
 		cfg:          cfg,
 		nextConsumer: nextConsumer,
+		telemetry:    telemetry,
 	}
 }
 
@@ -55,7 +57,7 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 	dstNodeIp := labels.GetStringValue(constlabels.DstNodeIp)
 	srcNodeIp := labels.GetStringValue(constlabels.SrcNodeIp)
 	if dstNodeIp == "" || srcNodeIp == "" {
-		p.logger.Warn("dstNodeIp or srcNodeIp is empty which is not expected, skip: ", zap.String("gaugeGroup", gaugeGroup.String()))
+		p.telemetry.Logger.Debug("dstNodeIp or srcNodeIp is empty which is not expected, skip: ", zap.String("gaugeGroup", gaugeGroup.String()))
 		return nil
 	}
 	// NodeName could be empty

@@ -52,8 +52,11 @@ func (c APIConfig) Validate() error {
 	return nil
 }
 
-var MetaDataCache = New()
-var once sync.Once
+var (
+	MetaDataCache = New()
+	KubeClient    *k8s.Clientset
+	once          sync.Once
+)
 
 func InitK8sHandler(options ...Option) error {
 	var retErr error
@@ -79,6 +82,7 @@ func InitK8sHandler(options ...Option) error {
 		time.Sleep(1 * time.Second)
 		go PodWatch(clientSet)
 		time.Sleep(1 * time.Second)
+		KubeClient = clientSet
 	})
 	return retErr
 }
