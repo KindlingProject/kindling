@@ -77,9 +77,9 @@ if  you have questions or ideas, feel free to reach out to us in the following w
 
 - Check out our [discussions](https://github.com/Kindling-project/kindling/discussions)
 - Join us on our [Slack team](https://kindling-world.slack.com/join/shared_invite/zt-12bdv5kbn-HPajCjB0_CmuvXw~4t_lAw#/shared-invite/email)
--  Join us from Wechat
+- Join us from WeChat Group (chinese)
 
-![image-20220125192518485](/Users/jiang/Library/Application Support/typora-user-images/image-20220125192518485.png)
+![img](https://cdn.nlark.com/yuque/0/2022/png/2307576/1643176150105-21390a1c-15e7-4ee4-9f6d-07b1238342d8.png)
 
 ## License
 
