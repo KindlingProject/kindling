@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 17,
-  "iteration": 1642497772590,
+  "id": 30,
+  "iteration": 1643192366778,
   "links": [],
   "panels": [
     {
@@ -152,7 +152,7 @@
         "y": 0
       },
       "id": 4,
-      "interval": null,
+      "interval": "30",
       "legend": {
         "percentage": true,
         "show": true,
@@ -161,6 +161,7 @@
       },
       "legendType": "Right side",
       "links": [],
+      "maxDataPoints": 1,
       "nullPointMode": "connected",
       "pieType": "pie",
       "pluginVersion": "7.1.1",
@@ -168,10 +169,10 @@
       "targets": [
         {
           "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\", response_content!=\"0\"}[$__interval])) by (pod)",
-          "instant": true,
+          "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{request_content}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -206,7 +207,7 @@
         "y": 0
       },
       "id": 6,
-      "interval": null,
+      "interval": "30",
       "legend": {
         "header": "",
         "show": true,
@@ -223,7 +224,7 @@
       "strokeWidth": 1,
       "targets": [
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\", response_content!=\"0\"}[$__interval])) by (response_content)",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\", response_content!=\"0\"}[$__interval])) by (response_content), \"response_content\", \"FormatErr\", \"response_content\", \"1.*\"), \"response_content\", \"ServFail\", \"response_content\", \"2.*\"), \"response_content\", \"NXDomain\", \"response_content\", \"3.*\"), \"response_content\", \"NotImp\", \"response_content\", \"4.*\"), \"response_content\", \"Refused\", \"response_content\", \"5.*\")",
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
@@ -259,6 +260,7 @@
       },
       "hiddenSeries": false,
       "id": 8,
+      "interval": "30",
       "legend": {
         "avg": false,
         "current": false,
@@ -270,6 +272,7 @@
       },
       "lines": false,
       "linewidth": 1,
+      "maxDataPoints": 100,
       "nullPointMode": "null",
       "percentage": false,
       "pluginVersion": "7.1.1",
@@ -294,7 +297,7 @@
       "timeShift": null,
       "title": "Parsing Domain Failure Top10",
       "tooltip": {
-        "shared": false,
+        "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
@@ -303,7 +306,7 @@
         "buckets": null,
         "mode": "series",
         "name": null,
-        "show": true,
+        "show": false,
         "values": [
           "total"
         ]
@@ -359,7 +362,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -391,7 +394,7 @@
       "timeShift": null,
       "title": "Response Counts",
       "tooltip": {
-        "shared": false,
+        "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
@@ -454,7 +457,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -486,7 +489,7 @@
       "timeShift": null,
       "title": "Response Time",
       "tooltip": {
-        "shared": false,
+        "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
@@ -556,7 +559,7 @@
                   {
                     "from": "",
                     "id": 0,
-                    "text": "FormErr",
+                    "text": "FormatErr",
                     "to": "",
                     "type": 1,
                     "value": "1"
@@ -642,6 +645,10 @@
                     "value": "10"
                   }
                 ]
+              },
+              {
+                "id": "custom.width",
+                "value": null
               }
             ]
           },
@@ -754,33 +761,30 @@
             },
             "indexByName": {
               "Time": 0,
-              "Value": 20,
-              "__name__": 14,
-              "dst_ip": 5,
-              "dst_namespace": 6,
-              "dst_port": 7,
-              "dst_service": 23,
-              "dst_workload_kind": 24,
-              "dst_workload_name": 4,
-              "instance": 8,
-              "is_server": 15,
-              "job": 9,
-              "protocol": 10,
-              "request_content": 16,
-              "request_duration_status": 17,
-              "request_processing_status": 18,
-              "request_reqxfer_status": 19,
-              "response_content": 21,
-              "response_rspxfer_status": 22,
-              "service_instance_id": 11,
-              "service_name": 12,
-              "src_ip": 2,
-              "src_namespace": 13,
-              "src_node": 25,
-              "src_pod": 3,
-              "src_service": 26,
-              "src_workload_kind": 27,
-              "src_workload_name": 1
+              "Value": 19,
+              "__name__": 13,
+              "dst_ip": 3,
+              "dst_namespace": 5,
+              "dst_node": 24,
+              "dst_pod": 4,
+              "dst_port": 6,
+              "dst_service": 22,
+              "dst_workload_kind": 23,
+              "dst_workload_name": 2,
+              "instance": 7,
+              "is_server": 14,
+              "job": 8,
+              "protocol": 9,
+              "request_content": 15,
+              "request_duration_status": 16,
+              "request_processing_status": 17,
+              "request_reqxfer_status": 18,
+              "response_content": 20,
+              "response_rspxfer_status": 21,
+              "service_instance_id": 10,
+              "service_name": 11,
+              "src_ip": 1,
+              "src_namespace": 12
             },
             "renameByName": {
               "Value": "Response Time",
@@ -880,5 +884,5 @@
   "timezone": "",
   "title": "DNS Request Details",
   "uid": "UFwanjpnk",
-  "version": 15
+  "version": 5
 }

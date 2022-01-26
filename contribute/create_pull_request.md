@@ -3,11 +3,11 @@ We’re excited that you want to join us. This doc explains the process for crea
 ​
 
 ## **Before you submit a pull request**
-Fist-time contributors shuld read the [Contributor Guide](https://github.com/Kindling-project/kindling/CONTRIBUTING.md) to get started.
+Fist-time contributors shuld read the [Contributor Guide](../CONTRIBUTING.md) to get started.
 Make sure your pull request adheres to relevant code conventions.
 
 ## Your first pull request
-If this is your first time contributing to an open-source project on GitHub, make sure you read about [Creating a pull request](https://github.com/Kindling-project/kindling/contribute/creating-a-pull-request).
+If this is your first time contributing to an open-source project on GitHub, make sure you read about [Creating a pull request](contribute/creating-a-pull-request).
 To increase the chance of having your pull request accepted, make sure your pull request follows these guidelines:
 
 - Title and description matches the implementation.

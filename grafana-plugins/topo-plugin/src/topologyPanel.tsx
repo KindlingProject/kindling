@@ -4,16 +4,19 @@ import _ from 'lodash';
 import './topology/node';
 import './topology/edge';
 import { formatTime, formatCount, formatKMBT, formatPercent, nodeTooltip } from './topology/tooltip';
+import TopoLegend from './topology/legend';
 import { NodeDataProps, EdgeDataProps, nsRelationHandle, detailRelationHandle, detailNodesHandle, detailEdgesHandle } from './topology/services'; 
 import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
-import { stylesFactory, Select, Checkbox } from '@grafana/ui';
+import { stylesFactory, Select, Checkbox, RadioButtonGroup } from '@grafana/ui';
 // ErrorBoundary, Alert, 
 
 interface VolumeProps {
   maxSentVolume: number; 
   maxReceiveVolume: number;
+  minSentVolume: number; 
+  minReceiveVolume: number;
 }
 const meetricList: Array<{label: string; value: any; description?: string}> = [
   { label: 'Latency', value: 'latency' },
@@ -23,6 +26,10 @@ const meetricList: Array<{label: string; value: any; description?: string}> = [
   { label: 'Receive Volume', value: 'receiveVolume' },
   { label: 'RTT', value: 'rtt' },
   { label: 'Retransmit', value: 'retransmit' }
+];
+const viewRadioOptions = [
+  { label: 'Workload', value: 'workload_view' },
+  { label: 'Pod', value: 'pod_view' }
 ];
 
 let SGraph: any;
@@ -36,23 +43,15 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const styles = getStyles();
   const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace.split(',').length === 1);
   const [showService, setShowService] = useState<boolean>(false);
+  const [showView, setShowView] = useState<boolean>(workload.split(',').length === 1);
+  const [view, setView] = useState<string>('workload_view');
   const [lineMetric, setLineMetric] = useState<any>('latency');
-  const [volumes, setVolumes] = useState<VolumeProps>({maxSentVolume: 0, maxReceiveVolume: 0});
+  const [volumes, setVolumes] = useState<VolumeProps>({maxSentVolume: 0, maxReceiveVolume: 0, minSentVolume: 0, minReceiveVolume: 0});
+  const [nodeTypesList, setNodeTypesList] = useState<any[]>([]);
 
   // console.log(namespace, workload);
   // console.log(data);
 
-  // const crossLine = (edges: any, edgeModel: any, idx: number) => {
-  //   edges.forEach((edge: any, edgeIdx: number) => {
-  //     let source = edge.getSource().getModel();
-  //     let target = edge.getTarget().getModel();
-  //     if (source.id === edgeModel.target && target.id === edgeModel.source) {
-  //       if (edgeIdx < idx) {
-  //         edgeModel.labelCfg.refY = showService ? -15 : -10;
-  //       }
-  //     }
-  //   });
-  // }
   // 当勾选View Service Call时，显示service的调用边，两个节点之间存在多条调用关系，使用弧线绘制对应的调用关系
   const serviceLineUpdate = () => {
     let activeList: any[] = [];
@@ -218,6 +217,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       },
       layout: {
         type: 'dagre',
+        // rankdir: 'TB',
         rankdir: 'LR',
         align: 'DL',
         ranksep: 60
@@ -254,58 +254,58 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     updateLinesAndNodes(lineMetric, serviceLine);
   };
   // 只勾选一个namespace是workload为all或者workload为单个值的调用关系处理
-  const workloadRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps, serviceLine = showService) => {
+  const workloadRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps, showPod: boolean, serviceLine = showService) => {
     let nodes: any[] = [], edges: any[] = [];
-    // 当workload为all的时候，只绘制对应namespace下所有workload的调用关系
+    let result: any[] = [];
+    // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
     if (workload.indexOf(',') > -1) {
-      let result = _.filter(topoData, (item: any) => item.fields[1].labels.dst_namespace === namespace || item.fields[1].labels.src_namespace === namespace);
-      console.log('workload Topology', result);
-      _.forEach(result, item => {
-        let tdata: any = item.fields[1].labels;
-        // let source: string, target: string;
-        let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', false, serviceLine);
-        let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', false, serviceLine);
-        sourceNode && nodes.push(sourceNode);
-        targetNode && nodes.push(targetNode);
-        let edgeId = `edge_${source}_${target}${service ? '_' + service : ''}`
-        if (_.findIndex(edges, {id: edgeId}) === -1) {
-          let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
-          edges.push({
-            id: edgeId,
-            source: source,
-            target: target,
-            service: service || '',
-            opposite
-          });
-        }
-      });
+      result = _.filter(topoData, (item: any) => item.fields[1].labels.dst_namespace === namespace || item.fields[1].labels.src_namespace === namespace);
+      // console.log('workload Topology', result);
     } else {
-      // 具体namespace和workload下的pod调用关系
-      let result = _.filter(topoData, (item: any) => (item.fields[1].labels.dst_namespace === namespace && item.fields[1].labels.dst_workload_name === workload) || (item.fields[1].labels.src_namespace === namespace && item.fields[1].labels.src_workload_name === workload));
-      console.log('pod Topology', result);
-      _.forEach(result, item => {
-        let tdata: any = item.fields[1].labels;
-        let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', true, serviceLine);
-        let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', true, serviceLine);
-        sourceNode && nodes.push(sourceNode);
-        targetNode && nodes.push(targetNode);
-        let edgeId = `edge_${source}_${target}${service ? '_' + service  : ''}`
-        if (_.findIndex(edges, {id: edgeId}) === -1) {
-          let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
-          edges.push({
-            id: edgeId,
-            source: source,
-            target: target,
-            opposite,
-            service: service || ''
-          });
-        }
-      });
+      // 具体namespace和workload下的所有调用数据
+      result = _.filter(topoData, (item: any) => (item.fields[1].labels.dst_namespace === namespace && item.fields[1].labels.dst_workload_name === workload) || (item.fields[1].labels.src_namespace === namespace && item.fields[1].labels.src_workload_name === workload));
+      // console.log('pod Topology', result);
     }
+    _.forEach(result, item => {
+      let tdata: any = item.fields[1].labels;
+      let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', showPod, serviceLine);
+      let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', showPod, serviceLine);
+      sourceNode && nodes.push(sourceNode);
+      targetNode && nodes.push(targetNode);
+      let edgeId = `edge_${source}_${target}${service ? '_' + service : ''}`
+      if (_.findIndex(edges, {id: edgeId}) === -1) {
+        let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
+        edges.push({
+          id: edgeId,
+          source: source,
+          target: target,
+          service: service || '',
+          opposite
+        });
+      }
+    });
     nodes = detailNodesHandle(nodes, nodeData);
     edges = detailEdgesHandle(nodes, edges, edgeData, serviceLine);
     
     return { nodes, edges };
+  }
+  // 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
+  const getNodeTypes = (nodes: any[]) => {
+    let nodeByType = _.groupBy(nodes, 'nodeType');
+    let types: string[] = _.keys(nodeByType);
+    return types;
+  }
+  // 重新回去拓扑绘制数据时，更新对应的节点的类型数组和边上流量max、min的数值
+  const handleResult = (gdata: any) => {
+    let nodeTypesList = getNodeTypes(gdata.nodes);
+    setNodeTypesList(nodeTypesList);
+    let volumeData: VolumeProps = {
+      maxSentVolume: _.max(_.map(gdata.edges, 'sentVolume')),
+      maxReceiveVolume: _.max(_.map(gdata.edges, 'receiveVolume')),
+      minSentVolume: _.min(_.map(gdata.edges, 'sentVolume')),
+      minReceiveVolume: _.min(_.map(gdata.edges, 'receiveVolume'))
+    }
+    setVolumes(volumeData);
   }
   // 初始化数据处理：生成拓扑数据，获取调用关系流量最大值
   const initData = () => {
@@ -338,15 +338,15 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodeSendVolumeData,
       nodeReceiveVolumeData
     };
-    console.log('edgeData', edgeData);
-    console.log('nodeData', nodeData);
+    // console.log('edgeData', edgeData);
+    // console.log('nodeData', nodeData);
     // 当namespace为all的时候，只绘制对应namespace的调用关系
     if (namespace.indexOf(',') > -1) {
       let result: any = nsRelationHandle(topoData, nodeData, edgeData);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     } else {
-      let result: any = workloadRelationHandle(topoData, nodeData, edgeData);
+      let result: any = workloadRelationHandle(topoData, nodeData, edgeData, false);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     }
@@ -357,14 +357,15 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     }
     console.log(gdata);
     draw(gdata);
-
-    let volumeData: VolumeProps = {
-      maxSentVolume: _.max(_.map(gdata.edges, 'sentVolume')),
-      maxReceiveVolume: _.max(_.map(gdata.edges, 'receiveVolume'))
-    }
-    setVolumes(volumeData);
+    handleResult(gdata);
   }
 
+  useEffect(() => {
+    if (SGraph) {
+      updateLinesAndNodes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volumes]);
   useEffect(() => {
     if (namespace.split(',').length === 1) {
       setShowCheckbox(true);
@@ -372,6 +373,13 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       setShowCheckbox(false);
     }
   }, [namespace]);
+  useEffect(() => {
+    if (workload.split(',').length === 1) {
+      setShowView(true);
+    } else {
+      setShowView(false);
+    }
+  }, [workload]);
   useEffect(() => {
     if (data.state === 'Done') {
       initData();
@@ -387,19 +395,26 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const changeShowService = () => {
     let show = !showService ? true : false;
     setShowService(show);
-    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, show);
+    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, view === 'pod_view', show);
     let gdata = {
       nodes: nodes,
       edges: edges
     }
     draw(gdata, show);
-
-    let volumeData: VolumeProps = {
-      maxSentVolume: _.max(_.map(gdata.edges, 'sentVolume')),
-      maxReceiveVolume: _.max(_.map(gdata.edges, 'receiveVolume'))
-    }
-    setVolumes(volumeData);
+    handleResult(gdata);
   }
+
+  const changeView = (value: any) => {
+    setView(value);
+    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, value === 'pod_view', showService);
+    let gdata = {
+      nodes: nodes,
+      edges: edges
+    }
+    draw(gdata);
+    handleResult(gdata);
+  }
+
   return (
     <div
       className={cx(
@@ -419,6 +434,15 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           showCheckbox ? <Checkbox css="" value={showService} onChange={changeShowService} label='View Service Call'/> : null
         }
       </div>
+      <div className={styles.topRightWarp}>
+        {
+          showView ? <div className={styles.viewRadioMode}>
+            <span>View Mode</span>
+            <RadioButtonGroup options={viewRadioOptions} value={view} onChange={changeView}/>
+          </div> : null
+        }
+      </div>
+      <TopoLegend typeList={nodeTypesList} metric={lineMetric} volumes={volumes}/>
       <div id="kindling_topo" style={{ height: '100%' }} ref={graphRef}></div>
     </div>
   );
@@ -441,6 +465,20 @@ const getStyles = stylesFactory(() => {
       display: flex;
       align-items: center;
       margin-bottom: 10px;
+    `,
+    topRightWarp: css`
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      width: 230px;
+    `,
+    viewRadioMode: css`
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     `,
     svg: css`
       position: absolute;

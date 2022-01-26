@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"go.opentelemetry.io/otel/attribute"
@@ -54,13 +55,13 @@ type OtelExporter struct {
 	metricAggregationMap map[string]MetricAggregationKind
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
-	logger               *zap.Logger
+	telemetry            *component.TelemetryTools
 }
 
-func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
+func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
 	cfg, ok := config.(*Config)
 	if !ok {
-		logger.Panic("Cannot convert Component config", zap.String("componentType", Otel))
+		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", Otel))
 	}
 	customLabels := make([]attribute.KeyValue, 0, len(cfg.CustomLabels))
 	for k, v := range cfg.CustomLabels {
@@ -68,7 +69,7 @@ func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
 	}
 
 	if cfg.ExportKind != PrometheusKindExporter {
-		commonLabels := GetCommonLabels(false, logger)
+		commonLabels := GetCommonLabels(false, telemetry.Logger)
 		for i := 0; i < len(commonLabels); i++ {
 			if _, find := cfg.CustomLabels[string(commonLabels[i].Key)]; !find {
 				customLabels = append(customLabels, commonLabels[i])
@@ -78,13 +79,13 @@ func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
 
 	hostName, err := os.Hostname()
 	if err != nil {
-		logger.Error("Error happened when getting hostname; set hostname unknown: ", zap.Error(err))
+		telemetry.Logger.Error("Error happened when getting hostname; set hostname unknown: ", zap.Error(err))
 		hostName = "unknown"
 	}
 
 	clusterId, ok := os.LookupEnv(clusterIdEnv)
 	if !ok {
-		logger.Warn("[CLUSTER_ID] is not found in env variable which will be set [noclusteridset]")
+		telemetry.Logger.Warn("[CLUSTER_ID] is not found in env variable which will be set [noclusteridset]")
 		clusterId = "noclusteridset"
 	}
 
@@ -114,7 +115,7 @@ func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
 		exp, err := prometheus.New(config, c)
 
 		if err != nil {
-			logger.Panic("failed to initialize prometheus exporter %v", zap.Error(err))
+			telemetry.Logger.Panic("failed to initialize prometheus exporter %v", zap.Error(err))
 			return nil
 		}
 
@@ -123,11 +124,11 @@ func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
 			traceProvider:        nil,
 			defaultTracer:        nil,
 			customLabels:         customLabels,
-			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), logger, customLabels),
+			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
-			logger:               logger,
+			telemetry:            telemetry,
 		}
-		go StartServer(exp, logger, cfg.PromCfg.Port)
+		go StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
 	} else {
 		var collectPeriod time.Duration
 
@@ -136,13 +137,13 @@ func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
 		} else if cfg.ExportKind == OtlpGrpcKindExporter {
 			collectPeriod = cfg.OtlpGrpcCfg.CollectPeriod
 		} else {
-			logger.Panic("Err! No exporter kind matched ", zap.String("exportKind", cfg.ExportKind))
+			telemetry.Logger.Panic("Err! No exporter kind matched ", zap.String("exportKind", cfg.ExportKind))
 			return nil
 		}
 
-		exporters, err := newExporters(context.Background(), cfg, logger)
+		exporters, err := newExporters(context.Background(), cfg, telemetry.Logger)
 		if err != nil {
-			logger.Panic("Error happened when creating otel exporter:", zap.Error(err))
+			telemetry.Logger.Panic("Error happened when creating otel exporter:", zap.Error(err))
 			return nil
 		}
 
@@ -175,13 +176,13 @@ func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
 			traceProvider:        tracerProvider,
 			defaultTracer:        tracer,
 			customLabels:         customLabels,
-			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, customLabels),
+			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
-			logger:               logger,
+			telemetry:            telemetry,
 		}
 
 		if err = cont.Start(context.Background()); err != nil {
-			logger.Panic("failed to start controller:", zap.Error(err))
+			telemetry.Logger.Panic("failed to start controller:", zap.Error(err))
 			return nil
 		}
 	}
@@ -190,7 +191,7 @@ func NewExporter(config interface{}, logger *zap.Logger) exporter.Exporter {
 }
 
 func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
-	if ce := e.logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
+	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
 		ce.Write(
 			zap.String("gaugeGroup", gaugeGroup.String()),
 		)
@@ -202,7 +203,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		name := value.Name
 		metricKind, ok := e.findInstrumentKind(name)
 		if !ok {
-			e.logger.Warn("Skip a Metric: No metric aggregation set for metric", zap.String("metricName", name))
+			e.telemetry.Logger.Warn("Skip a Metric: No metric aggregation set for metric", zap.String("metricName", name))
 			continue
 		}
 		if metricKind == MAGaugeKind {

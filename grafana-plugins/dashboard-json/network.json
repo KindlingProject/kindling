@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 18,
-  "iteration": 1642507282465,
+  "id": 41,
+  "iteration": 1643192459301,
   "links": [],
   "panels": [
     {
@@ -41,6 +41,7 @@
       },
       "hiddenSeries": false,
       "id": 2,
+      "interval": "30",
       "legend": {
         "avg": false,
         "current": false,
@@ -52,6 +53,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 100,
       "nullPointMode": "null",
       "percentage": false,
       "pluginVersion": "7.1.1",
@@ -64,7 +66,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"} [$__interval]))",
+          "expr": "sum(increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval]))",
           "interval": "",
           "intervalFactor": 5,
           "legendFormat": "",
@@ -134,6 +136,7 @@
       },
       "hiddenSeries": false,
       "id": 5,
+      "interval": "30",
       "legend": {
         "avg": false,
         "current": false,
@@ -145,6 +148,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 100,
       "nullPointMode": "null",
       "percentage": false,
       "pluginVersion": "7.1.1",
@@ -232,7 +236,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -825,5 +829,5 @@
   "timezone": "",
   "title": "Network Details",
   "uid": "4Jq_VCtnz",
-  "version": 15
+  "version": 3
 }

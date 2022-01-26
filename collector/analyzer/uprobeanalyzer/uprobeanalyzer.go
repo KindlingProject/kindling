@@ -2,6 +2,7 @@ package uprobeanalyzer
 
 import (
 	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	conntrackerpackge "github.com/Kindling-project/kindling/collector/metadata/conntracker"
 	"github.com/Kindling-project/kindling/collector/model"
@@ -23,24 +24,25 @@ const (
 
 type UprobeAnalyzer struct {
 	cfg         *Config
-	logger      *zap.Logger
 	consumers   []consumer.Consumer
 	conntracker *conntrackerpackge.Conntracker
+
+	telemetry *component.TelemetryTools
 }
 
-func NewUprobeAnalyzer(config interface{}, logger *zap.Logger, consumers []consumer.Consumer) analyzer.Analyzer {
+func NewUprobeAnalyzer(config interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	cfg, ok := config.(*Config)
 	if !ok {
-		logger.Sugar().Panicf("Cannot convert mock_analyzer config")
+		telemetry.Logger.Sugar().Panicf("Cannot convert mock_analyzer config")
 	}
 	retAnalyzer := &UprobeAnalyzer{
 		cfg:       cfg,
-		logger:    logger,
 		consumers: consumers,
+		telemetry: telemetry,
 	}
 	conntracker, err := conntrackerpackge.NewConntracker(10000)
 	if err != nil {
-		logger.Panic("Failed to create UprobeAnalyzer: ", zap.Error(err))
+		telemetry.Logger.Panic("Failed to create UprobeAnalyzer: ", zap.Error(err))
 	}
 	retAnalyzer.conntracker = conntracker
 	return retAnalyzer
@@ -52,7 +54,7 @@ func (a *UprobeAnalyzer) Start() error {
 
 func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if event.Name != constnames.GrpcUprobeEvent {
-		a.logger.Warn("Skip a Event: UprobeAnalyzer cannot handle event", zap.String("eventName", event.Name))
+		a.telemetry.Logger.Warn("Skip a Event: UprobeAnalyzer cannot handle event", zap.String("eventName", event.Name))
 		return nil
 	}
 
@@ -60,7 +62,7 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	pid := event.GetUserAttribute("pid").GetValue().GetUintValue()
 	fd := event.GetUserAttribute("fd").GetValue().GetUintValue()
 	if role != clientRole && role != serverRole {
-		a.logger.Warn("Skip a Event: UprobeAnalyzer received a unexpected role event", zap.Uint64("pid", pid), zap.Uint64("fd", fd))
+		a.telemetry.Logger.Warn("Skip a Event: UprobeAnalyzer received a unexpected role event", zap.Uint64("pid", pid), zap.Uint64("fd", fd))
 		return nil
 	}
 

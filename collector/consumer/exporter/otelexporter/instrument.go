@@ -3,12 +3,16 @@ package otelexporter
 import (
 	"context"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 )
+
+var traceAsMetricHelp = "Describe a single request which is abnormal. " +
+	"For status labels, number '1', '2' and '3' stands for Green, Yellow and Red respectively."
 
 type instrumentFactory struct {
 	// TODO: Initialize instruments when initializing factory
@@ -71,7 +75,18 @@ func (i *instrumentFactory) recordGaugeAsync(metricName string, singleGauge mode
 				return
 			}
 		}
-	})
+	}, WithDescription(metricName))
+}
+
+func WithDescription(metricName string) metric.InstrumentOption {
+	var option metric.InstrumentOption
+	switch metricName {
+	case constlabels.ToKindlingTraceAsMetricName():
+		option = metric.WithDescription(traceAsMetricHelp)
+	default:
+		option = metric.WithDescription("")
+	}
+	return option
 }
 
 func (i *instrumentFactory) isGaugeAsyncInitialized(metricName string) bool {

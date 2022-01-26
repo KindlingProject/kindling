@@ -26,18 +26,14 @@ export const formatTime = (time: number) => {
 };
 export const formatCount = (y: number) => {
     let yy: number = Math.abs(y);
-    if (yy >= 100000000) {
-        return (yy / 100000000).toFixed(2) + '亿次';
-    } else if (yy >= 10000000) {
-        return (yy / 10000000).toFixed(2) + '千万次';
-    } else if (yy >= 1000000) {
-        return (yy / 1000000).toFixed(2) + '百万次';
-    } else if (yy >= 10000) {
-        return (yy / 10000).toFixed(2) + '万次';
+    if (yy >= 1000000) {
+        return (yy / 1000000).toFixed(2) + 'M';
+    } else if (yy >= 1000) {
+        return (yy / 1000).toFixed(2) + 'K';
     } else if (yy >= 1) {
-        return yy.toFixed(2) + '次';
+        return yy.toFixed(2);
     } else if (yy > 0) {
-        return yy.toFixed(4) + '次';
+        return yy.toFixed(4);
     } else {
         return 0;
     }
@@ -45,13 +41,13 @@ export const formatCount = (y: number) => {
 export const formatKMBT = (y: number) => {
     let yy: number = Math.abs(y);
     if (yy >= Math.pow(1024, 4)) {
-        return (yy / Math.pow(1024, 4)).toFixed(2) + 'T';
+        return (yy / Math.pow(1024, 4)).toFixed(2) + 'TB';
     } else if (yy >= Math.pow(1024, 3)) {
-        return (yy / Math.pow(1024, 3)).toFixed(2) + 'G';
+        return (yy / Math.pow(1024, 3)).toFixed(2) + 'GB';
     } else if (yy >= Math.pow(1024, 2)) {
-        return (yy / Math.pow(1024, 2)).toFixed(2) + 'M';
+        return (yy / Math.pow(1024, 2)).toFixed(2) + 'MB';
     } else if (yy >= 1024) {
-        return (yy / 1024).toFixed(2) + 'K';
+        return (yy / 1024).toFixed(2) + 'KB';
     } else if (yy < 1024 && yy >= 1) {
         return yy.toFixed(2) + 'B';
     } else if (yy < 1 && yy > 0) {
@@ -131,7 +127,7 @@ export const nodeTooltip = new G6.Tooltip({
         let elem = document.createElement("div");
         elem.setAttribute('id', 'nodeTooltip');
         ReactDOM.render(tooltipDom, elem);
-        return ['external', 'dns', 'default'].indexOf(model.nodeType) > -1 ? model.name : elem;
+        return ['external', 'dns', 'default', 'unknow'].indexOf(model.nodeType) > -1 ? model.name : elem;
     }
 });
 

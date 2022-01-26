@@ -1,6 +1,7 @@
 package k8sprocessor
 
 import (
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
 	"github.com/Kindling-project/kindling/collector/metadata/kubernetes"
@@ -20,36 +21,36 @@ type K8sMetadataProcessor struct {
 	nextConsumer  consumer.Consumer
 	localNodeIp   string
 	localNodeName string
-	logger        *zap.Logger
+	telemetry     *component.TelemetryTools
 }
 
-func NewKubernetesProcessor(cfg interface{}, logger *zap.Logger, nextConsumer consumer.Consumer) processor.Processor {
+func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
 	config, ok := cfg.(*Config)
 	if !ok {
-		logger.Panic("Cannot convert Component config", zap.String("componentType", K8sMetadata))
+		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", K8sMetadata))
 	}
 	var options []kubernetes.Option
 	options = append(options, kubernetes.WithAuthType(config.KubeAuthType))
 	options = append(options, kubernetes.WithKubeConfigDir(config.KubeConfigDir))
 	err := kubernetes.InitK8sHandler(options...)
 	if err != nil {
-		logger.Sugar().Panicf("Failed to initialize [%s]: %v", K8sMetadata, err)
+		telemetry.Logger.Sugar().Panicf("Failed to initialize [%s]: %v", K8sMetadata, err)
 		return nil
 	}
 
 	var localNodeIp, localNodeName string
 	if localNodeIp, err = getHostIpFromEnv(); err != nil {
-		logger.Warn("Local NodeIp can not found", zap.Error(err))
+		telemetry.Logger.Warn("Local NodeIp can not found", zap.Error(err))
 	}
 	if localNodeName, err = getHostNameFromEnv(); err != nil {
-		logger.Warn("Local NodeName can not found", zap.Error(err))
+		telemetry.Logger.Warn("Local NodeName can not found", zap.Error(err))
 	}
 	return &K8sMetadataProcessor{
 		metadata:      kubernetes.MetaDataCache,
 		nextConsumer:  nextConsumer,
 		localNodeIp:   localNodeIp,
 		localNodeName: localNodeName,
-		logger:        logger,
+		telemetry:     telemetry,
 	}
 }
 

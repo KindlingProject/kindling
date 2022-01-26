@@ -2,13 +2,12 @@ package application
 
 import (
 	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
-	"github.com/Kindling-project/kindling/collector/logger"
 	"github.com/Kindling-project/kindling/collector/receiver"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 const (
@@ -16,42 +15,40 @@ const (
 	AnalyzersKey  = "analyzers"
 	ProcessorsKey = "processors"
 	ExportersKey  = "exporters"
-	LoggerKey     = "logger"
 )
 
-var ComponentsKeyMap = []string{ReceiversKey, AnalyzersKey, ProcessorsKey, ExportersKey, LoggerKey}
+var ComponentsKeyMap = []string{ReceiversKey, AnalyzersKey, ProcessorsKey, ExportersKey}
 
 type ComponentsFactory struct {
 	Receivers  map[string]ReceiverFactory
 	Analyzers  map[string]AnalyzerFactory
 	Processors map[string]ProcessorFactory
 	Exporters  map[string]ExporterFactory
-	logger     *zap.Logger
 }
 
-type NewReceiverFunc func(cfg interface{}, log *zap.Logger, analyzerManager analyzer.Manager) receiver.Receiver
-type NewAnalyzerFunc func(cfg interface{}, log *zap.Logger, consumers []consumer.Consumer) analyzer.Analyzer
-type NewProcessorFunc func(cfg interface{}, log *zap.Logger, consumer consumer.Consumer) processor.Processor
-type NewExporterFunc func(cfg interface{}, log *zap.Logger) exporter.Exporter
+type NewReceiverFunc func(cfg interface{}, telemetry *component.TelemetryTools, analyzerManager analyzer.Manager) receiver.Receiver
+type NewAnalyzerFunc func(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer
+type NewProcessorFunc func(cfg interface{}, telemetry *component.TelemetryTools, consumer consumer.Consumer) processor.Processor
+type NewExporterFunc func(cfg interface{}, telemetry *component.TelemetryTools) exporter.Exporter
 
 type ReceiverFactory struct {
-	newFunc NewReceiverFunc
-	config  interface{}
+	NewFunc NewReceiverFunc
+	Config  interface{}
 }
 
 type AnalyzerFactory struct {
-	newFunc NewAnalyzerFunc
-	config  interface{}
+	NewFunc NewAnalyzerFunc
+	Config  interface{}
 }
 
 type ProcessorFactory struct {
-	newFunc NewProcessorFunc
-	config  interface{}
+	NewFunc NewProcessorFunc
+	Config  interface{}
 }
 
 type ExporterFactory struct {
-	newFunc NewExporterFunc
-	config  interface{}
+	NewFunc NewExporterFunc
+	Config  interface{}
 }
 
 func NewComponentsFactory() *ComponentsFactory {
@@ -68,8 +65,8 @@ func (c *ComponentsFactory) RegisterReceiver(
 	config interface{},
 ) {
 	c.Receivers[name] = ReceiverFactory{
-		newFunc: f,
-		config:  config,
+		NewFunc: f,
+		Config:  config,
 	}
 }
 
@@ -79,8 +76,8 @@ func (c *ComponentsFactory) RegisterAnalyzer(
 	config interface{},
 ) {
 	c.Analyzers[name] = AnalyzerFactory{
-		newFunc: f,
-		config:  config,
+		NewFunc: f,
+		Config:  config,
 	}
 }
 
@@ -90,8 +87,8 @@ func (c *ComponentsFactory) RegisterProcessor(
 	config interface{},
 ) {
 	c.Processors[name] = ProcessorFactory{
-		newFunc: f,
-		config:  config,
+		NewFunc: f,
+		Config:  config,
 	}
 }
 
@@ -101,8 +98,8 @@ func (c *ComponentsFactory) RegisterExporter(
 	config interface{},
 ) {
 	c.Exporters[name] = ExporterFactory{
-		newFunc: f,
-		config:  config,
+		NewFunc: f,
+		Config:  config,
 	}
 }
 
@@ -112,7 +109,7 @@ func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 		case ReceiversKey:
 			for k, factory := range c.Receivers {
 				key := ReceiversKey + "." + k
-				err := viper.UnmarshalKey(key, factory.config)
+				err := viper.UnmarshalKey(key, factory.Config)
 				if err != nil {
 					return err
 				}
@@ -120,7 +117,7 @@ func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 		case AnalyzersKey:
 			for k, factory := range c.Analyzers {
 				key := AnalyzersKey + "." + k
-				err := viper.UnmarshalKey(key, factory.config)
+				err := viper.UnmarshalKey(key, factory.Config)
 				if err != nil {
 					return err
 				}
@@ -128,7 +125,7 @@ func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 		case ProcessorsKey:
 			for k, factory := range c.Processors {
 				key := ProcessorsKey + "." + k
-				err := viper.UnmarshalKey(key, factory.config)
+				err := viper.UnmarshalKey(key, factory.Config)
 				if err != nil {
 					return err
 				}
@@ -136,18 +133,11 @@ func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 		case ExportersKey:
 			for k, factory := range c.Exporters {
 				key := ExportersKey + "." + k
-				err := viper.UnmarshalKey(key, factory.config)
+				err := viper.UnmarshalKey(key, factory.Config)
 				if err != nil {
 					return err
 				}
 			}
-		case LoggerKey:
-			var loggerConfig = logger.Config{}
-			err := viper.UnmarshalKey(LoggerKey, &loggerConfig)
-			if err != nil {
-				return err
-			}
-			c.logger = logger.InitLogger(loggerConfig)
 		}
 	}
 	return nil
