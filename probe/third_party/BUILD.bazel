@@ -1,0 +1,73 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake", "configure_make", "make")
+
+package(default_visibility = ["//visibility:public"])
+
+configure_make(
+    name = "jq_build",
+    configure_options = [
+        "--disable-maintainer-mode",
+        "--enable-all-static",
+        "--disable-dependency-tracking",
+    ],
+    lib_source = "@lib_jq//:all",
+    make_commands = [
+        "make install-libLTLIBRARIES install-includeHEADERS",
+    ],
+    out_static_libs = ["libjq.a"],
+)
+
+configure_make(
+    name = "zmq_build",
+    autogen = True,
+    lib_source = "@lib_zmq//:all",
+    make_commands = [
+	"make install",
+    ],
+    out_static_libs = ["libzmq.a"],
+)
+
+configure_make(
+    name = "curl_build",
+    configure_options = [
+                    "--disable-threaded-resolver",
+                    "--disable-shared",
+                    "--enable-optimize",
+                    "--disable-curldebug",
+                    "--disable-rt",
+                    "--enable-http",
+                    "--enable-ftp",
+                    "--disable-file",
+                    "--disable-ldap",
+                    "--disable-rtsp",
+                    "--disable-telnet",
+                    "--disable-tftp",
+                    "--disable-pop3",
+                    "--disable-imap",
+                    "--disable-smb",
+                    "--disable-smtp",
+                    "--disable-gopher",
+                    "--disable-sspi",
+                    "--disable-ntlm-wb",
+                    "--disable-tls-srp",
+                    "--without-winssl",
+                    "--without-darwinssl",
+                    "--without-polarssl",
+                    "--without-cyassl",
+                    "--without-nss",
+                    "--without-axtls",
+                    "--without-ca-path",
+                    "--without-ca-bundle",
+                    "--without-libmetalink",
+                    "--without-librtmp",
+                    "--without-winidn",
+                    "--without-libidn",
+                    "--without-libidn2",
+                    "--without-nghttp2",
+                    "--without-libssh2",
+                    "--without-libpsl",
+    ],
+    lib_source = "@lib_curl//:all",
+    linkopts = [],
+    out_static_libs = ["libcurl.a"],
+)

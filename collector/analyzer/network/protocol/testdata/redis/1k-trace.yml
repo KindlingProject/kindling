@@ -1,0 +1,30 @@
+trace:
+  key: redis-1k
+  requests:
+    -
+      name: "recvfrom"
+      timestamp: 100000000
+      user_attributes:
+        latency: 8000
+        res: 22
+        data:
+          - "*2\r\n$3\r\nget\r\n$3\r\nkey\r\n"
+  responses:
+    -
+      name: "sendto"
+      timestamp: 100100000
+      user_attributes:
+        latency: 80000
+        res: 1000
+        data:
+          - "*10\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$93\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12345\r\n"
+          - "$90\r\ntest1234567890test1234567890test1234567890test1234567890test1234567890test1234567890test12\r\n"

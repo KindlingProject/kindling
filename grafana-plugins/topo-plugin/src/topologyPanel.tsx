@@ -1,0 +1,495 @@
+import React, { useRef, useState, useEffect } from 'react';
+import * as G6 from '@antv/g6';
+import _ from 'lodash';
+import './topology/node';
+import './topology/edge';
+import { formatTime, formatCount, formatKMBT, formatPercent, nodeTooltip } from './topology/tooltip';
+import TopoLegend from './topology/legend';
+import { NodeDataProps, EdgeDataProps, nsRelationHandle, detailRelationHandle, detailNodesHandle, detailEdgesHandle } from './topology/services'; 
+import { PanelProps } from '@grafana/data';
+import { SimpleOptions } from 'types';
+import { css, cx } from 'emotion';
+import { stylesFactory, Select, Checkbox, RadioButtonGroup } from '@grafana/ui';
+// ErrorBoundary, Alert, 
+
+interface VolumeProps {
+  maxSentVolume: number; 
+  maxReceiveVolume: number;
+  minSentVolume: number; 
+  minReceiveVolume: number;
+}
+const meetricList: Array<{label: string; value: any; description?: string}> = [
+  { label: 'Latency', value: 'latency' },
+  { label: 'Calls', value: 'calls' },
+  { label: 'Error Rate', value: 'errorRate' },
+  { label: 'Sent Volume', value: 'sentVolume' },
+  { label: 'Receive Volume', value: 'receiveVolume' },
+  { label: 'RTT', value: 'rtt' },
+  { label: 'Retransmit', value: 'retransmit' }
+];
+const viewRadioOptions = [
+  { label: 'Workload', value: 'workload_view' },
+  { label: 'Pod', value: 'pod_view' }
+];
+
+let SGraph: any;
+let topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps;
+interface Props extends PanelProps<SimpleOptions> {}
+export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, replaceVariables }) => {
+  let graphRef: any = useRef();
+  // const theme = useTheme();
+  const namespace = replaceVariables('$namespace');
+  const workload = replaceVariables('$workload');
+  const styles = getStyles();
+  const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace.split(',').length === 1);
+  const [showService, setShowService] = useState<boolean>(false);
+  const [showView, setShowView] = useState<boolean>(workload.split(',').length === 1);
+  const [view, setView] = useState<string>('workload_view');
+  const [lineMetric, setLineMetric] = useState<any>('latency');
+  const [volumes, setVolumes] = useState<VolumeProps>({maxSentVolume: 0, maxReceiveVolume: 0, minSentVolume: 0, minReceiveVolume: 0});
+  const [nodeTypesList, setNodeTypesList] = useState<any[]>([]);
+
+  // console.log(namespace, workload);
+  // console.log(data);
+
+  // 当勾选View Service Call时，显示service的调用边，两个节点之间存在多条调用关系，使用弧线绘制对应的调用关系
+  const serviceLineUpdate = () => {
+    let activeList: any[] = [];
+    const edges = SGraph.getEdges();
+    const arc = 30;
+    edges.forEach((edge: any) => {
+      let edgeModel = edge.getModel();
+      let active = activeList.findIndex((item: any) => (item.source === edgeModel.source && item.target === edgeModel.target) || (item.source === edgeModel.target && item.target === edgeModel.source));
+      if (active === -1) {
+        activeList.push({
+          source: edgeModel.source,
+          target: edgeModel.target
+        });
+        let lines = edges.filter((itemEdge: any) => {
+          let item = itemEdge.getModel();
+          return (item.source === edgeModel.source && item.target === edgeModel.target) || (item.source === edgeModel.target && item.target === edgeModel.source)
+        });
+        if (lines.length > 1) {
+          let oddNum = 0, evenNum = 0;
+          lines.forEach((item: any, idx: number) => {
+            let line: any = item.getModel();
+            line.type = 'service-edge2';
+            let curveOffset = 0;
+            if (idx % 2 === 0) {
+              curveOffset = arc * (1 + (1 * evenNum));
+              evenNum ++;
+            } else {
+              curveOffset = -arc * (1 + (1 * oddNum));
+              oddNum ++;
+            }
+            line.curveOffset = curveOffset;
+            SGraph.updateItem(item, line);
+          });
+        }
+      }
+    });
+  }
+  // 根据当前指标选择更新边的样式
+  const updateLinesAndNodes = (metric = lineMetric, serviceLine = showService) => {
+    const nodes = SGraph.getNodes();
+    const edges = SGraph.getEdges();
+    if (metric === 'latency' || metric === 'rtt' || metric === 'errorRate') {
+      edges.forEach((edge: any, idx: number) => {
+        let edgeModel = edge.getModel();
+        let color: string;
+        
+        if (metric === 'latency') {
+          color = edgeModel.latency > 1000 ? '#ff4c4c' : (edgeModel.latency > 200 ? '#f3ff69' : '#C2C8D5');
+          edgeModel.label = formatTime(edgeModel.latency);
+        } else if (metric === 'rtt') {
+          color = edgeModel.rtt > 200 ? '#ff4c4c' : (edgeModel.rtt > 100 ? '#f3ff69' : '#C2C8D5');
+          edgeModel.label = formatTime(edgeModel.latency);
+        } else {
+          color = edgeModel.errorRate > 0 ? '#ff4c4c' : '#C2C8D5';
+          edgeModel.label = formatPercent(edgeModel.errorRate);
+        }
+        edgeModel.opposite && (edgeModel.labelCfg.refY = -10);
+        edgeModel.style.stroke = color;
+        if (serviceLine) {
+          edgeModel.rectColor = color;
+        }
+        edgeModel.style.lineWidth = 1;
+        SGraph.updateItem(edge, edgeModel);
+      });
+      nodes.forEach((node: any) => {
+        let nodeModel = node.getModel();
+        if (metric === 'latency') {
+          nodeModel.status = nodeModel.latency > 1000 ? 'red' : (nodeModel.latency > 200 ? 'yellow' : 'green');
+        } else if (metric === 'rtt') {
+          nodeModel.status = 'green';
+        } else {
+          nodeModel.status = nodeModel.errorRate > 0 ? 'red' : 'green';
+        }
+        SGraph.updateItem(node, nodeModel);
+      });
+    } else if (metric === 'sentVolume' || metric === 'receiveVolume'){
+      if (metric === 'sentVolume') {
+        let volumeStep = volumes.maxSentVolume / 5;
+        if (edges.length === 1) {
+          let edge = edges[0];
+          let edgeModel = edge.getModel();
+          edgeModel.style.lineWidth = 1;
+          edgeModel.style.stroke = '#C2C8D5';
+          edgeModel.label = formatKMBT(edgeModel.sentVolume);
+          SGraph.updateItem(edge, edgeModel);
+        } else {
+          edges.forEach((edge: any, idx: number) => {
+            let edgeModel = edge.getModel();
+            let step = Math.floor(edgeModel.sentVolume / volumeStep);
+            edgeModel.style.lineWidth = step === 0 ? 1 : 1.5 * step;
+            edgeModel.style.stroke = '#C2C8D5';
+            edgeModel.label = formatKMBT(edgeModel.sentVolume);
+            edgeModel.opposite && (edgeModel.labelCfg.refY = -10);
+            SGraph.updateItem(edge, edgeModel);
+          });
+        }
+      } else {
+        let volumeStep = volumes.maxReceiveVolume / 5;
+        if (edges.length === 1) {
+          let edge = edges[0];
+          let edgeModel = edge.getModel();
+          edgeModel.style.lineWidth = 1;
+          edgeModel.style.stroke = '#C2C8D5';
+          edgeModel.label = formatKMBT(edgeModel.receiveVolume);
+          SGraph.updateItem(edge, edgeModel);
+        } else {
+          edges.forEach((edge: any, idx: number) => {
+            let edgeModel = edge.getModel();
+            let step = Math.floor(edgeModel.receiveVolume / volumeStep);
+            edgeModel.style.lineWidth = step === 0 ? 1 : 1.5 * step;
+            edgeModel.style.stroke = '#C2C8D5';
+            edgeModel.label = formatKMBT(edgeModel.receiveVolume);
+            edgeModel.opposite && (edgeModel.labelCfg.refY = -10);
+            SGraph.updateItem(edge, edgeModel);
+          });
+        }
+      }
+      nodes.forEach((node: any) => {
+        let nodeModel = node.getModel();
+        nodeModel.status = 'green';
+        SGraph.updateItem(node, nodeModel);
+      });
+    } else {
+      edges.forEach((edge: any) => {
+        let edgeModel = edge.getModel();
+        edgeModel.style.stroke = '#C2C8D5';
+        edgeModel.style.lineWidth = 1;
+        edgeModel.label = formatCount(edgeModel[metric]);
+        SGraph.updateItem(edge, edgeModel);
+      });
+      nodes.forEach((node: any) => {
+        let nodeModel = node.getModel();
+        nodeModel.status = 'green';
+        SGraph.updateItem(node, nodeModel);
+      });
+    }
+  }
+  // 绘制拓扑图
+  const draw = (gdata: any, serviceLine = showService) => {
+    const inner: any = document.getElementById('kindling_topo');
+    inner.innerHTML = '';
+
+    const graph = new G6.Graph({
+      // renderer: 'svg',
+      container: 'kindling_topo',
+      width: width,
+      height: height,
+      fitCenter: true,
+      autoPaint: false,
+      plugins: [nodeTooltip],
+      modes: {
+        default: [
+          {
+            type: 'drag-canvas',
+            enableOptimize: true,
+          }, {
+            type: 'zoom-canvas',
+            maxZoom: 1.8,
+            minZoom: 0.4
+          }, 
+          'drag-node'
+        ]
+      },
+      layout: {
+        type: 'dagre',
+        // rankdir: 'TB',
+        rankdir: 'LR',
+        align: 'DL',
+        ranksep: 60
+        // controlPoints: true,
+        // workerEnabled: nodeNum > 200
+      },
+      defaultNode: {
+        type: 'custom-node'
+      },
+      defaultEdge: {
+        type: 'service-edge',
+        labelCfg: {
+          refY: serviceLine ? 15 : 10,
+          autoRotate: true,
+          style: {
+            fontWeight: 400,
+            fill: '#C2C8D5',
+          }
+        },
+        style: {
+          radius: 10,
+          offset: 5,
+          endArrow: true,
+          lineWidth: 1,
+          stroke: '#C2C8D5',
+        }
+      }
+    });
+    graph.data(gdata);
+    graph.render();
+
+    SGraph = graph;
+    serviceLine && serviceLineUpdate();
+    updateLinesAndNodes(lineMetric, serviceLine);
+  };
+  // 只勾选一个namespace是workload为all或者workload为单个值的调用关系处理
+  const workloadRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps, showPod: boolean, serviceLine = showService) => {
+    let nodes: any[] = [], edges: any[] = [];
+    let result: any[] = [];
+    // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
+    if (workload.indexOf(',') > -1) {
+      result = _.filter(topoData, (item: any) => item.fields[1].labels.dst_namespace === namespace || item.fields[1].labels.src_namespace === namespace);
+      // console.log('workload Topology', result);
+    } else {
+      // 具体namespace和workload下的所有调用数据
+      result = _.filter(topoData, (item: any) => (item.fields[1].labels.dst_namespace === namespace && item.fields[1].labels.dst_workload_name === workload) || (item.fields[1].labels.src_namespace === namespace && item.fields[1].labels.src_workload_name === workload));
+      // console.log('pod Topology', result);
+    }
+    _.forEach(result, item => {
+      let tdata: any = item.fields[1].labels;
+      let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', showPod, serviceLine);
+      let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', showPod, serviceLine);
+      sourceNode && nodes.push(sourceNode);
+      targetNode && nodes.push(targetNode);
+      let edgeId = `edge_${source}_${target}${service ? '_' + service : ''}`
+      if (_.findIndex(edges, {id: edgeId}) === -1) {
+        let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
+        edges.push({
+          id: edgeId,
+          source: source,
+          target: target,
+          service: service || '',
+          opposite
+        });
+      }
+    });
+    nodes = detailNodesHandle(nodes, nodeData);
+    edges = detailEdgesHandle(nodes, edges, edgeData, serviceLine);
+    
+    return { nodes, edges };
+  }
+  // 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
+  const getNodeTypes = (nodes: any[]) => {
+    let nodeByType = _.groupBy(nodes, 'nodeType');
+    let types: string[] = _.keys(nodeByType);
+    return types;
+  }
+  // 重新回去拓扑绘制数据时，更新对应的节点的类型数组和边上流量max、min的数值
+  const handleResult = (gdata: any) => {
+    let nodeTypesList = getNodeTypes(gdata.nodes);
+    setNodeTypesList(nodeTypesList);
+    let volumeData: VolumeProps = {
+      maxSentVolume: _.max(_.map(gdata.edges, 'sentVolume')),
+      maxReceiveVolume: _.max(_.map(gdata.edges, 'receiveVolume')),
+      minSentVolume: _.min(_.map(gdata.edges, 'sentVolume')),
+      minReceiveVolume: _.min(_.map(gdata.edges, 'receiveVolume'))
+    }
+    setVolumes(volumeData);
+  }
+  // 初始化数据处理：生成拓扑数据，获取调用关系流量最大值
+  const initData = () => {
+    // 处理grafana查询数据生成对应的拓扑调用数据结构
+    let nodes: any[] = [], edges: any[] = [];
+    topoData = _.filter(data.series, (item: any) => item.refId === 'A');
+    let edgeTimeData: any = _.filter(data.series, (item: any) => item.refId === 'I');
+    let edgeSendVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'B');
+    let edgeReceiveVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'C');
+    let edgeRetransmitData: any = _.filter(data.series, (item: any) => item.refId === 'J');
+    let edgeRTTData: any = _.filter(data.series, (item: any) => item.refId === 'K');
+    edgeData = {
+      edgeCallData: topoData,
+      edgeTimeData,
+      edgeSendVolumeData,
+      edgeReceiveVolumeData,
+      edgeRetransmitData,
+      edgeRTTData
+    };
+    
+    let nodeCallsData: any = _.filter(data.series, (item: any) => item.refId === 'D'); // 次数调用增长
+    let nodeTimeData: any = _.filter(data.series, (item: any) => item.refId === 'E');
+    let nodeErrorRateData: any = _.filter(data.series, (item: any) => item.refId === 'F');
+    let nodeSendVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'G');
+    let nodeReceiveVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'H');
+    nodeData = {
+      nodeCallsData,
+      nodeTimeData,
+      nodeErrorRateData,
+      nodeSendVolumeData,
+      nodeReceiveVolumeData
+    };
+    // console.log('edgeData', edgeData);
+    // console.log('nodeData', nodeData);
+    // 当namespace为all的时候，只绘制对应namespace的调用关系
+    if (namespace.indexOf(',') > -1) {
+      let result: any = nsRelationHandle(topoData, nodeData, edgeData);
+      nodes = [].concat(result.nodes);
+      edges = [].concat(result.edges);
+    } else {
+      let result: any = workloadRelationHandle(topoData, nodeData, edgeData, false);
+      nodes = [].concat(result.nodes);
+      edges = [].concat(result.edges);
+    }
+    
+    let gdata = {
+      nodes: nodes,
+      edges: edges
+    }
+    console.log(gdata);
+    draw(gdata);
+    handleResult(gdata);
+  }
+
+  useEffect(() => {
+    if (SGraph) {
+      updateLinesAndNodes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volumes]);
+  useEffect(() => {
+    if (namespace.split(',').length === 1) {
+      setShowCheckbox(true);
+    } else {
+      setShowCheckbox(false);
+    }
+  }, [namespace]);
+  useEffect(() => {
+    if (workload.split(',').length === 1) {
+      setShowView(true);
+    } else {
+      setShowView(false);
+    }
+  }, [workload]);
+  useEffect(() => {
+    if (data.state === 'Done') {
+      initData();
+    }
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, namespace]);
+
+  // 切换线段指标时，相应的线段样式更新
+  const lineMetricChange = (opt: any) => {
+    setLineMetric(opt.value);
+    updateLinesAndNodes(opt.value);
+  }
+  const changeShowService = () => {
+    let show = !showService ? true : false;
+    setShowService(show);
+    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, view === 'pod_view', show);
+    let gdata = {
+      nodes: nodes,
+      edges: edges
+    }
+    draw(gdata, show);
+    handleResult(gdata);
+  }
+
+  const changeView = (value: any) => {
+    setView(value);
+    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, value === 'pod_view', showService);
+    let gdata = {
+      nodes: nodes,
+      edges: edges
+    }
+    draw(gdata);
+    handleResult(gdata);
+  }
+
+  return (
+    <div
+      className={cx(
+        styles.wrapper,
+        css`
+          width: ${width}px;
+          height: ${height}px;
+        `
+      )}
+    >
+      <div className={styles.topLineMetric}>
+        <div className={styles.metricSelect}>
+          <span style={{ width: '180px' }}>Call Line Metric</span>
+          <Select value={lineMetric} options={meetricList} onChange={lineMetricChange}/>
+        </div>
+        {
+          showCheckbox ? <Checkbox css="" value={showService} onChange={changeShowService} label='View Service Call'/> : null
+        }
+      </div>
+      <div className={styles.topRightWarp}>
+        {
+          showView ? <div className={styles.viewRadioMode}>
+            <span>View Mode</span>
+            <RadioButtonGroup options={viewRadioOptions} value={view} onChange={changeView}/>
+          </div> : null
+        }
+      </div>
+      <TopoLegend typeList={nodeTypesList} metric={lineMetric} volumes={volumes}/>
+      <div id="kindling_topo" style={{ height: '100%' }} ref={graphRef}></div>
+    </div>
+  );
+};
+
+const getStyles = stylesFactory(() => {
+  return {
+    wrapper: css`
+      position: relative;
+    `,
+    topLineMetric: css`
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    `,
+    metricSelect: css`
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    `,
+    topRightWarp: css`
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      width: 230px;
+    `,
+    viewRadioMode: css`
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    `,
+    svg: css`
+      position: absolute;
+      top: 0;
+      left: 0;
+    `,
+    textBox: css`
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      padding: 10px;
+    `,
+  };
+});

@@ -1,0 +1,5 @@
+.idea
+cmake-build-debug
+bazel-*
+.git
+.clwb
