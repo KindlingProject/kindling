@@ -1,4 +1,4 @@
-# How the core kinndling team t riage issues
+# How the core kinndling team triage issues
 
 The main goal of issue triage is to categorize all incoming Kindling issues and make sure each issue has all basic information needed for anyone else to understand and be able to start working on it.
 
@@ -120,7 +120,7 @@ If the author provides the standard information but you are still unable to tria
 
 If the author does not respond to the requested information within the timespan of a week, close the issue with a kind note stating that the author can request for the issue to be reopened when the necessary information is provided.
 
-When you feel you have all the information needed you're ready to [categorizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#3-categorizing-an-issue).
+When you feel you have all the information needed you're ready to [categorizing the issue](#3-categorizing-an-issue).
 
 If you receive a notification with additional information provided but you are not anymore on issue triage and you feel you do not have time to handle it, you should delegate it to the current person on issue triage.
 
@@ -159,12 +159,12 @@ If it's not perfectly clear that it's an actual bug, quickly try to reproduce it
 1. Add a comment describing detailed steps for how to reproduce it, if applicable.
 2. Label the issue `type/bug` and  add any related area/* labels .
 3. If you know that maintainers wont be able to put any resources into it for some time then label the issue with  `beginner friendly`  on which code to update to fix the bug. This should signal to the community that we would appreciate any help we can get to resolve this.
-4. Move on to [prioritizing the issue](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+4. Move on to [prioritizing the issue](#4-prioritization-of-issues).
 
 **It can't be reproduced:**
 
-1. Either [ask for more information](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#2-ensure-the-issue-contains-basic-information) needed to investigate it more thoroughly.
-2. Either [delegate further investigations](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#investigation-of-issues) to someone else.
+1. Either [ask for more information](#2-ensure-the-issue-contains-basic-information) needed to investigate it more thoroughly.
+2. Either [delegate further investigations](#investigation-of-issues) to someone else.
 
 **It works as intended/by design:**
 
@@ -174,7 +174,7 @@ If it's not perfectly clear that it's an actual bug, quickly try to reproduce it
 ### Enhancement/feature?
 
 1. Label the issue `type/feature-request` and at least one `area/*` label.
-2. Move on to [prioritizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+2. Move on to [prioritizing the issue](#4-prioritization-of-issues).
 
 ### Documentation issue?
 
@@ -196,7 +196,7 @@ There's a minor typo/error/lack of information that adds a lot of confusion for 
 **Major error/lack of information:**
 
 1. Label the issue with  `beginner friendly`, if applicable, to signal that we find this important to fix and we would appreciate any help we can get from the community.
-2. Move on to [prioritizing the issue](contribute/how_the_core_kindling_team_triage_issues.md#4-prioritization-of-issues).
+2. Move on to [prioritizing the issue](#4-prioritization-of-issues).
 
 ### Support requests
 
@@ -241,22 +241,22 @@ In case there is an uncertainty around the prioritization of an issue, please as
 1. Label the issue `priority/important-soon`.
 2. Add the issue to the next upcoming patch or major/minor stable release milestone. Ask maintainers for help if unsure if it's a patch or not. Create a new milestone if there are none.
 3. Make sure to add the issue to a suitable backlog of a GitHub project and prioritize it or assign someone to work on it now or very soon.
-4. Consider requesting [help from the discussions](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#Requesting help from the discussions), even though it may be problematic given a short amount of time until it should be released.
+4. Consider requesting [help from the discussions](#5-requesting-help-from-the-discussions), even though it may be problematic given a short amount of time until it should be released.
 
 **Important long-term**
 
 1. Label the issue `priority/important-longterm`.
-2. Consider requesting [help from the discussions](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#Requesting help from the discussions).
+2. Consider requesting [help from the discussions](#5-requesting-help-from-the-discussions).
 
 **Nice to have**
 
 1. Label the issue `priority/nice-to-have`.
-2. Consider requesting [help from the discussions](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#Requesting help from the discussions).
+2. Consider requesting [help from the discussions](#5-requesting-help-from-the-discussions).
 
 **Not critical, but unsure?**
 
 1. Label the issue `priority/unscheduled`.
-2. Consider requesting [help from the discussions](https://github.com/Kindling-project/kindling/contribute/how_the_core_kindling_team_triage_issues.md#Requesting help from the discussions).
+2. Consider requesting [help from the discussions](#5-requesting-help-from-the-discussions).
 
 ## 5. Requesting help from the discussions
 
@@ -271,7 +271,7 @@ Depending on the issue and/or priority, it's always a good idea to consider sign
 
 ## Investigation of issues
 
-When an issue has all basic information provided, but the triage responsible haven't been able to reproduce the reported problem at a first glance, the issue is labeled [Needs investigation](https://github.com/grafana/grafana/labels/needs%20investigation). Depending on the perceived severity the investigation will either be delegated to another maintainer for further investigation or put on hold until someone else (maintainer or contributor) picks it up and eventually starts investigating it.
+When an issue has all basic information provided, but the triage responsible haven't been able to reproduce the reported problem at a first glance, the issue is labeled [Needs investigation](https://github.com/Kindling-project/kindling/labels/needs%20investigation). Depending on the perceived severity the investigation will either be delegated to another maintainer for further investigation or put on hold until someone else (maintainer or contributor) picks it up and eventually starts investigating it.
 
 Investigating issues can be a very time consuming task, especially for the maintainers, given  the complexities of Kindling. There is a certain number of combinations that are more common than others, and these are in general easier for maintainers to investigate.
 
