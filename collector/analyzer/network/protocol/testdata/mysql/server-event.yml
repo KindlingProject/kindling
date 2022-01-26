@@ -1,0 +1,25 @@
+# localhost:49368 -> mysql://localhost:3306
+eventCommon:
+  # SYSCALL_EXIT
+  source: 2
+  # CAT_NET
+  category: 3
+  ctx:
+    thread_info:
+      pid: 903
+      tid: 2744
+      uid: 123
+      gid: 127
+      comm: "mysqld"
+    fd_info:
+        num: 4
+        # FD_IPV4_SOCK
+        type_fd: 3
+        # TCP
+        protocol: 1
+        # IsServer
+        role: true
+        sip: [16777343]
+        sport: 49368
+        dip: [16777343]
+        dport: 3306

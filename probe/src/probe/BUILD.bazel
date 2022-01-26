@@ -1,0 +1,75 @@
+load("@px//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("@px//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+
+package(default_visibility = ["//src:__subpackages__"])
+
+pl_proto_library(
+    name = "hcmine_pl_proto",
+    srcs = ["hcmine.proto"],
+    visibility = ["//src:__subpackages__"],
+)
+
+pl_cc_proto_library(
+    name = "hcmine_pl_cc_proto",
+    proto = ":hcmine_pl_proto",
+    visibility = ["//src:__subpackages__"],
+)
+
+pl_cc_binary(
+    name = "kindling_probe",
+    srcs = glob(
+        ["*.cpp","*.cc","*.h"],
+        exclude = [
+            "**/*_test.cc",
+            "*_main.cc",
+        ],
+    ),
+    copts = ["-Wno-unused-parameter","-Wno-unused-variable","-Wno-mismatched-tags"],
+    deps = [
+        "//src/probe/converter:cc_library",
+        "//src/probe/publisher:cc_library",
+        "//src/probe/utils:cc_library",
+        "@px//src/common/signal:cc_library",
+        "@px//:px_headers",
+        "@px//src/stirling:cc_library",
+        "@px//src/stirling/utils:cc_library",
+        #"@px//src/stirling:cc_library",
+	    "//src/userspace/libsinsp:cc_library",
+	    "//src/userspace/libscap:cc_library",
+	    "//src/driver:scap_cc_library",
+	    "//third_party:zmq_build",
+    ],
+)
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+container_image(
+   # name = "kp_cc_base_image",
+    name = "kindling_probe_image",
+    base = "@px//:pl_cc_bpf_image",
+    directory = "/pl",
+    files = [
+	  "@kindling_probes_tar_gz//file:file",
+	  "//deploy:scripts",
+	  ":kindling_probe",
+    ],
+    cmd = ["/pl/docker-entrypoint.sh"],
+    visibility = ["//visibility:public"],
+)
+
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+cc_image(
+    name = "kindling_probe_image_old",
+    base = "@px//:pl_cc_bpf_image",
+    binary = ":kindling_probe",
+)
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+container_push(
+    name = "push_image",
+    format = "Docker",
+    image = ":kindling_probe_image",
+    # ATTENTION!! Modify this if you want to change docker registry.
+    registry = "registry.us-west-1.aliyuncs.com",
+    repository = "arms-docker-repo/arms-bpf-agent",
+    tag = "qianlu-test",
+)

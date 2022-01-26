@@ -1,0 +1,175 @@
+load("@px//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+
+pl_proto_library(
+    name = "cri_pl_proto",
+    srcs = ["cri.proto"],
+    visibility = ["//src:__subpackages__"],
+)
+
+pl_cc_proto_library(
+    name = "cri_pl_cc_proto",
+    proto = ":cri_pl_proto",
+    visibility = ["//src:__subpackages__"],
+)
+
+load("@px//bazel:pl_build_system.bzl", "pl_cc_library")
+
+package(default_visibility = ["//src:__subpackages__"])
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+	    	"container.cpp",
+	"container_engine_base.cpp",
+	"docker_common.cpp",
+	"container_info.cpp",
+	"ctext.cpp",
+	"cyclewriter.cpp",
+	"container_engine_mesos.cpp",
+	"mesos.cpp",
+	"mesos_component.cpp",
+	#"cursescomponents.cpp",
+	#"cursestable.cpp",
+	#"cursesspectro.cpp",
+	#"cursesui.cpp",
+	"event.cpp",
+	"eventformatter.cpp",
+	"dns_manager.cpp",
+	"dumper.cpp",
+	"fdinfo.cpp",
+	"filter.cpp",
+	"filterchecks.cpp",
+	"gen_filter.cpp",
+	"http_parser.c",
+	"http_reason.cpp",
+	"ifinfo.cpp",
+	"json_query.cpp",
+	"json_error_log.cpp",
+	"k8s.cpp",
+	"k8s_api_error.cpp",
+	"k8s_api_handler.cpp",
+	"k8s_component.cpp",
+	"k8s_daemonset_handler.cpp",
+	"k8s_deployment_handler.cpp",
+	"k8s_dispatcher.cpp",
+	"k8s_event_data.cpp",
+	"k8s_event_handler.cpp",
+	"k8s_handler.cpp",
+	"k8s_namespace_handler.cpp",
+	"k8s_net.cpp",
+	"k8s_node_handler.cpp",
+	"k8s_pod_handler.cpp",
+	"k8s_pod_handler.cpp",
+	"k8s_replicationcontroller_handler.cpp",
+	"k8s_replicaset_handler.cpp",
+	"k8s_service_handler.cpp",
+	"k8s_state.cpp",
+	"marathon_component.cpp",
+	"marathon_http.cpp",
+	"memmem.cpp",
+	"tracers.cpp",
+	"mesos_auth.cpp",
+	"mesos_collector.cpp",
+	"mesos_http.cpp",
+	"mesos_state.cpp",
+	"internal_metrics.cpp",
+	"logger.cpp",
+	"parsers.cpp",
+	"prefix_search.cpp",
+	"protodecoder.cpp",
+	"threadinfo.cpp",
+	"tuples.cpp",
+	"sinsp.cpp",
+	"stats.cpp",
+	"table.cpp",
+	"token_bucket.cpp",
+	"sinsp_auth.cpp",
+	"sinsp_curl.cpp",
+	"stopwatch.cpp",
+	"uri_parser.c",
+	"container_engine_cri.cpp",
+	"uri.cpp",
+	"user_event_logger.cpp",
+	"utils.cpp",
+	"user_event.cpp",
+	"value_parser.cpp",
+	"viewinfo.cpp",
+	"docker_linux.cpp",
+	"libvirt_lxc.cpp",
+    "lxc.cpp",
+    "rkt.cpp",
+	"bpm.cpp",
+	"runc.cpp",
+	"cgroup_limits.cpp",
+	"cri.cpp",
+	"grpc_channel_registry.cpp",
+            # "*.h",
+            # "*.cc",
+            # "*.cpp",
+	    # "*.c",
+#	    "container_engine/container_engine_base.cpp",
+#	    "container_engine/docker_common.cpp",
+#	    "container_engine/docker_linux.cpp",
+#	    "container_engine/libvirt_lxc.cpp",
+#	    "container_engine/lxc.cpp",
+#	    "container_engine/mesos.cpp",
+#	    "container_engine/rkt.cpp",
+#	    "container_engine/bpm.cpp",
+#	    "container_engine/cri.cpp",
+        ],
+        exclude = [
+	    "chisel.cpp",
+            "chisel_api.cpp",
+            "lua_parser.cpp",
+            "lua_parser_api.cpp",
+	    "tracer_emitter.cpp",
+	    "docker_win.cpp",
+            "**/*_test.cc",
+	    "**/*_test.cpp",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    # linkopts = ["-lz -lanl -ldl -lpthread -lncurses"],
+    linkopts = ["-lz -lanl -ldl -lpthread"],
+    defines = ["HAS_CAPTURE"],
+    copts = ["-Wno-unused-function", "-Wno-unused-parameter","-Wno-missing-field-initializers","-Wno-error=implicit-fallthrough","-Wno-error=float-conversion", "-Wno-error=pessimizing-move", "-Wno-error=type-limits","-Wno-error=format=","-Wno-mismatched-tags","-Wno-overloaded-virtual","-Wno-unused-variable","-Wno-range-loop-construct","-Wno-sometimes-uninitialized","-Wno-unused-private-field","-Wno-format-truncation","-Wno-class-memaccess"],
+    visibility = ["//src:__subpackages__"],
+    deps = [
+	    "//src/userspace/libscap:cc_library",
+	    #"@ncurses_lib//:ncurses",
+	# "//src/userspace/libsinsp/container_engine:cc_library",
+	    "//src/userspace/libsinsp/include:cc_library",
+	    "//src/common:cc_library",
+	    "//src/userspace/async:cc_library",
+        # grpcpp
+        "@com_github_grpc_grpc//:grpc++_unsecure",
+        # grpc
+        "@com_github_grpc_grpc//:grpc_unsecure",
+        # protobuf
+        # cares
+
+        # jq
+	    "//third_party:jq_build",
+        # b64
+	    "//src/b64:cc_library",
+        # rt
+        # anl
+        # openssl ssl
+        "@com_google_boringssl//:ssl",
+        # openssl crypto
+        "@com_google_boringssl//:crypto",
+        # dl
+        # pthread
+
+        # curl
+	    "//third_party:curl_build",
+        # tbb
+        "@com_intel_tbb//:tbb",
+        # grpc
+        # jsoncpp
+	    "//src/userspace/libsinsp/third-party/jsoncpp:cc_library",
+        ":cri_pl_cc_proto",
+    ],
+)

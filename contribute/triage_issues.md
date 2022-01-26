@@ -10,7 +10,7 @@ Triage helps ensure that issues resolve quickly by:
 
 + Streamlining the development process by preventing duplicate discussions.
 
-  This document gives you some ideas on what you can do to help. For more information, read more about [how the core Kindling team triage issues](./how_the_core_kindling_team_triage_issues.md)
+This document gives you some ideas on what you can do to help. For more information, read more about [how the core Kindling team triage issues](./how_the_core_kindling_team_triage_issues.md)
 
 ## **Improve issues**
 Improve issues by suggesting improvements to the title and description. If you think an issue has formatting issues, bad language, or grammatical errors, post a comment to let the author and maintainers know.
