@@ -5,12 +5,12 @@ Kubernetes v1.x+ is required.
 ### Promethues
 Deployed in Kubernetes.
 ### Grafana
-TBD
+Grafana is aready installed.
 ### Architecture
 Only x86-64 Supported.
 ### Operating System
 #### Distributions
-Only supported on Linux. The following list describes the distribution versions (only official distribution, no kernel version changed) verified by Kindling. [More support list click here.](./Distributions and Kernel Support List.md)
+Only supported on Linux. The following list describes the distribution versions (only official distribution, no kernel version changed) verified by Kindling. [More support list click here.](./Distributions%20and%20Kernel%20Support%20List.md)
 
 | **Distribution** | **Version (NO KENENL VERSION CHANGED)** |
 | --- | --- |
@@ -39,8 +39,8 @@ bash <(curl -Ss https://raw.githubusercontent.com/Kindling-project/kindling/main
 > **Get the code first and 'cd kindling/deploy & bash install.sh'**
 
 1. **Install Kindling Probe and Collector: install.sh** creates Namespace, ConfigMap, ClusterRole, ServiceAccount, ClusterRoleBindding. **install.sh** deploys the agent as two separate containers named **Kindling Probe** and **Kindling Collector**, which are combined in one Kubernetes Pod. The container images, namely **kindling-probe** and **kindling-collector**, are provided in Docker Hub, which can be** replaced with your own containers** in kindling-deploy.yml.
-1. **Configure Promethues**: **install.sh **create** Service **and** Promethues ServiceMonitor **for exposing service to Promethues**. You can refer to **[How to use ServiceMonitor to scrape metric from Kindling](./How to use ServiceMonitor to scrape metric from Kindling.md ) for more information.
-3. **Configure Grafana**: After the **install.sh** execves, you should config **grafana-plugins**, refer to [How to use grafana-plugin](./How to  use grafana-plugin.md).
+1. **Configure Promethues**: **install.sh **create** Service **and** Promethues ServiceMonitor **for exposing service to Promethues**. You can refer to **[How to use ServiceMonitor to scrape metric from Kindling](./How%20to%20use%20ServiceMonitor%20to%20scrape%20metric%20from%20Kindling.md ) for more information.
+3. **Configure Grafana**: After the **install.sh** execves, you should config **grafana-plugins**, refer to [How to use grafana-plugin](./How%20to%20use%20grafana-plugin.md).
 
 Enjoy kindling!
 # Build Kindling container
