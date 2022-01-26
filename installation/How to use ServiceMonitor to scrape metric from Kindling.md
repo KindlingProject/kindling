@@ -1,4 +1,4 @@
-## Info
+## Configure  prometheus to scrape Kindling metric
 
 
 The Prometheus Operator (usually integrated into the **Kube Prometheus**) provides Kubernetes native deployment and management of Prometheus and related monitoring components.
