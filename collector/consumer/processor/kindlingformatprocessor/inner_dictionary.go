@@ -8,9 +8,9 @@ import (
 
 const (
 	millToNano   = 1000000
-	GreenStatus  = "green"
-	YellowStatus = "yellow"
-	RedStatus    = "red"
+	GreenStatus  = "1"
+	YellowStatus = "2"
+	RedStatus    = "3"
 )
 
 type gauges struct {
