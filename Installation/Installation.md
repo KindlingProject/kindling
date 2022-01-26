@@ -10,7 +10,7 @@ TBD
 Only x86-64 Supported.
 ### Operating System
 #### Distributions
-Only supported on Linux. The following list describes the distribution versions (only official distribution, no kernel version changed) verified by Kindling. [More support list click here.](https://kgwnvb.yuque.com/kgwnvb/nokmba/uvsv8m)
+Only supported on Linux. The following list describes the distribution versions (only official distribution, no kernel version changed) verified by Kindling. [More support list click here.](./Distributions and Kernel Support List.md)
 
 | **Distribution** | **Version (NO KENENL VERSION CHANGED)** |
 | --- | --- |
@@ -19,8 +19,9 @@ Only supported on Linux. The following list describes the distribution versions 
 | RHEL | 7+ |
 | CentOS | 7+ |
 
-If Linux versions in your Kubernetes are **not listed**, you can compile with the steps in [Build Kindling container](#ZQjjX) depending on your kernel version.
+If Linux versions in your Kubernetes are **not listed**, you can compile with the steps in [Build Kindling container](#build-kindling-container) depending on your kernel version.
 It's worth noting that the actual kernel version of some of Linux distributions may be inconsistent when the kernel is slightly updated such as an LTS kernel release. Some distributions such as Ubuntu, Debian may fail to load eBPF program, if so, try to set envrionment variable KERNEL_VERSION_CODE, which equals to (VERSION * 65536) + (PATCHLEVEL * 256) + SUBLEVEL.
+
 #### Kernel Option
 
 - The following kernel options must be enabled (usually they are, unless a custom-built kernel is used): 
@@ -38,8 +39,8 @@ bash <(curl -Ss https://raw.githubusercontent.com/Kindling-project/kindling/main
 > **Get the code first and 'cd kindling/deploy & bash install.sh'**
 
 1. **Install Kindling Probe and Collector: install.sh** creates Namespace, ConfigMap, ClusterRole, ServiceAccount, ClusterRoleBindding. **install.sh** deploys the agent as two separate containers named **Kindling Probe** and **Kindling Collector**, which are combined in one Kubernetes Pod. The container images, namely **kindling-probe** and **kindling-collector**, are provided in Docker Hub, which can be** replaced with your own containers** in kindling-deploy.yml.
-1. **Configure Promethues**: **install.sh **create** Service **and** Promethues ServiceMonitor **for exposing service to Promethues**. You can refer to **[How to use ServiceMonitor to scrape metric from Kindling](https://kgwnvb.yuque.com/kgwnvb/nokmba/yzrfxa) for more information.
-3. **Configure Grafana**: After the **install.sh** execves, you should config **grafana-plugins**, refer to [How to use grafana-plugin](https://kgwnvb.yuque.com/kgwnvb/nokmba/xhw7lo).
+1. **Configure Promethues**: **install.sh **create** Service **and** Promethues ServiceMonitor **for exposing service to Promethues**. You can refer to **[How to use ServiceMonitor to scrape metric from Kindling](./How to use ServiceMonitor to scrape metric from Kindling.md ) for more information.
+3. **Configure Grafana**: After the **install.sh** execves, you should config **grafana-plugins**, refer to [How to use grafana-plugin](./How to  use grafana-plugin.md).
 
 Enjoy kindling!
 # Build Kindling container
