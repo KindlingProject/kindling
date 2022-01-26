@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 16,
-  "iteration": 1642507297890,
+  "id": 40,
+  "iteration": 1643192269532,
   "links": [],
   "panels": [
     {
@@ -270,7 +270,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\",response_content=~\"400|404|500\"}[$__interval])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\"}[$__interval])) * 100",
+          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\",response_content=~\"4..|5..\"}[$__interval])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\"}[$__interval])) * 100",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "Err rate",
@@ -389,9 +389,9 @@
         "buckets": null,
         "mode": "series",
         "name": null,
-        "show": true,
+        "show": false,
         "values": [
-          "current"
+          "total"
         ]
       },
       "yaxes": [
@@ -441,11 +441,14 @@
       "hiddenSeries": false,
       "id": 4,
       "legend": {
+        "alignAsTable": false,
         "avg": false,
         "current": false,
         "max": false,
         "min": false,
+        "rightSide": false,
         "show": false,
+        "sideWidth": 500,
         "total": false,
         "values": false
       },
@@ -463,7 +466,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"http\"}[5m]) /increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"http\"}[5m])) by (request_content)",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"http\"}[$__interval])) / sum by(request_content)  (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"http\"}[$__interval]))) ",
+          "format": "time_series",
           "interval": "",
           "legendFormat": "{{request_content}}",
           "refId": "A"
@@ -484,9 +488,9 @@
         "buckets": null,
         "mode": "series",
         "name": null,
-        "show": true,
+        "show": false,
         "values": [
-          "current"
+          "avg"
         ]
       },
       "yaxes": [
@@ -557,7 +561,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\", response_content=~\"400|404|500|503\"}[$__interval])) / sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\"}[$__interval])) * 100)",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\", response_content=~\"4..|5..\"}[$__interval])) / sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\"}[$__interval])) * 100)",
           "interval": "",
           "legendFormat": "{{ request_content }}",
           "refId": "A"
@@ -578,9 +582,9 @@
         "buckets": null,
         "mode": "series",
         "name": null,
-        "show": true,
+        "show": false,
         "values": [
-          "current"
+          "avg"
         ]
       },
       "yaxes": [
@@ -653,6 +657,217 @@
                 "value": "ns"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ReqXFer"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "from": "",
+                    "id": 0,
+                    "text": "Normal",
+                    "to": "",
+                    "type": 1,
+                    "value": "1"
+                  },
+                  {
+                    "from": "",
+                    "id": 1,
+                    "text": "Warning",
+                    "to": "",
+                    "type": 1,
+                    "value": "2"
+                  },
+                  {
+                    "from": "",
+                    "id": 2,
+                    "text": "Abnormal",
+                    "to": "",
+                    "type": 1,
+                    "value": "3"
+                  }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "processing"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "from": "",
+                    "id": 0,
+                    "text": "Normal",
+                    "to": "",
+                    "type": 1,
+                    "value": "1"
+                  },
+                  {
+                    "from": "",
+                    "id": 1,
+                    "text": "Warning",
+                    "to": "",
+                    "type": 1,
+                    "value": "2"
+                  },
+                  {
+                    "from": "",
+                    "id": 2,
+                    "text": "Abnormal",
+                    "to": "",
+                    "type": 1,
+                    "value": "3"
+                  }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RspXFer"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "from": "",
+                    "id": 0,
+                    "text": "Normal",
+                    "to": "",
+                    "type": 1,
+                    "value": "1"
+                  },
+                  {
+                    "from": "",
+                    "id": 1,
+                    "text": "Warning",
+                    "to": "",
+                    "type": 1,
+                    "value": "2"
+                  },
+                  {
+                    "from": "",
+                    "id": 2,
+                    "text": "Abnormal",
+                    "to": "",
+                    "type": 1,
+                    "value": "3"
+                  }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "rgb(227, 227, 227)",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 400
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
           }
         ]
       },
@@ -663,6 +878,8 @@
         "y": 15
       },
       "id": 14,
+      "interval": "30",
+      "maxDataPoints": 1,
       "options": {
         "frameIndex": 0,
         "showHeader": true,
@@ -686,8 +903,9 @@
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"http\"}[5m])) and kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
           "format": "table",
+          "hide": false,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -730,6 +948,7 @@
           "id": "organize",
           "options": {
             "excludeByName": {
+              "exported_job": true,
               "src_container": true,
               "src_container_id": true,
               "src_node": true,
@@ -1126,6 +1345,217 @@
                 "value": "ns"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ReqXRef"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "from": "",
+                    "id": 0,
+                    "text": "Normal",
+                    "to": "",
+                    "type": 1,
+                    "value": "1"
+                  },
+                  {
+                    "from": "",
+                    "id": 1,
+                    "text": "Warning",
+                    "to": "",
+                    "type": 1,
+                    "value": "2"
+                  },
+                  {
+                    "from": "",
+                    "id": 2,
+                    "text": "Abnormal",
+                    "to": "",
+                    "type": 1,
+                    "value": "3"
+                  }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "processing"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "from": "",
+                    "id": 0,
+                    "text": "Normal",
+                    "to": "",
+                    "type": 1,
+                    "value": "1"
+                  },
+                  {
+                    "from": "",
+                    "id": 1,
+                    "text": "Warning",
+                    "to": "",
+                    "type": 1,
+                    "value": "2"
+                  },
+                  {
+                    "from": "",
+                    "id": 2,
+                    "text": "Abnormal",
+                    "to": "",
+                    "type": 1,
+                    "value": "3"
+                  }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RspXRef"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "from": "",
+                    "id": 0,
+                    "text": "Normal",
+                    "to": "",
+                    "type": 1,
+                    "value": "1"
+                  },
+                  {
+                    "from": "",
+                    "id": 1,
+                    "text": "Warning",
+                    "to": "",
+                    "type": 1,
+                    "value": "2"
+                  },
+                  {
+                    "from": "",
+                    "id": 2,
+                    "text": "Abnormal",
+                    "to": "",
+                    "type": 1,
+                    "value": "3"
+                  }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "rgb(202, 207, 202)",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 400
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
           }
         ]
       },
@@ -1196,19 +1626,27 @@
           "id": "organize",
           "options": {
             "excludeByName": {
+              "dst_node": true,
+              "dst_service": true,
+              "dst_workload_kind": true,
               "src_container": true,
               "src_container_id": true,
               "status_code": true
             },
             "indexByName": {
               "Time": 1,
-              "Value #A": 5,
-              "dst_ip": 4,
-              "request_content": 9,
-              "request_processing_status": 7,
-              "request_reqxfer_status": 6,
+              "Value #A": 7,
+              "dst_ip": 5,
+              "dst_node": 12,
+              "dst_pod": 6,
+              "dst_service": 13,
+              "dst_workload_kind": 14,
+              "dst_workload_name": 4,
+              "request_content": 11,
+              "request_processing_status": 9,
+              "request_reqxfer_status": 8,
               "response_content": 0,
-              "response_rspxfer_status": 8,
+              "response_rspxfer_status": 10,
               "src_ip": 2,
               "src_pod": 3
             },
@@ -1216,6 +1654,9 @@
               "Value #A": "Latency",
               "Value #B": "P99 Latency",
               "dst_ip": "Destination IP",
+              "dst_pod": "Destination Pod",
+              "dst_service": "",
+              "dst_workload_name": "Destination",
               "request_content": "URL",
               "request_processing_status": "processing",
               "request_reqxfer_status": "ReqXRef",
@@ -1239,8 +1680,8 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "kube-system",
-          "value": "kube-system"
+          "text": "test-ns",
+          "value": "test-ns"
         },
         "datasource": "Prometheus",
         "definition": "kindling_entity_request_duration_nanoseconds_count",
@@ -1265,8 +1706,8 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "coredns",
-          "value": "coredns"
+          "text": "testdemo2",
+          "value": "testdemo2"
         },
         "datasource": "Prometheus",
         "definition": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
@@ -1290,7 +1731,7 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
@@ -1309,5 +1750,5 @@
   "timezone": "",
   "title": "WorkLoad Details",
   "uid": "kR25k8pnz",
-  "version": 26
+  "version": 7
 }
