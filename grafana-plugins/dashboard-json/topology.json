@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 4,
-  "iteration": 1642676399276,
+  "id": 31,
+  "iteration": 1643192418525,
   "links": [],
   "panels": [
     {
@@ -36,11 +36,6 @@
       "id": 2,
       "interval": "",
       "maxDataPoints": 1,
-      "options": {
-        "seriesCountSize": "sm",
-        "showSeriesCount": false,
-        "text": "Default value of text input option"
-      },
       "pluginVersion": "7.1.1",
       "targets": [
         {
@@ -150,7 +145,7 @@
         "name": "namespace",
         "options": [],
         "query": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 2,
@@ -206,7 +201,7 @@
     ]
   },
   "timezone": "",
-  "title": "antv-topology",
+  "title": "Topologyres",
   "uid": "MiIYJE57k",
-  "version": 45
+  "version": 4
 }
