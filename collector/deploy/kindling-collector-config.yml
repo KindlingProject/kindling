@@ -93,7 +93,6 @@ exporters:
     export_kind: prometheus
     # Add labels to all metrics in the format of [key: value]
     custom_labels:
-      job: test-hcmine
     prometheus:
       port: :8080
     otlp:
