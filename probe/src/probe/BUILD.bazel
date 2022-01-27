@@ -56,6 +56,19 @@ container_image(
     visibility = ["//visibility:public"],
 )
 
+container_image(
+    name = "kindling_probe_image_localdriver",
+    base = "@px//:pl_cc_bpf_image",
+    directory = "/pl",
+    files = [
+	  "//deploy:scripts",
+	  "//deploy:localdriver",
+	  ":kindling_probe",
+    ],
+    cmd = ["/pl/docker-entrypoint.sh"],
+    visibility = ["//visibility:public"],
+)
+
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 cc_image(
     name = "kindling_probe_image_old",
@@ -68,6 +81,16 @@ container_push(
     name = "push_image",
     format = "Docker",
     image = ":kindling_probe_image",
+    # ATTENTION!! Modify this if you want to change docker registry.
+    registry = "registry.us-west-1.aliyuncs.com",
+    repository = "arms-docker-repo/arms-bpf-agent",
+    tag = "qianlu-test",
+)
+
+container_push(
+    name = "push_image_localdriver",
+    format = "Docker",
+    image = ":kindling_probe_image_localdriver",
     # ATTENTION!! Modify this if you want to change docker registry.
     registry = "registry.us-west-1.aliyuncs.com",
     repository = "arms-docker-repo/arms-bpf-agent",
