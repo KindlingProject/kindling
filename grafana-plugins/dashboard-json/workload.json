@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 40,
-  "iteration": 1643192269532,
+  "iteration": 1643265095708,
   "links": [],
   "panels": [
     {
@@ -903,7 +903,7 @@
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (src_ip, src_pod, dst_ip, dst_pod)  kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1581,7 +1581,7 @@
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"http\"}[5m])) and kindling_trace_request_duration_nanoseconds{is_server=\"false\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (src_ip, src_pod, dst_ip, dst_pod)  kindling_trace_request_duration_nanoseconds{is_server=\"true\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"http\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1731,7 +1731,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {
@@ -1750,5 +1750,5 @@
   "timezone": "",
   "title": "WorkLoad Details",
   "uid": "kR25k8pnz",
-  "version": 7
+  "version": 10
 }
