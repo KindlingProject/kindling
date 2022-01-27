@@ -76,8 +76,15 @@ cp kindling-probe.tar.gz deploy/
 bazel build -s --config=clang src/probe:kindling_probe
 # build container
 # configure the image registry, repository and tag in probe/src/probe/BUILD.bazel
+
+# If you use the kernel module and eBPF probe compiled in the previous step,execute the following command
+bazel build -s --config=clang src/probe:push_image_localdriver
+# If you use kernel modules precompiled by kindling（not execute "docker run -it -v /usr/src:/host/usr/src -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest"）,execute the following command
 bazel build -s --config=clang src/probe:push_image
+
 # make sure you have access to push, push container image
+./bazel-bin/src/probe/push_image_localdriver
+# or
 ./bazel-bin/src/probe/push_image
 ```
 
