@@ -33,13 +33,13 @@ It's worth noting that the actual kernel version of some of Linux distributions 
 Kindling provides [script](https://raw.githubusercontent.com/Kindling-project/kindling/main/deploy/install.sh) and yaml files to deploy in Kubernetes:
 ```bash
 # Make sure having the access to api-server, can run on Kubernetes master node.
-bash <(curl -Ss https://raw.githubusercontent.com/Kindling-project/kindling/main/deploy/install.sh)
+bash <(curl -Ss https://raw.githubusercontent.com/Kindling-project/kindling/main/deploy/start.sh)
 ```
 > **The url may not be accessed because kindling repository is private.**
 > **Get the code first and 'cd kindling/deploy & bash install.sh'**
 
-1. **Install Kindling Probe and Collector: install.sh** creates Namespace, ConfigMap, ClusterRole, ServiceAccount, ClusterRoleBindding. **install.sh** deploys the agent as two separate containers named **Kindling Probe** and **Kindling Collector**, which are combined in one Kubernetes Pod. The container images, namely **kindling-probe** and **kindling-collector**, are provided in Docker Hub, which can be** replaced with your own containers** in kindling-deploy.yml.
-1. **Configure Promethues**: **install.sh **create** Service **and** Promethues ServiceMonitor **for exposing service to Promethues**. You can refer to **[How to use ServiceMonitor to scrape metric from Kindling](./How%20to%20use%20ServiceMonitor%20to%20scrape%20metric%20from%20Kindling.md ) for more information.
+1. **Install Kindling Probe and Collector: install.sh** creates Namespace, ConfigMap, ClusterRole, ServiceAccount, ClusterRoleBindding. **install.sh** deploys the agent as two separate containers named **Kindling Probe** and **Kindling Collector**, which are combined in one Kubernetes Pod. The container images, namely **kindling-probe** and **kindling-collector**, are provided in Docker Hub, which can be **replaced with your own containers** in kindling-deploy.yml.
+1. **Configure Promethues**: **install.sh **create **Service and Promethues ServiceMonitor **for exposing service to Promethues. You can refer to [How to use ServiceMonitor to scrape metric from Kindling](./How%20to%20use%20ServiceMonitor%20to%20scrape%20metric%20from%20Kindling.md ) for more information.
 3. **Configure Grafana**: After the **install.sh** execves, you should config **grafana-plugins**, refer to [How to use grafana-plugin](./How%20to%20use%20grafana-plugin.md).
 
 Enjoy kindling!
@@ -55,27 +55,41 @@ sudo yum -y install kernel-devel-$(uname -r)
 ```
 **Warning**: The command might not work with some kernel, or install kernel headers in another way. [http://rpm.pbone.net](http://rpm.pbone.net) is a choice to find RPMs for RHEL-like distributions.
 ### Build Container
-Kindling provides a container environment for compiling, run as follows:
+Kindling provides container environment for compiling, run as follows:
 ```bash
 git clone https://github.com/Kindling-project/kindling.git 
 cd kindling
 
-# start compile container.
-./scripts/run_docker.sh
-# or start in daemon mode
-./scripts/run_docker_bpf_daemon.sh
-
 # build kindling-probe
 cd probe
+
+# build and package eBPF, kernel probes
+docker run -it -v /usr/src:/host/usr/src -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
+tar -cvzf kindling-probe.tar.gz kindling-probe/
+cp kindling-probe.tar.gz deploy/
+
+# start compile container for binaries
+./scripts/run_docker.sh
+# or start in daemon mode, choose one of them
+./scripts/run_docker_bpf_daemon.sh
 # compile kindling-probe
 bazel build -s --config=clang src/probe:kindling_probe
 # build container
+# configure the image registry, repository and tag in probe/src/probe/BUILD.bazel
 bazel build -s --config=clang src/probe:push_image
+# make sure you have access to push, push container image
 ./bazel-bin/src/probe/push_image
+```
 
+
+
+```bash
 # build kindling-collector
 cd collector
+docker run -it $PWD:/collector bash
 go build
-cd deploy
+# exit from container
 docker build -t kindling-collector -f deploy/Dockerfile .
+# push container image by docker push
 ```
+

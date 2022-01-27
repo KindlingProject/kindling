@@ -1,23 +1,29 @@
-Kindling run with kernel module is not available now for missing uprobe support. Therefore, kindling only support eBPF probe with Linux Kernel Version > 4.14.
+Kindling only support eBPF probe with Linux Kernel Version > 4.14 (For CentOS, from 3.10.0-957). We precompile probes for CentOS7 and CentOS8, for Ubuntu and Debian, you should build container image following the steps of [Build Kindling container](./Installation.md#build-kindling-container).
 
-- Ubuntu
-   - 16.04 (4.15.0-x-generic)
-   - 18.04 (4.15.0-x-generic)
-   - TBD
-- Debian
-   - ~~9 (only kernel module)~~
-   - 10
-   - 11
 - RHEL & CentOS
-   - ~~7.6 (3.10.0-957.el7.x86_64)~~
-   - ~~7.7 (3.10.0-1062.el7.x86_64)~~
-   - ~~7.8 (3.10.0-1127.el7.x86_64)~~
-   - ~~7.9 (3.10.0-1160.el7.x86_64)~~
-   - TBD
+   - 7.4 (3.10.0-693.el7.x86_64, only kernel module)
+   - 7.5 (3.10.0-862.el7.x86_64, only kernel module)
+   - 7.6 (3.10.0-957.el7.x86_64)
+   - 7.7 (3.10.0-1062.el7.x86_64)
+     - 3.10.0-1062.9.1.el7.x86_64
+   - 7.8 (3.10.0-1127.el7.x86_64)
+   - 7.9 (3.10.0-1160.el7.x86_64)
+     - 3.10.0-1160.11.1.el7.x86_64
+     - 3.10.0-1160.15.2.el7.x86_64
+     - 3.10.0-1160.24.1.el7.x86_64
+   - 8.0 (4.18.0-80.el8.x86_64, only kernel module)
+  - 8.1 (4.18.0-147.el8.x86_64)
+  - 8.2 (4.18.0-193.el8.x86_64)
+  - 8.3 (4.18.0-240.el8.x86_64)
+  - 8.4 (4.18.0-305.el8.x86_64)
+- Ubuntu
+   - 16.04 (need compile probe yourself)
+   - 18.04 (need compile probe yourself)
+- Debian
+   - 9 (only kernel module, need compile probes yourself)
+   - 10 (need compile probes yourself)
 - Other Kernel versions
-   - CentOS
-      - ~~3.10.0-693.el7.x86_64 (only kernel module)~~
-      - ~~3.10.0-862.el7.x86_64 (only kernel module)~~
-      - ~~3.10.0-1160.11.1.el7.x86_64~~
-      - ~~3.10.0-1160.15.2.el7.x86_64~~
-      - ~~3.10.0-1160.24.1.el7.x86_64~~
+   - 4.19.159.mizar
+   - 4.19.91-23.al7.x86_64
+   - 4.19.91-24.1.al7.x86_64
+   - Other Linux Kernel Version > 4.14 will be supported
