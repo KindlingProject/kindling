@@ -19,18 +19,42 @@ spec:
       - name: kindling-probe
         image: kindlingproject/kindling-probe:latest
         imagePullPolicy: Always
+        args:
+        - --v=1
+        - --minloglevel=0
+        - --log_dir=/pl
+        - --logtostderr=false
+        - --stirling_enable_kafka_tracing=false
+        - --stirling_enable_nats_tracing=false
+        - --stirling_enable_redis_tracing=false
+        - --stirling_enable_dns_tracing=false
+        - --stirling_enable_cass_tracing=false
+        - --stirling_enable_http_tracing=false
+        - --stirling_enable_pgsql_tracing=false
+        - --stirling_enable_mysql_tracing=false
+        command:
+        - /pl/docker-entrypoint.sh
         resources:
           limits:
-            memory: 200Mi
+            memory: 300Mi
           requests:
-            memory: 200Mi
+            memory: 300Mi
         env:
         - name: HOST_PROC
           value: /host/proc
-        - name: HCMINE_BPF_PROBE
-          value: /opt/probe.o
+        - name: PL_HOST_PATH
+          value: /host
+        - name: HCMINE_HOST_ROOT
+          value: /host
         securityContext:
           privileged: true
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/kernel-support
+          initialDelaySeconds: 5
+          periodSeconds: 5
         volumeMounts:
         - name: shared-volume-kindling
           mountPath: /home/kindling

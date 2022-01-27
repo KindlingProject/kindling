@@ -93,7 +93,6 @@ exporters:
     export_kind: prometheus
     # Add labels to all metrics in the format of [key: value]
     custom_labels:
-      job: test-hcmine
     prometheus:
       port: :8080
     otlp:
@@ -103,13 +102,16 @@ exporters:
     stdout:
       collect_period: 15s
 
-logger:
-  console_level: debug # debug,info,warn,error,none
-  file_level: debug
-  file_rotation:
-    filename: agent.log
-    maxsize: 512 #MB
-    maxage: 30 #day
-    maxbackups: 5
-    localtime: true
-    compress: false
+observability:
+  logger:
+    console_level: info # debug,info,warn,error,none
+    file_level: info
+    file_rotation:
+      filename: agent.log
+      maxsize: 512 #MB
+      maxage: 30 #day
+      maxbackups: 5
+      localtime: true
+      compress: false
+  opentelemetry:
+    prometheus_port: :8081
