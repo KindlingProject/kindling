@@ -44,42 +44,45 @@ bash <(curl -Ss https://raw.githubusercontent.com/Kindling-project/kindling/main
 
 Enjoy kindling!
 # Build Kindling container
-## Compile in Docker
-### Install target kernel headers
-Kernel headers are used to compile kernel module and eBPF module. The version of kernel headers must match the runtime.
+## Build kindling-probe
+
+```bash
+git clone https://github.com/Kindling-project/kindling.git 
+cd kindling/probe
 ```
+
+### Build local kernel modules and eBPF modules
+
+Following steps are used to compile local kernel modules and eBPF modules, which you can skip if using precompiled modules by Kindling.
+
+```bash
+# Kernel headers are used to compile kernel modules and eBPF modules. The version of kernel headers must match the runtime. Warning: The command might not work with some kernel, or install kernel headers in another way. http://rpm.pbone.net is a choice to find RPMs for RHEL-like distributions.
 # Debian-like distributions
 sudo apt-get -y install linux-headers-$(uname -r)
 # RHEL-like distributions
 sudo yum -y install kernel-devel-$(uname -r)
-```
-**Warning**: The command might not work with some kernel, or install kernel headers in another way. [http://rpm.pbone.net](http://rpm.pbone.net) is a choice to find RPMs for RHEL-like distributions.
-### Build Container
-Kindling provides container environment for compiling, run as follows:
-```bash
-git clone https://github.com/Kindling-project/kindling.git 
-cd kindling
-
-# build kindling-probe
-cd probe
 
 # build and package eBPF, kernel probes
 docker run -it -v /usr/src:/host/usr/src -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
 tar -cvzf kindling-probe.tar.gz kindling-probe/
+# copy and wait for building the image
 cp kindling-probe.tar.gz deploy/
+```
 
+
+```bash
 # start compile container for binaries
 ./scripts/run_docker.sh
 # or start in daemon mode, choose one of them
 ./scripts/run_docker_bpf_daemon.sh
 # compile kindling-probe
 bazel build -s --config=clang src/probe:kindling_probe
+
 # build container
 # configure the image registry, repository and tag in probe/src/probe/BUILD.bazel
-
-# If you use the kernel module and eBPF probe compiled in the previous step,execute the following command
+# If you use the kernel module and eBPF probe compiled in the previous step, execute the following command
 bazel build -s --config=clang src/probe:push_image_localdriver
-# If you use kernel modules precompiled by kindling（not execute "docker run -it -v /usr/src:/host/usr/src -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest"）,execute the following command
+# else if you use kernel modules precompiled by kindling, execute the following command
 bazel build -s --config=clang src/probe:push_image
 
 # make sure you have access to push, push container image
@@ -88,12 +91,13 @@ bazel build -s --config=clang src/probe:push_image
 ./bazel-bin/src/probe/push_image
 ```
 
-
+## Building kindling-collector
 
 ```bash
-# build kindling-collector
-cd collector
-docker run -it $PWD:/collector bash
+git clone https://github.com/Kindling-project/kindling.git 
+
+cd kindling/collector
+docker run -it -v $PWD:/collector kindlingproject/kindling-collector-builder bash
 go build
 # exit from container
 docker build -t kindling-collector -f deploy/Dockerfile .
