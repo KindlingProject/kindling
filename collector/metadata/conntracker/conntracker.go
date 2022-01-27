@@ -170,6 +170,9 @@ func (ctr *Conntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16,
 func (ctr *Conntracker) GetDNATTupleWithString(srcIP string, dstIP string, srcPort uint16, dstPort uint16, isUdp uint32) *IPTranslation {
 	sourceIP := StringToUint32(srcIP)
 	destinationIP := StringToUint32(dstIP)
+	if sourceIP == 0 || destinationIP == 0 {
+		return nil
+	}
 	return ctr.GetDNATTuple(sourceIP, destinationIP, srcPort, dstPort, isUdp)
 }
 
