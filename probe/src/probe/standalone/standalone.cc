@@ -8,14 +8,14 @@
 px::Status consume_uprobe_data(uint64_t table_id, px::types::TabletID tablet_id,
                                           std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch) {
 
-    std::cout << "[qianlu][grpc] table_id:" << table_id << " tablet_id:" << tablet_id << std::endl;
+    std::cout << "[stirling][grpc] table_id:" << table_id << " tablet_id:" << tablet_id << std::endl;
 
     if (record_batch->empty() || record_batch->at(0)->Size() == 0) {
-        std::cout << "[qianlu][grpc] record_batch is empty. table_id:" << table_id << std::endl;
+        std::cout << "[stirling][grpc] record_batch is empty. table_id:" << table_id << std::endl;
         return px::Status::OK();
     }
 
-    std::cout << "[qianlu][grpc] record_batch cols is " << record_batch->size() << " samples:" << record_batch->at(0)->Size() << std::endl;
+    std::cout << "[stirling][grpc] record_batch cols is " << record_batch->size() << " samples:" << record_batch->at(0)->Size() << std::endl;
 //
 //    auto it = m_kindlingEventLists.find(uprobe_converter_);
 //    KindlingEventList* kindlingEventList;
@@ -26,7 +26,7 @@ px::Status consume_uprobe_data(uint64_t table_id, px::types::TabletID tablet_id,
 //        kindlingEventList = it->second;
 //    }
     if (record_batch->size() != 20) {
-	std::cout << "[qianlu] size not match" << " table_id:" << table_id << " tablet_id:" << tablet_id << std::endl;
+	std::cout << "[stirling] size not match" << " table_id:" << table_id << " tablet_id:" << tablet_id << std::endl;
 	return px::Status::OK();
     }
     int ids = 0;
@@ -37,7 +37,7 @@ px::Status consume_uprobe_data(uint64_t table_id, px::types::TabletID tablet_id,
 
     auto batch_size = record_batch->at(0)->Size();
     for (size_t i = 0; i < batch_size; ++ i ) {
-        std::cout << "[qianlu][grpc] begin to process record " << i << " ... " << std::endl;
+        std::cout << "[stirling][grpc] begin to process record " << i << " ... " << std::endl;
         int64_t ts = record_batch->at(px::stirling::kHTTPTimeIdx)->Get<px::types::Time64NSValue>(i).val;
 	std::cout << "ts:" << ts << " idx:" << px::stirling::kHTTPTimeIdx << std::endl;
         int32_t pid = record_batch->at(px::stirling::kHTTPUPIDIdx)->Get<px::types::UInt128Value>(i).High64();
@@ -75,7 +75,7 @@ px::Status consume_uprobe_data(uint64_t table_id, px::types::TabletID tablet_id,
         int64_t latency = record_batch->at(px::stirling::kHTTPLatencyIdx)->Get<px::types::Int64Value>(i).val;
 	std::cout << "latency:" << latency << std::endl;
 
-        std::cout << "[qianlu][grpc] ts:" << ts << " pid:" << pid << " remote_addr:" << remote_addr << " remote_port:" << remote_port << " trace_role:" << trace_role << std::endl;
+        std::cout << "[stirling][grpc] ts:" << ts << " pid:" << pid << " remote_addr:" << remote_addr << " remote_port:" << remote_port << " trace_role:" << trace_role << std::endl;
 
 //        struct grpc_event_t gevt;
 //        gevt.timestamp = ts;
@@ -96,12 +96,11 @@ px::Status consume_uprobe_data(uint64_t table_id, px::types::TabletID tablet_id,
 //        auto tinfo = m_inspector->get_thread_ref(pid, true, true, true);
 //        if (tinfo) {
 //            gevt.container_id = tinfo->m_container_id;
-//            std::cout << "[qianlu] find container_id for pid:" << pid << " container_id:" << gevt.container_id << std::endl;
+//            std::cout << "[stirling] find container_id for pid:" << pid << " container_id:" << gevt.container_id << std::endl;
 //        } else {
-//            std::cout << "[qianlu] cannot find container_id for pid:" << pid << std::endl;
+//            std::cout << "[stirling] cannot find container_id for pid:" << pid << std::endl;
 //        }
 
-        // convert数据
 //        event_mutex_.lock();
 //        KindlingEvent *kindlingEvent = kindlingEventList->add_kindling_event_list();
 //        uprobe_converter_->convert(kindlingEvent, &gevt);
@@ -119,7 +118,7 @@ int main(int argc, char** argv) {
     auto stirling = px::stirling::Stirling::Create(px::stirling::CreateSourceRegistry(px::stirling::GetSourceNamesForGroup(px::stirling::SourceConnectorGroup::kTracers))
                                                            .ConsumeValueOrDie());
     TerminationHandler::set_stirling(stirling.get());
-    std::cout << "hello, qianlu!" << std::endl;
+    std::cout << "hello, stirling!" << std::endl;
     stirling->RegisterDataPushCallback(consume_uprobe_data);
     std::cout << "register data push callback done." << std::endl;
     auto status = stirling->RunAsThread();

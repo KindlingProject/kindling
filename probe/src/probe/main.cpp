@@ -48,7 +48,7 @@ void do_inspect(sinsp *inspector, sinsp_evt_formatter *formatter, int pid, int s
         if (ev->get_thread_info()->m_comm == "sshd" || ev->get_type() == PPME_SCHEDSWITCH_6_E || ev->get_type() == PPME_SCHEDSWITCH_6_X) {
             continue;
         }
-        pub->distribute_event(ev, pid, sysdigConverter);
+        pub->consume_sysdig_event(ev, pid, sysdigConverter);
         if (is_syscall_out == 1 && filter_out_pid_event == ev->get_thread_info()->m_pid && formatter->tostring(ev, &line)) {
             cout<< line << endl;
         }
@@ -151,13 +151,13 @@ int main(int argc, char** argv) {
 		bool init_stirling = true;
 		auto kernel_version = px::stirling::utils::GetKernelVersion().ValueOrDie();
 		std::cout << absl::Substitute("kernel version is $0.$1.$2", kernel_version.version, kernel_version.major_rev, kernel_version.minor_rev) << std::endl;
-		if (kernel_version.version <= 4 && kernel_version.major_rev < 14) {
+        if ((kernel_version.version == 4 && kernel_version.major_rev < 14) || kernel_version.version < 4) {
 		    init_stirling = false;
             LOG(WARNING) << absl::Substitute("kernel version is $0.$1.$2, do not init stirling ... ", kernel_version.version, kernel_version.major_rev, kernel_version.minor_rev);
 		    std::cout << "***** kernel version is " << kernel_version.version << "." << kernel_version.major_rev << " , do not init stirling ... *****" << std::endl;
 		}
 
-        uprobe_converter* uconv = new uprobe_converter(inspector);
+        uprobe_converter* uconv = new uprobe_converter();
         publisher *pub = new publisher(inspector, uconv);
 
         std::unique_ptr<px::stirling::Stirling> stirling_;

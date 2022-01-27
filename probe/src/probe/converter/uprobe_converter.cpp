@@ -4,22 +4,21 @@
 
 #include "src/probe/converter/uprobe_converter.h"
 
-uprobe_converter::uprobe_converter(sinsp *inspector) : m_inspector(inspector) {}
+uprobe_converter::uprobe_converter() : converter(100, INT_MAX) {}
 
 uprobe_converter::~uprobe_converter() {}
 
-void uprobe_converter::convert(kindling::KindlingEvent *kevt, void *evt) {
+void uprobe_converter::convert(void *evt) {
 //    std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch =
 //            static_cast<std::unique_ptr<px::types::ColumnWrapperRecordBatch>>(evt);
+    auto kevt = get_kindlingEventList()->add_kindling_event_list();
     struct grpc_event_t* gevt = static_cast<struct grpc_event_t*>(evt);
 
-    // 先塞外面的内容
     kevt->set_source(UPROBE);
     kevt->set_name("grpc_uprobe");
     kevt->set_category(CAT_NET);
     kevt->set_timestamp(gevt->timestamp);
 
-    // 开始塞 attributes
     // pid
     auto pid_attr = kevt->add_user_attributes();
     pid_attr->set_key("pid");

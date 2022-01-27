@@ -1,7 +1,3 @@
-//
-// Created by 散养鸡 on 2021/12/13.
-//
-
 #include "src/probe/publisher/publisher.h"
 #include <unistd.h>
 #include <sys/un.h>
@@ -17,7 +13,6 @@
 
 using namespace std;
 using namespace kindling;
-vector<Socket> *sub_event_list[PPM_EVENT_MAX];
 
 publisher::publisher(sinsp *inspector, uprobe_converter* uprobe_converter) {
     m_socket = NULL;
@@ -29,15 +24,17 @@ publisher::publisher(sinsp *inspector, uprobe_converter* uprobe_converter) {
 }
 
 publisher::~publisher() {
+    delete m_selector;
     delete m_bind_address;
     delete m_client_event_map;
 }
 
-void publisher::distribute_event(sinsp_evt *evt, int pid, converter *sysdigConverter) {
+void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigConverter) {
     if (!m_socket) {
         return;
     }
 
+    // filter out kindling-probe itself and pid in filter_pid
     sinsp_threadinfo *evThreadInfo = evt->get_thread_info();
     if (evThreadInfo->m_ptid == pid || evThreadInfo->m_pid == pid || evThreadInfo->m_pid == 0) {
         return;
@@ -48,10 +45,27 @@ void publisher::distribute_event(sinsp_evt *evt, int pid, converter *sysdigConve
             return;
         }
     }
-
-    bool f = m_selector->select(evt->get_type(), ((sysdig_converter *) sysdigConverter)->get_kindling_category(evt));
-    if (f) {
-        put_uds_map(sysdigConverter, evt);
+    // convert sysdig event to kindling event
+    if (m_selector->select(evt->get_type(), ((sysdig_converter *) sysdigConverter)->get_kindling_category(evt))) {
+        // TODO determine max_size
+//        if (sysdigConverter->judge_max_size()) {
+//            return;
+//        }
+        auto it = m_kindlingEventLists.find(sysdigConverter);
+        KindlingEventList* kindlingEventList;
+        if (it == m_kindlingEventLists.end()) {
+            kindlingEventList = new KindlingEventList();
+            m_kindlingEventLists[sysdigConverter] = kindlingEventList;
+            m_ready[kindlingEventList] = false;
+        } else {
+            kindlingEventList = it->second;
+        }
+        sysdigConverter->convert(evt);
+        // if send list was sent
+        if (sysdigConverter->judge_batch_size() && !m_ready[kindlingEventList]) {
+            m_kindlingEventLists[sysdigConverter] = sysdigConverter->swap_list(kindlingEventList);
+            m_ready[kindlingEventList] = true;
+        }
     }
 }
 
@@ -81,27 +95,12 @@ void publisher::send_server(publisher *mpublisher) {
     cout << "Thread sender start" << endl;
     while (true) {
         usleep(100000);
-        // 序列化
-        mpublisher->event_mutex_.lock();
-//        auto client_event = mpublisher->m_client_event_map->begin();
-//        while (client_event != mpublisher->m_client_event_map->end()) {
-//            string msg;
-//            // TODO
-//            auto pKindlingEventList = client_event->second[0];
-//            auto client_socket = client_event->first;
-//            pKindlingEventList->SerializeToString(&msg);
-////            cout << pKindlingEventList->Utf8DebugString() << endl;
-//            if (0 == pKindlingEventList->kindling_event_list_size()) {
-//                client_event++;
-//                continue;
-//            }
-//            zmq_send(client_socket, msg.data(), msg.size(), ZMQ_DONTWAIT);
-//            pKindlingEventList->clear_kindling_event_list();
-//            client_event++;
-//        }
-
         for (auto list : mpublisher->m_kindlingEventLists) {
             auto pKindlingEventList = list.second;
+            // flag == false
+            if (!mpublisher->m_ready[pKindlingEventList]) {
+                continue;
+            }
             if (pKindlingEventList->kindling_event_list_size() > 0) {
                 string msg;
                 pKindlingEventList->SerializeToString(&msg);
@@ -109,8 +108,8 @@ void publisher::send_server(publisher *mpublisher) {
                 zmq_send(mpublisher->m_socket, msg.data(), msg.size(), ZMQ_DONTWAIT);
                 pKindlingEventList->clear_kindling_event_list();
             }
+            mpublisher->m_ready[pKindlingEventList] = false;
         }
-        mpublisher->event_mutex_.unlock();
     }
 }
 
@@ -158,13 +157,6 @@ void publisher::subscribe(string sub_event, string &reason) {
     // bind
     m_socket = socket;
     m_bind_address->insert((char *) address.data(), socket);
-
-//    // notify kernel probe and set sub_event_map
-//    for (int i = 0; i < subEvent.event_type_size(); i++) {
-//        uint16_t event_type = subEvent.event_type(i);
-//        set_sysdig_event(event_type);
-//        put_sub_event_map(event_type, socket);
-//    }
 }
 
 // 将uprobe事件放入待发送map
@@ -258,74 +250,15 @@ px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID
             std::cout << "[qianlu] cannot find container_id for pid:" << pid << std::endl;
         }
 
-        // convert数据
-        event_mutex_.lock();
-        KindlingEvent *kindlingEvent = kindlingEventList->add_kindling_event_list();
-        uprobe_converter_->convert(kindlingEvent, &gevt);
-        event_mutex_.unlock();
+        // convert to kindling event
+        uprobe_converter_->convert(&gevt);
+        // if send list was sent
+        if (uprobe_converter_->judge_batch_size() && !m_ready[kindlingEventList]) {
+            m_kindlingEventLists[uprobe_converter_] = uprobe_converter_->swap_list(kindlingEventList);
+            m_ready[kindlingEventList] = true;
+        }
     }
     return px::Status::OK();
-}
-
-// 将事件放入待发送map
-void publisher::put_uds_map(converter *sysdigConverter, sinsp_evt *evt) {
-    auto it = m_kindlingEventLists.find(sysdigConverter);
-    KindlingEventList* kindlingEventList;
-    if (it == m_kindlingEventLists.end()) {
-        kindlingEventList = new KindlingEventList();
-        m_kindlingEventLists[sysdigConverter] = kindlingEventList;
-    } else {
-        kindlingEventList = it->second;
-    }
-    event_mutex_.lock();
-    KindlingEvent *kindlingEvent = kindlingEventList->add_kindling_event_list();
-    sysdigConverter->convert(kindlingEvent, evt);
-    event_mutex_.unlock();
-}
-
-void publisher::put_sub_event_map(uint16_t sub_event, void *socket) {
-    event_mutex_.lock();
-    vector<void *> *client_sockets = sub_event_list[sub_event];
-    if (client_sockets != nullptr) {
-        bool exist_client = false;
-        for (void *client : *client_sockets) {
-            if (client == socket) {
-                exist_client = true;
-                break;
-            }
-        }
-        if (!exist_client) {
-            client_sockets->push_back(socket);
-            cout << system("date") << " event未被订阅，插入map,fd: " << socket << "event: " << sub_event << endl;
-        }
-    } else {
-        auto *clients = new vector<void *>;
-        clients->push_back(socket);
-        cout << system("date") << " event未被订阅，插入map,fd: " << socket << "event: " << sub_event << endl;
-        sub_event_list[sub_event] = clients;
-    }
-
-    event_mutex_.unlock();
-}
-
-void publisher::delete_sub_event_map(uint16_t sub_event, void *socket) {
-    event_mutex_.lock();
-    vector<Socket> *client_sockets = sub_event_list[sub_event];
-    if (client_sockets != nullptr) {
-        vector<void *>::iterator it;
-        for (it = client_sockets->begin(); it != client_sockets->end();) {
-            if (*it == socket) {
-                it = client_sockets->erase(it);
-            } else {
-                it++;
-            }
-        }
-    }
-    event_mutex_.unlock();
-}
-
-void publisher::set_sysdig_event(uint16_t type) {
-
 }
 
 selector::selector() {
@@ -385,4 +318,5 @@ void selector::parse(const google::protobuf::RepeatedPtrField<::kindling::Label>
             cout << "Subscribe: Kindling event name err: " << label.name() << endl;
         }
     }
+    // TODO notify kernel, set eventmask
 }

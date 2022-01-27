@@ -30,11 +30,11 @@ or GPL2.txt for full copies of the license.
 
 #include <asm/unistd.h>
 
-#include "src/driver/ppm_ringbuffer.h"
-#include "src/driver/ppm_events_public.h"
-#include "src/driver/ppm_events.h"
-#include "src/driver/ppm.h"
-#include "src/driver/ppm_version.h"
+#include "ppm_ringbuffer.h"
+#include "ppm_events_public.h"
+#include "ppm_events.h"
+#include "ppm.h"
+#include "ppm_version.h"
 
 #if (defined CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) || (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30))
 void ppm_task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)

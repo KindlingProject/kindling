@@ -126,7 +126,65 @@ static int bpf_map_create(enum bpf_map_type map_type,
 
 	return sys_bpf(BPF_MAP_CREATE, &attr, sizeof(attr));
 }
-
+static int get_kernel_version()
+{
+	char buf[256];
+	char filename[256];
+	unsigned x, y, z;
+	for (int i = 0; i < 4; i++)
+	{
+		switch(i)
+		{
+			case 0:
+			{
+				// KERNEL_VERSION_CODE, as environment variable
+				// KERNEL_VERSION_CODE = (VERSION * 65536) + (PATCHLEVEL * 256) + SUBLEVEL
+				// same to KERNEL_VERSION
+				char *kernel_version_c = getenv("KERNEL_VERSION_CODE");
+				if (kernel_version_c != NULL)
+					return atoi(kernel_version_c);
+				break;
+			}
+			case 1:
+			{
+				// ubuntu
+				// check /proc/version_signature
+				int t;
+				snprintf(filename, sizeof(filename), "%s/proc/version_signature", scap_get_host_root());
+				int fd = open(filename, O_RDONLY, 0);
+				int res = read(fd, buf, sizeof(buf));
+				if (sscanf(buf, "Ubuntu %d.%d.%d-%d.%d-generic %d.%d.%d", &t, &t, &t, &t, &t, &x, &y, &z) != 8)
+					break;
+				return KERNEL_VERSION(x, y, z);
+			}
+			case 2:
+			{
+				// debian
+				// check /proc/sys/kernel/version
+				snprintf(filename, sizeof(filename), "%s/proc/sys/kernel/version", scap_get_host_root());
+				int fd = open(filename, O_RDONLY, 0);
+				if (fd < 0)
+					break;
+				int res = read(fd, buf, sizeof(buf));
+				if (sscanf(buf, "#1 SMP Debian %d.%d.%d-x (xxxx-xx-xx)", &x, &y, &z) != 3)
+					break;
+				return KERNEL_VERSION(x, y, z);
+			}
+			case 3:
+			{
+				// uname
+				struct utsname utsn;
+				uname(&utsn);
+				if (sscanf(utsn.release, "%d.%d.%d", &x, &y, &z) != 3)
+					return 0;
+				return KERNEL_VERSION(x, y, z);
+			}
+			default:
+				return 0;
+		}
+	}
+	return 0;
+}
 static int bpf_load_program(const struct bpf_insn *insns,
 			    enum bpf_prog_type type,
 			    size_t insns_cnt,
@@ -145,12 +203,10 @@ static int bpf_load_program(const struct bpf_insn *insns,
 	attr.log_buf = (unsigned long) NULL;
 	attr.log_size = 0;
 	attr.log_level = 0;
-		if (type == BPF_PROG_TYPE_KPROBE) {
-		struct utsname utsname;
-		uname(&utsname);
-		unsigned x, y, z;
-		sscanf(utsname.release, "%d.%d.%d", &x, &y, &z);
-		attr.kern_version = KERNEL_VERSION(x, y, z);
+
+    if (type == BPF_PROG_TYPE_KPROBE)
+	{
+		attr.kern_version = get_kernel_version();
 	}
 
 	fd = sys_bpf(BPF_PROG_LOAD, &attr, sizeof(attr));

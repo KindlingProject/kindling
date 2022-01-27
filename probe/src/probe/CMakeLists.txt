@@ -40,6 +40,7 @@ if(NOT WIN32)
 	include_directories("${CURSES_INCLUDE_DIR}")
 endif()
 set(SOURCE_FILES
+        converter/converter.cpp
         converter/sysdig_converter.cpp
         converter/kindling_event.pb.cc
         publisher/subscribe.pb.cc

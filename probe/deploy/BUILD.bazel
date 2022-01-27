@@ -3,3 +3,9 @@ filegroup(
     srcs = ["docker-entrypoint.sh","kindling-probe-loader","gdb_print.sh"],
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "localdriver",
+    srcs = ["kindling-probes.tar.gz"],
+    visibility = ["//visibility:public"],
+)

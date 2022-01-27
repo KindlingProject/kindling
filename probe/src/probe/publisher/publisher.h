@@ -1,9 +1,5 @@
-//
-// Created by 散养鸡 on 2021/12/13.
-//
-
-#ifndef HCMINE_PUBLISHER_H
-#define HCMINE_PUBLISHER_H
+#ifndef KINDLING_PROBE_PUBLISHER_H
+#define KINDLING_PROBE_PUBLISHER_H
 #include <vector>
 #include "src/probe/converter/kindling_event.pb.h"
 #include "src/probe/publisher/subscribe.pb.h"
@@ -42,7 +38,7 @@ public:
     // return list, add for converter or clear for send
     vector<KindlingEventList*> get_kindlingEventLists(converter *cvter);
 
-    void distribute_event(sinsp_evt *evt, int pid, converter *sysdigConverter);
+    void consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigConverter);
     px::Status consume_uprobe_data(uint64_t table_id, px::types::TabletID tablet_id,
             std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch);
     // run [thread] send, [thread] subscribe
@@ -61,25 +57,21 @@ private:
     // single sender
     Socket m_socket;
     map<converter *, KindlingEventList *> m_kindlingEventLists;
+    map<KindlingEventList *, bool> m_ready;
 
     shared_unordered_map<string, Socket> *m_bind_address;
 
+    // multi sender
     // vector for multi event source, e.g. [0] for sysdig, [1] for pixie
     shared_unordered_map<Socket, vector<KindlingEventList *>> *m_client_event_map;
     // selectors
     selector *m_selector;
 
-    // used for sysdig
-    void put_uds_map(converter *converter, sinsp_evt* evt);
-    void put_sub_event_map(uint16_t sub_event, void *socket);
-    void delete_sub_event_map(uint16_t sub_event, void *socket);
-    void set_sysdig_event(uint16_t type);
 
     uprobe_converter* uprobe_converter_;
     sinsp *m_inspector;
-    std::mutex event_mutex_;
     std::mutex pid_mutex_;
     vector<int> filter_pid;
 };
 
-#endif //HCMINE_PUBLISHER_H
+#endif //KINDLING_PROBE_PUBLISHER_H
