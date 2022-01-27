@@ -7,7 +7,7 @@ or GPL2.txt for full copies of the license.
 
 */
 
-#include "src/driver/ppm_events_public.h"
+#include "ppm_events_public.h"
 
 const struct ppm_event_info g_event_info[PPM_EVENT_MAX] = {
 	/* PPME_GENERIC_E */{"syscall", EC_OTHER, EF_NONE, 2, {{"ID", PT_SYSCALLID, PF_DEC}, {"nativeID", PT_UINT16, PF_DEC} } },

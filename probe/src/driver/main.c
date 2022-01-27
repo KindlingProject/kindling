@@ -14,7 +14,7 @@ or GPL2.txt for full copies of the license.
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 20)
 #include <linux/kobject.h>
 #include <trace/sched.h>
-#include "src/driver/ppm_syscall.h"
+#include "ppm_syscall.h"
 #include <trace/syscall.h>
 #else
 #include <asm/syscall.h>

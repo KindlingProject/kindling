@@ -7,7 +7,7 @@ or GPL2.txt for full copies of the license.
 
 */
 
-#include "src/driver/ppm_events_public.h"
+#include "ppm_events_public.h"
 
 const struct ppm_name_value socket_families[] = {
 	{"AF_NFC", PPM_AF_NFC},

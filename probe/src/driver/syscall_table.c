@@ -21,7 +21,7 @@ or GPL2.txt for full copies of the license.
 #include <net/sock.h>
 #include <asm/unistd.h>
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 20)
-#include "src/driver/ppm_syscall.h"
+#include "ppm_syscall.h"
 #else
 #include <asm/syscall.h>
 #endif
@@ -30,11 +30,11 @@ or GPL2.txt for full copies of the license.
 #define SYSCALL_TABLE_ID0 0
 #endif /* __KERNEL__ */
 
-#include "src/driver/ppm_events_public.h"
+#include "ppm_events_public.h"
 #ifdef __KERNEL__
-#include "src/driver/ppm.h"
+#include "ppm.h"
 #if defined(CONFIG_IA32_EMULATION) && !defined(__NR_ia32_socketcall)
-#include "src/driver/ppm_compat_unistd_32.h"
+#include "ppm_compat_unistd_32.h"
 #endif
 #endif /* __KERNEL__ */
 
