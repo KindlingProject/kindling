@@ -61,9 +61,8 @@ spec:
           readOnly: false
         - name: shared-volume-subpub
           mountPath: /home/kindling-sub
-        - mountPath: /sys/fs/cgroup
-          name: cgroup-vol
-          readOnly: true
+        - mountPath: /sys
+          name: sys-vol
         - mountPath: /etc/modprobe.d
           name: modprobe-d
           readOnly: true
@@ -131,7 +130,6 @@ spec:
         name: kindlingcfg
       - hostPath:
           path: /etc/modprobe.d
-          type: ""
         name: modprobe-d
       - hostPath:
           path: /etc/os-release
@@ -142,40 +140,31 @@ spec:
         name: dshm
       - hostPath:
           path: /dev
-          type: ""
         name: dev-vol
       - hostPath:
           path: /proc
-          type: ""
         name: proc-vol
       - hostPath:
           path: /etc
-          type: ""
         name: etc-vol
       - hostPath:
           path: /boot
-          type: ""
         name: boot-vol
       - hostPath:
           path: /lib/modules
-          type: ""
         name: modules-vol
       - hostPath:
           path: /usr
-          type: ""
         name: usr-vol
       - hostPath:
           path: /run
-          type: ""
         name: run-vol
       - hostPath:
           path: /var/run
-          type: ""
         name: varrun-vol
       - hostPath:
-          path: /sys/fs/cgroup
-          type: ""
-        name: cgroup-vol
+          path: /sys
+        name: sys-vol
       - name: shared-volume-kindling
         emptyDir: {}
       - name: shared-volume-subpub
