@@ -48,7 +48,7 @@ void do_inspect(sinsp *inspector, sinsp_evt_formatter *formatter, int pid, int s
         if (ev->get_thread_info()->m_comm == "sshd" || ev->get_type() == PPME_SCHEDSWITCH_6_E || ev->get_type() == PPME_SCHEDSWITCH_6_X) {
             continue;
         }
-        pub->distribute_event(ev, pid, sysdigConverter);
+        pub->consume_sysdig_event(ev, pid, sysdigConverter);
         if (is_syscall_out == 1 && filter_out_pid_event == ev->get_thread_info()->m_pid && formatter->tostring(ev, &line)) {
             cout<< line << endl;
         }

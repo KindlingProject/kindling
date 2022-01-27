@@ -36,8 +36,8 @@ struct grpc_event_t {
 
 class uprobe_converter : public converter {
 public:
-    void convert(kindling::KindlingEvent *kevt, void *evt);
-    uprobe_converter(sinsp *);
+    void convert(void *evt);
+    uprobe_converter();
     ~uprobe_converter();
 
 private:

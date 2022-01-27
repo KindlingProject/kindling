@@ -8,9 +8,10 @@ uprobe_converter::uprobe_converter(sinsp *inspector) : m_inspector(inspector) {}
 
 uprobe_converter::~uprobe_converter() {}
 
-void uprobe_converter::convert(kindling::KindlingEvent *kevt, void *evt) {
+void uprobe_converter::convert(void *evt) {
 //    std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch =
 //            static_cast<std::unique_ptr<px::types::ColumnWrapperRecordBatch>>(evt);
+    auto kevt = get_kindlingEventList()->add_kindling_event_list();
     struct grpc_event_t* gevt = static_cast<struct grpc_event_t*>(evt);
 
     // 先塞外面的内容

@@ -1,7 +1,3 @@
-//
-// Created by 散养鸡 on 2021/12/13.
-//
-
 #include "src/probe/converter/sysdig_converter.h"
 #include <map>
 #include <iostream>
@@ -15,7 +11,8 @@ sysdig_converter::sysdig_converter(sinsp *inspector) : m_inspector(inspector) {
 sysdig_converter::~sysdig_converter() {
 }
 
-void sysdig_converter::convert(kindling::KindlingEvent *kevt, void *evt) {
+void sysdig_converter::convert(void *evt) {
+    auto kevt = get_kindlingEventList()->add_kindling_event_list();
     sinsp_evt *sevt = (sinsp_evt *) evt;
 
     init_kindling_event(kevt, sevt);
