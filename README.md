@@ -2,6 +2,8 @@
 
 # [![](https://img.shields.io/badge/license-Apache2.0-blue.svg)](https://github.com/Kindling-project/kindling/blob/main/LICENSE)[![](https://img.shields.io/badge/docs-latest-green.svg)](http://www.kindling.space:33215/project-1/)
 
+Visit [Kindling website](http://kindling.harmonycloud.cn/) for more information.
+
 ## What is Kindling
 
 Kindling is an eBPF-based cloud-native monitor tool, which aims to help users understand the app behavior from kernel to code stack. Currently, it provides an easy way to get the view of the network flows in the Kubernetes environment, and many built-in network monitor dashboards like retransmit, DNS, throughput, TPS. Not only as a network monitor, but Kindling is also trying to analyze one detail RPC call and get the following information, which can be found in network explore in chrome. And the usage is the same as network explore in chrome, with which user can tell which part to dig into to find the root cause of the problem in the production environment. 
@@ -64,8 +66,6 @@ You can deploy Kindling easily, check out [Installation Guide](Installation/Inst
 ## Documentation
 
 The Kindling documentation is available at [kindling website]( http://www.kindling.space:33215/project-1/)
-
-Our Roadmap
 
 ## Contributing 
 
