@@ -95,6 +95,7 @@ ServiceMonitor is a CustomResources defined by Prometheus Operator.
 
 The headless Service is used for collecting agents' podIp and port.
 The ServiceMonitor is used for add the infomation to Prometheus targets which collected by headless Service.
+
 > $ kubectl create -f kindling-service.yaml
 > $ kubectl create -f kindling-serviceMonitor.yaml
 
