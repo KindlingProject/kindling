@@ -5,7 +5,7 @@
 using namespace std;
 using namespace kindling;
 
-sysdig_converter::sysdig_converter(sinsp *inspector) : m_inspector(inspector) {
+sysdig_converter::sysdig_converter(sinsp *inspector) : converter(100, INT_MAX), m_inspector(inspector) {
 }
 
 sysdig_converter::~sysdig_converter() {

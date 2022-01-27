@@ -38,9 +38,6 @@ public:
     void convert(void *evt);
     uprobe_converter();
     ~uprobe_converter();
-
-private:
-    sinsp *m_inspector;
 };
 
 

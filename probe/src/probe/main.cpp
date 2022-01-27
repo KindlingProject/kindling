@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
 		    std::cout << "***** kernel version is " << kernel_version.version << "." << kernel_version.major_rev << " , do not init stirling ... *****" << std::endl;
 		}
 
-        uprobe_converter* uconv = new uprobe_converter(inspector);
+        uprobe_converter* uconv = new uprobe_converter();
         publisher *pub = new publisher(inspector, uconv);
 
         std::unique_ptr<px::stirling::Stirling> stirling_;

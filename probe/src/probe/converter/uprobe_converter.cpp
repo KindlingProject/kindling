@@ -4,7 +4,7 @@
 
 #include "src/probe/converter/uprobe_converter.h"
 
-uprobe_converter::uprobe_converter(sinsp *inspector) : m_inspector(inspector) {}
+uprobe_converter::uprobe_converter() : converter(100, INT_MAX) {}
 
 uprobe_converter::~uprobe_converter() {}
 
