@@ -1,21 +1,22 @@
-//
-// Created by 散养鸡 on 2021/12/13.
-//
-
-#ifndef HCMINE_CONVERT_H
-#define HCMINE_CONVERT_H
+#ifndef KINDLING_PROBE_CONVERTER_H
+#define KINDLING_PROBE_CONVERTER_H
 #include <string>
-//#include <publisher/publisher.h>
 #include "src/probe/converter/kindling_event.pb.h"
 
 class converter {
 public:
+    converter();
+    converter(uint64_t batch_size, uint64_t max_size);
+    ~converter();
 	// source evt -> kindling evt
-	virtual void convert(kindling::KindlingEvent* kevt, void * evt) = 0;
-    std::string GetName();
+	virtual void convert(void * evt);
+    bool judge_batch_size();
+	bool judge_max_size();
+    kindling::KindlingEventList* swap_list(kindling::KindlingEventList *);
+    kindling::KindlingEventList* get_kindlingEventList();
 private:
-    std::string m_name;
-//    publisher *m_publisher;
+    kindling::KindlingEventList *m_kindlingEventList;
+    uint64_t batch_size;
+    uint64_t max_size;
 };
-
-#endif //HCMINE_CONVERT_H
+#endif //KINDLING_PROBE_CONVERTER_H

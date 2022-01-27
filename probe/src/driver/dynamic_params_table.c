@@ -7,7 +7,7 @@ or GPL2.txt for full copies of the license.
 
 */
 
-#include "src/driver/ppm_events_public.h"
+#include "ppm_events_public.h"
 
 const struct ppm_param_info sockopt_dynamic_param[PPM_SOCKOPT_IDX_MAX] = {
 	[PPM_SOCKOPT_IDX_UNKNOWN] = {{0}, PT_BYTEBUF, PF_HEX},

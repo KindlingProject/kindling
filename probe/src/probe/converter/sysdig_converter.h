@@ -1,9 +1,5 @@
-//
-// Created by 散养鸡 on 2021/12/13.
-//
-
-#ifndef HCMINE_SYSDIG_CONVERTER_H
-#define HCMINE_SYSDIG_CONVERTER_H
+#ifndef KINDLING_PROBE_SYSDIG_CONVERTER_H
+#define KINDLING_PROBE_SYSDIG_CONVERTER_H
 #include "src/userspace/libsinsp/sinsp.h"
 #include "src/probe/converter/converter.h"
 using namespace kindling;
@@ -11,7 +7,7 @@ using namespace kindling;
 class sysdig_converter : public converter
 {
 public:
-    void convert(kindling::KindlingEvent* kevt, void *evt);
+    void convert(void *evt);
     sysdig_converter(sinsp *);
     ~sysdig_converter();
     Category get_kindling_category(sinsp_evt *pEvt);
@@ -34,4 +30,4 @@ private:
     int setTuple(kindling::KindlingEvent* kevt, const sinsp_evt_param *pParam);
 };
 
-#endif //HCMINE_SYSDIG_CONVERTER_H
+#endif //KINDLING_PROBE_SYSDIG_CONVERTER_H

@@ -28,17 +28,17 @@ or GPL2.txt for full copies of the license.
 #include <linux/in.h>
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 20)
 #include <linux/mount.h>
-#include "src/driver/ppm_syscall.h"
+#include "ppm_syscall.h"
 #else
 #include <asm/syscall.h>
 #endif
 
-#include "src/driver/ppm_ringbuffer.h"
-#include "src/driver/ppm_events_public.h"
-#include "src/driver/ppm_events.h"
-#include "src/driver/ppm.h"
-#include "src/driver/ppm_flag_helpers.h"
-#include "src/driver/ppm_version.h"
+#include "ppm_ringbuffer.h"
+#include "ppm_events_public.h"
+#include "ppm_events.h"
+#include "ppm.h"
+#include "ppm_flag_helpers.h"
+#include "ppm_version.h"
 
 /*
  * The kernel patched with grsecurity makes the default access_ok trigger a

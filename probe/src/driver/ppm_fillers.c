@@ -37,7 +37,7 @@ or GPL2.txt for full copies of the license.
 #include <linux/cgroup.h>
 #endif
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 20)
-#include "src/driver/ppm_syscall.h"
+#include "ppm_syscall.h"
 #else
 #include <asm/syscall.h>
 #endif
@@ -46,11 +46,11 @@ or GPL2.txt for full copies of the license.
 #define KERNEL_CONSTRAINT_FOR_TCP_DROP
 #endif
 
-#include "src/driver/ppm_ringbuffer.h"
-#include "src/driver/ppm_events_public.h"
-#include "src/driver/ppm_events.h"
-#include "src/driver/ppm.h"
-#include "src/driver/ppm_flag_helpers.h"
+#include "ppm_ringbuffer.h"
+#include "ppm_events_public.h"
+#include "ppm_events.h"
+#include "ppm.h"
+#include "ppm_flag_helpers.h"
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 #include <linux/bpf.h>
 #endif
