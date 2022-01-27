@@ -14,13 +14,11 @@ void uprobe_converter::convert(void *evt) {
     auto kevt = get_kindlingEventList()->add_kindling_event_list();
     struct grpc_event_t* gevt = static_cast<struct grpc_event_t*>(evt);
 
-    // 先塞外面的内容
     kevt->set_source(UPROBE);
     kevt->set_name("grpc_uprobe");
     kevt->set_category(CAT_NET);
     kevt->set_timestamp(gevt->timestamp);
 
-    // 开始塞 attributes
     // pid
     auto pid_attr = kevt->add_user_attributes();
     pid_attr->set_key("pid");

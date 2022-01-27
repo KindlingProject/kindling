@@ -17,7 +17,6 @@ using namespace kindling;
 struct grpc_event_t {
     int64_t timestamp;
     int32_t pid;
-    // 可以不用
 //    int64_t fd;
     std::string remote_addr;
     int64_t remote_port;
