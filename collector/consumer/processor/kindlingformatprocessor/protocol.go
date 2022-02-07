@@ -56,7 +56,7 @@ func fillCommonProtocolLabels(g *gauges, protocol ProtocolType, isServer bool) {
 		}
 	case grpc:
 		if isServer {
-			fillEntityGRPCProtocolLabel(g)
+			fillEntityHttpProtocolLabel(g)
 		} else {
 			fillTopologyHttpProtocolLabel(g)
 		}
@@ -72,11 +72,6 @@ func fillEntityHttpProtocolLabel(g *gauges) {
 
 func fillTopologyHttpProtocolLabel(g *gauges) {
 	g.targetLabels.AddStringValue(constlabels.StatusCode, strconv.FormatInt(g.Labels.GetIntValue(constlabels.HttpStatusCode), 10))
-}
-
-func fillEntityGRPCProtocolLabel(g *gauges) {
-	g.targetLabels.AddStringValue(constlabels.RequestContent, g.Labels.GetStringValue(constlabels.HttpUrl))
-	g.targetLabels.AddStringValue(constlabels.ResponseContent, strconv.FormatInt(g.Labels.GetIntValue(constlabels.HttpStatusCode), 10))
 }
 
 func fillEntityDnsProtocolLabel(g *gauges) {
