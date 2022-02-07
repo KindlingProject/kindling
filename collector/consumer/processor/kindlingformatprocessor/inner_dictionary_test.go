@@ -107,6 +107,8 @@ func newInnerGauges(isServer bool) *model.GaugeGroup {
 	gaugesGroup.Labels.AddStringValue(constlabels.Pid, "test-Pid")
 	gaugesGroup.Labels.AddStringValue(constlabels.Protocol, http)
 	gaugesGroup.Labels.AddStringValue(constlabels.HttpUrl, "httpUrl")
+	// For now, only http gauges will have the ContentKey label.
+	gaugesGroup.Labels.AddStringValue(constlabels.ContentKey, "httpUrl")
 	gaugesGroup.Labels.AddIntValue(constlabels.HttpStatusCode, 200)
 	gaugesGroup.Labels.AddStringValue(constlabels.IsError, "test-IsError")
 	gaugesGroup.Labels.AddStringValue(constlabels.ErrorType, "test-ErrorType")
