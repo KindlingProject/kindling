@@ -2,6 +2,7 @@ package uprobeanalyzer
 
 import (
 	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/http/tools"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	conntrackerpackge "github.com/Kindling-project/kindling/collector/metadata/conntracker"
@@ -11,7 +12,10 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/hashicorp/go-multierror"
 	"go.uber.org/zap"
+	"strings"
 )
+
+var httpMerger = tools.NewHttpMergeCache()
 
 const (
 	UprobeType analyzer.Type = "uprobeanalyzer"
@@ -91,6 +95,7 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		constlabels.HttpRequestPayload:  model.NewStringValue(string(reqBody)),
 		constlabels.HttpResponsePayload: model.NewStringValue(string(respBody)),
 		constlabels.HttpStatusCode:      model.NewIntValue(int64(statusCode)),
+		constlabels.ContentKey:          model.NewStringValue(getContentKey(reqPath)),
 	})
 
 	if statusCode >= 400 {
@@ -160,4 +165,15 @@ func (a *UprobeAnalyzer) Shutdown() error {
 
 func (a *UprobeAnalyzer) Type() analyzer.Type {
 	return UprobeType
+}
+
+func getContentKey(url string) string {
+	if url == "" {
+		return ""
+	}
+	index := strings.Index(url, "?")
+	if index != -1 {
+		url = url[:index]
+	}
+	return httpMerger.GetContentKey(url)
 }
