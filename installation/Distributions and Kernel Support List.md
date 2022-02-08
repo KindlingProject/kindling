@@ -1,4 +1,4 @@
-Kindling only support eBPF probe with Linux Kernel Version > 4.14 (For CentOS, from 3.10.0-957). We precompile probes for CentOS7 and CentOS8, for Ubuntu and Debian, you should build container image following the steps of [Build Kindling container](./Installation.md#build-kindling-container).
+Kindling only support eBPF probe with Linux Kernel Version > 4.14 (For CentOS, from 3.10.0-957). We precompile probes for CentOS7 and CentOS8. For Ubuntu and Debian, you should build container image following the steps of [Build Kindling container](./Installation.md#build-kindling-container).
 
 - RHEL & CentOS
    - 7.4 (3.10.0-693.el7.x86_64, only kernel module)
