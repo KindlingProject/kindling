@@ -61,7 +61,7 @@ The lightweight version will be open sourced first and the standard version is u
 
 ## Get started
 
-You can deploy Kindling easily, check out [Installation Guide](Installation/Installation.md) for detail.
+You can deploy Kindling easily, check out [Installation Guide](http://www.kindling.space:33215/project-1/doc-3/) for detail.
 
 ## Documentation
 
