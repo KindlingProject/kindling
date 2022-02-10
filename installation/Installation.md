@@ -63,7 +63,7 @@ sudo apt-get -y install linux-headers-$(uname -r)
 sudo yum -y install kernel-devel-$(uname -r)
 
 # build and package eBPF, kernel probes
-docker run -it -v /usr/src:/host/usr/src -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
+docker run -it -v /usr:/host/usr -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
 tar -cvzf kindling-probe.tar.gz kindling-probe/
 # copy and wait for building the image
 cp kindling-probe.tar.gz deploy/
@@ -75,7 +75,7 @@ cp kindling-probe.tar.gz deploy/
 ./scripts/run_docker.sh
 # or start in daemon mode, choose one of them
 ./scripts/run_docker_bpf_daemon.sh
-# compile kindling-probe
+# in container, compile kindling-probe
 bazel build -s --config=clang src/probe:kindling_probe
 
 # build container
@@ -98,7 +98,7 @@ git clone https://github.com/Kindling-project/kindling.git
 
 cd kindling/collector
 docker run -it -v $PWD:/collector kindlingproject/kindling-collector-builder bash
-go build
+go build -o kindling-collector
 # exit from container
 docker build -t kindling-collector -f deploy/Dockerfile .
 # push container image by docker push
