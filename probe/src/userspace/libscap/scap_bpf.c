@@ -1209,95 +1209,6 @@ int32_t scap_bpf_enable_page_faults(scap_t* handle)
 	return SCAP_SUCCESS;
 }
 
-int32_t scap_bpf_set_eventmask(scap_t* handle, uint32_t event_id)
-{
-	struct sysdig_bpf_settings settings;
-	int k = 0;
-
-	if(bpf_map_lookup_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_lookup_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-	settings.events_mask[event_id] = true;
-
-	if(bpf_map_update_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings, BPF_ANY) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_update_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-	return SCAP_SUCCESS;
-}
-
-int32_t scap_bpf_unset_eventmask(scap_t* handle, uint32_t event_id)
-{
-	struct sysdig_bpf_settings settings;
-	int k = 0;
-
-	if(bpf_map_lookup_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_lookup_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-	settings.events_mask[event_id] = false;
-	if(bpf_map_update_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings, BPF_ANY) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_update_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-	return SCAP_SUCCESS;
-}
-
-int32_t scap_bpf_fill_eventmask(scap_t* handle)
-{
-	struct sysdig_bpf_settings settings;
-	int k = 0;
-
-	if(bpf_map_lookup_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_lookup_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-	for (int i = 0; i < PPM_EVENT_MAX; i++) {
-	    settings.events_mask[i] = true;
-	}
-
-	if(bpf_map_update_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings, BPF_ANY) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_update_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-	return SCAP_SUCCESS;
-}
-
-int32_t scap_bpf_clear_eventmask(scap_t* handle)
-{
-	struct sysdig_bpf_settings settings;
-	int k = 0;
-
-	if(bpf_map_lookup_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_lookup_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-    memset(settings.events_mask, 0, sizeof(settings.events_mask));
-
-	if(bpf_map_update_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings, BPF_ANY) != 0)
-	{
-		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_update_elem < 0");
-		return SCAP_FAILURE;
-	}
-
-	return SCAP_SUCCESS;
-}
-
 int32_t scap_bpf_enable_tracers_capture(scap_t* handle)
 {
 	struct sysdig_bpf_settings settings;
@@ -1848,6 +1759,59 @@ int32_t scap_bpf_get_n_tracepoint_hit(scap_t* handle, long* ret)
 		}
 
 		ret[j] = v.n_evts;
+	}
+
+	return SCAP_SUCCESS;
+}
+
+int32_t scap_bpf_handle_eventmask(scap_t* handle, uint32_t op, uint32_t event_id)
+{
+	if (event_id >= PPM_EVENT_MAX || event_id < 0)
+	{
+		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "illegal event type");
+		return SCAP_FAILURE;
+	}
+	struct sysdig_bpf_settings settings;
+	int k = 0;
+
+	if(bpf_map_lookup_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings) != 0)
+	{
+		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_lookup_elem < 0");
+		return SCAP_FAILURE;
+	}
+	switch(op)
+	{
+	case PPM_IOCTL_MASK_ZERO_EVENTS:
+	{
+		for(int j = 0; j < PPM_EVENT_MAX; j++)
+		{
+			const struct ppm_event_info event = g_event_info[j];
+			// event with flag EF_MODIFIES_STATE cannot be dropped, so we preserve.
+			if(event.flags & EF_MODIFIES_STATE)
+			{
+				continue;
+			}
+			settings.events_mask[j] = false;
+		}
+		break;
+	}
+	case PPM_IOCTL_MASK_SET_EVENT:
+		settings.events_mask[event_id] = true;
+		break;
+	case PPM_IOCTL_MASK_UNSET_EVENT:
+	{
+		const struct ppm_event_info event = g_event_info[event_id];
+		if(!(event.flags & EF_MODIFIES_STATE))
+		{
+			settings.events_mask[event_id] = false;
+		}
+		break;
+	}
+	}
+	if(bpf_map_update_elem(handle->m_bpf_map_fds[SYSDIG_SETTINGS_MAP], &k, &settings, BPF_ANY) != 0)
+	{
+		snprintf(handle->m_lasterr, SCAP_LASTERR_SIZE, "SYSDIG_SETTINGS_MAP bpf_map_update_elem < 0");
+		return SCAP_FAILURE;
 	}
 
 	return SCAP_SUCCESS;
