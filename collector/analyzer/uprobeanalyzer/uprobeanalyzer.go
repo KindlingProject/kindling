@@ -2,7 +2,7 @@ package uprobeanalyzer
 
 import (
 	"github.com/Kindling-project/kindling/collector/analyzer"
-	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/http/tools"
+	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	conntrackerpackge "github.com/Kindling-project/kindling/collector/metadata/conntracker"
