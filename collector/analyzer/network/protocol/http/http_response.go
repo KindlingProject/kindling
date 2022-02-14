@@ -1,10 +1,10 @@
 package http
 
 import (
+	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 	"strconv"
 
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
-	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/http/tools"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 )
 

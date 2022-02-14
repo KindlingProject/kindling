@@ -36,6 +36,29 @@ func Test_fillCommonProtocolLabels(t *testing.T) {
 				"response_content": "200",
 			},
 		},
+		{
+			name: "GrpcTopology",
+			args: args{
+				g:        newGauges(newInnerGauges(false)),
+				protocol: grpc,
+				isServer: false,
+			},
+			want: map[string]string{
+				"status_code": "200",
+			},
+		},
+		{
+			name: "GrpcEntity",
+			args: args{
+				g:        newGauges(newInnerGauges(true)),
+				protocol: grpc,
+				isServer: true,
+			},
+			want: map[string]string{
+				"request_content":  "httpUrl",
+				"response_content": "200",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
