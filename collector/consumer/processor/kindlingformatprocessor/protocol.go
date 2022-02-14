@@ -54,6 +54,12 @@ func fillCommonProtocolLabels(g *gauges, protocol ProtocolType, isServer bool) {
 		} else {
 			fillTopologyMysqlProtocolLabel(g)
 		}
+	case grpc:
+		if isServer {
+			fillEntityHttpProtocolLabel(g)
+		} else {
+			fillTopologyHttpProtocolLabel(g)
+		}
 	default:
 		// Do nothing ?
 	}
