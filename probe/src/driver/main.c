@@ -1116,6 +1116,15 @@ cleanup_ioctl_procinfo:
 		/* Used for dropping events so they must stay on */
 		set_bit(PPME_DROP_E, g_events_mask);
 		set_bit(PPME_DROP_X, g_events_mask);
+		int j;
+		/* event with flag EF_MODIFIES_STATE cannot be dropped, so we preserve. */
+		for (j = 0; j < PPM_EVENT_MAX; j++)
+		{
+			if (g_event_info[j].flags & EF_MODIFIES_STATE)
+			{
+				set_bit(j, g_events_mask);
+			}
+		}
 
 		ret = 0;
 		goto cleanup_ioctl;
@@ -1149,8 +1158,14 @@ cleanup_ioctl_procinfo:
 			goto cleanup_ioctl;
 		}
 
-		clear_bit(syscall_to_unset, g_events_mask);
-
+		if (!(g_event_info[syscall_to_unset].flags & EF_MODIFIES_STATE))
+		{
+			clear_bit(syscall_to_unset, g_events_mask);
+		}
+		else
+		{
+			vpr_info("Warning: cannot PPM_IOCTL_MASK_UNSET_EVENT (%u), event (%u) modifies state\n", syscall_to_unset, syscall_to_unset);
+		}
 		ret = 0;
 		goto cleanup_ioctl;
 	}

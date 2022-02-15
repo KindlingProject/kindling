@@ -122,6 +122,7 @@ int main(int argc, char** argv) {
 
         try {
             inspector->open("");
+            inspector->clear_eventmask();
         }
         catch (const sinsp_exception &e) {
             open_success = false;

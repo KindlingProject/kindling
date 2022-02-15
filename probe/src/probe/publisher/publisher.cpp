@@ -16,7 +16,7 @@ using namespace kindling;
 
 publisher::publisher(sinsp *inspector, uprobe_converter* uprobe_converter) {
     m_socket = NULL;
-    m_selector = new selector();
+    m_selector = new selector(inspector);
     m_inspector = inspector;
     m_bind_address = new shared_unordered_map<string, Socket>;
     m_client_event_map = new shared_unordered_map<void *, vector<KindlingEventList *>>;
@@ -261,7 +261,7 @@ px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID
     return px::Status::OK();
 }
 
-selector::selector() {
+selector::selector(sinsp *inspector) {
     m_labels = new map<ppm_event_type, vector<Category>* >;
     for (auto e : kindling_to_sysdig) {
         m_events[e.event_name] = e.event_type;
@@ -269,6 +269,7 @@ selector::selector() {
     for (auto c : category_map) {
         m_categories[c.cateogry_name] = c.category_value;
     }
+    m_inspector = inspector;
 }
 
 bool selector::select(uint16_t type, Category category) {
@@ -318,5 +319,8 @@ void selector::parse(const google::protobuf::RepeatedPtrField<::kindling::Label>
             cout << "Subscribe: Kindling event name err: " << label.name() << endl;
         }
     }
-    // TODO notify kernel, set eventmask
+    // notify kernel, set eventmask
+    for (auto it : *m_labels) {
+        m_inspector->set_eventmask(it.first);
+    }
 }
