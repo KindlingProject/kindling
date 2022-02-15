@@ -1,6 +1,8 @@
 # Kindling
 
-# [![](https://img.shields.io/badge/license-Apache2.0-blue.svg)](https://github.com/Kindling-project/kindling/blob/main/LICENSE)[![](https://img.shields.io/badge/docs-latest-green.svg)](http://www.kindling.space:33215/project-1/)
+[![License](https://img.shields.io/badge/license-Apache2.0-blue.svg)](https://github.com/Kindling-project/kindling/blob/main/LICENSE)
+[![Doc](https://img.shields.io/badge/docs-latest-green.svg)](http://www.kindling.space:33215/project-1/) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/Kindling-project/kindling/collector)](https://goreportcard.com/report/github.com/Kindling-project/kindling/collector)
 
 Visit [Kindling website](http://kindling.harmonycloud.cn/) for more information.
 
