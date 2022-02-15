@@ -115,8 +115,10 @@ func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 
 func (r *UdsReceiver) startZeroMqPull() error {
 	cfg := r.cfg.ZEROMQPULL
+	pullErrorCount := 0
 	r.telemetry.Logger.Info("Starting ZeroMq Pull connect on endpoint", zap.String("endpoint", cfg.Endpoint))
 	pullSocket := r.zmqPullSocket
+	pullSocket.SetRcvtimeo(5 * time.Second)
 	err := pullSocket.connect(cfg.Endpoint)
 	if err != nil {
 		r.telemetry.Logger.Panic("Connecting ZeroMq Pull failed on endpoint", zap.String("endpoint", cfg.Endpoint))
@@ -133,7 +135,16 @@ func (r *UdsReceiver) startZeroMqPull() error {
 				r.shutdwonState = false
 				break
 			}
-			req, _ := pullSocket.RecvMessage(0)
+			req, recvErr := pullSocket.RecvMessage(0)
+			if recvErr != nil {
+				r.telemetry.Logger.Info("zeromq recv event error", zap.Error(recvErr))
+				pullErrorCount++
+				if pullErrorCount > 3 {
+					r.startZeroMqReq()
+					pullErrorCount = 0
+				}
+				continue
+			}
 			if len(req) >= 1 {
 				events := &model.KindlingEventList{}
 				err = proto.Unmarshal([]byte(req[0]), events)
