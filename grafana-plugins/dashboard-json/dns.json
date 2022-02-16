@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 30,
-  "iteration": 1643192366778,
+  "iteration": 1645001293673,
   "links": [],
   "panels": [
     {
@@ -155,13 +155,12 @@
       "interval": "30",
       "legend": {
         "percentage": true,
-        "show": true,
+        "show": false,
         "sideWidth": null,
         "values": true
       },
       "legendType": "Right side",
       "links": [],
-      "maxDataPoints": 1,
       "nullPointMode": "connected",
       "pieType": "pie",
       "pluginVersion": "7.1.1",
@@ -180,7 +179,7 @@
       "timeShift": null,
       "title": "Response Timeout Counts",
       "type": "grafana-piechart-panel",
-      "valueName": "current"
+      "valueName": "avg"
     },
     {
       "aliasColors": {},
@@ -217,7 +216,6 @@
       },
       "legendType": "Right side",
       "links": [],
-      "maxDataPoints": 1,
       "nullPointMode": "connected",
       "pieType": "pie",
       "pluginVersion": "7.1.1",
@@ -236,7 +234,7 @@
       "timeShift": null,
       "title": "All Request Failure",
       "type": "grafana-piechart-panel",
-      "valueName": "current"
+      "valueName": "avg"
     },
     {
       "aliasColors": {},
@@ -757,34 +755,40 @@
               "src_node": true,
               "src_pod": false,
               "src_service": true,
-              "src_workload_kind": true
+              "src_workload_kind": true,
+              "src_workload_name": true
             },
             "indexByName": {
               "Time": 0,
-              "Value": 19,
-              "__name__": 13,
-              "dst_ip": 3,
-              "dst_namespace": 5,
-              "dst_node": 24,
-              "dst_pod": 4,
-              "dst_port": 6,
-              "dst_service": 22,
-              "dst_workload_kind": 23,
-              "dst_workload_name": 2,
-              "instance": 7,
-              "is_server": 14,
-              "job": 8,
-              "protocol": 9,
-              "request_content": 15,
-              "request_duration_status": 16,
-              "request_processing_status": 17,
-              "request_reqxfer_status": 18,
-              "response_content": 20,
-              "response_rspxfer_status": 21,
-              "service_instance_id": 10,
-              "service_name": 11,
-              "src_ip": 1,
-              "src_namespace": 12
+              "Value": 21,
+              "__name__": 15,
+              "dst_ip": 5,
+              "dst_namespace": 7,
+              "dst_node": 26,
+              "dst_pod": 6,
+              "dst_port": 8,
+              "dst_service": 24,
+              "dst_workload_kind": 25,
+              "dst_workload_name": 4,
+              "instance": 9,
+              "is_server": 16,
+              "job": 10,
+              "protocol": 11,
+              "request_content": 17,
+              "request_duration_status": 18,
+              "request_processing_status": 19,
+              "request_reqxfer_status": 20,
+              "response_content": 22,
+              "response_rspxfer_status": 23,
+              "service_instance_id": 12,
+              "service_name": 13,
+              "src_ip": 2,
+              "src_namespace": 14,
+              "src_node": 27,
+              "src_pod": 3,
+              "src_service": 28,
+              "src_workload_kind": 29,
+              "src_workload_name": 1
             },
             "renameByName": {
               "Value": "Response Time",
@@ -884,5 +888,5 @@
   "timezone": "",
   "title": "DNS Request Details",
   "uid": "UFwanjpnk",
-  "version": 5
+  "version": 6
 }

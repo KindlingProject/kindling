@@ -9,8 +9,7 @@ import { NodeDataProps, EdgeDataProps, nsRelationHandle, detailRelationHandle, d
 import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
-import { stylesFactory, Select, Checkbox, RadioButtonGroup } from '@grafana/ui';
-// ErrorBoundary, Alert, 
+import { stylesFactory, Select, RadioButtonGroup } from '@grafana/ui';
 
 interface VolumeProps {
   maxSentVolume: number; 
@@ -31,6 +30,10 @@ const viewRadioOptions = [
   { label: 'Workload', value: 'workload_view' },
   { label: 'Pod', value: 'pod_view' }
 ];
+const showServiceOptions = [
+  { label: 'ON', value: true },
+  { label: 'OFF', value: false }
+];
 
 let SGraph: any;
 let topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps;
@@ -43,13 +46,13 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const styles = getStyles();
   const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace.split(',').length === 1);
   const [showService, setShowService] = useState<boolean>(false);
-  const [showView, setShowView] = useState<boolean>(workload.split(',').length === 1);
+  const [showView, setShowView] = useState<boolean>(false);
   const [view, setView] = useState<string>('workload_view');
   const [lineMetric, setLineMetric] = useState<any>('latency');
   const [volumes, setVolumes] = useState<VolumeProps>({maxSentVolume: 0, maxReceiveVolume: 0, minSentVolume: 0, minReceiveVolume: 0});
   const [nodeTypesList, setNodeTypesList] = useState<any[]>([]);
 
-  // console.log(namespace, workload);
+  // console.log(namespace, workload, width, height);
   // console.log(data);
 
   // 当勾选View Service Call时，显示service的调用边，两个节点之间存在多条调用关系，使用弧线绘制对应的调用关系
@@ -197,7 +200,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     const graph = new G6.Graph({
       // renderer: 'svg',
       container: 'kindling_topo',
-      width: width,
+      width: width - 240,
       height: height,
       fitCenter: true,
       autoPaint: false,
@@ -257,8 +260,8 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const workloadRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps, showPod: boolean, serviceLine = showService) => {
     let nodes: any[] = [], edges: any[] = [];
     let result: any[] = [];
-    // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
-    if (workload.indexOf(',') > -1) {
+    if (workload.split(',').length > 1) {
+      // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
       result = _.filter(topoData, (item: any) => item.fields[1].labels.dst_namespace === namespace || item.fields[1].labels.src_namespace === namespace);
       // console.log('workload Topology', result);
     } else {
@@ -286,7 +289,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     });
     nodes = detailNodesHandle(nodes, nodeData);
     edges = detailEdgesHandle(nodes, edges, edgeData, serviceLine);
-    
+    console.log(nodes, edges);
     return { nodes, edges };
   }
   // 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
@@ -346,7 +349,9 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     } else {
-      let result: any = workloadRelationHandle(topoData, nodeData, edgeData, false);
+      let showPod = workload.split(',').length === 1;
+      setView(showPod ? 'pod_view' : 'workload_view');
+      let result: any = workloadRelationHandle(topoData, nodeData, edgeData, showPod);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     }
@@ -364,22 +369,22 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     if (SGraph) {
       updateLinesAndNodes();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [volumes]);
+
   useEffect(() => {
     if (namespace.split(',').length === 1) {
       setShowCheckbox(true);
+      if (workload.split(',').length === 1) {
+        setShowView(true);
+      } else {
+        setShowView(false);
+      }
     } else {
       setShowCheckbox(false);
-    }
-  }, [namespace]);
-  useEffect(() => {
-    if (workload.split(',').length === 1) {
-      setShowView(true);
-    } else {
       setShowView(false);
     }
-  }, [workload]);
+  }, [namespace, workload]);
   useEffect(() => {
     if (data.state === 'Done') {
       initData();
@@ -392,6 +397,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     setLineMetric(opt.value);
     updateLinesAndNodes(opt.value);
   }
+  // 是否显示调用关系上的service调用
   const changeShowService = () => {
     let show = !showService ? true : false;
     setShowService(show);
@@ -403,7 +409,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     draw(gdata, show);
     handleResult(gdata);
   }
-
+  // 切换View Mode。workload视图下切换workload跟pod视图
   const changeView = (value: any) => {
     setView(value);
     let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, value === 'pod_view', showService);
@@ -430,9 +436,6 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           <span style={{ width: '180px' }}>Call Line Metric</span>
           <Select value={lineMetric} options={meetricList} onChange={lineMetricChange}/>
         </div>
-        {
-          showCheckbox ? <Checkbox css="" value={showService} onChange={changeShowService} label='View Service Call'/> : null
-        }
       </div>
       <div className={styles.topRightWarp}>
         {
@@ -441,8 +444,17 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
             <RadioButtonGroup options={viewRadioOptions} value={view} onChange={changeView}/>
           </div> : null
         }
+        {/* {
+          showCheckbox ? <Checkbox css="" value={showService} onChange={changeShowService} label='View Service Call'/> : null
+        } */}
+        {
+          showCheckbox ? <div className={styles.viewRadioMode}>
+            <span>Service Dependency</span>
+            <RadioButtonGroup options={showServiceOptions} value={showService} onChange={changeShowService}/>
+          </div> : null
+        }
+        <TopoLegend typeList={nodeTypesList} metric={lineMetric} volumes={volumes}/>
       </div>
-      <TopoLegend typeList={nodeTypesList} metric={lineMetric} volumes={volumes}/>
       <div id="kindling_topo" style={{ height: '100%' }} ref={graphRef}></div>
     </div>
   );
@@ -473,12 +485,13 @@ const getStyles = stylesFactory(() => {
       z-index: 10;
       display: flex;
       flex-direction: column;
-      width: 230px;
+      width: 245px;
     `,
     viewRadioMode: css`
       display: flex;
       align-items: center;
       justify-content: space-between;
+      margin-bottom: 10px;
     `,
     svg: css`
       position: absolute;

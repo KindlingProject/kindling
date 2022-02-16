@@ -101,9 +101,11 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
             });
         }
         if (_.findIndex(edges, {source: tdata.src_namespace, target: target}) === -1) {
+            let opposite: boolean = _.findIndex(edges, {source: target, target: tdata.src_namespace}) > -1 ? true : false;
             edges.push({
                 source: tdata.src_namespace,
                 target: target,
+                opposite,
                 dnsEdge: tdata.protocol === 'dns'
             });
         }

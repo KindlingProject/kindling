@@ -86,7 +86,7 @@ function TopoLegend(props: LProps) {
                     <span>{type}</span>
                 </div>)
             }
-            <span>node ans call line status</span>
+            <span className={styles.status_label}>node ans call line status</span>
             {
                 metricRender()
             }
@@ -97,23 +97,25 @@ function TopoLegend(props: LProps) {
 const getStyles = stylesFactory(() => {
     return {
         legend_warp: css`
-            position: absolute;
-            top: 40px;
-            right: 0;
             z-index: 10;
             display: flex;
             flex-direction: column;
-            width: 230px;
+            width: 245px;
         `,
         legend_item: css`
-            height: 24px;
+            height: 28px;
+            line-height: 28px;
         `,
         legend_icon: css`
             width: 18px;
             margin-right: 10px;
         `,
+        status_label: css`
+            margin: 8px 0;
+        `,
         color_item: css`
-            height: 24px;
+            height: 28px;
+            line-height: 28px;
         `,
         color_pointer: css`
             border-radius: 6px;
