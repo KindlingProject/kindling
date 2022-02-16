@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 40,
-  "iteration": 1643265095708,
+  "iteration": 1645002139173,
   "links": [],
   "panels": [
     {
@@ -30,7 +30,7 @@
       },
       "id": 6,
       "panels": [],
-      "title": "Receive Request Details",
+      "title": "Request Details",
       "type": "row"
     },
     {
@@ -300,7 +300,7 @@
           "format": "percent",
           "label": null,
           "logBase": 1,
-          "max": null,
+          "max": "100",
           "min": null,
           "show": true
         },
@@ -592,8 +592,8 @@
           "format": "percent",
           "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
+          "max": "100",
+          "min": "0",
           "show": true
         },
         {
@@ -903,7 +903,7 @@
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (src_ip, src_pod, dst_ip, dst_pod)  kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -958,25 +958,17 @@
             },
             "indexByName": {
               "Time": 1,
-              "Value #A": 8,
-              "Value #B": 9,
-              "dst_ip": 6,
-              "dst_pod": 7,
-              "dst_workload_name": 5,
-              "request_content": 13,
-              "request_processing_status": 11,
-              "request_reqxfer_status": 10,
+              "Value #A": 2,
+              "dst_ip": 9,
+              "dst_pod": 10,
+              "dst_workload_name": 8,
+              "request_content": 6,
+              "request_processing_status": 4,
+              "request_reqxfer_status": 3,
               "response_content": 0,
-              "response_rspxfer_status": 12,
-              "src_container": 14,
-              "src_container_id": 15,
-              "src_ip": 3,
-              "src_node": 16,
-              "src_pod": 4,
-              "src_service": 17,
-              "src_workload_kind": 18,
-              "src_workload_name": 2,
-              "status_code": 19
+              "response_rspxfer_status": 5,
+              "src_ip": 7,
+              "src_node": 11
             },
             "renameByName": {
               "Value #A": "Latency",
@@ -1010,7 +1002,7 @@
       },
       "id": 10,
       "panels": [],
-      "title": "Send Request Details",
+      "title": "Upstream Performance ",
       "type": "row"
     },
     {
@@ -1277,10 +1269,11 @@
       },
       "yaxes": [
         {
+          "decimals": null,
           "format": "percent",
           "label": null,
           "logBase": 1,
-          "max": null,
+          "max": "100",
           "min": null,
           "show": true
         },
@@ -1581,7 +1574,7 @@
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (src_ip, src_pod, dst_ip, dst_pod)  kindling_trace_request_duration_nanoseconds{is_server=\"true\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"http\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1635,20 +1628,15 @@
             },
             "indexByName": {
               "Time": 1,
-              "Value #A": 7,
-              "dst_ip": 5,
-              "dst_node": 12,
-              "dst_pod": 6,
-              "dst_service": 13,
-              "dst_workload_kind": 14,
-              "dst_workload_name": 4,
-              "request_content": 11,
-              "request_processing_status": 9,
-              "request_reqxfer_status": 8,
+              "Value #A": 2,
+              "dst_ip": 9,
+              "request_content": 6,
+              "request_processing_status": 4,
+              "request_reqxfer_status": 3,
               "response_content": 0,
-              "response_rspxfer_status": 10,
-              "src_ip": 2,
-              "src_pod": 3
+              "response_rspxfer_status": 5,
+              "src_ip": 7,
+              "src_pod": 8
             },
             "renameByName": {
               "Value #A": "Latency",
@@ -1680,8 +1668,8 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "test-ns",
-          "value": "test-ns"
+          "text": "kube-system",
+          "value": "kube-system"
         },
         "datasource": "Prometheus",
         "definition": "kindling_entity_request_duration_nanoseconds_count",
@@ -1706,8 +1694,8 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "testdemo2",
-          "value": "testdemo2"
+          "text": "coredns",
+          "value": "coredns"
         },
         "datasource": "Prometheus",
         "definition": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
@@ -1731,7 +1719,7 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {
@@ -1750,5 +1738,5 @@
   "timezone": "",
   "title": "WorkLoad Details",
   "uid": "kR25k8pnz",
-  "version": 10
+  "version": 16
 }

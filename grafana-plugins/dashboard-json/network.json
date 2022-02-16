@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 41,
-  "iteration": 1643192459301,
+  "iteration": 1645002016169,
   "links": [],
   "panels": [
     {
@@ -584,7 +584,9 @@
               "Value #B": "Retransmit",
               "Value #D": "Sent Volume",
               "Value #E": "Receive Volume",
-              "Value #F": "RTT"
+              "Value #F": "RTT",
+              "dst_workload_name": "Destination",
+              "src_workload_name": "Source"
             }
           }
         }
@@ -829,5 +831,5 @@
   "timezone": "",
   "title": "Network Details",
   "uid": "4Jq_VCtnz",
-  "version": 3
+  "version": 4
 }
