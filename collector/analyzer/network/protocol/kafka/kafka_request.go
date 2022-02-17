@@ -33,7 +33,7 @@ func parseRequest() protocol.ParsePkgFn {
 
 		message.ReadInt32(8, &correlationId)
 		message.ReadInt16(12, &clientIdLength)
-		if correlationId < 0 {
+		if correlationId < 0 || clientIdLength < 0 {
 			return false, true
 		}
 		var offset = int(clientIdLength) + 14
