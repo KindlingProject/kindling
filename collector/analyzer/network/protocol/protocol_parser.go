@@ -97,23 +97,6 @@ func (message PayloadMessage) HasAttribute(key string) bool {
 }
 
 // =============== PayLoad ===============
-func (message *PayloadMessage) ReadLittleEndianInt(offset int, size int) int32 {
-	if size == 1 {
-		return int32(message.Data[offset])
-	}
-	if size == 2 {
-		return int32(message.Data[offset]) | int32(message.Data[offset+1])<<8
-	}
-	if size == 3 {
-		return int32(message.Data[offset]) | int32(message.Data[offset+1])<<8 | int32(message.Data[offset+2])<<16
-	}
-	return int32(message.Data[offset]) | int32(message.Data[offset+1])<<8 | int32(message.Data[offset+2])<<16 | int32(message.Data[offset+2])<<24
-}
-
-func (message *PayloadMessage) ReadUnsignedIntByThreeBytes(offset int) uint32 {
-	return (uint32(message.Data[offset])<<16 | uint32(message.Data[offset+1])<<8 | uint32(message.Data[offset+2]))
-}
-
 func (message *PayloadMessage) ReadUInt16(offset int) (complete bool, value uint16) {
 	if offset+2 >= len(message.Data) {
 		return true, 0
@@ -141,57 +124,6 @@ func (message *PayloadMessage) ReadInt32(offset int, v *int32) (toOffset int, er
 	}
 	*v = int32(message.Data[offset])<<24 | int32(message.Data[offset+1])<<16 | int32(message.Data[offset+2])<<8 | int32(message.Data[offset+3])
 	return offset + 4, nil
-}
-
-func (message *PayloadMessage) ReadThreeBytes(offset int) int32 {
-	return int32(message.Data[offset+2])<<16 |
-		int32(message.Data[offset+1])<<8 | int32(message.Data[offset])
-}
-
-func (message *PayloadMessage) ReadInt64(offset int) int64 {
-	return int64(message.Data[offset])<<56 |
-		int64(message.Data[offset+1])<<48 |
-		int64(message.Data[offset+2])<<40 |
-		int64(message.Data[offset+3])<<32 |
-		int64(message.Data[offset+4])<<24 |
-		int64(message.Data[offset+5])<<16 |
-		int64(message.Data[offset+6])<<8 |
-		int64(message.Data[offset+7])
-}
-
-func (message *PayloadMessage) ReadByte() (byte, error) {
-	if message.Offset >= len(message.Data) {
-		return 0, ErrMessageComplete
-	}
-	message.Offset += 1
-	return message.Data[message.Offset-1], nil
-}
-
-func (message *PayloadMessage) ReadFull(buf []byte) (n int, err error) {
-	var min = len(buf)
-	if len(message.Data)-message.Offset < min {
-		return 0, ErrMessageShort
-	}
-	for n < min && err == nil {
-		var nn int
-		nn, err = message.Read(buf[n:])
-		n += nn
-	}
-	if n >= min {
-		err = nil
-	} else if n > 0 && err == ErrEof {
-		err = ErrUnexpectedEOF
-	}
-	return
-}
-
-func (message *PayloadMessage) Read(b []byte) (n int, err error) {
-	if message.Offset >= len(message.Data) {
-		return 0, ErrEof
-	}
-	n = copy(b, message.Data[message.Offset:])
-	message.Offset = message.Offset + n
-	return
 }
 
 func (message *PayloadMessage) ReadBytes(offset int, length int) (toOffset int, value []byte) {
