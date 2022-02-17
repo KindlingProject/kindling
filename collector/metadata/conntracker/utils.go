@@ -17,7 +17,7 @@ func IPToUInt32(ip net.IP) uint32 {
 
 func StringToUint32(ip string) uint32 {
 	bytes := strings.Split(ip, ".")
-	if len(bytes) <= 4 {
+	if len(bytes) < 4 {
 		return 0
 	}
 	b0, _ := strconv.Atoi(bytes[0])
