@@ -122,6 +122,9 @@ func (message *PayloadMessage) ReadUInt16(offset int) (complete bool, value uint
 }
 
 func (message *PayloadMessage) ReadInt16(offset int, v *int16) (toOffset int, err error) {
+	if offset < -1 {
+		return -1, ErrMessageInvalid
+	}
 	if offset+2 >= len(message.Data) {
 		return -1, ErrMessageShort
 	}
