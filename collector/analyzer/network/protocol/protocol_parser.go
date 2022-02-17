@@ -122,7 +122,7 @@ func (message *PayloadMessage) ReadUInt16(offset int) (complete bool, value uint
 }
 
 func (message *PayloadMessage) ReadInt16(offset int, v *int16) (toOffset int, err error) {
-	if offset < -1 {
+	if offset < 0 {
 		return -1, ErrMessageInvalid
 	}
 	if offset+2 >= len(message.Data) {
@@ -133,7 +133,7 @@ func (message *PayloadMessage) ReadInt16(offset int, v *int16) (toOffset int, er
 }
 
 func (message *PayloadMessage) ReadInt32(offset int, v *int32) (toOffset int, err error) {
-	if offset < -1 {
+	if offset < 0 {
 		return -1, ErrMessageInvalid
 	}
 	if offset+4 >= len(message.Data) {
@@ -203,6 +203,9 @@ func (message *PayloadMessage) ReadBytes(offset int, length int) (toOffset int, 
 }
 
 func (message *PayloadMessage) readUnsignedVarIntCore(offset int, times int, f func(uint64)) (toOffset int, err error) {
+	if offset < 0 {
+		return -1, ErrMessageInvalid
+	}
 	var b byte
 	x := uint64(0)
 	s := uint(0)
