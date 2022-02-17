@@ -322,5 +322,8 @@ void selector::parse(const google::protobuf::RepeatedPtrField<::kindling::Label>
     // notify kernel, set eventmask
     for (auto it : *m_labels) {
         m_inspector->set_eventmask(it.first);
+        if (!PPME_IS_ENTER(it.first)) {
+            m_inspector->set_eventmask(it.first - 1);
+        }
     }
 }
