@@ -28,11 +28,12 @@ pl_cc_library(
             "**/*_benchmark.cc",
         ],
     ),
-    copts = ["-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-sign-compare","-Wno-unused-private-field","-Wno-mismatched-tags"],
+    copts = ["-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libscap", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp/third-party/jsoncpp", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp", "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-sign-compare","-Wno-unused-private-field","-Wno-mismatched-tags"],
     hdrs = glob(["*.h"]),
     deps = [
         ":kindling_event_pl_cc_proto",
-        "//src/userspace/libsinsp:cc_library",
+        "//src/probe/container:cc_library",
+        "//third_party:agent-libs_build",
         "@px//:px_headers",
     ],
 )

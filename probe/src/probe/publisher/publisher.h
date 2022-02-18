@@ -5,7 +5,7 @@
 #include "src/probe/publisher/subscribe.pb.h"
 #include "src/probe/converter/converter.h"
 #include "src/probe/utils/shared_unordered_map.h"
-#include "src/userspace/libsinsp/sinsp.h"
+#include "sinsp.h"
 #include "src/probe/converter/uprobe_converter.h"
 
 #include <src/common/base/base.h>
