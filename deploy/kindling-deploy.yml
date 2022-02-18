@@ -44,7 +44,7 @@ spec:
           value: /host/proc
         - name: PL_HOST_PATH
           value: /host
-        - name: HCMINE_HOST_ROOT
+        - name: SYSDIG_HOST_ROOT
           value: /host
         securityContext:
           privileged: true
