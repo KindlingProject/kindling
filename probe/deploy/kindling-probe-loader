@@ -98,11 +98,11 @@ ARCH=$(uname -m)
 KERNEL_RELEASE=$(uname -r)
 APPROXIMATE_KERNEL_VERSION=$(echo "$KERNEL_RELEASE" | awk -F. '{print $1"."$2"."$3"."$(NF-1)"."$NF}')
 SCRIPT_NAME=$(basename "${0}")
-PROBE_NAME="hcmine-probe"
+PROBE_NAME="kindling-falcolib-probe"
 MAX_RMMOD_WAIT=60
 
-tar -zxvf /pl/kindling-probes.tar.gz -C /opt
-mv /opt/kindling-probe /opt/.kindling
+tar -zxvf /pl/kindling-falcolib-probe.tar.gz -C /opt
+mv /opt/kindling-falcolib-probe /opt/.kindling
 
 if [ "$(id -u)" != 0 ]; then
 	echo "Installer must be run as root (or with sudo)."

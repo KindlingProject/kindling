@@ -56,6 +56,11 @@ cd kindling/probe
 Following steps are used to compile local kernel modules and eBPF modules, which you can skip if using precompiled modules by Kindling.
 
 ```bash
+git clone https://github.com/Kindling-project/agent-libs/commits/kindling-dev
+cd agent-libs
+```
+
+```bash
 # Kernel headers are used to compile kernel modules and eBPF modules. The version of kernel headers must match the runtime. Warning: The command might not work with some kernel, or install kernel headers in another way. http://rpm.pbone.net is a choice to find RPMs for RHEL-like distributions.
 # Debian-like distributions
 sudo apt-get -y install linux-headers-$(uname -r)
@@ -64,9 +69,9 @@ sudo yum -y install kernel-devel-$(uname -r)
 
 # build and package eBPF, kernel probes
 docker run -it -v /usr:/host/usr -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
-tar -cvzf kindling-probe.tar.gz kindling-probe/
+tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/
 # copy and wait for building the image
-cp kindling-probe.tar.gz deploy/
+cp kindling-falcolib-probe.tar.gz kindling/probe/deploy/
 ```
 
 

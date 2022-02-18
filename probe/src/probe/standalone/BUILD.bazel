@@ -27,7 +27,7 @@ container_image(
     base = "@px//:pl_cc_bpf_image",
     directory = "/pl",
     files = [
-	"@kindling_probes_tar_gz//file:file",
+	"@kindling_falcolib_probe_tar_gz//file:file",
 	"//deploy:scripts",
 	":qianlu",
     ],

@@ -15,10 +15,10 @@ pl_cc_library(
         ],
     ),
     hdrs = ["shared_unordered_map.h"],
-    copts = ["-Wno-mismatched-tags"],
+    copts = ["-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libscap", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp/third-party/jsoncpp", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp", "-Wno-mismatched-tags"],
     deps = [
         "@px//src/common/signal:cc_library",
         "@px//:px_headers",
-        "//src/userspace/libsinsp:cc_library",
+        "//third_party:agent-libs_build",
     ],
 )
