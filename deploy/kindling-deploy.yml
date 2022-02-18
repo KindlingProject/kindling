@@ -19,6 +19,12 @@ spec:
       - name: kindling-probe
         image: kindlingproject/kindling-probe:latest
         imagePullPolicy: Always
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - sh
+                - /pl/post_start.sh
         args:
         - --v=1
         - --minloglevel=0

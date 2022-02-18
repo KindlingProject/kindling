@@ -1,6 +1,6 @@
 filegroup(
     name = "scripts",
-    srcs = ["docker-entrypoint.sh","kindling-probe-loader","gdb_print.sh"],
+    srcs = ["docker-entrypoint.sh","kindling-probe-loader","gdb_print.sh","post_start.sh"],
     visibility = ["//visibility:public"],
 )
 
