@@ -52,7 +52,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		if r.cfg.StoreExternalSrcIP {
 			srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
 			if srcNamespace == constlabels.ExternalClusterNamespace {
-				// Use data from server-side to generate a topology metric.
+				// Use data from server-side to generate a topology metric only when the namespace is EXTERNAL.
 				externalGaugeGroup := newGauges(gaugeGroup)
 				// Here we have to modify the field "IsServer" to generate the metric.
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, false)
