@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 41,
-  "iteration": 1645002016169,
+  "iteration": 1645175061554,
   "links": [],
   "panels": [
     {
@@ -54,7 +54,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -243,7 +243,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -338,7 +338,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -831,5 +831,5 @@
   "timezone": "",
   "title": "Network Details",
   "uid": "4Jq_VCtnz",
-  "version": 4
+  "version": 5
 }
