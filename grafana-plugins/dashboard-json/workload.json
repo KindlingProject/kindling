@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 40,
-  "iteration": 1645002139173,
+  "iteration": 1645429949888,
   "links": [],
   "panels": [
     {
@@ -68,7 +68,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -80,7 +80,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\"}[$__interval])) by(namespace, workload_name)",
+          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\", protocol=\"$protocol\"}[$__interval])) by(namespace, workload_name)",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "count",
@@ -163,7 +163,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -175,7 +175,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\"}[$__interval])) / sum by(namespace, workload_name) \n (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\"}[$__interval]))",
+          "expr": "sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__interval])) / sum by(namespace, workload_name) \n (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__interval]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "value",
@@ -258,7 +258,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -270,7 +270,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\",response_content=~\"4..|5..\"}[$__interval])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\"}[$__interval])) * 100",
+          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\",response_content=~\"4..|5..|1|2|3\"}[$__interval])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) * 100",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "Err rate",
@@ -365,7 +365,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\"}[$__interval])) by(request_content))",
+          "expr": "topk(10, sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) by(request_content))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -466,7 +466,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"http\"}[$__interval])) / sum by(request_content)  (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"http\"}[$__interval]))) ",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) / sum by(request_content)  (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval]))) ",
           "format": "time_series",
           "interval": "",
           "legendFormat": "{{request_content}}",
@@ -561,7 +561,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\", response_content=~\"4..|5..\"}[$__interval])) / sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"http\"}[$__interval])) * 100)",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\", response_content=~\"4..|5..|1|2|3\"}[$__interval])) / sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) * 100)",
           "interval": "",
           "legendFormat": "{{ request_content }}",
           "refId": "A"
@@ -893,7 +893,7 @@
       "pluginVersion": "7.1.1",
       "targets": [
         {
-          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -903,7 +903,7 @@
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1040,7 +1040,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -1052,7 +1052,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\"}[$__interval]))",
+          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "count",
@@ -1135,7 +1135,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -1147,7 +1147,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(src_namespace, src_workload_name) (increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\"}[$__interval])) / sum by(src_namespace, src_workload_name) \n (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\"}[$__interval]))",
+          "expr": "sum by(src_namespace, src_workload_name) (increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) / sum by(src_namespace, src_workload_name) \n (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "latency",
@@ -1230,7 +1230,7 @@
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
       "percentage": false,
       "pluginVersion": "7.1.1",
       "pointradius": 2,
@@ -1242,7 +1242,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",status_code=~\"400|404|500\"}[$__interval])) / sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\"}[$__interval])) * 100",
+          "expr": "sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\",status_code=~\"4..|5..|1|2|3\"}[$__interval])) / sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) * 100",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
@@ -1566,7 +1566,7 @@
       "pluginVersion": "7.1.1",
       "targets": [
         {
-          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"false\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"false\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1574,7 +1574,7 @@
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"http\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"http\"}",
+          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1715,11 +1715,40 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": "http",
+          "value": "http"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Protocol",
+        "multi": false,
+        "name": "protocol",
+        "options": [
+          {
+            "selected": true,
+            "text": "http",
+            "value": "http"
+          },
+          {
+            "selected": false,
+            "text": "dns",
+            "value": "dns"
+          }
+        ],
+        "query": "http,dns",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {
@@ -1738,5 +1767,5 @@
   "timezone": "",
   "title": "WorkLoad Details",
   "uid": "kR25k8pnz",
-  "version": 16
+  "version": 18
 }
