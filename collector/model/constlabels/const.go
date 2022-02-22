@@ -62,9 +62,14 @@ const (
 	RequestProcessingStatus = "request_processing_status"
 	ResponseRspxferStatus   = "response_rspxfer_status"
 
-	ExternalClusterNamespace = "EXTERNAL"
+	ExternalClusterNamespace = "NOT_FOUND_EXTERNAL"
+	InternalClusterNamespace = "NOT_FOUND_INTERNAL"
 )
 
 const (
 	STR_EMPTY = ""
 )
+
+func IsNamespaceNotFound(namespace string) bool {
+	return namespace == ExternalClusterNamespace || namespace == InternalClusterNamespace
+}

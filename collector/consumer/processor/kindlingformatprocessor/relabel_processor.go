@@ -48,7 +48,20 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		//protocol := newGauges(gaugeGroup)
 		//protocolErr := r.nextConsumer.Consume(protocol.Process(r.cfg, ProtocolDetailMetricName, ServiceInstanceInfo, ServiceK8sInfo, ProtocolDetailInfo))
 		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo))
-		return multierr.Combine(traceErr, metricErr)
+		var metricErr2 error
+		if r.cfg.StoreExternalSrcIP {
+			srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
+			if srcNamespace == constlabels.ExternalClusterNamespace {
+				// Use data from server-side to generate a topology metric only when the namespace is EXTERNAL.
+				externalGaugeGroup := newGauges(gaugeGroup)
+				// Here we have to modify the field "IsServer" to generate the metric.
+				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, false)
+				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo, TopologyProtocolInfo))
+				// In case of using the original data later, we reset the field "IsServer".
+				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, true)
+			}
+		}
+		return multierr.Combine(traceErr, metricErr, metricErr2)
 	} else {
 		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo, SrcDockerInfo, TopologyProtocolInfo))
 		return multierr.Combine(traceErr, metricErr)
