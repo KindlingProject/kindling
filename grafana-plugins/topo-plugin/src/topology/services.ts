@@ -1,7 +1,30 @@
 import _ from 'lodash';
 
+export const metricList: Array<{label: string; value: any; description?: string}> = [
+    { label: 'Latency', value: 'latency' },
+    { label: 'Calls', value: 'calls' },
+    { label: 'Error Rate', value: 'errorRate' },
+    { label: 'Sent Volume', value: 'sentVolume' },
+    { label: 'Receive Volume', value: 'receiveVolume' },
+    { label: 'RTT', value: 'rtt' },
+    { label: 'Retransmit', value: 'retransmit' }
+];
+export const directionOptions = [
+    { label: 'TB', value: 'TB' },
+    { label: 'LR', value: 'LR' }
+];
+export const viewRadioOptions = [
+    { label: 'Workload', value: 'workload_view' },
+    { label: 'Pod', value: 'pod_view' }
+];
+export const showServiceOptions = [
+    { label: 'ON', value: true },
+    { label: 'OFF', value: false }
+];
+
+
 // externalTypes 当前外部调用的namespace枚举值
-const externalTypes: string[] = ['EXTERNAL', 'external', 'default'];
+const externalTypes: string[] = ['NOT_FOUND_EXTERNAL', 'NOT_FOUND_INTERNAL', 'EXTERNAL', 'external', 'default'];
 const workloadTypes: string[] = ['workload', 'deployment', 'daemonset', 'statefulset', 'node'];
 export interface TopologyProps {
     nodes: NodeProps[];
@@ -87,7 +110,7 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
                 nodes.push({
                     id: tdata.dst_namespace,
                     name: tdata.dst_namespace,
-                    nodeType: tdata.dst_namespace === 'EXTERNAL' ? 'external' : 'namespace',
+                    nodeType: externalTypes.indexOf(tdata.dst_namespace) > -1 ? 'external' : 'namespace',
                     showNamespace: false
                 });
             }
@@ -96,7 +119,7 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
             nodes.push({
                 id: tdata.src_namespace,
                 name: tdata.src_namespace,
-                nodeType: tdata.src_namespace === 'EXTERNAL' ? 'external' : 'namespace',
+                nodeType: externalTypes.indexOf(tdata.src_namespace) > -1 ? 'external' : 'namespace',
                 showNamespace: false
             });
         }
