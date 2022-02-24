@@ -6,7 +6,7 @@
 #define KINDLING_PROBE_UPROBE_CONVERTER_H
 
 #include "src/probe/converter/converter.h"
-#include "src/userspace/libsinsp/sinsp.h"
+#include "userspace/libsinsp/sinsp.h"
 
 #include <iostream>
 #include <vector>

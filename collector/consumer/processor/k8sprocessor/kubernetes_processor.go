@@ -95,7 +95,7 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 	} else {
 		labelMap.AddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
 		labelMap.AddStringValue(constlabels.SrcNode, p.localNodeName)
-		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
 	}
 	// add metadata for dst
 	dstIp := labelMap.GetStringValue(constlabels.DstIp)
@@ -133,8 +133,10 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 		if nodeName, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
 			labelMap.AddStringValue(constlabels.DstNodeIp, dstIp)
 			labelMap.AddStringValue(constlabels.DstNode, nodeName)
+			labelMap.AddStringValue(constlabels.DstNamespace, constlabels.InternalClusterNamespace)
+		} else {
+			labelMap.AddStringValue(constlabels.DstNamespace, constlabels.ExternalClusterNamespace)
 		}
-		labelMap.AddStringValue(constlabels.DstNamespace, constlabels.ExternalClusterNamespace)
 	}
 }
 
@@ -151,8 +153,10 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForServerLabel(labelMap *model.Attr
 		if nodeName, ok := p.metadata.GetNodeNameByIp(srcIp); ok {
 			labelMap.AddStringValue(constlabels.SrcNodeIp, srcIp)
 			labelMap.AddStringValue(constlabels.SrcNode, nodeName)
+			labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+		} else {
+			labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
 		}
-		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
 	}
 	containerId := labelMap.GetStringValue(constlabels.ContainerId)
 	labelMap.AddStringValue(constlabels.DstContainerId, containerId)
@@ -165,7 +169,7 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForServerLabel(labelMap *model.Attr
 	} else {
 		labelMap.AddStringValue(constlabels.DstNodeIp, p.localNodeIp)
 		labelMap.AddStringValue(constlabels.DstNode, p.localNodeName)
-		labelMap.AddStringValue(constlabels.DstNamespace, constlabels.ExternalClusterNamespace)
+		labelMap.AddStringValue(constlabels.DstNamespace, constlabels.InternalClusterNamespace)
 	}
 }
 
@@ -199,8 +203,11 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpSRC(labelMap *model.AttributeM
 		addPodMetaInfoLabelSRC(labelMap, srcPodInfo)
 		return
 	}
-
-	labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+	if _, ok := p.metadata.GetNodeNameByIp(srcIp); ok {
+		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+	} else {
+		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+	}
 }
 
 func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeMap) {
@@ -241,8 +248,11 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 		addPodMetaInfoLabelDST(labelMap, dstPodInfo)
 		return
 	}
-
-	labelMap.AddStringValue(constlabels.DstNamespace, constlabels.ExternalClusterNamespace)
+	if _, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
+		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+	} else {
+		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+	}
 }
 
 func addContainerMetaInfoLabelSRC(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {

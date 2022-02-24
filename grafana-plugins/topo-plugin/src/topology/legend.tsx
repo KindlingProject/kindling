@@ -42,41 +42,50 @@ interface LProps {
     typeList: string[];
     metric: string;
     volumes: any;
+    options: any;
 }
 function TopoLegend(props: LProps) {
-    const { typeList, metric, volumes } = props;
+    const { typeList, metric, volumes, options } = props;
     const styles = getStyles();
 
     const metricRender = () => {
+        let domNode: any = null;
         if (metric === 'latency') {
-            return <div>
-                <ColorLegend color="#C2C8D5" title="Normal(<20ms)"/>
-                <ColorLegend color="#f3ff69" title="Warning(20ms~1000ms)"/>
-                <ColorLegend color="#ff4c4c" title="AbNormal(>1000ms)"/>
-            </div>
+            domNode = (
+                <div>
+                    <ColorLegend color="#C2C8D5" title={`Normal(<${options.normalLatency}ms)`}/>
+                    <ColorLegend color="#f3ff69" title={`Warning(${options.normalLatency}ms~${options.abnormalLatency}ms)`}/>
+                    <ColorLegend color="#ff4c4c" title={`AbNormal(>${options.abnormalLatency}ms)`}/>
+                </div>
+            ); 
         } else if (metric === 'rtt') {
-            return <div>
-                <ColorLegend color="#C2C8D5" title="Normal(<100ms)"/>
-                <ColorLegend color="#f3ff69" title="Warning(100ms~200ms)"/>
-                <ColorLegend color="#ff4c4c" title="AbNormal(>200ms)"/>
-            </div>
+            domNode = (<div>
+                <ColorLegend color="#C2C8D5" title={`Normal(<${options.normalRtt}ms)`}/>
+                <ColorLegend color="#f3ff69" title={`Warning(${options.normalRtt}ms~${options.abnormalRtt}ms)`}/>
+                <ColorLegend color="#ff4c4c" title={`AbNormal(>${options.abnormalRtt}ms)`}/>
+            </div>);
         } else if (metric === 'errorRate') {
-            return <div>
+            domNode = (<div>
                 <ColorLegend color="#C2C8D5" title="Normal(0%)"/>
                 <ColorLegend color="#ff4c4c" title="AbNormal(>0%)"/>
-            </div>
+            </div>);
         } else if (metric === 'sentVolume') {
-            return <div>
+            domNode = (<div>
                 <ColorLegend title={`min Volume ${formatKMBT(volumes.minSentVolume)}`}/>
                 <ColorLegend title={`max Volume ${formatKMBT(volumes.maxSentVolume)}`}/>
-            </div>
+            </div>);
         } else if (metric === 'receiveVolume') {
-            return <div>
+            domNode = (<div>
                 <ColorLegend title={`min Volume ${formatKMBT(volumes.minReceiveVolume)}`}/>
                 <ColorLegend title={`max Volume ${formatKMBT(volumes.maxReceiveVolume)}`}/>
-            </div>
+            </div>);
         }
-        return null;
+        return <>
+            {
+                domNode !== null ? <span className={styles.status_label}>node and call line status</span> : null
+            }
+            {domNode}
+        </>;
     }
     return (
         <div className={styles.legend_warp}>
@@ -86,7 +95,6 @@ function TopoLegend(props: LProps) {
                     <span>{type}</span>
                 </div>)
             }
-            <span className={styles.status_label}>node ans call line status</span>
             {
                 metricRender()
             }

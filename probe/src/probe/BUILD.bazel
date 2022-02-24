@@ -24,7 +24,7 @@ pl_cc_binary(
             "*_main.cc",
         ],
     ),
-    copts = ["-Wno-unused-parameter","-Wno-unused-variable","-Wno-mismatched-tags"],
+    copts = ["-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libscap", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp/third-party/jsoncpp", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp", "-Wno-unused-parameter","-Wno-unused-variable","-Wno-mismatched-tags"],
     deps = [
         "//src/probe/converter:cc_library",
         "//src/probe/publisher:cc_library",
@@ -34,9 +34,7 @@ pl_cc_binary(
         "@px//src/stirling:cc_library",
         "@px//src/stirling/utils:cc_library",
         #"@px//src/stirling:cc_library",
-	    "//src/userspace/libsinsp:cc_library",
-	    "//src/userspace/libscap:cc_library",
-	    "//src/driver:scap_cc_library",
+        "//third_party:agent-libs_build",
 	    "//third_party:zmq_build",
     ],
 )
@@ -47,7 +45,7 @@ container_image(
     base = "@px//:pl_cc_bpf_image",
     directory = "/pl",
     files = [
-	  "@kindling_probes_tar_gz//file:file",
+	  "@kindling_falcolib_probe_tar_gz//file:file",
 	  "//deploy:scripts",
 	  ":kindling_probe",
     ],

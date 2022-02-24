@@ -123,7 +123,7 @@ func TopologyTraceK8sInfo(cfg *Config, g *gauges) {
 }
 
 func TopologyK8sInfo(cfg *Config, g *gauges) {
-	if cfg.NeedPodDetail || g.Labels.GetStringValue(constlabels.DstNamespace) == constlabels.ExternalClusterNamespace {
+	if cfg.NeedPodDetail {
 		TopologyTraceK8sInfo(cfg, g)
 	} else {
 		g.targetLabels.AddStringValue(constlabels.SrcNamespace, g.Labels.GetStringValue(constlabels.SrcNamespace))
@@ -135,6 +135,11 @@ func TopologyK8sInfo(cfg *Config, g *gauges) {
 		g.targetLabels.AddStringValue(constlabels.DstWorkloadKind, g.Labels.GetStringValue(constlabels.DstWorkloadKind))
 		g.targetLabels.AddStringValue(constlabels.DstWorkloadName, g.Labels.GetStringValue(constlabels.DstWorkloadName))
 		g.targetLabels.AddStringValue(constlabels.DstService, g.Labels.GetStringValue(constlabels.DstService))
+
+		if constlabels.IsNamespaceNotFound(g.Labels.GetStringValue(constlabels.DstNamespace)) {
+			g.targetLabels.AddStringValue(constlabels.DstNode, g.Labels.GetStringValue(constlabels.DstNode))
+			g.targetLabels.AddStringValue(constlabels.DstPod, g.Labels.GetStringValue(constlabels.DstPod))
+		}
 	}
 }
 
@@ -160,7 +165,7 @@ func TopologyTraceInstanceInfo(cfg *Config, g *gauges) {
 func TopologyInstanceInfo(cfg *Config, g *gauges) {
 	if cfg.NeedPodDetail {
 		TopologyTraceInstanceInfo(cfg, g)
-	} else if g.Labels.GetStringValue(constlabels.DstNamespace) == constlabels.ExternalClusterNamespace {
+	} else if constlabels.IsNamespaceNotFound(g.Labels.GetStringValue(constlabels.DstNamespace)) {
 		DstInstanceInfo(cfg, g)
 	}
 }

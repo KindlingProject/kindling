@@ -1,14 +1,14 @@
 #include <cstdio>
 #include <iostream>
 #include <cstdlib>
-#include "src/userspace/libsinsp/sinsp.h"
+#include "sinsp.h"
 #include "src/probe/utils/termination_handler.h"
 #include <unistd.h>
 #include <sys/un.h>
 #include "src/probe/converter/sysdig_converter.h"
 #include "src/probe/publisher/publisher.h"
 #include "src/probe/converter/kindling_event.pb.h"
-#include "src/driver/driver_config.h"
+#include "driver/driver_config.h"
 #include "src/stirling/stirling.h"
 #include "src/common/base/base.h"
 #include <src/stirling/stirling.h>
@@ -171,7 +171,6 @@ int main(int argc, char** argv) {
                                                          std::placeholders::_1, std::placeholders::_2,
                                                          std::placeholders::_3));
             TerminationHandler::set_stirling(stirling.get());
-            std::cout << "hello, qianlu!" << std::endl;
             auto status = stirling->RunAsThread();
             std::cout << status.ok() << "begin to run core" << std::endl;
             stirling_ = std::move(stirling);

@@ -5,6 +5,8 @@
 using namespace std;
 using namespace kindling;
 
+match_container *matchContainer = new match_container();
+
 sysdig_converter::sysdig_converter(sinsp *inspector) : converter(100, INT_MAX), m_inspector(inspector) {
 }
 
@@ -145,14 +147,9 @@ int sysdig_converter::add_threadinfo(kindling::KindlingEvent *kevt, sinsp_evt *s
     k_tinfo->set_uid(s_tinfo->m_uid);
     k_tinfo->set_gid(s_tinfo->m_gid);
     k_tinfo->set_comm(s_tinfo->m_comm);
-    if (!s_tinfo->m_container_id.empty()) {
-        k_tinfo->set_container_id(s_tinfo->m_container_id);
-        const sinsp_container_info::ptr_t container_info =
-                m_inspector->m_container_manager.get_container(s_tinfo->m_container_id);
-        if (container_info && !container_info->m_name.empty()) {
-            k_tinfo->set_container_name(container_info->m_name);
-        }
-    }
+    std::string container_id;
+    matchContainer->matches_cgroups(s_tinfo, container_id);
+    k_tinfo->set_container_id(container_id);
     return 0;
 }
 

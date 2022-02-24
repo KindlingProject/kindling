@@ -5,7 +5,7 @@
 #include <iostream>
 #include <zmq.h>
 #include <regex>
-#include "src/userspace/libsinsp/tuples.h"
+#include "tuples.h"
 #include <dirent.h>
 #include "src/probe/publisher/defination.h"
 #include "src/probe/converter/sysdig_converter.h"

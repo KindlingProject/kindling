@@ -19,6 +19,12 @@ spec:
       - name: kindling-probe
         image: kindlingproject/kindling-probe:latest
         imagePullPolicy: Always
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - sh
+                - /pl/post_start.sh
         args:
         - --v=1
         - --minloglevel=0
@@ -44,7 +50,7 @@ spec:
           value: /host/proc
         - name: PL_HOST_PATH
           value: /host
-        - name: HCMINE_HOST_ROOT
+        - name: SYSDIG_HOST_ROOT
           value: /host
         securityContext:
           privileged: true
@@ -93,7 +99,8 @@ spec:
         image: kindlingproject/kindling-collector:latest
         imagePullPolicy: Always
         securityContext:
-          privileged: true
+          capabilities:
+            add: ["NET_ADMIN", "NET_BROADCAST"]
         resources:
           limits:
             memory: 800Mi

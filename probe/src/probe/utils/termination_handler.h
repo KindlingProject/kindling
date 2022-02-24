@@ -8,7 +8,7 @@
 #include <src/stirling/stirling.h>
 #include <src/common/base/base.h>
 #include <src/common/signal/signal.h>
-#include "src/userspace/libsinsp/sinsp.h"
+#include "sinsp.h"
 #include <memory>
 
 class TerminationHandler {

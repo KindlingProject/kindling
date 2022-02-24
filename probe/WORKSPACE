@@ -11,13 +11,6 @@ git_repository(
 BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-http_archive(
-        name = "lib_jq",
-        urls = ["https://github.com/stedolan/jq/releases/download/jq-1.5/jq-1.5.tar.gz"],
-        sha256 = "c4d2bfec6436341113419debf479d833692cc5cdab7eb0326b5a4d4fbe9f493c",
-        strip_prefix = "jq-1.5",
-	build_file_content = BUILD_ALL_CONTENT,
-    )
 
 http_archive(
         name = "lib_zmq",
@@ -28,12 +21,13 @@ http_archive(
     )
 
 http_archive(
-        name = "lib_curl",
-        urls = ["https://common-lib-bzl.oss-us-west-1.aliyuncs.com/curl-7.61.0.tar.bz2"],
-        sha256 = "5f6f336921cf5b84de56afbd08dfb70adeef2303751ffb3e570c936c6d656c9c",
-        strip_prefix = "curl-7.61.0",
-	build_file_content = BUILD_ALL_CONTENT,
+        name = "agent-libs",
+        urls = ["https://github.com/Kindling-project/agent-libs/archive/8c130f7c4326398372661c0148b5bba5a1a2e9d8.tar.gz"],
+        sha256 = "08eeda3700337e7ce0bc69eb8b0634266935923764b6494f1cb52eb5dc4d334c",
+        strip_prefix = "agent-libs-8c130f7c4326398372661c0148b5bba5a1a2e9d8",
+        build_file_content = BUILD_ALL_CONTENT,
     )
+
 
 new_local_repository(
         name = "libzmq",
