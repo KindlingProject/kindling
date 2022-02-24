@@ -183,6 +183,10 @@ func (message *PayloadMessage) readNullableString(offset int, v *string) (toOffs
 	if length == -1 {
 		return toOffset, nil
 	}
+	if toOffset+int(length) >= len(message.Data) {
+		*v = string(message.Data[toOffset:])
+		return len(message.Data), nil
+	}
 	*v = string(message.Data[toOffset : toOffset+int(length)])
 	return toOffset + int(length), nil
 }
@@ -199,6 +203,10 @@ func (message *PayloadMessage) readCompactNullableString(offset int, v *string) 
 	}
 	if intLength == -1 {
 		return toOffset, nil
+	}
+	if toOffset+int(length) >= len(message.Data) {
+		*v = string(message.Data[toOffset:])
+		return len(message.Data), nil
 	}
 	*v = string(message.Data[toOffset : toOffset+intLength])
 	return toOffset + intLength, nil
