@@ -99,7 +99,8 @@ spec:
         image: kindlingproject/kindling-collector:latest
         imagePullPolicy: Always
         securityContext:
-          privileged: true
+          capabilities:
+            add: ["NET_ADMIN", "NET_BROADCAST"]
         resources:
           limits:
             memory: 800Mi
