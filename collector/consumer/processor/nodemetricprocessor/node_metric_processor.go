@@ -66,7 +66,7 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 
 	var retError error
 	// For request, the transmit direction is SrcNode->DstNode
-	requestIo, ok := gaugeGroup.GetValue(constvalues.RequestIo)
+	requestIo, ok := gaugeGroup.GetGauge(constvalues.RequestIo)
 	if ok {
 		newLabels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcNodeIp: model.NewStringValue(srcNodeIp),
@@ -91,7 +91,7 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 		}
 	}
 	// For response, the transmit direction is DstNode->SrcNode
-	responseIo, ok := gaugeGroup.GetValue(constvalues.ResponseIo)
+	responseIo, ok := gaugeGroup.GetGauge(constvalues.ResponseIo)
 	if ok {
 		newLabels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcNodeIp: model.NewStringValue(dstNodeIp),
