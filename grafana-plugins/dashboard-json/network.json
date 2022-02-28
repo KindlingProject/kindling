@@ -8,16 +8,23 @@
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 41,
-  "iteration": 1645175061554,
+  "iteration": 1645602645355,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "aliasColors": {},
@@ -25,12 +32,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -55,8 +56,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -74,9 +78,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Retransmit",
       "tooltip": {
         "shared": true,
@@ -85,33 +87,26 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "$$hashKey": "object:236",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:237",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -120,12 +115,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -150,8 +139,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -168,9 +160,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Packet Lost",
       "tooltip": {
         "shared": true,
@@ -179,33 +169,26 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "$$hashKey": "object:267",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:268",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -214,12 +197,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -244,8 +221,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -263,9 +243,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "RTT",
       "tooltip": {
         "shared": true,
@@ -274,33 +252,26 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "$$hashKey": "object:383",
           "format": "µs",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:384",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -309,12 +280,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -339,8 +304,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -363,9 +331,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Network Volume",
       "tooltip": {
         "shared": true,
@@ -374,33 +340,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "decbytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -408,7 +365,8 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "align": null
+            "align": "auto",
+            "displayMode": "auto"
           },
           "mappings": [],
           "thresholds": {
@@ -486,11 +444,20 @@
       "interval": "",
       "maxDataPoints": 1,
       "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "showHeader": true
       },
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "targets": [
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "sum by (src_workload_name, dst_workload_name) (kindling_trace_request_duration_nanoseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"})",
           "format": "table",
           "instant": true,
@@ -499,6 +466,8 @@
           "refId": "A"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "sum by (src_workload_name, dst_workload_name) (increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])) and sum by (src_workload_name, dst_workload_name) (kindling_trace_request_duration_nanoseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"})",
           "format": "table",
           "hide": false,
@@ -508,6 +477,8 @@
           "refId": "B"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "sum by (src_workload_name, dst_workload_name) (increase(kindling_tcp_packet_loss_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])) and sum by (src_workload_name, dst_workload_name) (kindling_trace_request_duration_nanoseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"})",
           "format": "table",
           "hide": false,
@@ -517,6 +488,8 @@
           "refId": "C"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "sum by (src_workload_name, dst_workload_name) (increase(kindling_topology_request_request_bytes_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])) and sum by (src_workload_name, dst_workload_name) (kindling_trace_request_duration_nanoseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"})",
           "format": "table",
           "hide": false,
@@ -526,6 +499,8 @@
           "refId": "D"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "sum by (src_workload_name, dst_workload_name) (increase(kindling_topology_request_response_bytes_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])) and sum by (src_workload_name, dst_workload_name) (kindling_trace_request_duration_nanoseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"})",
           "format": "table",
           "hide": false,
@@ -535,6 +510,8 @@
           "refId": "E"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "sum by (src_workload_name, dst_workload_name) (kindling_tcp_rtt_microseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}) and sum by (src_workload_name, dst_workload_name) (kindling_trace_request_duration_nanoseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"})",
           "format": "table",
           "instant": true,
@@ -543,8 +520,6 @@
           "refId": "F"
         }
       ],
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Connections Details",
       "transformations": [
         {
@@ -598,7 +573,8 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "align": null
+            "align": "auto",
+            "displayMode": "auto"
           },
           "mappings": [],
           "thresholds": {
@@ -626,6 +602,13 @@
       "id": 10,
       "maxDataPoints": 1,
       "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "showHeader": true,
         "sortBy": [
           {
@@ -634,9 +617,11 @@
           }
         ]
       },
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "targets": [
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])",
           "format": "table",
           "instant": true,
@@ -645,6 +630,8 @@
           "refId": "A"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "increase(kindling_tcp_packet_loss_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])",
           "format": "table",
           "hide": false,
@@ -654,7 +641,9 @@
           "refId": "B"
         },
         {
-          "expr": "kindling_tcp_rtt_milliseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}",
+          "datasource": "Prometheus",
+          "exemplar": false,
+          "expr": "kindling_tcp_rtt_milliseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"} and on (src_pod, dst_pod) increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -662,8 +651,6 @@
           "refId": "C"
         }
       ],
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Retransmit Details",
       "transformations": [
         {
@@ -735,9 +722,11 @@
               "src_workload_name": 0
             },
             "renameByName": {
+              "Value": "Retransmit",
               "Value #A": "Retransmit",
               "dst_ip": "Destination IP",
               "dst_namespace": "Destination Namespace",
+              "dst_node": "",
               "dst_node_ip": "",
               "dst_pod": "Destination Pod",
               "dst_workload_name": "Destination",
@@ -752,59 +741,61 @@
       "type": "table"
     }
   ],
-  "schemaVersion": 26,
+  "schemaVersion": 34,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
-        "allValue": null,
         "current": {
           "selected": false,
           "text": "All",
           "value": "$__all"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_topology_request_duration_nanoseconds_count",
+        "definition": "label_values(kindling_topology_request_duration_nanoseconds_count, src_workload_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Source",
         "multi": false,
         "name": "source",
         "options": [],
-        "query": "kindling_topology_request_duration_nanoseconds_count",
+        "query": {
+          "query": "label_values(kindling_topology_request_duration_nanoseconds_count, src_workload_name)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 2,
-        "regex": "/src_workload_name=\"(.+?)\\\"/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
-        "allValue": null,
         "current": {
           "selected": false,
           "text": "All",
           "value": "$__all"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_topology_request_duration_nanoseconds_count",
+        "definition": "label_values(kindling_topology_request_duration_nanoseconds_count, dst_workload_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Destination",
         "multi": false,
         "name": "destination",
         "options": [],
-        "query": "kindling_topology_request_duration_nanoseconds_count",
+        "query": {
+          "query": "label_values(kindling_topology_request_duration_nanoseconds_count, dst_workload_name)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 2,
-        "regex": "/dst_workload_name=\"(.+?)\\\"/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -831,5 +822,6 @@
   "timezone": "",
   "title": "Network Details",
   "uid": "4Jq_VCtnz",
-  "version": 5
+  "version": 8,
+  "weekStart": ""
 }

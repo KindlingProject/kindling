@@ -8,16 +8,23 @@
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 30,
-  "iteration": 1645001293673,
+  "iteration": 1645604655346,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "aliasColors": {},
@@ -25,26 +32,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -61,16 +48,19 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": false,
+        "show": true,
         "total": false,
         "values": false
       },
       "lines": true,
       "linewidth": 1,
       "maxDataPoints": 100,
-      "nullPointMode": "null",
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -80,17 +70,15 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (src_workload_name)",
+          "expr": "sum by (dst_ip) (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\", protocol=\"dns\"}[$__interval]))",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{src_workload_name}}",
+          "legendFormat": "{{ dst_ip }}",
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Request Counts",
       "tooltip": {
         "shared": true,
@@ -99,142 +87,178 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "$$hashKey": "object:420",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:421",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
       "aliasColors": {},
-      "breakPoint": "50%",
-      "cacheTimeout": null,
-      "combine": {
-        "label": "Others",
-        "threshold": 0
-      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fontSize": "80%",
-      "format": "short",
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
         "h": 7,
         "w": 8,
         "x": 8,
         "y": 0
       },
-      "id": 4,
+      "hiddenSeries": false,
+      "id": 10,
       "interval": "30",
       "legend": {
-        "percentage": true,
-        "show": false,
-        "sideWidth": null,
-        "values": true
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
-      "legendType": "Right side",
-      "links": [],
+      "lines": true,
+      "linewidth": 1,
+      "maxDataPoints": 100,
       "nullPointMode": "connected",
-      "pieType": "pie",
-      "pluginVersion": "7.1.1",
-      "strokeWidth": 1,
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.6",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\", response_content!=\"0\"}[$__interval])) by (pod)",
-          "instant": false,
+          "datasource": "Prometheus",
+          "exemplar": true,
+          "expr": "sum by (dst_ip) (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__interval]))",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{dst_ip}}",
           "refId": "A"
         }
       ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Response Timeout Counts",
-      "type": "grafana-piechart-panel",
-      "valueName": "avg"
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Status Error Counts",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:115",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:116",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
     },
     {
-      "aliasColors": {},
-      "breakPoint": "50%",
-      "cacheTimeout": null,
-      "combine": {
-        "label": "Others",
-        "threshold": 0
-      },
       "datasource": "Prometheus",
-      "decimals": null,
       "fieldConfig": {
         "defaults": {
-          "custom": {}
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "unit": "short"
         },
         "overrides": []
       },
-      "fontSize": "80%",
-      "format": "short",
       "gridPos": {
         "h": 7,
         "w": 8,
         "x": 16,
         "y": 0
       },
-      "id": 6,
+      "id": 4,
       "interval": "30",
-      "legend": {
-        "header": "",
-        "show": true,
-        "sort": null,
-        "sortDesc": null,
-        "values": true
-      },
-      "legendType": "Right side",
       "links": [],
-      "nullPointMode": "connected",
-      "pieType": "pie",
+      "maxDataPoints": 100,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
       "pluginVersion": "7.1.1",
-      "strokeWidth": 1,
       "targets": [
         {
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\", response_content!=\"0\"}[$__interval])) by (response_content), \"response_content\", \"FormatErr\", \"response_content\", \"1.*\"), \"response_content\", \"ServFail\", \"response_content\", \"2.*\"), \"response_content\", \"NXDomain\", \"response_content\", \"3.*\"), \"response_content\", \"NotImp\", \"response_content\", \"4.*\"), \"response_content\", \"Refused\", \"response_content\", \"5.*\")",
+          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\",src_workload_name=\"$workload\",le=\"+Inf\"}[$__interval])) - sum(increase(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\",src_workload_name=\"$workload\",le=\"5e+08\"}[$__interval]))",
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{response_content}}",
+          "legendFormat": "count",
           "refId": "A"
         }
       ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "All Request Failure",
-      "type": "grafana-piechart-panel",
-      "valueName": "avg"
+      "title": "Response Timeout Counts",
+      "type": "piechart"
     },
     {
       "aliasColors": {},
@@ -242,12 +266,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -264,7 +282,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": false,
+        "show": true,
         "total": false,
         "values": false
       },
@@ -272,8 +290,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -283,16 +304,16 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\", response_content!=\"0\"}[$__interval])) by (request_content))",
+          "datasource": "Prometheus",
+          "exemplar": true,
+          "expr": "topk(10, sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__interval])) by (dst_ip))",
           "interval": "",
-          "legendFormat": "{{ request_content }}",
+          "legendFormat": "{{ dst_ip }}",
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Parsing Domain Failure Top10",
       "tooltip": {
         "shared": true,
@@ -301,9 +322,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "series",
-        "name": null,
         "show": false,
         "values": [
           "total"
@@ -311,121 +330,85 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:84",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:85",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
-      "aliasColors": {},
-      "bars": true,
-      "dashLength": 10,
-      "dashes": false,
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
-          "custom": {}
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "unit": "short"
         },
         "overrides": []
       },
-      "fill": 1,
-      "fillGradient": 0,
       "gridPos": {
         "h": 7,
         "w": 8,
         "x": 8,
         "y": 7
       },
-      "hiddenSeries": false,
-      "id": 10,
+      "id": 6,
       "interval": "30",
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
       },
-      "lines": false,
-      "linewidth": 1,
-      "maxDataPoints": 100,
-      "nullPointMode": "null",
-      "percentage": false,
       "pluginVersion": "7.1.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (namespace, workload_name)",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__interval])) by (status_code), \"status_code\", \"FormatErr\", \"status_code\", \"1.*\"), \"status_code\", \"ServFail\", \"status_code\", \"2.*\"), \"status_code\", \"NXDomain\", \"status_code\", \"3.*\"), \"status_code\", \"NotImp\", \"status_code\", \"4.*\"), \"status_code\", \"Refused\", \"status_code\", \"5.*\")",
+          "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{workload_name}}",
+          "legendFormat": "{{status_code}}",
           "refId": "A"
         }
       ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Response Counts",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
+      "title": "All Request Failure",
+      "type": "piechart"
     },
     {
       "aliasColors": {},
@@ -433,12 +416,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -455,7 +432,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": false,
+        "show": true,
         "total": false,
         "values": false
       },
@@ -463,8 +440,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -474,17 +454,15 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (namespace, workload_name) /\nsum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (namespace, workload_name)",
+          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (dst_ip) /\nsum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (dst_ip)",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{workload_name}}",
+          "legendFormat": "{{dst_ip}}",
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Response Time",
       "tooltip": {
         "shared": true,
@@ -493,33 +471,26 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "$$hashKey": "object:169",
           "format": "ns",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:170",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -527,7 +498,8 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "align": null
+            "align": "auto",
+            "displayMode": "auto"
           },
           "mappings": [],
           "thresholds": {
@@ -555,98 +527,47 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "from": "",
-                    "id": 0,
-                    "text": "FormatErr",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 1,
-                    "text": "ServFail",
-                    "to": "",
-                    "type": 1,
-                    "value": "2"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "text": "NXDomain",
-                    "to": "",
-                    "type": 1,
-                    "value": "3"
-                  },
-                  {
-                    "from": "",
-                    "id": 3,
-                    "text": "NotImp",
-                    "to": "",
-                    "type": 1,
-                    "value": "4"
-                  },
-                  {
-                    "from": "",
-                    "id": 4,
-                    "text": "Refused",
-                    "to": "",
-                    "type": 1,
-                    "value": "5"
-                  },
-                  {
-                    "from": "",
-                    "id": 5,
-                    "text": "NoError",
-                    "to": "",
-                    "type": 1,
-                    "value": "0"
-                  },
-                  {
-                    "from": "",
-                    "id": 6,
-                    "text": "YXDomain",
-                    "to": "",
-                    "type": 1,
-                    "value": "6"
-                  },
-                  {
-                    "from": "",
-                    "id": 7,
-                    "text": "YXRRSet",
-                    "to": "",
-                    "type": 1,
-                    "value": "7"
-                  },
-                  {
-                    "from": "",
-                    "id": 8,
-                    "text": "NXRRSet",
-                    "to": "",
-                    "type": 1,
-                    "value": "8"
-                  },
-                  {
-                    "from": "",
-                    "id": 9,
-                    "text": "NotAuth",
-                    "to": "",
-                    "type": 1,
-                    "value": "9"
-                  },
-                  {
-                    "from": "",
-                    "id": 10,
-                    "text": "NotZone",
-                    "to": "",
-                    "type": 1,
-                    "value": "10"
+                    "options": {
+                      "0": {
+                        "text": "NoError"
+                      },
+                      "1": {
+                        "text": "FormatErr"
+                      },
+                      "2": {
+                        "text": "ServFail"
+                      },
+                      "3": {
+                        "text": "NXDomain"
+                      },
+                      "4": {
+                        "text": "NotImp"
+                      },
+                      "5": {
+                        "text": "Refused"
+                      },
+                      "6": {
+                        "text": "YXDomain"
+                      },
+                      "7": {
+                        "text": "YXRRSet"
+                      },
+                      "8": {
+                        "text": "NXRRSet"
+                      },
+                      "9": {
+                        "text": "NotAuth"
+                      },
+                      "10": {
+                        "text": "NotZone"
+                      }
+                    },
+                    "type": "value"
                   }
                 ]
               },
               {
-                "id": "custom.width",
-                "value": null
+                "id": "custom.width"
               }
             ]
           },
@@ -693,6 +614,17 @@
                 "value": 0
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Source Pod"
+            },
+            "properties": [
+              {
+                "id": "custom.width"
+              }
+            ]
           }
         ]
       },
@@ -705,14 +637,21 @@
       "id": 14,
       "maxDataPoints": 1,
       "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "frameIndex": 0,
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "targets": [
         {
-          "expr": "kindling_trace_request_duration_nanoseconds{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"dns\"}",
+          "expr": "kindling_trace_request_duration_nanoseconds{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -721,9 +660,7 @@
           "refId": "A"
         }
       ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "DNS Timeout Request Detail",
+      "title": "DNS Request Detail",
       "transformations": [
         {
           "id": "organize",
@@ -809,13 +746,12 @@
       "type": "table"
     }
   ],
-  "schemaVersion": 26,
+  "schemaVersion": 34,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
-        "allValue": null,
         "current": {
           "selected": false,
           "text": "kube-system",
@@ -829,19 +765,20 @@
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "kindling_entity_request_duration_nanoseconds_count{protocol=\"dns\"}",
+        "query": {
+          "query": "kindling_entity_request_duration_nanoseconds_count{protocol=\"dns\"}",
+          "refId": "Prometheus-namespace-Variable-Query"
+        },
         "refresh": 2,
         "regex": "/namespace=\"(.+?)\\\"/",
         "skipUrlSync": false,
         "sort": 2,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
-        "allValue": null,
         "current": {
           "selected": false,
           "text": "coredns",
@@ -855,13 +792,15 @@
         "multi": false,
         "name": "workload",
         "options": [],
-        "query": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\", protocol=\"dns\"} ",
+        "query": {
+          "query": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\", protocol=\"dns\"} ",
+          "refId": "Prometheus-workload-Variable-Query"
+        },
         "refresh": 2,
         "regex": "/workload_name=\"(.+?)\\\"/",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -888,5 +827,6 @@
   "timezone": "",
   "title": "DNS Request Details",
   "uid": "UFwanjpnk",
-  "version": 6
+  "version": 12,
+  "weekStart": ""
 }
