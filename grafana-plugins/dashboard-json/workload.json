@@ -8,20 +8,26 @@
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 40,
-  "iteration": 1645429949888,
+  "iteration": 1645603656373,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
-      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -39,12 +45,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -69,8 +69,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -88,9 +91,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Request Counts",
       "tooltip": {
         "shared": true,
@@ -99,33 +100,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -134,12 +126,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -164,8 +150,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -183,9 +172,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Latency",
       "tooltip": {
         "shared": true,
@@ -194,33 +181,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "ns",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -229,12 +207,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -259,8 +231,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -278,9 +253,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Erroneous Calls rate",
       "tooltip": {
         "shared": true,
@@ -289,33 +262,27 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "$$hashKey": "object:111",
           "format": "percent",
-          "label": null,
           "logBase": 1,
           "max": "100",
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:112",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -325,12 +292,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -354,8 +315,11 @@
       "lines": false,
       "linewidth": 1,
       "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -374,9 +338,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Request Counts Top10",
       "tooltip": {
         "shared": true,
@@ -386,9 +348,7 @@
       "transformations": [],
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "series",
-        "name": null,
         "show": false,
         "values": [
           "total"
@@ -396,26 +356,19 @@
       },
       "yaxes": [
         {
-          "decimals": null,
           "format": "short",
           "label": "",
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": false
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -424,12 +377,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -455,8 +402,11 @@
       "lines": false,
       "linewidth": 1,
       "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -474,9 +424,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Latency Top10",
       "tooltip": {
         "shared": true,
@@ -485,9 +433,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "series",
-        "name": null,
         "show": false,
         "values": [
           "avg"
@@ -496,24 +442,17 @@
       "yaxes": [
         {
           "format": "ns",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -522,12 +461,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -550,8 +483,11 @@
       "lines": false,
       "linewidth": 1,
       "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -568,9 +504,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Erroneous Calls rate Top10",
       "tooltip": {
         "shared": true,
@@ -579,9 +513,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "series",
-        "name": null,
         "show": false,
         "values": [
           "avg"
@@ -589,25 +521,22 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:79",
           "format": "percent",
-          "label": null,
           "logBase": 1,
           "max": "100",
           "min": "0",
           "show": true
         },
         {
+          "$$hashKey": "object:80",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -615,7 +544,7 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "align": null,
+            "align": "auto",
             "displayMode": "auto"
           },
           "mappings": [],
@@ -668,28 +597,18 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "from": "",
-                    "id": 0,
-                    "text": "Normal",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 1,
-                    "text": "Warning",
-                    "to": "",
-                    "type": 1,
-                    "value": "2"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "text": "Abnormal",
-                    "to": "",
-                    "type": 1,
-                    "value": "3"
+                    "options": {
+                      "1": {
+                        "text": "Normal"
+                      },
+                      "2": {
+                        "text": "Warning"
+                      },
+                      "3": {
+                        "text": "Abnormal"
+                      }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -729,28 +648,18 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "from": "",
-                    "id": 0,
-                    "text": "Normal",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 1,
-                    "text": "Warning",
-                    "to": "",
-                    "type": 1,
-                    "value": "2"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "text": "Abnormal",
-                    "to": "",
-                    "type": 1,
-                    "value": "3"
+                    "options": {
+                      "1": {
+                        "text": "Normal"
+                      },
+                      "2": {
+                        "text": "Warning"
+                      },
+                      "3": {
+                        "text": "Abnormal"
+                      }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -790,28 +699,18 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "from": "",
-                    "id": 0,
-                    "text": "Normal",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 1,
-                    "text": "Warning",
-                    "to": "",
-                    "type": 1,
-                    "value": "2"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "text": "Abnormal",
-                    "to": "",
-                    "type": 1,
-                    "value": "3"
+                    "options": {
+                      "1": {
+                        "text": "Normal"
+                      },
+                      "2": {
+                        "text": "Warning"
+                      },
+                      "3": {
+                        "text": "Abnormal"
+                      }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -881,6 +780,13 @@
       "interval": "30",
       "maxDataPoints": 1,
       "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "frameIndex": 0,
         "showHeader": true,
         "sortBy": [
@@ -890,9 +796,11 @@
           }
         ]
       },
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "targets": [
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "hide": false,
@@ -903,6 +811,8 @@
           "refId": "A"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "hide": false,
@@ -912,8 +822,6 @@
           "refId": "B"
         }
       ],
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Request details",
       "transformations": [
         {
@@ -958,19 +866,20 @@
             },
             "indexByName": {
               "Time": 1,
-              "Value #A": 2,
+              "Value": 5,
               "dst_ip": 9,
               "dst_pod": 10,
               "dst_workload_name": 8,
               "request_content": 6,
-              "request_processing_status": 4,
-              "request_reqxfer_status": 3,
+              "request_processing_status": 3,
+              "request_reqxfer_status": 2,
               "response_content": 0,
-              "response_rspxfer_status": 5,
+              "response_rspxfer_status": 4,
               "src_ip": 7,
               "src_node": 11
             },
             "renameByName": {
+              "Value": "Latency",
               "Value #A": "Latency",
               "Value #B": "P99 Latency",
               "dst_ip": "Destination IP",
@@ -993,7 +902,6 @@
     },
     {
       "collapsed": false,
-      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1011,12 +919,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1041,8 +943,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1060,9 +965,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Request Counts",
       "tooltip": {
         "shared": true,
@@ -1071,33 +974,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1106,12 +1000,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1136,8 +1024,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1155,9 +1046,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Latency",
       "tooltip": {
         "shared": true,
@@ -1166,33 +1055,26 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "$$hashKey": "object:87",
           "format": "ns",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:88",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1201,12 +1083,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1231,8 +1107,11 @@
       "linewidth": 1,
       "maxDataPoints": 100,
       "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1250,9 +1129,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Erroneous Calls rate",
       "tooltip": {
         "shared": true,
@@ -1261,34 +1138,27 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
-          "decimals": null,
+          "$$hashKey": "object:170",
           "format": "percent",
-          "label": null,
           "logBase": 1,
           "max": "100",
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:171",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1297,7 +1167,8 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "align": null
+            "align": "auto",
+            "displayMode": "auto"
           },
           "mappings": [],
           "thresholds": {
@@ -1349,28 +1220,18 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "from": "",
-                    "id": 0,
-                    "text": "Normal",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 1,
-                    "text": "Warning",
-                    "to": "",
-                    "type": 1,
-                    "value": "2"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "text": "Abnormal",
-                    "to": "",
-                    "type": 1,
-                    "value": "3"
+                    "options": {
+                      "1": {
+                        "text": "Normal"
+                      },
+                      "2": {
+                        "text": "Warning"
+                      },
+                      "3": {
+                        "text": "Abnormal"
+                      }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -1410,28 +1271,18 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "from": "",
-                    "id": 0,
-                    "text": "Normal",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 1,
-                    "text": "Warning",
-                    "to": "",
-                    "type": 1,
-                    "value": "2"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "text": "Abnormal",
-                    "to": "",
-                    "type": 1,
-                    "value": "3"
+                    "options": {
+                      "1": {
+                        "text": "Normal"
+                      },
+                      "2": {
+                        "text": "Warning"
+                      },
+                      "3": {
+                        "text": "Abnormal"
+                      }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -1471,28 +1322,18 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "from": "",
-                    "id": 0,
-                    "text": "Normal",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 1,
-                    "text": "Warning",
-                    "to": "",
-                    "type": 1,
-                    "value": "2"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "text": "Abnormal",
-                    "to": "",
-                    "type": 1,
-                    "value": "3"
+                    "options": {
+                      "1": {
+                        "text": "Normal"
+                      },
+                      "2": {
+                        "text": "Warning"
+                      },
+                      "3": {
+                        "text": "Abnormal"
+                      }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -1560,12 +1401,21 @@
       },
       "id": 12,
       "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "frameIndex": 0,
         "showHeader": true
       },
-      "pluginVersion": "7.1.1",
+      "pluginVersion": "8.3.6",
       "targets": [
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"false\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "instant": true,
@@ -1574,6 +1424,8 @@
           "refId": "A"
         },
         {
+          "datasource": "Prometheus",
+          "exemplar": false,
           "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"$protocol\"}",
           "format": "table",
           "hide": false,
@@ -1583,8 +1435,6 @@
           "refId": "B"
         }
       ],
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Request details",
       "transformations": [
         {
@@ -1628,17 +1478,18 @@
             },
             "indexByName": {
               "Time": 1,
-              "Value #A": 2,
+              "Value": 5,
               "dst_ip": 9,
               "request_content": 6,
-              "request_processing_status": 4,
-              "request_reqxfer_status": 3,
+              "request_processing_status": 3,
+              "request_reqxfer_status": 2,
               "response_content": 0,
-              "response_rspxfer_status": 5,
+              "response_rspxfer_status": 4,
               "src_ip": 7,
               "src_pod": 8
             },
             "renameByName": {
+              "Value": "Latency",
               "Value #A": "Latency",
               "Value #B": "P99 Latency",
               "dst_ip": "Destination IP",
@@ -1659,13 +1510,12 @@
       "type": "table"
     }
   ],
-  "schemaVersion": 26,
+  "schemaVersion": 34,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
-        "allValue": null,
         "current": {
           "selected": false,
           "text": "kube-system",
@@ -1679,19 +1529,20 @@
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "kindling_entity_request_duration_nanoseconds_count",
+        "query": {
+          "query": "kindling_entity_request_duration_nanoseconds_count",
+          "refId": "Prometheus-namespace-Variable-Query"
+        },
         "refresh": 2,
         "regex": "/namespace=\"(.+?)\\\"/",
         "skipUrlSync": false,
         "sort": 2,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
-        "allValue": null,
         "current": {
           "selected": false,
           "text": "coredns",
@@ -1705,19 +1556,20 @@
         "multi": false,
         "name": "workload",
         "options": [],
-        "query": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
+        "query": {
+          "query": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
+          "refId": "Prometheus-workload-Variable-Query"
+        },
         "refresh": 2,
         "regex": "/workload_name=\"(.+?)\\\"/",
         "skipUrlSync": false,
         "sort": 2,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
-        "allValue": null,
         "current": {
           "selected": true,
           "text": "http",
@@ -1767,5 +1619,6 @@
   "timezone": "",
   "title": "WorkLoad Details",
   "uid": "kR25k8pnz",
-  "version": 18
+  "version": 20,
+  "weekStart": ""
 }
