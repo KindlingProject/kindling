@@ -133,8 +133,8 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "test-ns",
-          "value": "test-ns"
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": "Prometheus",
         "definition": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
