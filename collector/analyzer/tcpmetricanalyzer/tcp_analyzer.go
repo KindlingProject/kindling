@@ -96,7 +96,7 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Gaug
 	if rtt == 0 {
 		return nil, nil
 	}
-	gauge := model.Gauge{
+	gauge := &model.Gauge{
 		Name:  TcpRttMetricName,
 		Value: int64(rtt),
 	}
@@ -108,7 +108,7 @@ func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*mod
 	if err != nil {
 		return nil, err
 	}
-	gauge := model.Gauge{
+	gauge := &model.Gauge{
 		Name:  TcpRetransmitMetricName,
 		Value: 1,
 	}
@@ -120,7 +120,7 @@ func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.Gau
 	if err != nil {
 		return nil, err
 	}
-	gauge := model.Gauge{
+	gauge := &model.Gauge{
 		Name:  TcpDropMetricName,
 		Value: 1,
 	}

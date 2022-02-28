@@ -141,6 +141,13 @@ func (attributes *AttributeMap) GetValues() map[string]AttributeValue {
 	return nil
 }
 
+// ResetValues sets the default value for all elements. Used for implementing sync.Pool.
+func (attributes *AttributeMap) ResetValues() {
+	for _, v := range attributes.values {
+		v.Reset()
+	}
+}
+
 func (attributes *AttributeMap) String() string {
 	json, _ := json.Marshal(attributes.ToStringMap())
 	return string(json)
@@ -148,6 +155,7 @@ func (attributes *AttributeMap) String() string {
 
 type AttributeValue interface {
 	ToString() string
+	Reset()
 }
 
 type stringValue struct {
@@ -158,6 +166,10 @@ func (v *stringValue) ToString() string {
 	return v.value
 }
 
+func (v *stringValue) Reset() {
+	v.value = ""
+}
+
 type intValue struct {
 	value int64
 }
@@ -166,10 +178,18 @@ func (v *intValue) ToString() string {
 	return strconv.FormatInt(v.value, 10)
 }
 
+func (v *intValue) Reset() {
+	v.value = 0
+}
+
 type boolValue struct {
 	value bool
 }
 
 func (v *boolValue) ToString() string {
 	return strconv.FormatBool(v.value)
+}
+
+func (v *boolValue) Reset() {
+	v.value = false
 }

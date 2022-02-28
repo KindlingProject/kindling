@@ -208,7 +208,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		}
 		if metricKind == MAGaugeKind {
 			e.instrumentFactory.recordGaugeAsync(name, model.GaugeGroup{
-				Values:    []model.Gauge{value},
+				Values:    []*model.Gauge{value},
 				Labels:    gaugeGroup.Labels,
 				Timestamp: gaugeGroup.Timestamp,
 			})

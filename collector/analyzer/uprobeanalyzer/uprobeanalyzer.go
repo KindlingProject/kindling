@@ -135,15 +135,15 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		}))
 	}
 
-	latencyGauge := model.Gauge{
+	latencyGauge := &model.Gauge{
 		Name:  constvalues.RequestTotalTime,
 		Value: int64(latency),
 	}
-	requestIoGauge := model.Gauge{
+	requestIoGauge := &model.Gauge{
 		Name:  constvalues.RequestIo,
 		Value: int64(event.GetUserAttribute("req_body_size").GetValue().GetUintValue()),
 	}
-	responseIoGauge := model.Gauge{
+	responseIoGauge := &model.Gauge{
 		Name:  constvalues.ResponseIo,
 		Value: int64(event.GetUserAttribute("resp_body_size").GetValue().GetUintValue()),
 	}

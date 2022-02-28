@@ -75,7 +75,7 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 			constlabels.DstNode:   model.NewStringValue(dstNodeName),
 			"role":                model.NewStringValue(role),
 		})
-		newValue := model.Gauge{
+		newValue := &model.Gauge{
 			Name:  "kindling_node_transmit_bytes_total",
 			Value: requestIo.Value,
 		}
@@ -100,7 +100,7 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 			constlabels.DstNode:   model.NewStringValue(srcNodeName),
 			"role":                model.NewStringValue(role),
 		})
-		newValue := model.Gauge{
+		newValue := &model.Gauge{
 			Name:  "kindling_node_transmit_bytes_total",
 			Value: responseIo.Value,
 		}
