@@ -19,15 +19,15 @@ func NewAttributeMapWithValues(values map[string]AttributeValue) *AttributeMap {
 }
 
 func NewStringValue(value string) AttributeValue {
-	return stringValue{value: value}
+	return &stringValue{value: value}
 }
 
 func NewIntValue(value int64) AttributeValue {
-	return intValue{value: value}
+	return &intValue{value: value}
 }
 
 func NewBoolValue(value bool) AttributeValue {
-	return boolValue{value: value}
+	return &boolValue{value: value}
 }
 
 func (attributes *AttributeMap) Merge(other *AttributeMap) {
@@ -54,43 +54,67 @@ func (attributes *AttributeMap) HasAttribute(key string) bool {
 
 func (attributes *AttributeMap) GetStringValue(key string) string {
 	value := attributes.values[key]
-	if x, ok := value.(stringValue); ok {
+	if x, ok := value.(*stringValue); ok {
 		return x.value
 	}
 	return ""
 }
 
 func (attributes *AttributeMap) AddStringValue(key string, value string) {
-	attributes.values[key] = stringValue{
+	attributes.values[key] = &stringValue{
 		value: value,
+	}
+}
+
+func (attributes *AttributeMap) UpdateAddStringValue(key string, value string) {
+	if v, ok := attributes.values[key]; ok {
+		v.(*stringValue).value = value
+	} else {
+		attributes.AddStringValue(key, value)
 	}
 }
 
 func (attributes *AttributeMap) GetIntValue(key string) int64 {
 	value := attributes.values[key]
-	if x, ok := value.(intValue); ok {
+	if x, ok := value.(*intValue); ok {
 		return x.value
 	}
 	return 0
 }
 
 func (attributes *AttributeMap) AddIntValue(key string, value int64) {
-	attributes.values[key] = intValue{
+	attributes.values[key] = &intValue{
 		value: value,
+	}
+}
+
+func (attributes *AttributeMap) UpdateAddIntValue(key string, value int64) {
+	if v, ok := attributes.values[key]; ok {
+		v.(*intValue).value = value
+	} else {
+		attributes.AddIntValue(key, value)
 	}
 }
 
 func (attributes *AttributeMap) GetBoolValue(key string) bool {
 	value := attributes.values[key]
-	if x, ok := value.(boolValue); ok {
+	if x, ok := value.(*boolValue); ok {
 		return x.value
 	}
 	return false
 }
 
 func (attributes *AttributeMap) AddBoolValue(key string, value bool) {
-	attributes.values[key] = boolValue{
+	attributes.values[key] = &boolValue{
 		value: value,
+	}
+}
+
+func (attributes *AttributeMap) UpdateAddBoolValue(key string, value bool) {
+	if v, ok := attributes.values[key]; ok {
+		v.(*boolValue).value = value
+	} else {
+		attributes.AddBoolValue(key, value)
 	}
 }
 
@@ -130,7 +154,7 @@ type stringValue struct {
 	value string
 }
 
-func (v stringValue) ToString() string {
+func (v *stringValue) ToString() string {
 	return v.value
 }
 
@@ -138,7 +162,7 @@ type intValue struct {
 	value int64
 }
 
-func (v intValue) ToString() string {
+func (v *intValue) ToString() string {
 	return strconv.FormatInt(v.value, 10)
 }
 
@@ -146,6 +170,6 @@ type boolValue struct {
 	value bool
 }
 
-func (v boolValue) ToString() string {
+func (v *boolValue) ToString() string {
 	return strconv.FormatBool(v.value)
 }
