@@ -3,7 +3,6 @@ package kindlingformatprocessor
 import (
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"strconv"
-	"strings"
 )
 
 type ProtocolType string
@@ -25,6 +24,13 @@ func fillSpecialProtocolLabels(g *gauges, protocol ProtocolType) {
 		fillKafkaMetricProtocolLabel(g)
 	default:
 		// Do nothing
+	}
+}
+
+func fillSpanProtocolLabels(g *gauges, protocol ProtocolType) {
+	switch protocol {
+	case http:
+		fillSpanHttpProtocolLabel(g)
 	}
 }
 
@@ -74,6 +80,17 @@ func fillTopologyHttpProtocolLabel(g *gauges) {
 	g.targetLabels.AddStringValue(constlabels.StatusCode, strconv.FormatInt(g.Labels.GetIntValue(constlabels.HttpStatusCode), 10))
 }
 
+func fillSpanHttpProtocolLabel(g *gauges) {
+	g.targetLabels.AddStringValue("http.method", g.Labels.GetStringValue(constlabels.HttpMethod))
+	g.targetLabels.AddStringValue("http.endpoint", g.Labels.GetStringValue(constlabels.HttpUrl))
+	g.targetLabels.AddIntValue("http.status_code", g.Labels.GetIntValue(constlabels.HttpStatusCode))
+	// TODO trace_id and trace_type
+	//kv = append(kv, attribute.String("http.trace_id", s.Protocol.HTTP.TraceID))
+	//kv = append(kv, attribute.String("http.trace_type", s.Protocol.HTTP.TraceType))
+	g.targetLabels.AddStringValue("http.request_payload", g.Labels.GetStringValue(constlabels.HttpRequestPayload))
+	g.targetLabels.AddStringValue("http.response_payload", g.Labels.GetStringValue(constlabels.HttpResponsePayload))
+}
+
 func fillEntityDnsProtocolLabel(g *gauges) {
 	g.targetLabels.AddStringValue(constlabels.RequestContent, g.Labels.GetStringValue(constlabels.DnsDomain))
 	g.targetLabels.AddStringValue(constlabels.ResponseContent, strconv.FormatInt(g.Labels.GetIntValue(constlabels.DnsRcode), 10))
@@ -106,20 +123,4 @@ func fillKafkaMetricProtocolLabel(g *gauges) {
 	g.targetLabels.AddStringValue(constlabels.Topic, g.Labels.GetStringValue(constlabels.KafkaTopic))
 	//g.targetLabels.AddStringValue(constlabels.Operation,g.Labels.GetStringValue())
 	//g.targetLabels.AddStringValue(constlabels.ConsumerId, g.Labels.GetStringValue())
-}
-
-// UrlMerge shortens the input url when it contains more than two /
-func UrlMerge(url string) string {
-	paramIndex := strings.Index(url, "?")
-	if paramIndex != -1 {
-		url = url[0:paramIndex]
-	}
-	if url == "" {
-		return ""
-	}
-	slices := strings.SplitN(url, "/", 4)
-	if len(slices) < 4 || slices[3] == "" {
-		return url
-	}
-	return "/" + slices[1] + "/" + slices[2] + "/*"
 }

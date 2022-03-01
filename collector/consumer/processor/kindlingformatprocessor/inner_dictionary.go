@@ -84,6 +84,10 @@ func TraceName(cfg *Config, g *gauges) {
 	})
 }
 
+func SpanName(cfg *Config, g *gauges) {
+	g.Name = constvalues.SpanInfo
+}
+
 func ProtocolDetailMetricName(cfg *Config, g *gauges) {
 	for _, gauge := range g.Values {
 		g.targetValues = append(g.targetValues, &model.Gauge{
@@ -184,6 +188,11 @@ func DstInstanceInfo(cfg *Config, g *gauges) {
 	}
 }
 
+func SpanProtocolInfo(cfg *Config, g *gauges) {
+	g.targetLabels.AddStringValue(constlabels.Protocol, g.Labels.GetStringValue(constlabels.Protocol))
+	fillSpanProtocolLabels(g, ProtocolType(g.Labels.GetStringValue(constlabels.Protocol)))
+}
+
 func ServiceProtocolInfo(cfg *Config, g *gauges) {
 	g.targetLabels.AddStringValue(constlabels.Protocol, g.Labels.GetStringValue(constlabels.Protocol))
 	fillCommonProtocolLabels(g, ProtocolType(g.Labels.GetStringValue(constlabels.Protocol)), true)
@@ -236,4 +245,26 @@ func getSubStageStatus(requestSendTime int64) string {
 	} else {
 		return YellowStatus
 	}
+}
+
+func TraceValuesToLabel(cfg *Config, g *gauges) {
+	for i := 0; i < len(g.Values); i++ {
+		if g.Values[i].Name == constvalues.RequestSentTime {
+			g.targetLabels.AddIntValue(constlabels.RequestSentNs, g.Values[i].Value)
+		} else if g.Values[i].Name == constvalues.WaitingTtfbTime {
+			g.targetLabels.AddIntValue(constlabels.WaitingTTfbNs, g.Values[i].Value)
+		} else if g.Values[i].Name == constvalues.ContentDownloadTime {
+			g.targetLabels.AddIntValue(constlabels.ContentDownloadNs, g.Values[i].Value)
+		} else if g.Values[i].Name == constvalues.RequestTotalTime {
+			g.targetLabels.AddIntValue(constlabels.RequestTotalNs, g.Values[i].Value)
+		} else if g.Values[i].Name == constvalues.RequestIo {
+			g.targetLabels.AddIntValue(constlabels.RequestIoBytes, g.Values[i].Value)
+		} else if g.Values[i].Name == constvalues.ResponseIo {
+			g.targetLabels.AddIntValue(constlabels.ResponseIoBytes, g.Values[i].Value)
+		}
+	}
+
+	g.targetLabels.AddBoolValue(constlabels.IsServer, g.Labels.GetBoolValue(constlabels.IsServer))
+	g.targetLabels.AddBoolValue(constlabels.IsError, g.Labels.GetBoolValue(constlabels.IsError))
+	g.targetLabels.AddIntValue(constlabels.Timestamp, int64(g.Timestamp))
 }
