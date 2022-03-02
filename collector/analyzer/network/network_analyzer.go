@@ -148,7 +148,7 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 }
 
 func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
-	timer := time.NewTicker(5 * time.Second)
+	timer := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-timer.C:
