@@ -88,28 +88,28 @@ func (p *K8sMetadataProcessor) processTcpMetric(gaugeGroup *model.GaugeGroup) {
 func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.AttributeMap) {
 	// add metadata for src
 	containerId := labelMap.GetStringValue(constlabels.ContainerId)
-	labelMap.AddStringValue(constlabels.SrcContainerId, containerId)
+	labelMap.UpdateAddStringValue(constlabels.SrcContainerId, containerId)
 	resInfo, ok := p.metadata.GetByContainerId(containerId)
 	if ok {
 		addContainerMetaInfoLabelSRC(labelMap, resInfo)
 	} else {
-		labelMap.AddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
-		labelMap.AddStringValue(constlabels.SrcNode, p.localNodeName)
-		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
+		labelMap.UpdateAddStringValue(constlabels.SrcNode, p.localNodeName)
+		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
 	}
 	// add metadata for dst
 	dstIp := labelMap.GetStringValue(constlabels.DstIp)
 	if dstIp == loopbackIp {
-		labelMap.AddStringValue(constlabels.DstNodeIp, p.localNodeIp)
-		labelMap.AddStringValue(constlabels.DstNode, p.localNodeName)
+		labelMap.UpdateAddStringValue(constlabels.DstNodeIp, p.localNodeIp)
+		labelMap.UpdateAddStringValue(constlabels.DstNode, p.localNodeName)
 	}
 	dstPort := labelMap.GetIntValue(constlabels.DstPort)
 	// DstIp is IP of a service
 	if svcInfo, ok := p.metadata.GetServiceByIpPort(dstIp, uint32(dstPort)); ok {
-		labelMap.AddStringValue(constlabels.DstNamespace, svcInfo.Namespace)
-		labelMap.AddStringValue(constlabels.DstService, svcInfo.ServiceName)
-		labelMap.AddStringValue(constlabels.DstWorkloadKind, svcInfo.WorkloadKind)
-		labelMap.AddStringValue(constlabels.DstWorkloadName, svcInfo.WorkloadName)
+		labelMap.UpdateAddStringValue(constlabels.DstNamespace, svcInfo.Namespace)
+		labelMap.UpdateAddStringValue(constlabels.DstService, svcInfo.ServiceName)
+		labelMap.UpdateAddStringValue(constlabels.DstWorkloadKind, svcInfo.WorkloadKind)
+		labelMap.UpdateAddStringValue(constlabels.DstWorkloadName, svcInfo.WorkloadName)
 		// find podInfo using dnat_ip
 		dNatIp := labelMap.GetStringValue(constlabels.DnatIp)
 		dNatPort := labelMap.GetIntValue(constlabels.DnatPort)
@@ -120,8 +120,8 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 			} else {
 				// maybe dnat_ip is NodeIP
 				if nodeName, ok := p.metadata.GetNodeNameByIp(dNatIp); ok {
-					labelMap.AddStringValue(constlabels.DstNodeIp, dNatIp)
-					labelMap.AddStringValue(constlabels.DstNode, nodeName)
+					labelMap.UpdateAddStringValue(constlabels.DstNodeIp, dNatIp)
+					labelMap.UpdateAddStringValue(constlabels.DstNode, nodeName)
 				}
 			}
 		}
@@ -131,11 +131,11 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 	} else {
 		// DstIp is a IP from external
 		if nodeName, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
-			labelMap.AddStringValue(constlabels.DstNodeIp, dstIp)
-			labelMap.AddStringValue(constlabels.DstNode, nodeName)
-			labelMap.AddStringValue(constlabels.DstNamespace, constlabels.InternalClusterNamespace)
+			labelMap.UpdateAddStringValue(constlabels.DstNodeIp, dstIp)
+			labelMap.UpdateAddStringValue(constlabels.DstNode, nodeName)
+			labelMap.UpdateAddStringValue(constlabels.DstNamespace, constlabels.InternalClusterNamespace)
 		} else {
-			labelMap.AddStringValue(constlabels.DstNamespace, constlabels.ExternalClusterNamespace)
+			labelMap.UpdateAddStringValue(constlabels.DstNamespace, constlabels.ExternalClusterNamespace)
 		}
 	}
 }
@@ -143,33 +143,33 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 func (p *K8sMetadataProcessor) addK8sMetaDataForServerLabel(labelMap *model.AttributeMap) {
 	srcIp := labelMap.GetStringValue(constlabels.SrcIp)
 	if srcIp == loopbackIp {
-		labelMap.AddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
-		labelMap.AddStringValue(constlabels.SrcNode, p.localNodeName)
+		labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
+		labelMap.UpdateAddStringValue(constlabels.SrcNode, p.localNodeName)
 	}
 	podInfo, ok := p.metadata.GetPodByIp(srcIp)
 	if ok {
 		addPodMetaInfoLabelSRC(labelMap, podInfo)
 	} else {
 		if nodeName, ok := p.metadata.GetNodeNameByIp(srcIp); ok {
-			labelMap.AddStringValue(constlabels.SrcNodeIp, srcIp)
-			labelMap.AddStringValue(constlabels.SrcNode, nodeName)
-			labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+			labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, srcIp)
+			labelMap.UpdateAddStringValue(constlabels.SrcNode, nodeName)
+			labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
 		} else {
-			labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+			labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
 		}
 	}
 	containerId := labelMap.GetStringValue(constlabels.ContainerId)
-	labelMap.AddStringValue(constlabels.DstContainerId, containerId)
+	labelMap.UpdateAddStringValue(constlabels.DstContainerId, containerId)
 	containerInfo, ok := p.metadata.GetByContainerId(containerId)
 	if ok {
 		addContainerMetaInfoLabelDST(labelMap, containerInfo)
 		if containerInfo.RefPodInfo.ServiceInfo != nil {
-			labelMap.AddStringValue(constlabels.DstService, containerInfo.RefPodInfo.ServiceInfo.ServiceName)
+			labelMap.UpdateAddStringValue(constlabels.DstService, containerInfo.RefPodInfo.ServiceInfo.ServiceName)
 		}
 	} else {
-		labelMap.AddStringValue(constlabels.DstNodeIp, p.localNodeIp)
-		labelMap.AddStringValue(constlabels.DstNode, p.localNodeName)
-		labelMap.AddStringValue(constlabels.DstNamespace, constlabels.InternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.DstNodeIp, p.localNodeIp)
+		labelMap.UpdateAddStringValue(constlabels.DstNode, p.localNodeName)
+		labelMap.UpdateAddStringValue(constlabels.DstNamespace, constlabels.InternalClusterNamespace)
 	}
 }
 
@@ -204,9 +204,9 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpSRC(labelMap *model.AttributeM
 		return
 	}
 	if _, ok := p.metadata.GetNodeNameByIp(srcIp); ok {
-		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
 	} else {
-		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
 	}
 }
 
@@ -221,10 +221,10 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 	dstPort := labelMap.GetIntValue(constlabels.DstPort)
 	dstSvcInfo, ok := p.metadata.GetServiceByIpPort(dstIp, uint32(dstPort))
 	if ok {
-		labelMap.AddStringValue(constlabels.DstNamespace, dstSvcInfo.Namespace)
-		labelMap.AddStringValue(constlabels.DstService, dstSvcInfo.ServiceName)
-		labelMap.AddStringValue(constlabels.DstWorkloadKind, dstSvcInfo.WorkloadKind)
-		labelMap.AddStringValue(constlabels.DstWorkloadName, dstSvcInfo.WorkloadName)
+		labelMap.UpdateAddStringValue(constlabels.DstNamespace, dstSvcInfo.Namespace)
+		labelMap.UpdateAddStringValue(constlabels.DstService, dstSvcInfo.ServiceName)
+		labelMap.UpdateAddStringValue(constlabels.DstWorkloadKind, dstSvcInfo.WorkloadKind)
+		labelMap.UpdateAddStringValue(constlabels.DstWorkloadName, dstSvcInfo.WorkloadName)
 		// find podInfo using dnat_ip
 		dNatIp := labelMap.GetStringValue(constlabels.DnatIp)
 		dNatPort := labelMap.GetIntValue(constlabels.DnatPort)
@@ -249,43 +249,43 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 		return
 	}
 	if _, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
-		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
 	} else {
-		labelMap.AddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
 	}
 }
 
 func addContainerMetaInfoLabelSRC(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {
-	labelMap.AddStringValue(constlabels.SrcContainer, containerInfo.Name)
+	labelMap.UpdateAddStringValue(constlabels.SrcContainer, containerInfo.Name)
 	addPodMetaInfoLabelSRC(labelMap, containerInfo.RefPodInfo)
 }
 
 func addPodMetaInfoLabelSRC(labelMap *model.AttributeMap, podInfo *kubernetes.K8sPodInfo) {
-	labelMap.AddStringValue(constlabels.SrcNode, podInfo.NodeName)
-	labelMap.AddStringValue(constlabels.SrcNodeIp, podInfo.NodeAddress)
-	labelMap.AddStringValue(constlabels.SrcNamespace, podInfo.Namespace)
-	labelMap.AddStringValue(constlabels.SrcWorkloadKind, podInfo.WorkloadKind)
-	labelMap.AddStringValue(constlabels.SrcWorkloadName, podInfo.WorkloadName)
-	labelMap.AddStringValue(constlabels.SrcPod, podInfo.PodName)
-	labelMap.AddStringValue(constlabels.SrcIp, podInfo.Ip)
+	labelMap.UpdateAddStringValue(constlabels.SrcNode, podInfo.NodeName)
+	labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, podInfo.NodeAddress)
+	labelMap.UpdateAddStringValue(constlabels.SrcNamespace, podInfo.Namespace)
+	labelMap.UpdateAddStringValue(constlabels.SrcWorkloadKind, podInfo.WorkloadKind)
+	labelMap.UpdateAddStringValue(constlabels.SrcWorkloadName, podInfo.WorkloadName)
+	labelMap.UpdateAddStringValue(constlabels.SrcPod, podInfo.PodName)
+	labelMap.UpdateAddStringValue(constlabels.SrcIp, podInfo.Ip)
 	if podInfo.ServiceInfo != nil {
-		labelMap.AddStringValue(constlabels.SrcService, podInfo.ServiceInfo.ServiceName)
+		labelMap.UpdateAddStringValue(constlabels.SrcService, podInfo.ServiceInfo.ServiceName)
 	}
 }
 
 func addContainerMetaInfoLabelDST(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {
-	labelMap.AddStringValue(constlabels.DstContainer, containerInfo.Name)
+	labelMap.UpdateAddStringValue(constlabels.DstContainer, containerInfo.Name)
 	addPodMetaInfoLabelDST(labelMap, containerInfo.RefPodInfo)
 }
 
 func addPodMetaInfoLabelDST(labelMap *model.AttributeMap, podInfo *kubernetes.K8sPodInfo) {
-	labelMap.AddStringValue(constlabels.DstNode, podInfo.NodeName)
-	labelMap.AddStringValue(constlabels.DstNodeIp, podInfo.NodeAddress)
-	labelMap.AddStringValue(constlabels.DstNamespace, podInfo.Namespace)
-	labelMap.AddStringValue(constlabels.DstWorkloadKind, podInfo.WorkloadKind)
-	labelMap.AddStringValue(constlabels.DstWorkloadName, podInfo.WorkloadName)
-	labelMap.AddStringValue(constlabels.DstPod, podInfo.PodName)
+	labelMap.UpdateAddStringValue(constlabels.DstNode, podInfo.NodeName)
+	labelMap.UpdateAddStringValue(constlabels.DstNodeIp, podInfo.NodeAddress)
+	labelMap.UpdateAddStringValue(constlabels.DstNamespace, podInfo.Namespace)
+	labelMap.UpdateAddStringValue(constlabels.DstWorkloadKind, podInfo.WorkloadKind)
+	labelMap.UpdateAddStringValue(constlabels.DstWorkloadName, podInfo.WorkloadName)
+	labelMap.UpdateAddStringValue(constlabels.DstPod, podInfo.PodName)
 	if labelMap.GetStringValue(constlabels.DstIp) == "" {
-		labelMap.AddStringValue(constlabels.DstIp, podInfo.Ip)
+		labelMap.UpdateAddStringValue(constlabels.DstIp, podInfo.Ip)
 	}
 }

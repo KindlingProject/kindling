@@ -51,7 +51,7 @@ func makeGaugeGroup(latency int64) *model.GaugeGroup {
 		constlabels.ResponseContent: model.NewIntValue(201),
 	})
 
-	latencyGauge := model.Gauge{
+	latencyGauge := &model.Gauge{
 		Name:  "kindling_entity_request_duration_nanoseconds",
 		Value: latency,
 	}
