@@ -11,6 +11,16 @@ const (
 	KEY_THRESHOLD = 5
 )
 
+var (
+	alphabetRegexp *regexp.Regexp
+	starRegexp     *regexp.Regexp
+)
+
+func init() {
+	alphabetRegexp, _ = regexp.Compile("^[A-Za-z_-]+$")
+	starRegexp, _ = regexp.Compile("^[/*]+$")
+}
+
 type HttpMerger struct {
 	keyThreshold int
 	cache        *simplelru.LRU
@@ -20,11 +30,10 @@ func NewHttpMergeCache() *HttpMerger {
 	merger := &HttpMerger{}
 	merger.keyThreshold = KEY_THRESHOLD
 	merger.cache, _ = simplelru.NewLRU(20000, nil)
-
 	return merger
 }
 
-func (merger HttpMerger) GetContentKey(url string) string {
+func (merger *HttpMerger) GetContentKey(url string) string {
 	if len(url) <= 1 {
 		return url
 	}
@@ -39,7 +48,7 @@ func (merger HttpMerger) GetContentKey(url string) string {
 	return truncateStarUrl(regexConvergence)
 }
 
-func (merger HttpMerger) convergeByAlgorithm(url string) string {
+func (merger *HttpMerger) convergeByAlgorithm(url string) string {
 	urlAt := getSubUrl(url, 0)
 	if len(urlAt) == 0 {
 		// If url_at is empty, the url is "/"
@@ -62,7 +71,7 @@ func (merger HttpMerger) convergeByAlgorithm(url string) string {
 	return result
 }
 
-func (merger HttpMerger) getCacheKey(urlA string, urlB string) string {
+func (merger *HttpMerger) getCacheKey(urlA string, urlB string) string {
 	if len(urlA) == 0 || len(urlB) == 0 {
 		return ""
 	}
@@ -114,7 +123,7 @@ func (merger HttpMerger) getCacheKey(urlA string, urlB string) string {
 	return ""
 }
 
-func (merger HttpMerger) convergeByRegex(url string) string {
+func (merger *HttpMerger) convergeByRegex(url string) string {
 	// "" -> ""
 	// "aa" -> "aa"
 	// "/" -> "", ""
@@ -134,7 +143,7 @@ func (merger HttpMerger) convergeByRegex(url string) string {
 		// The url is "/"
 		return url
 	}
-	match, _ := regexp.MatchString("^[A-Za-z_-]+$", firstPart)
+	match := alphabetRegexp.MatchString(firstPart)
 	if !match {
 		firstPart = "*"
 	}
@@ -185,7 +194,7 @@ func truncateStarUrl(url string) string {
 	if len(url) == 0 {
 		return url
 	}
-	match, _ := regexp.MatchString("^[/*]+$", url)
+	match := starRegexp.MatchString(url)
 	if match {
 		return "*"
 	}
