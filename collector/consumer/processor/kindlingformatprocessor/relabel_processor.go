@@ -41,7 +41,8 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 	if r.cfg.NeedTraceAsResourceSpan && common.isSlowOrError() {
 		// Trace As Span
 		span := newGauges(gaugeGroup)
-		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, TopologyTraceInstanceInfo, TopologyTraceK8sInfo, SpanProtocolInfo, TraceValuesToLabel))
+		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, TopologyTraceInstanceInfo,
+			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, SpanProtocolInfo, TraceValuesToLabel))
 	}
 
 	// The data when the field is Error is true and the error Type is 2, do not generate metric
