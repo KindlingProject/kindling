@@ -10,5 +10,5 @@ const (
 	RequestIo  = "request_io"
 	ResponseIo = "response_io"
 
-	SpanInfo = "span_info"
+	SpanInfo = "KSpanInfo"
 )
