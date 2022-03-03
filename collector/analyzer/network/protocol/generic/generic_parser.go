@@ -8,7 +8,7 @@ func NewGenericParser() *protocol.ProtocolParser {
 	requestParser := protocol.CreatePkgParser(fastfailGeneric(), parseGeneric())
 	responseParser := protocol.CreatePkgParser(fastfailGeneric(), parseGeneric())
 
-	return protocol.NewProtocolParser(protocol.UNSUPPORTED, requestParser, responseParser, nil)
+	return protocol.NewProtocolParser(protocol.NOSUPPORT, requestParser, responseParser, nil)
 }
 
 func fastfailGeneric() protocol.FastFailFn {

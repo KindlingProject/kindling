@@ -319,7 +319,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 		for _, parser := range cacheParsers {
 			records := na.parseProtocol(mps, parser)
 			if records != nil {
-				if protocol.UNSUPPORTED == parser.GetProtocol() {
+				if protocol.NOSUPPORT == parser.GetProtocol() {
 					// Reset mapping for  generic and port when exceed threshold so as to parsed by other protcols.
 					if parser.AddPortCount(port) == CACHE_RESET_THRESHOLD {
 						parser.ResetPort(port)
@@ -342,7 +342,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 			return records
 		}
 	}
-	return na.getRecords(mps, protocol.UNSUPPORTED, nil)
+	return na.getRecords(mps, protocol.NOSUPPORT, nil)
 }
 
 func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.ProtocolParser) []*model.GaugeGroup {
