@@ -39,13 +39,13 @@ func fillSpanProtocolLabels(g *gauges, protocol ProtocolType) {
 
 func fillSpanMysqlProtocolLabel(g *gauges) {
 	g.targetLabels.AddStringValue("mysql.sql", g.Labels.GetStringValue(constlabels.Sql))
-	g.targetLabels.AddStringValue("mysql.error_code", g.Labels.GetStringValue(constlabels.SqlErrCode))
+	g.targetLabels.AddStringValue("mysql.error_code", strconv.FormatInt(g.Labels.GetIntValue(constlabels.SqlErrCode), 10))
 	g.targetLabels.AddStringValue("mysql.error_msg", g.Labels.GetStringValue(constlabels.SqlErrMsg))
 }
 
 func fillSpanDNSProtocolLabel(g *gauges) {
 	g.targetLabels.AddStringValue("dns.domain", g.Labels.GetStringValue(constlabels.DnsDomain))
-	g.targetLabels.AddStringValue("dns.rcode", g.Labels.GetStringValue(constlabels.DnsRcode))
+	g.targetLabels.AddStringValue("dns.rcode", strconv.FormatInt(g.Labels.GetIntValue(constlabels.DnsRcode), 10))
 }
 
 func fillCommonProtocolLabels(g *gauges, protocol ProtocolType, isServer bool) {
