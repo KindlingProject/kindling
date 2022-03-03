@@ -72,6 +72,7 @@ const (
 	RequestIoBytes    = "requestio_bytes"
 	ResponseIoBytes   = "responseio_bytes"
 	Timestamp         = "timestamp"
+	IsConvergent      = "is_convergent"
 )
 const (
 	STR_EMPTY = ""

@@ -190,6 +190,7 @@ func DstInstanceInfo(cfg *Config, g *gauges) {
 
 func SpanProtocolInfo(cfg *Config, g *gauges) {
 	g.targetLabels.AddStringValue(constlabels.Protocol, g.Labels.GetStringValue(constlabels.Protocol))
+	g.targetLabels.AddStringValue(constlabels.ContentKey, g.Labels.GetStringValue(constlabels.ContentKey))
 	fillSpanProtocolLabels(g, ProtocolType(g.Labels.GetStringValue(constlabels.Protocol)))
 }
 
@@ -267,5 +268,9 @@ func TraceValuesToLabel(cfg *Config, g *gauges) {
 
 	g.targetLabels.AddBoolValue(constlabels.IsServer, g.Labels.GetBoolValue(constlabels.IsServer))
 	g.targetLabels.AddBoolValue(constlabels.IsError, g.Labels.GetBoolValue(constlabels.IsError))
+	g.targetLabels.AddBoolValue(constlabels.IsSlow, g.Labels.GetBoolValue(constlabels.IsSlow))
+
+	// TODO is_convergent
+	g.targetLabels.AddIntValue(constlabels.IsConvergent, 0)
 	g.targetLabels.AddIntValue(constlabels.Timestamp, int64(g.Timestamp))
 }
