@@ -36,7 +36,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		// Trace as Metric
 		trace := newGauges(gaugeGroup)
 		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo,
-			TopologyTraceK8sInfo, ServiceProtocolInfo, TraceStatusInfo))
+			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo))
 	}
 	if r.cfg.NeedTraceAsResourceSpan && common.isSlowOrError() {
 		// Trace As Span
