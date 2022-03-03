@@ -53,7 +53,7 @@ func Test_gauges_Process(t *testing.T) {
 			args: args{
 				gauges:   newGauges(newInnerGauges(false)),
 				cfg:      &Config{NeedTraceAsMetric: true, NeedPodDetail: true},
-				relabels: []Relabel{MetricName, TopologyInstanceInfo, TopologyK8sInfo, SrcDockerInfo, TopologyProtocolInfo},
+				relabels: []Relabel{MetricName, TopologyInstanceInfo, TopologyK8sInfo, SrcContainerInfo, TopologyProtocolInfo},
 			},
 			want: getTopologyMetric(),
 		},

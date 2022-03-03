@@ -257,6 +257,7 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 
 func addContainerMetaInfoLabelSRC(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {
 	labelMap.UpdateAddStringValue(constlabels.SrcContainer, containerInfo.Name)
+	labelMap.UpdateAddStringValue(constlabels.SrcContainerId, containerInfo.ContainerId)
 	addPodMetaInfoLabelSRC(labelMap, containerInfo.RefPodInfo)
 }
 
@@ -275,6 +276,7 @@ func addPodMetaInfoLabelSRC(labelMap *model.AttributeMap, podInfo *kubernetes.K8
 
 func addContainerMetaInfoLabelDST(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {
 	labelMap.UpdateAddStringValue(constlabels.DstContainer, containerInfo.Name)
+	labelMap.UpdateAddStringValue(constlabels.DstContainerId, containerInfo.ContainerId)
 	addPodMetaInfoLabelDST(labelMap, containerInfo.RefPodInfo)
 }
 
