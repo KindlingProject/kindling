@@ -11,6 +11,9 @@ spec:
     relabelings:
     - regex: '(container|endpoint|namespace|pod|service)'
       action: labeldrop
+  - interval: 15s
+    port: observability-metrics
+    path: /metrics
   namespaceSelector:
     matchNames:
     - kindling

@@ -9,9 +9,13 @@ spec:
   clusterIP: None
   ports:
   - name: metrics
-    port: 8080
+    port: 9500
     protocol: TCP
-    targetPort: 8080
+    targetPort: 9500
+  - name: observability-metrics
+    port: 9501
+    protocol: TCP
+    targetPort: 9501
   selector:
     k8s-app: kindling-agent
   sessionAffinity: None
