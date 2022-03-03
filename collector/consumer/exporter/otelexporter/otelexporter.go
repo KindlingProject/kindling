@@ -7,6 +7,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -25,6 +26,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
+	apitrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"os"
 	"time"
@@ -196,6 +198,17 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 			zap.String("gaugeGroup", gaugeGroup.String()),
 		)
 	}
+	if gaugeGroup.Name == constvalues.SpanInfo {
+		if e.defaultTracer == nil {
+			return errors.New("send span failed: this exporter can not support Span Data")
+		}
+		return e.PushTrace(gaugeGroup, gaugeGroup.Name)
+	} else {
+		return e.PushMetric(gaugeGroup)
+	}
+}
+
+func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
 	values := gaugeGroup.Values
 	measurements := make([]metric.Measurement, 0, len(values))
 	for _, value := range values {
@@ -220,6 +233,16 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		labels := gaugeGroup.Labels
 		e.instrumentFactory.meter.RecordBatch(context.Background(), GetLabels(labels, e.customLabels), measurements...)
 	}
+	return nil
+}
+
+func (e *OtelExporter) PushTrace(g *model.GaugeGroup, spanName string) error {
+	_, span := e.defaultTracer.Start(
+		context.Background(),
+		spanName,
+		apitrace.WithAttributes(GetLabels(g.Labels, e.customLabels)...),
+	)
+	span.End()
 	return nil
 }
 

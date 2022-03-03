@@ -30,11 +30,17 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 	common := newGauges(gaugeGroup)
 
 	var traceErr error = nil
+	var spanErr error = nil
 
 	if r.cfg.NeedTraceAsMetric && common.isSlowOrError() {
-		// Trace
+		// Trace as Metric
 		trace := newGauges(gaugeGroup)
 		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo, TopologyTraceK8sInfo, ServiceProtocolInfo, TraceStatusInfo))
+	}
+	if r.cfg.NeedTraceAsResourceSpan && common.isSlowOrError() {
+		// Trace As Span
+		span := newGauges(gaugeGroup)
+		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, TopologyTraceInstanceInfo, TopologyTraceK8sInfo, SpanProtocolInfo, TraceValuesToLabel))
 	}
 
 	// The data when the field is Error is true and the error Type is 2, do not generate metric
@@ -61,9 +67,9 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, true)
 			}
 		}
-		return multierr.Combine(traceErr, metricErr, metricErr2)
+		return multierr.Combine(traceErr, spanErr, metricErr, metricErr2)
 	} else {
 		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo, SrcDockerInfo, TopologyProtocolInfo))
-		return multierr.Combine(traceErr, metricErr)
+		return multierr.Combine(traceErr, spanErr, metricErr)
 	}
 }
