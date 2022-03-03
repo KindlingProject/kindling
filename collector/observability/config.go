@@ -5,5 +5,5 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	Port: ":8081",
+	Port: ":9501",
 }
