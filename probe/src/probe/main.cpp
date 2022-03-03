@@ -45,7 +45,7 @@ void do_inspect(sinsp *inspector, sinsp_evt_formatter *formatter, int pid, int s
             continue;
         }
 
-        if (ev->get_thread_info()->m_comm == "sshd" || ev->get_type() == PPME_SCHEDSWITCH_6_E || ev->get_type() == PPME_SCHEDSWITCH_6_X) {
+        if (ev->get_thread_info()->m_comm == "sshd" || ev->get_type() == PPME_SCHEDSWITCH_6_E || ev->get_type() == PPME_SCHEDSWITCH_6_X || ev->get_thread_info()->m_comm == "containerd" || ev->get_thread_info()->m_comm == "dockerd" || ev->get_thread_info()->m_comm == "container-shim") {
             continue;
         }
         pub->consume_sysdig_event(ev, pid, sysdigConverter);
