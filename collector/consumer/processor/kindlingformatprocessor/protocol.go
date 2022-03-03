@@ -8,14 +8,13 @@ import (
 type ProtocolType string
 
 const (
-	generic = "generic"
-	http    = "http"
-	http2   = "http2"
-	grpc    = "grpc"
-	dubbo   = "dubbo"
-	dns     = "dns"
-	kafka   = "kafka"
-	mysql   = "mysql"
+	http  = "http"
+	http2 = "http2"
+	grpc  = "grpc"
+	dubbo = "dubbo"
+	dns   = "dns"
+	kafka = "kafka"
+	mysql = "mysql"
 )
 
 func fillSpecialProtocolLabels(g *gauges, protocol ProtocolType) {
