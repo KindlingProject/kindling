@@ -64,8 +64,16 @@ const (
 
 	ExternalClusterNamespace = "NOT_FOUND_EXTERNAL"
 	InternalClusterNamespace = "NOT_FOUND_INTERNAL"
-)
 
+	RequestTotalNs    = "request_total_ns"
+	RequestSentNs     = "request_sent_ns"
+	WaitingTTfbNs     = "waiting_ttfb_ns"
+	ContentDownloadNs = "content_download_ns"
+	RequestIoBytes    = "requestio_bytes"
+	ResponseIoBytes   = "responseio_bytes"
+	Timestamp         = "timestamp"
+	IsConvergent      = "is_convergent"
+)
 const (
 	STR_EMPTY = ""
 )
