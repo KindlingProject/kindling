@@ -323,12 +323,19 @@ type messagePairKey struct {
 }
 
 func getMessagePairKey(evt *model.KindlingEvent) messagePairKey {
-	return messagePairKey{
-		pid:   evt.GetPid(),
-		fd:    evt.GetFd(),
-		sip:   evt.GetSip(),
-		dip:   evt.GetDip(),
-		sport: evt.GetSport(),
-		dport: evt.GetDport(),
+	if evt.IsUdp() == 1 {
+		return messagePairKey{
+			pid:   evt.GetPid(),
+			fd:    evt.GetFd(),
+			sip:   evt.GetSip(),
+			dip:   evt.GetDip(),
+			sport: evt.GetSport(),
+			dport: evt.GetDport(),
+		}
+	} else {
+		return messagePairKey{
+			pid: evt.GetPid(),
+			fd:  evt.GetFd(),
+		}
 	}
 }
