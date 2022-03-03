@@ -249,17 +249,18 @@ func getSubStageStatus(requestSendTime int64) string {
 
 func TraceValuesToLabel(cfg *Config, g *gauges) {
 	for i := 0; i < len(g.Values); i++ {
-		if g.Values[i].Name == constvalues.RequestSentTime {
+		switch g.Values[i].Name {
+		case constvalues.RequestSentTime:
 			g.targetLabels.AddIntValue(constlabels.RequestSentNs, g.Values[i].Value)
-		} else if g.Values[i].Name == constvalues.WaitingTtfbTime {
+		case constvalues.WaitingTtfbTime:
 			g.targetLabels.AddIntValue(constlabels.WaitingTTfbNs, g.Values[i].Value)
-		} else if g.Values[i].Name == constvalues.ContentDownloadTime {
+		case constvalues.ContentDownloadTime:
 			g.targetLabels.AddIntValue(constlabels.ContentDownloadNs, g.Values[i].Value)
-		} else if g.Values[i].Name == constvalues.RequestTotalTime {
+		case constvalues.RequestTotalTime:
 			g.targetLabels.AddIntValue(constlabels.RequestTotalNs, g.Values[i].Value)
-		} else if g.Values[i].Name == constvalues.RequestIo {
+		case constvalues.RequestIo:
 			g.targetLabels.AddIntValue(constlabels.RequestIoBytes, g.Values[i].Value)
-		} else if g.Values[i].Name == constvalues.ResponseIo {
+		case constvalues.ResponseIo:
 			g.targetLabels.AddIntValue(constlabels.ResponseIoBytes, g.Values[i].Value)
 		}
 	}
