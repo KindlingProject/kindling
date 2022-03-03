@@ -292,7 +292,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 	if found {
 		if mps.requests == nil {
 			// Connect Timeout
-			return na.getConnectFailRecords(mps, staticProtocol)
+			return na.getConnectFailRecords(mps)
 		}
 
 		if parser, exist := na.protocolMap[staticProtocol]; exist {
@@ -309,7 +309,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 
 	if mps.requests == nil {
 		// Connect Timeout
-		return na.getConnectFailRecords(mps, protocol.GENERIC)
+		return na.getConnectFailRecords(mps)
 	}
 
 	// Step2 Cache protocol and port
@@ -319,7 +319,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 		for _, parser := range cacheParsers {
 			records := na.parseProtocol(mps, parser)
 			if records != nil {
-				if protocol.GENERIC == parser.GetProtocol() {
+				if protocol.NOSUPPORT == parser.GetProtocol() {
 					// Reset mapping for  generic and port when exceed threshold so as to parsed by other protcols.
 					if parser.AddPortCount(port) == CACHE_RESET_THRESHOLD {
 						parser.ResetPort(port)
@@ -342,7 +342,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 			return records
 		}
 	}
-	return na.getRecords(mps, protocol.GENERIC, nil)
+	return na.getRecords(mps, protocol.NOSUPPORT, nil)
 }
 
 func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.ProtocolParser) []*model.GaugeGroup {
@@ -431,7 +431,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 	return na.getRecords(mps, parser.GetProtocol(), responseMsg.GetAttributes())
 }
 
-func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs, protocol string) []*model.GaugeGroup {
+func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.GaugeGroup {
 	evt := mps.connects.event
 	ret := na.gaugeGroupPool.Get()
 	ret.UpdateAddGauge(constvalues.ConnectTime, int64(mps.connects.getDuration()))
