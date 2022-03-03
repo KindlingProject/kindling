@@ -147,10 +147,19 @@ func TopologyK8sInfo(cfg *Config, g *gauges) {
 	}
 }
 
-func SrcDockerInfo(cfg *Config, g *gauges) {
+// SrcContainerInfo adds container level information to the input gauges if cfg.NeedPodDetail is enabled.
+func SrcContainerInfo(cfg *Config, g *gauges) {
 	if cfg.NeedPodDetail {
 		g.targetLabels.AddStringValue(constlabels.SrcContainer, g.Labels.GetStringValue(constlabels.SrcContainer))
 		g.targetLabels.AddStringValue(constlabels.SrcContainerId, g.Labels.GetStringValue(constlabels.SrcContainerId))
+	}
+}
+
+// DstContainerInfo adds container level information to the input gauges if cfg.NeedPodDetail is enabled.
+func DstContainerInfo(cfg *Config, g *gauges) {
+	if cfg.NeedPodDetail {
+		g.targetLabels.AddStringValue(constlabels.DstContainer, g.Labels.GetStringValue(constlabels.DstContainer))
+		g.targetLabels.AddStringValue(constlabels.DstContainerId, g.Labels.GetStringValue(constlabels.DstContainerId))
 	}
 }
 

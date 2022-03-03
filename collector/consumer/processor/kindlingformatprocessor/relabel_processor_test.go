@@ -64,28 +64,28 @@ func makeGaugeGroup(latency int64) *model.GaugeGroup {
 		constlabels.IsSlow:          model.NewBoolValue(true),
 	})
 
-	latencyGauge := model.Gauge{
+	latencyGauge := &model.Gauge{
 		Name:  "kindling_entity_request_duration_nanoseconds",
 		Value: latency,
 	}
 
-	requestTimeGauge := model.Gauge{
+	requestTimeGauge := &model.Gauge{
 		Name:  constvalues.RequestSentTime,
 		Value: 300,
 	}
-	waitTtfbTime := model.Gauge{
+	waitTtfbTime := &model.Gauge{
 		Name:  constvalues.WaitingTtfbTime,
 		Value: 400,
 	}
-	contentDownload := model.Gauge{
+	contentDownload := &model.Gauge{
 		Name:  constvalues.ContentDownloadTime,
 		Value: 500,
 	}
-	connectTime := model.Gauge{
+	connectTime := &model.Gauge{
 		Name:  constvalues.ConnectTime,
 		Value: 600,
 	}
-	reqio := model.Gauge{
+	reqio := &model.Gauge{
 		Name:  constvalues.RequestIo,
 		Value: 700,
 	}
