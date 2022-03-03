@@ -35,12 +35,14 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 	if r.cfg.NeedTraceAsMetric && common.isSlowOrError() {
 		// Trace as Metric
 		trace := newGauges(gaugeGroup)
-		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo, TopologyTraceK8sInfo, ServiceProtocolInfo, TraceStatusInfo))
+		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo,
+			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo))
 	}
 	if r.cfg.NeedTraceAsResourceSpan && common.isSlowOrError() {
 		// Trace As Span
 		span := newGauges(gaugeGroup)
-		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, TopologyTraceInstanceInfo, TopologyTraceK8sInfo, SpanProtocolInfo, TraceValuesToLabel))
+		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, TopologyTraceInstanceInfo,
+			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, SpanProtocolInfo, TraceValuesToLabel))
 	}
 
 	// The data when the field is Error is true and the error Type is 2, do not generate metric
@@ -62,14 +64,16 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 				externalGaugeGroup := newGauges(gaugeGroup)
 				// Here we have to modify the field "IsServer" to generate the metric.
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, false)
-				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo, TopologyProtocolInfo))
+				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, MetricName, TopologyInstanceInfo,
+					TopologyK8sInfo, DstContainerInfo, TopologyProtocolInfo))
 				// In case of using the original data later, we reset the field "IsServer".
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, true)
 			}
 		}
 		return multierr.Combine(traceErr, spanErr, metricErr, metricErr2)
 	} else {
-		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo, SrcDockerInfo, TopologyProtocolInfo))
-		return multierr.Combine(traceErr, spanErr, metricErr)
+		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo,
+			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo))
+		return multierr.Combine(traceErr, metricErr)
 	}
 }
