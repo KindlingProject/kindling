@@ -41,13 +41,13 @@ func (t *TelemetryManager) initLogger(viper *viper.Viper) {
 }
 
 func (t *TelemetryManager) initProvider(viper *viper.Viper) {
-	var config = &observability.Config{}
+	var config = &observability.DefaultConfig
 	key := ObservabilityConfig + "." + MetricKey
 	err := viper.UnmarshalKey(key, config)
 	if err != nil {
 		log.Printf("Error happened when reading observability config, and default config will be used: %v", err)
 	}
-	meterProvider, err := observability.InitTelemetry(t.Telemetry.Logger, &observability.DefaultConfig)
+	meterProvider, err := observability.InitTelemetry(t.Telemetry.Logger, config)
 	if err != nil {
 		log.Printf("Error happened when initializing meter provider: %v", err)
 		return

@@ -71,8 +71,11 @@ processors:
   kindlingformatprocessor:
     need_trace_as_metric: true
     need_pod_detail: true
+    store_external_src_ip: true
+    # When using otlp-grpc / stdout exporter , this option supports to
+    # send trace data in the format of ResourceSpan
+    need_trace_as_span: false
   nodemetricprocessor:
-
 
 exporters:
   otelexporter:
@@ -94,7 +97,7 @@ exporters:
     # Add labels to all metrics in the format of [key: value]
     custom_labels:
     prometheus:
-      port: :8080
+      port: :9500
     otlp:
       collect_period: 15s
       # Note: DO NOT add the prefix "http://"
@@ -114,4 +117,4 @@ observability:
       localtime: true
       compress: false
   opentelemetry:
-    prometheus_port: :8081
+    prometheus_port: :9501
