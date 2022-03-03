@@ -107,6 +107,8 @@ spec:
           requests:
             memory: 300Mi
         env:
+        - name: GOGC
+          value: "400"
         - name: MY_NODE_IP
           valueFrom:
             fieldRef:
