@@ -288,9 +288,9 @@ func traceSpanValuesToLabel(cfg *Config, g *gauges) {
 		}
 	}
 
-	g.targetLabels.AddIntValue(constlabels.IsServer, If(g.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int64))
-	g.targetLabels.AddIntValue(constlabels.IsError, If(g.Labels.GetBoolValue(constlabels.IsError), 1, 0).(int64))
-	g.targetLabels.AddIntValue(constlabels.IsSlow, If(g.Labels.GetBoolValue(constlabels.IsSlow), 1, 0).(int64))
+	g.targetLabels.AddIntValue(constlabels.IsServer, int64(If(g.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int)))
+	g.targetLabels.AddIntValue(constlabels.IsError, int64(If(g.Labels.GetBoolValue(constlabels.IsError), 1, 0).(int)))
+	g.targetLabels.AddIntValue(constlabels.IsSlow, int64(If(g.Labels.GetBoolValue(constlabels.IsSlow), 1, 0).(int)))
 
 	// TODO is_convergent
 	g.targetLabels.AddIntValue(constlabels.IsConvergent, 0)
