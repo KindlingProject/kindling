@@ -257,7 +257,20 @@ func getSubStageStatus(requestSendTime int64) string {
 	}
 }
 
-func TraceValuesToLabel(cfg *Config, g *gauges) {
+func traceSpanContainerInfo(cfg *Config, g *gauges) {
+	g.targetLabels.AddStringValue(srcContainerName, g.Labels.GetStringValue(constlabels.SrcContainer))
+	g.targetLabels.AddStringValue(srcContainerId, g.Labels.GetStringValue(constlabels.SrcContainerId))
+	g.targetLabels.AddStringValue(dstContainerName, g.Labels.GetStringValue(constlabels.DstContainer))
+	g.targetLabels.AddStringValue(dstContainerId, g.Labels.GetStringValue(constlabels.DstContainerId))
+}
+
+func traceSpanInstanceInfo(cfg *Config, g *gauges) {
+	g.targetLabels.AddStringValue(constlabels.SrcIp, g.Labels.GetStringValue(constlabels.SrcIp))
+	g.targetLabels.AddStringValue(constlabels.SrcPort, g.Labels.GetStringValue(constlabels.SrcPort))
+	DstInstanceInfo(cfg, g)
+}
+
+func traceSpanValuesToLabel(cfg *Config, g *gauges) {
 	for i := 0; i < len(g.Values); i++ {
 		switch g.Values[i].Name {
 		case constvalues.RequestSentTime:
@@ -275,11 +288,18 @@ func TraceValuesToLabel(cfg *Config, g *gauges) {
 		}
 	}
 
-	g.targetLabels.AddBoolValue(constlabels.IsServer, g.Labels.GetBoolValue(constlabels.IsServer))
-	g.targetLabels.AddBoolValue(constlabels.IsError, g.Labels.GetBoolValue(constlabels.IsError))
-	g.targetLabels.AddBoolValue(constlabels.IsSlow, g.Labels.GetBoolValue(constlabels.IsSlow))
+	g.targetLabels.AddIntValue(constlabels.IsServer, If(g.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int64))
+	g.targetLabels.AddIntValue(constlabels.IsError, If(g.Labels.GetBoolValue(constlabels.IsError), 1, 0).(int64))
+	g.targetLabels.AddIntValue(constlabels.IsSlow, If(g.Labels.GetBoolValue(constlabels.IsSlow), 1, 0).(int64))
 
 	// TODO is_convergent
 	g.targetLabels.AddIntValue(constlabels.IsConvergent, 0)
-	g.targetLabels.AddIntValue(constlabels.Timestamp, int64(g.Timestamp))
+	g.targetLabels.AddIntValue(constlabels.Timestamp, int64(g.Timestamp/millToNano))
+}
+
+func If(condition bool, trueVal, falseVal interface{}) interface{} {
+	if condition {
+		return trueVal
+	}
+	return falseVal
 }
