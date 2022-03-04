@@ -121,16 +121,16 @@ func fillEntityKafkaProtocolLabel(g *gauges) {
 }
 
 func fillTopologyKafkaProtocolLabel(g *gauges) {
-	g.targetLabels.AddStringValue(constlabels.StatusCode, g.Labels.GetStringValue(constlabels.KafkaTopic))
+	g.targetLabels.AddStringValue(constlabels.StatusCode, g.Labels.GetStringValue(constlabels.STR_EMPTY))
 }
 
 func fillEntityMysqlProtocolLabel(g *gauges) {
 	g.targetLabels.AddStringValue(constlabels.RequestContent, g.Labels.GetStringValue(constlabels.ContentKey))
-	g.targetLabels.AddStringValue(constlabels.ResponseContent, g.Labels.GetStringValue(constlabels.STR_EMPTY))
+	g.targetLabels.AddStringValue(constlabels.ResponseContent, strconv.FormatInt(g.Labels.GetIntValue(constlabels.SqlErrCode), 10))
 }
 
 func fillTopologyMysqlProtocolLabel(g *gauges) {
-	g.targetLabels.AddStringValue(constlabels.StatusCode, g.Labels.GetStringValue(constlabels.STR_EMPTY))
+	g.targetLabels.AddStringValue(constlabels.StatusCode, strconv.FormatInt(g.Labels.GetIntValue(constlabels.SqlErrCode), 10))
 }
 
 func fillKafkaMetricProtocolLabel(g *gauges) {
