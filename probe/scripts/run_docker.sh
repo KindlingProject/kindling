@@ -2,8 +2,8 @@ script_dir="$(dirname "$0")"
 workspace_root=$(realpath "${script_dir}/../")
 
 # Docker image information.
-#docker_image_with_tag="registry.us-west-1.aliyuncs.com/arms-docker-repo/bpf-compiler:kindling"
-docker_image_with_tag="registry.us-west-1.aliyuncs.com/arms-docker-repo/bpf-compiler:kindling-without-extra"
+#docker_image_with_tag="kindlingproject/kindling-compiler"
+docker_image_with_tag="kindlingproject/kindling-compiler"
 
 configs=(-v "$HOME/.config:/root/.config" \
   -v "$HOME/.ssh:/root/.ssh" \
