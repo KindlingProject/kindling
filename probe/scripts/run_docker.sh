@@ -5,7 +5,6 @@ workspace_root=$(realpath "${script_dir}/../")
 #docker_image_with_tag="kindlingproject/kindling-compiler"
 docker_image_with_tag="kindlingproject/kindling-compiler"
 
-
 configs=(-v "$HOME/.config:/root/.config" \
   -v "$HOME/.ssh:/root/.ssh" \
   -v "$HOME/.kube:/root/.kube" \
