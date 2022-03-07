@@ -67,9 +67,9 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 		if err != nil {
 			log.Fatal(err)
 		}
-		// if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
-		// 	log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
-		// }
+		if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
+			log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
+		}
 		// This will modify the net.core.rmem_default config, which is about 200KB by default, to
 		// receive conntrack flows as many as possible before complaining about "no buffer" error.
 		if err = c.SetReadBuffer(netlinkBufferSize); err != nil {
@@ -118,8 +118,12 @@ func (ctr *Conntracker) poll(workerNumber uint8) (err error) {
 		log.Fatal(err)
 	}
 	go func() {
+		ticker := time.NewTicker(1 * time.Second)
 		for {
 			select {
+			case <-ticker.C:
+				log.Printf("Conntrack statistics: %v", ctr.cache.stats)
+				log.Printf("Current cache size: %d", ctr.cache.Len())
 			case err := <-errCh:
 				log.Printf("error occured during receiving message from conntracker socket: %s", err)
 			}
@@ -166,8 +170,8 @@ func (ctr *Conntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16,
 		dstPort: dstPort,
 		isUdp:   isUdp,
 	}
-	ctr.mu.Lock()
-	defer ctr.mu.Unlock()
+	ctr.mu.RLock()
+	defer ctr.mu.RUnlock()
 
 	entry, ok := ctr.cache.Get(k)
 	if !ok {
