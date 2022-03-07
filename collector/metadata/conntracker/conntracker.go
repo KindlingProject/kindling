@@ -20,6 +20,8 @@ const (
 	eventChannelSize = 1024
 	// workerNumber is the number of event worker
 	workerNumber = 4
+	// netlinkBufferSize is the size of receive buffer of Netlink
+	netlinkBufferSize = 1024 * 1024
 )
 
 var globalConntracker *Conntracker
@@ -64,6 +66,14 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 		c, err := conntrack.Dial(nil)
 		if err != nil {
 			log.Fatal(err)
+		}
+		// if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
+		// 	log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
+		// }
+		// This will modify the net.core.rmem_default config, which is about 200KB by default, to
+		// receive conntrack flows as many as possible before complaining about "no buffer" error.
+		if err = c.SetReadBuffer(netlinkBufferSize); err != nil {
+			log.Printf("Warn: error setting up Netlink read buffer: %s", err)
 		}
 		globalConntracker = &Conntracker{
 			conn:         c,
@@ -111,7 +121,7 @@ func (ctr *Conntracker) poll(workerNumber uint8) (err error) {
 		for {
 			select {
 			case err := <-errCh:
-				fmt.Printf("error %s occured during receiving message from conntracker socket", err)
+				log.Printf("error occured during receiving message from conntracker socket: %s", err)
 			}
 		}
 
