@@ -70,9 +70,11 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 		if err = c.SetOption(netlink.ListenAllNSID, true); err != nil {
 			log.Printf("Warn: error setting up Netlink option ListenAllNSID: %s", err)
 		}
-		// if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
-		// 	log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
-		// }
+		// Enabling this option will avoid receiving ENOBUFS errors and prevent the workers from
+		// exiting, but remember that the flows will still be dropped if no buffer is available.
+		if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
+			log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
+		}
 		// This will modify the net.core.rmem_default config, which is about 200KB by default, to
 		// receive conntrack flows as many as possible before complaining about "no buffer" error.
 		if err = c.SetReadBuffer(netlinkBufferSize); err != nil {
