@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	//initializationTimeout is the timeout of new conntracker object
+	// initializationTimeout is the timeout of new conntracker object
 	initializationTimeout = time.Second * 10
 	// eventChannelSize is the size of the channel for Consumer.
 	eventChannelSize = 1024
@@ -67,9 +67,12 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
-			log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
+		if err = c.SetOption(netlink.ListenAllNSID, true); err != nil {
+			log.Printf("Warn: error setting up Netlink option ListenAllNSID: %s", err)
 		}
+		// if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
+		// 	log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
+		// }
 		// This will modify the net.core.rmem_default config, which is about 200KB by default, to
 		// receive conntrack flows as many as possible before complaining about "no buffer" error.
 		if err = c.SetReadBuffer(netlinkBufferSize); err != nil {
@@ -100,20 +103,10 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 	return globalConntracker, errMsg
 }
 
-//poll is to get incremental update from conntrack table continuously
+// poll gets incremental update from conntrack table continuously
 func (ctr *Conntracker) poll(workerNumber uint8) (err error) {
-	conn, err := conntrack.Dial(nil)
-	if err != nil {
-		return err
-	}
-
-	err = conn.SetOption(netlink.ListenAllNSID, true)
-	if err != nil {
-		return err
-	}
-
 	evtCh := make(chan conntrack.Event, eventChannelSize)
-	errCh, err := conn.Listen(evtCh, workerNumber, append(netfilter.GroupsCT))
+	errCh, err := ctr.conn.Listen(evtCh, workerNumber, append(netfilter.GroupsCT))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -161,7 +154,6 @@ func (ctr *Conntracker) updateCache(f *conntrack.Flow) bool {
 	return ctr.cache.Add(f)
 }
 
-// GetNATTuple is exposed to users
 func (ctr *Conntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16, dstPort uint16, isUdp uint32) *IPTranslation {
 	k := connKey{
 		srcIP:   srcIP,
