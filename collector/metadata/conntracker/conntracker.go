@@ -113,12 +113,8 @@ func (ctr *Conntracker) poll(workerNumber uint8) (err error) {
 		log.Fatal(err)
 	}
 	go func() {
-		ticker := time.NewTicker(1 * time.Second)
 		for {
 			select {
-			case <-ticker.C:
-				log.Printf("Conntrack statistics: %v", ctr.cache.stats)
-				log.Printf("Current cache size: %d", ctr.cache.Len())
 			case err := <-errCh:
 				log.Printf("error occured during receiving message from conntracker socket: %s", err)
 			}
