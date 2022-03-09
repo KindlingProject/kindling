@@ -43,14 +43,14 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		var isSample = false
 		randSeed := rand.Intn(99)
 		if common.isSlowOrError() {
-			if gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) && (randSeed+1) <= r.cfg.Sampleling_rate.SlowData {
+			if gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) && (randSeed+1) <= r.cfg.SamplingRate.SlowData {
 				isSample = true
 			}
-			if gaugeGroup.Labels.GetBoolValue(constlabels.IsError) && (randSeed+1) <= r.cfg.Sampleling_rate.ErrorData {
+			if gaugeGroup.Labels.GetBoolValue(constlabels.IsError) && (randSeed+1) <= r.cfg.SamplingRate.ErrorData {
 				isSample = true
 			}
 		} else {
-			if (randSeed + 1) <= r.cfg.Sampleling_rate.NormalData {
+			if (randSeed + 1) <= r.cfg.SamplingRate.NormalData {
 				isSample = true
 			}
 		}
