@@ -51,10 +51,10 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		var isSample = false
 		randSeed := rand.Intn(100)
 		if common.isSlowOrError() {
-			if gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) && (randSeed < r.cfg.SamplingRate.SlowData) {
+			if (randSeed < r.cfg.SamplingRate.SlowData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) {
 				isSample = true
 			}
-			if gaugeGroup.Labels.GetBoolValue(constlabels.IsError) && (randSeed < r.cfg.SamplingRate.ErrorData) {
+			if (randSeed < r.cfg.SamplingRate.ErrorData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsError) {
 				isSample = true
 			}
 		} else {
@@ -62,7 +62,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 				isSample = true
 			}
 		}
-		if isSample == true {
+		if isSample {
 			// Trace As Span
 			span := newGauges(gaugeGroup)
 			spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
