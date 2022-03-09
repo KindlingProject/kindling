@@ -7,6 +7,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"go.uber.org/multierr"
+	"math/rand"
 )
 
 const ProcessorName = "kindlingformatprocessor"
@@ -38,11 +39,27 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo,
 			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo))
 	}
-	if r.cfg.NeedTraceAsResourceSpan && common.isSlowOrError() {
-		// Trace As Span
-		span := newGauges(gaugeGroup)
-		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
-			TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
+	if r.cfg.NeedTraceAsResourceSpan {
+		var isSample = false
+		randSeed := rand.Intn(99)
+		if common.isSlowOrError() {
+			if gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) && (randSeed+1) <= r.cfg.Sampleling_rate.SlowData {
+				isSample = true
+			}
+			if gaugeGroup.Labels.GetBoolValue(constlabels.IsError) && (randSeed+1) <= r.cfg.Sampleling_rate.ErrorData {
+				isSample = true
+			}
+		} else {
+			if (randSeed + 1) <= r.cfg.Sampleling_rate.NormalData {
+				isSample = true
+			}
+		}
+		if isSample != false {
+			// Trace As Span
+			span := newGauges(gaugeGroup)
+			spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
+				TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
+		}
 	}
 
 	// The data when the field is Error is true and the error Type is 2, do not generate metric

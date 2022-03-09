@@ -79,6 +79,11 @@ processors:
     # When using otlp-grpc / stdout exporter , this option supports to
     # send trace data in the format of ResourceSpan
     need_trace_as_span: false
+    sampling_rate:
+      normal_data: 0
+      slow_data: 100
+      error_data: 100
+
   nodemetricprocessor:
 
 exporters:
