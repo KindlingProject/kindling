@@ -7,6 +7,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"go.uber.org/multierr"
+	"math/rand"
 )
 
 const ProcessorName = "kindlingformatprocessor"
@@ -19,8 +20,16 @@ type RelabelProcessor struct {
 }
 
 func NewRelabelProcessor(cfg interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
+	processorCfg := cfg.(*Config)
+	if processorCfg.SamplingRate == nil {
+		processorCfg.SamplingRate = &SampleConfig{
+			NormalData: 0,
+			SlowData:   100,
+			ErrorData:  100,
+		}
+	}
 	return &RelabelProcessor{
-		cfg:          cfg.(*Config),
+		cfg:          processorCfg,
 		nextConsumer: nextConsumer,
 		telemetry:    telemetry,
 	}
@@ -38,11 +47,27 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo,
 			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo))
 	}
-	if r.cfg.NeedTraceAsResourceSpan && common.isSlowOrError() {
-		// Trace As Span
-		span := newGauges(gaugeGroup)
-		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
-			TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
+	if r.cfg.NeedTraceAsResourceSpan {
+		var isSample = false
+		randSeed := rand.Intn(100)
+		if common.isSlowOrError() {
+			if (randSeed < r.cfg.SamplingRate.SlowData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) {
+				isSample = true
+			}
+			if (randSeed < r.cfg.SamplingRate.ErrorData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsError) {
+				isSample = true
+			}
+		} else {
+			if randSeed < r.cfg.SamplingRate.NormalData {
+				isSample = true
+			}
+		}
+		if isSample {
+			// Trace As Span
+			span := newGauges(gaugeGroup)
+			spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
+				TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
+		}
 	}
 
 	// The data when the field is Error is true and the error Type is 2, do not generate metric
