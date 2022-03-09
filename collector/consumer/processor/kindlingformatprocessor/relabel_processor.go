@@ -20,8 +20,16 @@ type RelabelProcessor struct {
 }
 
 func NewRelabelProcessor(cfg interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
+	processorCfg := cfg.(*Config)
+	if processorCfg.SamplingRate == nil {
+		processorCfg.SamplingRate = &SampleConfig{
+			NormalData: 0,
+			SlowData:   100,
+			ErrorData:  100,
+		}
+	}
 	return &RelabelProcessor{
-		cfg:          cfg.(*Config),
+		cfg:          processorCfg,
 		nextConsumer: nextConsumer,
 		telemetry:    telemetry,
 	}
