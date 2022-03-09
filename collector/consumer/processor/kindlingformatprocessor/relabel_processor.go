@@ -54,7 +54,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 				isSample = true
 			}
 		}
-		if isSample != false {
+		if isSample == true {
 			// Trace As Span
 			span := newGauges(gaugeGroup)
 			spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
