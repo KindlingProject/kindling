@@ -14,12 +14,14 @@ import (
 )
 
 const (
-	//initializationTimeout is the timeout of new conntracker object
+	// initializationTimeout is the timeout of new conntracker object
 	initializationTimeout = time.Second * 10
 	// eventChannelSize is the size of the channel for Consumer.
 	eventChannelSize = 1024
 	// workerNumber is the number of event worker
 	workerNumber = 4
+	// netlinkBufferSize is the size of receive buffer of Netlink
+	netlinkBufferSize = 1024 * 1024
 )
 
 var globalConntracker *Conntracker
@@ -65,6 +67,19 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 		if err != nil {
 			log.Fatal(err)
 		}
+		if err = c.SetOption(netlink.ListenAllNSID, true); err != nil {
+			log.Printf("Warn: error setting up Netlink option ListenAllNSID: %s", err)
+		}
+		// Enabling this option will avoid receiving ENOBUFS errors and prevent the workers from
+		// exiting, but remember that the flows will still be dropped if no buffer is available.
+		if err = c.SetOption(netlink.NoENOBUFS, true); err != nil {
+			log.Printf("Warn: error setting up Netlink option NoENOBUFS: %s", err)
+		}
+		// This will modify the net.core.rmem_default config, which is about 200KB by default, to
+		// receive conntrack flows as many as possible before complaining about "no buffer" error.
+		if err = c.SetReadBuffer(netlinkBufferSize); err != nil {
+			log.Printf("Warn: error setting up Netlink read buffer: %s", err)
+		}
 		globalConntracker = &Conntracker{
 			conn:         c,
 			cache:        newConntrackCache(maxStateSize),
@@ -90,20 +105,10 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 	return globalConntracker, errMsg
 }
 
-//poll is to get incremental update from conntrack table continuously
+// poll gets incremental update from conntrack table continuously
 func (ctr *Conntracker) poll(workerNumber uint8) (err error) {
-	conn, err := conntrack.Dial(nil)
-	if err != nil {
-		return err
-	}
-
-	err = conn.SetOption(netlink.ListenAllNSID, true)
-	if err != nil {
-		return err
-	}
-
 	evtCh := make(chan conntrack.Event, eventChannelSize)
-	errCh, err := conn.Listen(evtCh, workerNumber, append(netfilter.GroupsCT))
+	errCh, err := ctr.conn.Listen(evtCh, workerNumber, append(netfilter.GroupsCT))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,7 +116,7 @@ func (ctr *Conntracker) poll(workerNumber uint8) (err error) {
 		for {
 			select {
 			case err := <-errCh:
-				fmt.Printf("error %s occured during receiving message from conntracker socket", err)
+				log.Printf("error occured during receiving message from conntracker socket: %s", err)
 			}
 		}
 
@@ -147,7 +152,6 @@ func (ctr *Conntracker) updateCache(f *conntrack.Flow) bool {
 	return ctr.cache.Add(f)
 }
 
-// GetNATTuple is exposed to users
 func (ctr *Conntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16, dstPort uint16, isUdp uint32) *IPTranslation {
 	k := connKey{
 		srcIP:   srcIP,
@@ -156,8 +160,8 @@ func (ctr *Conntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16,
 		dstPort: dstPort,
 		isUdp:   isUdp,
 	}
-	ctr.mu.Lock()
-	defer ctr.mu.Unlock()
+	ctr.mu.RLock()
+	defer ctr.mu.RUnlock()
 
 	entry, ok := ctr.cache.Get(k)
 	if !ok {
