@@ -56,7 +56,7 @@ func parseHttpResponse() protocol.ParsePkgFn {
 		}
 
 		message.AddIntAttribute(constlabels.HttpStatusCode, statusCodeI)
-		message.AddStringAttribute(constlabels.HttpResponsePayload, string(message.GetData(0, 80)))
+		message.AddStringAttribute(constlabels.HttpResponsePayload, string(message.GetData(0, protocol.GetHttpPayLoadLength())))
 		if statusCodeI >= 400 {
 			message.AddBoolAttribute(constlabels.IsError, true)
 			message.AddIntAttribute(constlabels.ErrorType, int64(constlabels.ProtocolError))
