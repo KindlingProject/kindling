@@ -67,9 +67,10 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 		viper.UnmarshalKey("analyzers.networkanalyzer", config)
 
 		na = &NetworkAnalyzer{
-			cfg:           config,
-			nextConsumers: []consumer.Consumer{&NopProcessor{}},
-			telemetry:     component.NewDefaultTelemetryTools(),
+			cfg:            config,
+			gaugeGroupPool: NewGaugePool(),
+			nextConsumers:  []consumer.Consumer{&NopProcessor{}},
+			telemetry:      component.NewDefaultTelemetryTools(),
 		}
 		na.Start()
 	}

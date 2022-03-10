@@ -46,7 +46,7 @@ func parseHttpRequest() protocol.ParsePkgFn {
 
 		message.AddStringAttribute(constlabels.HttpMethod, string(method))
 		message.AddStringAttribute(constlabels.HttpUrl, string(url))
-		message.AddStringAttribute(constlabels.HttpRequestPayload, string(message.GetData(0, 80)))
+		message.AddStringAttribute(constlabels.HttpRequestPayload, string(message.GetData(0, protocol.GetHttpPayLoadLength())))
 
 		contentKey := getContentKey(string(url))
 		if len(contentKey) == 0 {
