@@ -4,6 +4,6 @@ def kindling_probes():
     http_file(
         name = "kindling_falcolib_probe_tar_gz",
         urls = ["https://k8s-bpf-probes-public.oss-cn-hangzhou.aliyuncs.com/kindling-falcolib-probe.tar.gz"],
-        sha256 = "d1962dddb86ef44d89b490b7ca37c07c283feeba73a235e9cdba42c556ffed6b",
+        sha256 = "fc6b44cfa36ad7cb1c532a07c0e5a761b289d696a33299af7293878003db74ac",
         downloaded_file_path = "kindling-falcolib-probe.tar.gz",
     )
