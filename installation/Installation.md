@@ -76,7 +76,7 @@ cp kindling-falcolib-probe.tar.gz kindling/probe/deploy/
 
 
 ```bash
-# start compile container for binaries
+# start compile container for binaries 
 cd ..
 ./scripts/run_docker.sh
 # or start in daemon mode, choose one of them
