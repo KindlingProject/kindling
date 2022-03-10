@@ -70,7 +70,7 @@ sudo yum -y install kernel-devel-$(uname -r)
 # build and package eBPF, kernel probes
 docker run -it -v /usr:/host/usr -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
 tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/
-# copy and wait for building the image.You may need to prefix the kindling path with your own absolute path
+# copy and wait for building the image.you may need to prefix the kindling path with your own absolute path
 cp kindling-falcolib-probe.tar.gz kindling/probe/deploy/
 ```
 
