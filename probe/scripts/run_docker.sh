@@ -3,13 +3,12 @@ workspace_root=$(realpath "${script_dir}/../")
 
 # Docker image information.
 #docker_image_with_tag="kindlingproject/kindling-compiler"
-docker_image_with_tag="kindlingproject/kindling-compiler"
+# docker_image_with_tag="kindlingproject/kindling-compiler"
+docker_image_with_tag="kindlingproject/kindling-compiler:dev"
 
 configs=(-v "$HOME/.config:/root/.config" \
   -v "$HOME/.ssh:/root/.ssh" \
-  -v "$HOME/.kube:/root/.kube" \
-  -v "$HOME/.gitconfig:/root/.gitconfig" \
-  -v "$HOME/.arcrc:/root/.arcrc")
+  -v "$HOME/.gitconfig:/root/.gitconfig") 
 
 IFS=' '
 # Read the environment variable and set it to an array. This allows
