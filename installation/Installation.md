@@ -56,7 +56,7 @@ cd kindling/probe
 Following steps are used to compile local kernel modules and eBPF modules, which you can skip if using precompiled modules by Kindling.
 
 ```bash
-git clone https://github.com/Kindling-project/agent-libs/commits/kindling-dev
+git clone -b kindling-dev https://github.com/Kindling-project/agent-libs
 cd agent-libs
 ```
 
@@ -70,13 +70,14 @@ sudo yum -y install kernel-devel-$(uname -r)
 # build and package eBPF, kernel probes
 docker run -it -v /usr:/host/usr -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
 tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/
-# copy and wait for building the image
+# copy and wait for building the image.You may need to prefix /kindling path with your own absolute path
 cp kindling-falcolib-probe.tar.gz kindling/probe/deploy/
 ```
 
 
 ```bash
 # start compile container for binaries
+cd ..
 ./scripts/run_docker.sh
 # or start in daemon mode, choose one of them
 ./scripts/run_docker_bpf_daemon.sh
