@@ -58,6 +58,7 @@ func (na *NetworkAnalyzer) Start() error {
 	}
 	go na.consumerFdNoReusingTrace()
 
+	protocol.SetHttpPayLoadLength(na.cfg.getHttpPayloadLength())
 	na.staticPortMap = map[uint32]string{}
 	for _, config := range na.cfg.ProtocolConfigs {
 		for _, port := range config.Ports {

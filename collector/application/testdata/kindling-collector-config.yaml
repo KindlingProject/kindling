@@ -41,6 +41,9 @@ analyzers:
     conntrack_rate_limit: 500
     proc_root: /proc
     protocol_parser: [ http, mysql, dns, redis, kafka ]
+    # http_payload_length indicates the maximum size that HTTP payload can be fetched.
+    # The trace data sent may contain such payload, so the higher this value, the larger network traffic.
+    http_payload_length: 200
     protocol_config:
       - key: "mysql"
         slow_threshold: 100
