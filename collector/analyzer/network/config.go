@@ -4,7 +4,7 @@ const (
 	defaultRequestTimeout        = 1
 	defaultConnectTimeout        = 1
 	defaultResponseSlowThreshold = 500
-	defaultHttpPayloadLength     = 80
+	defaultHttpPayloadLength     = 200
 )
 
 type Config struct {
