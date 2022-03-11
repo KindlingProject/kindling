@@ -62,10 +62,12 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 		return nil, fmt.Errorf("failed to initialize self-telemetry prometheus %w", err)
 	}
 
-	go StartServer(exp, logger, config.Port)
-	if err = c.Start(context.Background()); err != nil {
-		return nil, err
-	}
+	go func() {
+		err := StartServer(exp, logger, config.Port)
+		if err != nil {
+			logger.Warn("error starting self-telemetry server: ", zap.Error(err))
+		}
+	}()
 	return exp.MeterProvider(), nil
 }
 
