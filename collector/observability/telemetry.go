@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
@@ -24,7 +25,16 @@ const (
 	KindlingServiceNamePrefix = "kindling"
 )
 
+type otelLoggerHandler struct {
+	logger *zap.Logger
+}
+
+func (h *otelLoggerHandler) Handle(err error) {
+	h.logger.Warn("Opentelemetry-go encountered an error: ", zap.Error(err))
+}
+
 func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, error) {
+	otel.SetErrorHandler(&otelLoggerHandler{logger: logger})
 	hostName, err := os.Hostname()
 	if err != nil {
 		logger.Error("Error happened when getting hostname; set hostname unknown: ", zap.Error(err))
