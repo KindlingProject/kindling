@@ -130,7 +130,12 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
 		}
-		go StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
+		go func() {
+			err := StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
+			if err != nil {
+				telemetry.Logger.Warn("error starting otelexporter prometheus server: ", zap.Error(err))
+			}
+		}()
 	} else {
 		var collectPeriod time.Duration
 
