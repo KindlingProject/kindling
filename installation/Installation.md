@@ -46,17 +46,12 @@ Enjoy kindling!
 # Build Kindling container
 ## Build kindling-probe
 
-```bash
-git clone https://github.com/Kindling-project/kindling.git 
-cd kindling/probe
-```
+### Build local kernel modules and eBPF modules(Could skip if using precompiled modules)
 
-### Build local kernel modules and eBPF modules
-
-Following steps are used to compile local kernel modules and eBPF modules, which you can skip if using precompiled modules by Kindling.
+Following steps are used to compile local kernel modules and eBPF modules **when your kernel version is not supported by Kindling**, which you can skip if using precompiled modules.
 
 ```bash
-git clone https://github.com/Kindling-project/agent-libs/commits/kindling-dev
+git clone -b kindling-dev https://github.com/Kindling-project/agent-libs
 cd agent-libs
 ```
 
@@ -70,10 +65,15 @@ sudo yum -y install kernel-devel-$(uname -r)
 # build and package eBPF, kernel probes
 docker run -it -v /usr:/host/usr -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
 tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/
-# copy and wait for building the image
+# copy and wait for building the image.You may need to prefix /kindling path with your own absolute path
 cp kindling-falcolib-probe.tar.gz kindling/probe/deploy/
 ```
 
+### Compile and build kindling-probe itself
+```bash
+git clone https://github.com/Kindling-project/kindling.git 
+cd kindling/probe
+```
 
 ```bash
 # start compile container for binaries
@@ -96,7 +96,7 @@ bazel build -s --config=clang src/probe:push_image
 ./bazel-bin/src/probe/push_image
 ```
 
-## Building kindling-collector
+## Build kindling-collector
 
 ```bash
 git clone https://github.com/Kindling-project/kindling.git 
