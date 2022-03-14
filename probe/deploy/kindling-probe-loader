@@ -104,6 +104,10 @@ MAX_RMMOD_WAIT=60
 tar -zxvf /pl/kindling-falcolib-probe.tar.gz -C /opt
 mv /opt/kindling-falcolib-probe /opt/.kindling
 
+if [ -d /opt/kindling-extra-probe ]; then
+	/bin/cp -rf /opt/kindling-extra-probe/* /opt/.kindling/
+fi
+
 if [ "$(id -u)" != 0 ]; then
 	echo "Installer must be run as root (or with sudo)."
 	exit 1
