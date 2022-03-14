@@ -151,8 +151,8 @@ func (a *TcpMetricAnalyzer) getTupleLabels(event *model.KindlingEvent) (*model.A
 	labels.AddIntValue(constlabels.DstPort, int64(dPortUint))
 
 	dNatIp, dNatPort := a.findDNatTuple(sIpString, sPortUint, dIpString, dPortUint)
-	labels.AddStringValue(constlabels.DstIp, dNatIp)
-	labels.AddIntValue(constlabels.DstPort, dNatPort)
+	labels.AddStringValue(constlabels.DnatIp, dNatIp)
+	labels.AddIntValue(constlabels.DnatPort, dNatPort)
 	return labels, nil
 }
 
