@@ -173,6 +173,9 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForServerLabel(labelMap *model.Attr
 	}
 }
 
+// addK8sMetaDataViaIp is used to add k8s metadata to tcp metrics.
+// There is also a piece of code for removing "port" in this method, which
+// should be moved into a processor that is used for relabeling tcp metrics later.
 func (p *K8sMetadataProcessor) addK8sMetaDataViaIp(labelMap *model.AttributeMap) {
 	// Both Src and Dst should try:
 	// 1. (Only Dst)Use Ip Port to find Service (when found a Service,also use DNatIp to find the Pod)
@@ -183,13 +186,48 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIp(labelMap *model.AttributeMap)
 	p.addK8sMetaDataViaIpSRC(labelMap)
 	// add metadata for dst
 	p.addK8sMetaDataViaIpDST(labelMap)
+
+	// We only care about the real connection, so here replace DstIp/DstPort with DNatIp/DNatPort
+	if labelMap.GetStringValue(constlabels.DnatIp) != "" {
+		labelMap.AddStringValue(constlabels.DstIp, labelMap.GetStringValue(constlabels.DnatIp))
+	}
+	if labelMap.GetIntValue(constlabels.DnatPort) > 0 {
+		labelMap.AddIntValue(constlabels.DstPort, labelMap.GetIntValue(constlabels.DnatPort))
+	}
+	labelMap.RemoveAttribute(constlabels.DnatIp)
+	labelMap.RemoveAttribute(constlabels.DnatPort)
+	// Metric shouldn't contain high-cardinality labels, so here we want to remove
+	// the dynamic port label and retain the listening one. But we can't know which
+	// port is dynamic for sure, so we work around that by comparing their number size.
+	//
+	// The default dynamic port range in /proc/sys/net/ipv4/ip_local_port_range is 32768~60999.
+	// At most cases, the larger port is the dynamic port and the other one is the listening port.
+	// But sometimes the listening port is also greater than 32768 in which case there is no way to
+	// tell which one is listening.
+	var defaultMinLocalPort int64 = 32768
+	srcPort := labelMap.GetIntValue(constlabels.SrcPort)
+	dstPort := labelMap.GetIntValue(constlabels.DstPort)
+	// If they are both smaller than 32768 then we remove the much smaller one.
+	if srcPort < defaultMinLocalPort && dstPort < defaultMinLocalPort {
+		if srcPort > dstPort {
+			labelMap.RemoveAttribute(constlabels.SrcPort)
+		} else {
+			labelMap.RemoveAttribute(constlabels.DstPort)
+		}
+	} else {
+		// Otherwise, we remove the port that is larger than 32768.
+		if srcPort >= defaultMinLocalPort {
+			labelMap.RemoveAttribute(constlabels.SrcPort)
+		}
+		if dstPort >= defaultMinLocalPort {
+			labelMap.RemoveAttribute(constlabels.DstPort)
+		}
+	}
 }
 
 func (p *K8sMetadataProcessor) addK8sMetaDataViaIpSRC(labelMap *model.AttributeMap) {
 	// 1. Use Ip Port to find Container And Pod
 	// 2. Use Ip to find Pod
-	defer labelMap.RemoveAttribute(constlabels.SrcPort)
-
 	srcIp := labelMap.GetStringValue(constlabels.SrcIp)
 	srcPort := labelMap.GetIntValue(constlabels.SrcPort)
 	srcContainerInfo, ok := p.metadata.GetContainerByIpPort(srcIp, uint32(srcPort))
@@ -214,9 +252,6 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 	// 1. (Only Dst)Use Ip Port to find Service (when found a Service,also use DNatIp to find the Pod)
 	// 2. Use Ip Port to find Container And Pod
 	// 3. Use Ip to find Pod
-	defer labelMap.RemoveAttribute(constlabels.DstPort)
-	defer labelMap.RemoveAttribute(constlabels.DnatPort)
-
 	dstIp := labelMap.GetStringValue(constlabels.DstIp)
 	dstPort := labelMap.GetIntValue(constlabels.DstPort)
 	dstSvcInfo, ok := p.metadata.GetServiceByIpPort(dstIp, uint32(dstPort))
