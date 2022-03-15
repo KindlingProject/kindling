@@ -86,6 +86,7 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 }
 
 func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.GaugeGroup, error) {
+	// Only client-side has rtt metric
 	labels, err := a.getTupleLabels(event)
 	if err != nil {
 		return nil, err
@@ -143,45 +144,26 @@ func (a *TcpMetricAnalyzer) getTupleLabels(event *model.KindlingEvent) (*model.A
 	dIpString := model.IPLong2String(uint32(dIp.Value.GetUintValue()))
 	dPortUint := dPort.Value.GetUintValue()
 
-	dNatIp, dNatPort, role := a.findDNatTuple(sIpString, sPortUint, dIpString, dPortUint)
 	labels := model.NewAttributeMap()
-	switch role {
-	case "unknown":
-		labels.AddStringValue(constlabels.SrcIp, sIpString)
-		labels.AddIntValue(constlabels.SrcPort, int64(sPortUint))
-		labels.AddStringValue(constlabels.DstIp, dIpString)
-		labels.AddIntValue(constlabels.DstPort, int64(dPortUint))
-	case "client":
-		labels.AddStringValue(constlabels.SrcIp, sIpString)
-		labels.AddIntValue(constlabels.SrcPort, int64(sPortUint))
-		labels.AddStringValue(constlabels.DstIp, dNatIp)
-		labels.AddIntValue(constlabels.DstPort, dNatPort)
-	case "server":
-		labels.AddStringValue(constlabels.SrcIp, dIpString)
-		labels.AddIntValue(constlabels.SrcPort, int64(dPortUint))
-		labels.AddStringValue(constlabels.DstIp, sIpString)
-		labels.AddIntValue(constlabels.DstPort, int64(sPortUint))
-	}
+	labels.AddStringValue(constlabels.SrcIp, sIpString)
+	labels.AddIntValue(constlabels.SrcPort, int64(sPortUint))
+	labels.AddStringValue(constlabels.DstIp, dIpString)
+	labels.AddIntValue(constlabels.DstPort, int64(dPortUint))
 
+	dNatIp, dNatPort := a.findDNatTuple(sIpString, sPortUint, dIpString, dPortUint)
+	labels.AddStringValue(constlabels.DnatIp, dNatIp)
+	labels.AddIntValue(constlabels.DnatPort, dNatPort)
 	return labels, nil
 }
 
-func (a *TcpMetricAnalyzer) findDNatTuple(sIp string, sPort uint64, dIp string, dPort uint64) (string, int64, string) {
-	var role string
+func (a *TcpMetricAnalyzer) findDNatTuple(sIp string, sPort uint64, dIp string, dPort uint64) (string, int64) {
 	dNat := a.conntracker.GetDNATTupleWithString(sIp, dIp, uint16(sPort), uint16(dPort), 0)
 	if dNat == nil {
-		// Try again with reverse IP:Port
-		dNat = a.conntracker.GetDNATTupleWithString(dIp, sIp, uint16(dPort), uint16(sPort), 0)
-		role = "server"
-	} else {
-		role = "client"
-	}
-	if dNat == nil {
-		return "", -1, "unknown"
+		return "", -1
 	}
 	dNatIp := dNat.ReplSrcIP.String()
 	dNatPort := dNat.ReplSrcPort
-	return dNatIp, int64(dNatPort), role
+	return dNatIp, int64(dNatPort)
 }
 
 // Shutdown cleans all the resources used by the analyzer
