@@ -249,9 +249,9 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 		return
 	}
 	if _, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
-		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.DstNamespace, constlabels.InternalClusterNamespace)
 	} else {
-		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+		labelMap.UpdateAddStringValue(constlabels.DstNamespace, constlabels.ExternalClusterNamespace)
 	}
 }
 
