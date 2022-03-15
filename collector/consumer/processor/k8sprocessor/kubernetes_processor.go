@@ -194,6 +194,8 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIp(labelMap *model.AttributeMap)
 	if labelMap.GetIntValue(constlabels.DnatPort) > 0 {
 		labelMap.AddIntValue(constlabels.DstPort, labelMap.GetIntValue(constlabels.DnatPort))
 	}
+	labelMap.RemoveAttribute(constlabels.DnatIp)
+	labelMap.RemoveAttribute(constlabels.DnatPort)
 	// Metric shouldn't contain high-cardinality labels, so here we want to remove
 	// the dynamic port label and retain the listening one. But we can't know which
 	// port is dynamic for sure, so we work around that by comparing their number size.
