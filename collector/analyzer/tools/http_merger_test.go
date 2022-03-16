@@ -148,14 +148,6 @@ func TestConcurrentLruCache(t *testing.T) {
 	var wg sync.WaitGroup
 
 	addFunc := func() {
-		defer func() {
-			err := recover()
-			if err != nil {
-				t.Errorf("Error Occured %v", err)
-			}
-			wg.Done()
-		}()
-
 		urlA, urlB := "aaa", "bbb"
 		for i := 0; i < 100; i++ {
 			suffix := strconv.Itoa(i)
