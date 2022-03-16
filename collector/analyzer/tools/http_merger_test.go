@@ -1,6 +1,8 @@
 package tools
 
 import (
+	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -138,4 +140,36 @@ func TestHttpMerger_Cache(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConcurrentLruCache(t *testing.T) {
+	httpMerger := &HttpMerger{}
+	httpMerger.cache, _ = simplelru.NewLRU(10, nil)
+	var wg sync.WaitGroup
+
+	addFunc := func() {
+		defer func() {
+			err := recover()
+			if err != nil {
+				t.Errorf("Error Occured %v", err)
+			}
+			wg.Done()
+		}()
+
+		urlA, urlB := "aaa", "bbb"
+		for i := 0; i < 100; i++ {
+			suffix := strconv.Itoa(i)
+			httpMerger.getCountByUrl(urlA+suffix, urlB+suffix)
+			httpMerger.addUrlCount(urlA+suffix, 1, urlB+suffix, 1)
+		}
+
+		wg.Done()
+	}
+
+	for threads := 0; threads < 4; threads++ {
+		wg.Add(1)
+		go addFunc()
+	}
+
+	wg.Wait()
 }
