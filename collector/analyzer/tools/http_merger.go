@@ -3,6 +3,7 @@ package tools
 import (
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 )
@@ -24,6 +25,7 @@ func init() {
 type HttpMerger struct {
 	keyThreshold int
 	cache        *simplelru.LRU
+	mutex        sync.RWMutex
 }
 
 func NewHttpMergeCache() *HttpMerger {
@@ -76,26 +78,15 @@ func (merger *HttpMerger) getCacheKey(urlA string, urlB string) string {
 		return ""
 	}
 
-	var valueA = -1
-	var valueB = -1
-	cacheA, ok := merger.cache.Get(urlA)
-	if ok {
-		valueA = cacheA.(int)
-	}
-	cacheB, ok := merger.cache.Get(urlB)
-	if ok {
-		valueB = cacheB.(int)
-	}
+	valueA, valueB := merger.getCountByUrl(urlA, urlB)
 
 	if valueA < 0 && valueB > 0 {
-		merger.cache.Add(urlA, 1)
-		merger.cache.Add(urlB, valueB+1)
+		merger.addUrlCount(urlA, 1, urlB, valueB+1)
 		if valueB+1 >= merger.keyThreshold {
 			return urlB
 		}
 	} else if valueA > 0 && valueB < 0 {
-		merger.cache.Add(urlB, 1)
-		merger.cache.Add(urlA, valueA+1)
+		merger.addUrlCount(urlA, valueA+1, urlB, 1)
 		if valueA+1 >= merger.keyThreshold {
 			return urlA
 		}
@@ -115,12 +106,34 @@ func (merger *HttpMerger) getCacheKey(urlA string, urlB string) string {
 			return ""
 		}
 	} else {
-		merger.cache.Add(urlA, 1)
-		merger.cache.Add(urlB, 1)
+		merger.addUrlCount(urlA, 1, urlB, 1)
 		return ""
 	}
 
 	return ""
+}
+
+func (merger *HttpMerger) getCountByUrl(urlA string, urlB string) (int, int) {
+	merger.mutex.Lock()
+	defer merger.mutex.Unlock()
+
+	valueA := -1
+	if cache, ok := merger.cache.Get(urlA); ok {
+		valueA = cache.(int)
+	}
+	valueB := -1
+	if cache, ok := merger.cache.Get(urlB); ok {
+		valueB = cache.(int)
+	}
+	return valueA, valueB
+}
+
+func (merger *HttpMerger) addUrlCount(urlA string, countA int, urlB string, countB int) {
+	merger.mutex.Lock()
+	defer merger.mutex.Unlock()
+
+	merger.cache.Add(urlA, countA)
+	merger.cache.Add(urlB, countB)
 }
 
 func (merger *HttpMerger) convergeByRegex(url string) string {
