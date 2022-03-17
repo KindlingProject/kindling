@@ -5,6 +5,7 @@ import (
 	"github.com/ti-mo/conntrack"
 	"golang.org/x/sys/unix"
 	"net"
+	"sync"
 	"sync/atomic"
 )
 
@@ -27,6 +28,9 @@ type IPTranslation struct {
 }
 
 type conntrackCache struct {
+	// Must use sync.Mutex instead of sync.RWMutex because
+	// cache.Add and cache.Get both modify the list
+	mu sync.Mutex
 	//TODO replace simplelru with groupcache
 	cache *simplelru.LRU
 	stats struct {
@@ -50,8 +54,10 @@ func newConntrackCache(maxStateSize int) *conntrackCache {
 	return c
 }
 
-func (cc *conntrackCache) Get(k connKey) (*IPTranslation, bool) {
+func (cc *conntrackCache) Get(k *connKey) (*IPTranslation, bool) {
 	atomic.AddInt64(&cc.stats.gets, 1)
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
 	entry, ok := cc.cache.Get(k)
 	if !ok {
 		return nil, false
@@ -73,10 +79,14 @@ func (cc *conntrackCache) Add(f *conntrack.Flow) bool {
 		cc.cache.Add(key, value)
 		return true
 	}
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
 	return AddToCache(&f.TupleOrig, &f.TupleReply) && AddToCache(&f.TupleReply, &f.TupleOrig)
 }
 
-func (cc *conntrackCache) Remove(k connKey) bool {
+func (cc *conntrackCache) Remove(k *connKey) bool {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
 	if cc.cache.Remove(k) {
 		atomic.AddInt64(&cc.stats.remove, 1)
 		return true
@@ -88,8 +98,8 @@ func (cc *conntrackCache) Len() int {
 	return cc.cache.Len()
 }
 
-func tupleToKey(tuple *conntrack.Tuple) (connKey, bool) {
-	k := connKey{
+func tupleToKey(tuple *conntrack.Tuple) (*connKey, bool) {
+	k := &connKey{
 		srcIP:   IPToUInt32(tuple.IP.SourceAddress),
 		dstIP:   IPToUInt32(tuple.IP.DestinationAddress),
 		srcPort: tuple.Proto.SourcePort,
