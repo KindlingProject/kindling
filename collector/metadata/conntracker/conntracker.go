@@ -145,23 +145,17 @@ func (ctr *Conntracker) updateCache(f *conntrack.Flow) bool {
 	if !IsNAT(f) {
 		return false
 	}
-
-	ctr.mu.Lock()
-	defer ctr.mu.Unlock()
-
 	return ctr.cache.Add(f)
 }
 
 func (ctr *Conntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16, dstPort uint16, isUdp uint32) *IPTranslation {
-	k := connKey{
+	k := &connKey{
 		srcIP:   srcIP,
 		srcPort: srcPort,
 		dstIP:   dstIP,
 		dstPort: dstPort,
 		isUdp:   isUdp,
 	}
-	ctr.mu.RLock()
-	defer ctr.mu.RUnlock()
 
 	entry, ok := ctr.cache.Get(k)
 	if !ok {
