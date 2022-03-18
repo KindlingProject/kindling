@@ -123,9 +123,7 @@ func newExporters(context context.Context, cfg *Config, logger *zap.Logger) (exp
 	logger.Sugar().Infof("Initializing self-observability exporter whose type is %s", cfg.ExportKind)
 	switch cfg.ExportKind {
 	case StdoutKindExporter:
-		metricExp, err := stdoutmetric.New(
-			stdoutmetric.WithPrettyPrint(),
-		)
+		metricExp, err := stdoutmetric.New()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create exporter, %w", err)
 		}
