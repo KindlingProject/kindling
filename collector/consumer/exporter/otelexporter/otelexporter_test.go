@@ -72,7 +72,7 @@ func makeGaugeGroup(latency int64) *model.GaugeGroup {
 }
 
 func BenchmarkOtelExporter_Consume(b *testing.B) {
-	dimension := 1000
+	dimension := 100000
 
 	cfg := &Config{
 		ExportKind:   StdoutKindExporter,
@@ -181,6 +181,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		gaugesGroupsSlice[i] = gaugesGroup
 	}
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		otelexporter.Consume(gaugesGroupsSlice[recordCounter%dimension])
 		recordCounter++
