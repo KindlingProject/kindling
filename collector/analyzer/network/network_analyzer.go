@@ -191,16 +191,16 @@ func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 
 		na.distributeTraceMetric(oldPairs, mps)
 	}
-	na.recordRequestSize(evt, 1)
+	na.recordMessagePairSize(evt, 1)
 	return nil
 }
 
-func (na *NetworkAnalyzer) recordRequestSize(evt *model.KindlingEvent, count int64) {
-	name := "tcp"
+func (na *NetworkAnalyzer) recordMessagePairSize(evt *model.KindlingEvent, count int64) {
+	protocolType := "tcp"
 	if evt.IsUdp() == 1 {
-		name = "udp"
+		protocolType = "udp"
 	}
-	na.selfMetrics.networkRequestSize.Add(context.Background(), count, attribute.String("name", name))
+	na.selfMetrics.netanalyzerMessagePairSize.Add(context.Background(), count, attribute.String("type", protocolType))
 }
 
 func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
@@ -231,7 +231,7 @@ func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
 			oldPairs.mergeRequest(evt)
 		}
 	}
-	na.recordRequestSize(evt, 1)
+	na.recordMessagePairSize(evt, 1)
 	return nil
 }
 
@@ -264,7 +264,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	if newPairs != nil {
 		na.requestMonitor.Store(newPairs.getKey(), newPairs)
 	} else {
-		na.recordRequestSize(queryEvt, -1)
+		na.recordMessagePairSize(queryEvt, -1)
 		na.requestMonitor.Delete(oldPairs.getKey())
 	}
 
@@ -292,7 +292,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 				zap.String("record", record.String()),
 			)
 		}
-		na.selfMetrics.networkProtocolTotal.Add(context.Background(), 1, attribute.String("name", record.Labels.GetStringValue(constlabels.Protocol)))
+		na.selfMetrics.netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}
