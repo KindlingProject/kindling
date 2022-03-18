@@ -30,7 +30,6 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"os"
-	"strings"
 	"sync"
 	"time"
 )
@@ -46,10 +45,21 @@ const (
 	TracerName = "kindling-tracer"
 )
 
-var labelsSet map[string]bool
+var labelsSet map[labelKey]bool
 var labelsSetMutex sync.RWMutex
 
 var serviceName string
+
+type labelKey struct {
+	metric          string
+	srcIp           string
+	dstIp           string
+	dstPort         int64
+	requestContent  string
+	responseContent string
+	statusCode      string
+	protocol        string
+}
 
 type OtelOutputExporters struct {
 	metricExporter exportmetric.Exporter
@@ -346,57 +356,23 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 }(exponentialInt64Boundaries)
 
 func storeGaugeGroupKeys(group *model.GaugeGroup) {
-	labels := group.Labels.GetValues()
-	labelKey := strings.Builder{}
-	if value, ok := labels[constlabels.DstIp]; ok {
-		labelKey.WriteString(value.ToString())
-		labelKey.WriteString("#")
-	} else {
-		labelKey.WriteString("#")
+	key := labelKey{
+		metric:          "",
+		srcIp:           group.Labels.GetStringValue(constlabels.SrcIp),
+		dstIp:           group.Labels.GetStringValue(constlabels.DstIp),
+		dstPort:         group.Labels.GetIntValue(constlabels.DstPort),
+		requestContent:  group.Labels.GetStringValue(constlabels.ResponseContent),
+		responseContent: group.Labels.GetStringValue(constlabels.ResponseContent),
+		statusCode:      group.Labels.GetStringValue(constlabels.StatusCode),
+		protocol:        group.Labels.GetStringValue(constlabels.Protocol),
 	}
-	if value, ok := labels[constlabels.SrcIp]; ok {
-		labelKey.WriteString(value.ToString())
-		labelKey.WriteString("#")
-	} else {
-		labelKey.WriteString("#")
-	}
-	if value, ok := labels[constlabels.DstPort]; ok {
-		labelKey.WriteString(value.ToString())
-		labelKey.WriteString("#")
-	} else {
-		labelKey.WriteString("#")
-	}
-	if value, ok := labels[constlabels.RequestContent]; ok {
-		labelKey.WriteString(value.ToString())
-		labelKey.WriteString("#")
-	} else {
-		labelKey.WriteString("#")
-	}
-	if value, ok := labels[constlabels.ResponseContent]; ok {
-		labelKey.WriteString(value.ToString())
-		labelKey.WriteString("#")
-	} else {
-		labelKey.WriteString("#")
-	}
-	if value, ok := labels[constlabels.StatusCode]; ok {
-		labelKey.WriteString(value.ToString())
-		labelKey.WriteString("#")
-	} else {
-		labelKey.WriteString("#")
-	}
-	if value, ok := labels[constlabels.Protocol]; ok {
-		labelKey.WriteString(value.ToString())
-		labelKey.WriteString("#")
-	} else {
-		labelKey.WriteString("#")
-	}
-	keyPrefix := labelKey.String()
-	if _, ok := labelsSet[keyPrefix+group.Values[0].Name]; ok {
+	if _, ok := labelsSet[key]; ok {
 		return
 	}
 	labelsSetMutex.Lock()
 	for _, value := range group.Values {
-		labelsSet[keyPrefix+"#"+value.Name] = true
+		key.metric = value.Name
+		labelsSet[key] = true
 	}
 	labelsSetMutex.Unlock()
 }
