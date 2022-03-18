@@ -26,6 +26,7 @@ func newSelfMetrics(meterProvider metric.MeterProvider) {
 			metricExportedCountMetricsName, func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(int64(len(labelsSet)))
 			})
+		labelsSet = make(map[labelKey]bool, 0)
 	})
 }
 
