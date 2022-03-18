@@ -42,17 +42,16 @@ type NetworkAnalyzer struct {
 	gaugeGroupPool *GaugeGroupPool
 	requestMonitor sync.Map
 	telemetry      *component.TelemetryTools
-	selfMetrics    *selfMetrics
 }
 
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
+	newSelfMetrics(telemetry.MeterProvider)
 	return &NetworkAnalyzer{
 		cfg:            config,
 		gaugeGroupPool: NewGaugePool(),
 		nextConsumers:  consumers,
 		telemetry:      telemetry,
-		selfMetrics:    NewSelfMetrics(telemetry.MeterProvider),
 	}
 }
 
@@ -190,8 +189,9 @@ func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 		}
 
 		na.distributeTraceMetric(oldPairs, mps)
+	} else {
+		na.recordMessagePairSize(evt, 1)
 	}
-	na.recordMessagePairSize(evt, 1)
 	return nil
 }
 
@@ -200,7 +200,7 @@ func (na *NetworkAnalyzer) recordMessagePairSize(evt *model.KindlingEvent, count
 	if evt.IsUdp() == 1 {
 		protocolType = "udp"
 	}
-	na.selfMetrics.netanalyzerMessagePairSize.Add(context.Background(), count, attribute.String("type", protocolType))
+	netanalyzerMessagePairSize.Add(context.Background(), count, attribute.String("type", protocolType))
 }
 
 func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
@@ -230,8 +230,9 @@ func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
 		} else {
 			oldPairs.mergeRequest(evt)
 		}
+	} else {
+		na.recordMessagePairSize(evt, 1)
 	}
-	na.recordMessagePairSize(evt, 1)
 	return nil
 }
 
@@ -292,7 +293,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 				zap.String("record", record.String()),
 			)
 		}
-		na.selfMetrics.netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
+		netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}

@@ -1,18 +1,23 @@
 package network
 
-import "go.opentelemetry.io/otel/metric"
+import (
+	"sync"
 
-var netanalyzerMessagePairMetric = "kindling_telemetry_netanalyer_messagepair_size"
-var netanalyzerParsedRequestMetric = "kindling_telemetry_netanalyer_parsedrequest_total"
+	"go.opentelemetry.io/otel/metric"
+)
 
-type selfMetrics struct {
-	netanalyzerMessagePairSize    metric.Int64UpDownCounter
-	netanalyzerParsedRequestTotal metric.Int64Counter
-}
+var once sync.Once
+var netanalyzerMessagePairSize metric.Int64UpDownCounter
+var netanalyzerParsedRequestTotal metric.Int64Counter
 
-func NewSelfMetrics(meterProvider metric.MeterProvider) *selfMetrics {
-	return &selfMetrics{
-		netanalyzerMessagePairSize:    metric.Must(meterProvider.Meter("kindling")).NewInt64UpDownCounter(netanalyzerMessagePairMetric),
-		netanalyzerParsedRequestTotal: metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(netanalyzerParsedRequestMetric),
-	}
+const (
+	netanalyzerMessagePairMetric   = "kindling_telemetry_netanalyer_messagepair_size"
+	netanalyzerParsedRequestMetric = "kindling_telemetry_netanalyer_parsedrequest_total"
+)
+
+func newSelfMetrics(meterProvider metric.MeterProvider) {
+	once.Do(func() {
+		netanalyzerMessagePairSize = metric.Must(meterProvider.Meter("kindling")).NewInt64UpDownCounter(netanalyzerMessagePairMetric)
+		netanalyzerParsedRequestTotal = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(netanalyzerParsedRequestMetric)
+	})
 }
