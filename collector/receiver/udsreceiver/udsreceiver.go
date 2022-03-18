@@ -36,7 +36,6 @@ type UdsReceiver struct {
 	shutdownWG      sync.WaitGroup
 	shutdwonState   bool
 	telemetry       *component.TelemetryTools
-	selfMetrics     *selfMetrics
 }
 
 type Config struct {
@@ -105,11 +104,11 @@ func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 	if !ok {
 		telemetry.Logger.Sugar().Panicf("Cannot convert [%s] config", Uds)
 	}
+	newSelfMetrics(telemetry.MeterProvider)
 	return &UdsReceiver{
 		cfg:             cfg,
 		analyzerManager: analyzerManager,
 		telemetry:       telemetry,
-		selfMetrics:     NewSelfMetrics(telemetry.MeterProvider),
 	}
 }
 
@@ -228,7 +227,7 @@ func (r *UdsReceiver) Shutdown() error {
 func (r *UdsReceiver) SendToNextConsumer(events *model.KindlingEventList) error {
 	// TODO: Decouple dispatching logic from receiver and conduct it at analyzerManager via configuration
 	for _, evt := range events.KindlingEventList {
-		r.selfMetrics.eventSentCounter.Add(context.Background(), 1, attribute.String("name", evt.Name))
+		globalEventSentCounter.Add(context.Background(), 1, attribute.String("name", evt.Name))
 		var analyzer analyzerpackage.Analyzer
 		var isFound bool
 		switch evt.Name {
