@@ -7,6 +7,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -29,6 +30,8 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"os"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -42,6 +45,9 @@ const (
 	MeterName  = "kindling-instrument"
 	TracerName = "kindling-tracer"
 )
+
+var labelsSet map[string]bool
+var labelsSetMutex sync.RWMutex
 
 var serviceName string
 
@@ -58,6 +64,7 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
+	selfMetrics          *selfMetrics
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
@@ -186,6 +193,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			selfMetrics:          NewSelfMetrics(telemetry.MeterProvider),
 		}
 
 		if err = cont.Start(context.Background()); err != nil {
@@ -198,6 +206,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 }
 
 func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
+	e.selfMetrics.gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
 	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
 		ce.Write(
 			zap.String("gaugeGroup", gaugeGroup.String()),
@@ -214,6 +223,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 }
 
 func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
+	storeGaugeGroupKeys(gaugeGroup)
 	values := gaugeGroup.Values
 	measurements := make([]metric.Measurement, 0, len(values))
 	for _, value := range values {
@@ -334,3 +344,59 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 	}
 	return
 }(exponentialInt64Boundaries)
+
+func storeGaugeGroupKeys(group *model.GaugeGroup) {
+	labels := group.Labels.GetValues()
+	labelKey := strings.Builder{}
+	if value, ok := labels[constlabels.DstIp]; ok {
+		labelKey.WriteString(value.ToString())
+		labelKey.WriteString("#")
+	} else {
+		labelKey.WriteString("#")
+	}
+	if value, ok := labels[constlabels.SrcIp]; ok {
+		labelKey.WriteString(value.ToString())
+		labelKey.WriteString("#")
+	} else {
+		labelKey.WriteString("#")
+	}
+	if value, ok := labels[constlabels.DstPort]; ok {
+		labelKey.WriteString(value.ToString())
+		labelKey.WriteString("#")
+	} else {
+		labelKey.WriteString("#")
+	}
+	if value, ok := labels[constlabels.RequestContent]; ok {
+		labelKey.WriteString(value.ToString())
+		labelKey.WriteString("#")
+	} else {
+		labelKey.WriteString("#")
+	}
+	if value, ok := labels[constlabels.ResponseContent]; ok {
+		labelKey.WriteString(value.ToString())
+		labelKey.WriteString("#")
+	} else {
+		labelKey.WriteString("#")
+	}
+	if value, ok := labels[constlabels.StatusCode]; ok {
+		labelKey.WriteString(value.ToString())
+		labelKey.WriteString("#")
+	} else {
+		labelKey.WriteString("#")
+	}
+	if value, ok := labels[constlabels.Protocol]; ok {
+		labelKey.WriteString(value.ToString())
+		labelKey.WriteString("#")
+	} else {
+		labelKey.WriteString("#")
+	}
+	keyPrefix := labelKey.String()
+	if _, ok := labelsSet[keyPrefix+group.Values[0].Name]; ok {
+		return
+	}
+	labelsSetMutex.Lock()
+	for _, value := range group.Values {
+		labelsSet[keyPrefix+"#"+value.Name] = true
+	}
+	labelsSetMutex.Unlock()
+}
