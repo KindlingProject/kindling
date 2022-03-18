@@ -7,7 +7,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -30,7 +29,6 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -44,9 +42,6 @@ const (
 	MeterName  = "kindling-instrument"
 	TracerName = "kindling-tracer"
 )
-
-var labelsSet map[labelKey]bool
-var labelsSetMutex sync.RWMutex
 
 var serviceName string
 
@@ -74,10 +69,10 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
-	selfMetrics          *selfMetrics
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
+	newSelfMetrics(telemetry.MeterProvider)
 	cfg, ok := config.(*Config)
 	if !ok {
 		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", Otel))
@@ -203,7 +198,6 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
-			selfMetrics:          NewSelfMetrics(telemetry.MeterProvider),
 		}
 
 		if err = cont.Start(context.Background()); err != nil {
@@ -216,7 +210,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 }
 
 func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
-	e.selfMetrics.gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
+	gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
 	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
 		ce.Write(
 			zap.String("gaugeGroup", gaugeGroup.String()),
@@ -354,25 +348,3 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 	}
 	return
 }(exponentialInt64Boundaries)
-
-func storeGaugeGroupKeys(group *model.GaugeGroup) {
-	key := labelKey{
-		metric:          "",
-		srcIp:           group.Labels.GetStringValue(constlabels.SrcIp),
-		dstIp:           group.Labels.GetStringValue(constlabels.DstIp),
-		dstPort:         group.Labels.GetIntValue(constlabels.DstPort),
-		requestContent:  group.Labels.GetStringValue(constlabels.ResponseContent),
-		responseContent: group.Labels.GetStringValue(constlabels.ResponseContent),
-		statusCode:      group.Labels.GetStringValue(constlabels.StatusCode),
-		protocol:        group.Labels.GetStringValue(constlabels.Protocol),
-	}
-	if _, ok := labelsSet[key]; ok {
-		return
-	}
-	labelsSetMutex.Lock()
-	for _, value := range group.Values {
-		key.metric = value.Name
-		labelsSet[key] = true
-	}
-	labelsSetMutex.Unlock()
-}
