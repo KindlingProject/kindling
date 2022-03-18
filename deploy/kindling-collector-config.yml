@@ -129,4 +129,14 @@ observability:
       localtime: true
       compress: false
   opentelemetry:
-    prometheus_port: :9501
+    # Export data in the following ways: ["prometheus", "otlp", "stdout"]
+    # Note: configure the corresponding section to make everything ok
+    export_kind: stdout
+    prometheus:
+      port: :9501
+    otlp:
+      collect_period: 15s
+      # Note: DO NOT add the prefix "http://"
+      endpoint: 10.10.10.10:8080
+    stdout:
+      collect_period: 15s
