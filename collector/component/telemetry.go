@@ -5,6 +5,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
 	"log"
 )
@@ -53,6 +54,8 @@ func (t *TelemetryManager) initProvider(viper *viper.Viper) {
 		return
 	}
 	t.Telemetry.MeterProvider = meterProvider
+	// Here we set a global meter provider to make it accessible to all components
+	global.SetMeterProvider(meterProvider)
 }
 
 type TelemetryTools struct {

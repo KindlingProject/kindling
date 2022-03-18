@@ -3,6 +3,7 @@ package conntracker
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/metric/global"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -100,6 +101,7 @@ func newConntrackerOnce(maxStateSize int, workerNumber uint8) (*Conntracker, err
 			errMsg = fmt.Errorf("poll conntrack update failed:%w", err)
 			return
 		}
+		newSelfMetrics(global.GetMeterProvider(), globalConntracker)
 		return
 	})
 	return globalConntracker, errMsg
