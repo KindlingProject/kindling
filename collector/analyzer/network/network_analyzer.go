@@ -1,19 +1,21 @@
 package network
 
 import (
-	"github.com/Kindling-project/kindling/collector/component"
+	"context"
 	"math/rand"
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"github.com/Kindling-project/kindling/collector/consumer"
 
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/factory"
+	"github.com/Kindling-project/kindling/collector/component"
+	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/metadata/conntracker"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
@@ -40,6 +42,7 @@ type NetworkAnalyzer struct {
 	gaugeGroupPool *GaugeGroupPool
 	requestMonitor sync.Map
 	telemetry      *component.TelemetryTools
+	selfMetrics    *selfMetrics
 }
 
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
@@ -49,6 +52,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		gaugeGroupPool: NewGaugePool(),
 		nextConsumers:  consumers,
 		telemetry:      telemetry,
+		selfMetrics:    NewSelfMetrics(telemetry.MeterProvider),
 	}
 }
 
@@ -187,7 +191,16 @@ func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 
 		na.distributeTraceMetric(oldPairs, mps)
 	}
+	na.recordRequestSize(evt, 1)
 	return nil
+}
+
+func (na *NetworkAnalyzer) recordRequestSize(evt *model.KindlingEvent, count int64) {
+	name := "tcp"
+	if evt.IsUdp() == 1 {
+		name = "udp"
+	}
+	na.selfMetrics.networkRequestSize.Add(context.Background(), count, attribute.String("name", name))
 }
 
 func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
@@ -218,6 +231,7 @@ func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
 			oldPairs.mergeRequest(evt)
 		}
 	}
+	na.recordRequestSize(evt, 1)
 	return nil
 }
 
@@ -250,6 +264,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	if newPairs != nil {
 		na.requestMonitor.Store(newPairs.getKey(), newPairs)
 	} else {
+		na.recordRequestSize(queryEvt, -1)
 		na.requestMonitor.Delete(oldPairs.getKey())
 	}
 
@@ -271,13 +286,13 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	// Case 2 Request 498   Connect/Request                         Request
 	// Case 3 Normal             Connect/Request/Response   Request/Response
 	records := na.parseProtocols(oldPairs)
-
 	for _, record := range records {
 		if ce := na.telemetry.Logger.Check(zapcore.DebugLevel, "NetworkAnalyzer To NextProcess: "); ce != nil {
 			ce.Write(
 				zap.String("record", record.String()),
 			)
 		}
+		na.selfMetrics.networkProtocolTotal.Add(context.Background(), 1, attribute.String("name", record.Labels.GetStringValue(constlabels.Protocol)))
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}
