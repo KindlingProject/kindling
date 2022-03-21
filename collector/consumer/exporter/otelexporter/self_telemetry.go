@@ -45,11 +45,12 @@ func storeGaugeGroupKeys(group *model.GaugeGroup) {
 	}
 	labelsSetMutex.Lock()
 	defer labelsSetMutex.Unlock()
-	if _, ok := labelsSet[key]; ok {
-		return
-	}
 	for _, value := range group.Values {
 		key.metric = value.Name
-		labelsSet[key] = true
+		if _, ok := labelsSet[key]; ok {
+			return
+		} else {
+			labelsSet[key] = true
+		}
 	}
 }
