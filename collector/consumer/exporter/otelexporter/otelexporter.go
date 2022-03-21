@@ -210,6 +210,10 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 }
 
 func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
+	if gaugeGroup == nil {
+		// no need consume
+		return nil
+	}
 	gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
 	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
 		ce.Write(
