@@ -42,6 +42,7 @@ func storeGaugeGroupKeys(group *model.GaugeGroup) {
 		protocol:        group.Labels.GetStringValue(constlabels.Protocol),
 	}
 	labelsSetMutex.Lock()
+	defer labelsSetMutex.Unlock()
 	if _, ok := labelsSet[key]; ok {
 		return
 	}
@@ -49,5 +50,4 @@ func storeGaugeGroupKeys(group *model.GaugeGroup) {
 		key.metric = value.Name
 		labelsSet[key] = true
 	}
-	labelsSetMutex.Unlock()
 }
