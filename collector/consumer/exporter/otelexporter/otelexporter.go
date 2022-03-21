@@ -45,6 +45,17 @@ const (
 
 var serviceName string
 
+type labelKey struct {
+	metric          string
+	srcIp           string
+	dstIp           string
+	dstPort         int64
+	requestContent  string
+	responseContent string
+	statusCode      string
+	protocol        string
+}
+
 type OtelOutputExporters struct {
 	metricExporter exportmetric.Exporter
 	traceExporter  sdktrace.SpanExporter
@@ -61,6 +72,7 @@ type OtelExporter struct {
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
+	newSelfMetrics(telemetry.MeterProvider)
 	cfg, ok := config.(*Config)
 	if !ok {
 		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", Otel))
@@ -198,6 +210,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 }
 
 func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
+	gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
 	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
 		ce.Write(
 			zap.String("gaugeGroup", gaugeGroup.String()),
@@ -214,6 +227,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 }
 
 func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
+	storeGaugeGroupKeys(gaugeGroup)
 	values := gaugeGroup.Values
 	measurements := make([]metric.Measurement, 0, len(values))
 	for _, value := range values {
