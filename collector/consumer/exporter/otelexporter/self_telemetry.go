@@ -24,6 +24,8 @@ func newSelfMetrics(meterProvider metric.MeterProvider) {
 		gaugeGroupReceiverCounter = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(otelexporterGaugegroupsReceivedTotal)
 		metricExportedCardinalitySize = metric.Must(meterProvider.Meter("kindling")).NewInt64UpDownCounterObserver(
 			otelexporterCardinalitySize, func(ctx context.Context, result metric.Int64ObserverResult) {
+				labelsSetMutex.Lock()
+				defer labelsSetMutex.Unlock()
 				result.Observe(int64(len(labelsSet)))
 			})
 		labelsSet = make(map[labelKey]bool, 0)
