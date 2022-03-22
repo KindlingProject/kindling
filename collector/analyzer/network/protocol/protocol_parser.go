@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 	"github.com/Kindling-project/kindling/collector/model"
 
 	cmap "github.com/orcaman/concurrent-map"
@@ -70,6 +71,14 @@ func (message PayloadMessage) GetAttributes() *model.AttributeMap {
 
 func (message PayloadMessage) AddIntAttribute(key string, value int64) {
 	message.attributeMap.AddIntValue(key, value)
+}
+
+func (message PayloadMessage) AddUtf8StringAttribute(key string, value string) {
+	message.attributeMap.AddStringValue(key, tools.FormatStringToUtf8(value))
+}
+
+func (message PayloadMessage) AddByteArrayUtf8Attribute(key string, value []byte) {
+	message.attributeMap.AddStringValue(key, tools.FormatByteArrayToUtf8(value))
 }
 
 func (message PayloadMessage) AddStringAttribute(key string, value string) {

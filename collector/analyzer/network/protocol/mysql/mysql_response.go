@@ -52,7 +52,7 @@ func parseMysqlErr() protocol.ParsePkgFn {
 		}
 
 		message.AddIntAttribute(constlabels.SqlErrCode, int64(errorCode))
-		message.AddStringAttribute(constlabels.SqlErrMsg, errorMessage)
+		message.AddUtf8StringAttribute(constlabels.SqlErrMsg, errorMessage)
 		return true, true
 	}
 }

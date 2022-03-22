@@ -47,7 +47,7 @@ func parseRequestProduce() protocol.ParsePkgFn {
 			return false, true
 		}
 
-		message.AddStringAttribute(constlabels.KafkaTopic, string(topicName))
+		message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		message.AddIntAttribute(constlabels.KafkaPartition, int64(partition))
 		return true, true
 	}

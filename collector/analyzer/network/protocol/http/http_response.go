@@ -1,8 +1,9 @@
 package http
 
 import (
-	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 	"strconv"
+
+	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
@@ -56,7 +57,7 @@ func parseHttpResponse() protocol.ParsePkgFn {
 		}
 
 		message.AddIntAttribute(constlabels.HttpStatusCode, statusCodeI)
-		message.AddStringAttribute(constlabels.HttpResponsePayload, string(message.GetData(0, protocol.GetHttpPayLoadLength())))
+		message.AddByteArrayUtf8Attribute(constlabels.HttpResponsePayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 		if statusCodeI >= 400 {
 			message.AddBoolAttribute(constlabels.IsError, true)
 			message.AddIntAttribute(constlabels.ErrorType, int64(constlabels.ProtocolError))
