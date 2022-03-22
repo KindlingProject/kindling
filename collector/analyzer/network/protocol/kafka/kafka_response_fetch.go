@@ -56,7 +56,7 @@ func parseResponseFetch() protocol.ParsePkgFn {
 				return false, true
 			}
 		}
-		message.AddStringAttribute(constlabels.KafkaTopic, topicName)
+		message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		message.AddIntAttribute(constlabels.KafkaPartition, int64(partition))
 		message.AddIntAttribute(constlabels.KafkaErrorCode, int64(errorCode))
 		return true, true
