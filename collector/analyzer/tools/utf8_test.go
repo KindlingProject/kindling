@@ -26,7 +26,7 @@ func TestFomratByteArrayToUtf8(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FomratByteArrayToUtf8(tt.data)
+			got := FormatByteArrayToUtf8(tt.data)
 			if !utf8.ValidString(got) {
 				t.Errorf("Fail to format byteArray to utf8")
 			}
@@ -64,7 +64,7 @@ func TestFomratStringToUtf8(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data := string(tt.data)
-			got := FomratStringToUtf8(data)
+			got := FormatStringToUtf8(data)
 			if !utf8.ValidString(got) {
 				t.Errorf("Fail to format byteArray to utf8")
 			}
@@ -172,7 +172,7 @@ func TestValidate(t *testing.T) {
 	}
 
 	for _, data := range datas {
-		got := FomratStringToUtf8(data)
+		got := FormatStringToUtf8(data)
 		if !utf8.ValidString(got) {
 			t.Errorf("Fail to format to utf8: %s", data)
 		}

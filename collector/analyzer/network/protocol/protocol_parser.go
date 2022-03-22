@@ -74,11 +74,11 @@ func (message PayloadMessage) AddIntAttribute(key string, value int64) {
 }
 
 func (message PayloadMessage) AddUtf8StringAttribute(key string, value string) {
-	message.attributeMap.AddStringValue(key, tools.FomratStringToUtf8(value))
+	message.attributeMap.AddStringValue(key, tools.FormatStringToUtf8(value))
 }
 
 func (message PayloadMessage) AddByteArrayUtf8Attribute(key string, value []byte) {
-	message.attributeMap.AddStringValue(key, tools.FomratByteArrayToUtf8(value))
+	message.attributeMap.AddStringValue(key, tools.FormatByteArrayToUtf8(value))
 }
 
 func (message PayloadMessage) AddStringAttribute(key string, value string) {

@@ -104,7 +104,7 @@ func runeIndex(p []byte) int {
 	return np
 }
 
-func FomratByteArrayToUtf8(p []byte) string {
+func FormatByteArrayToUtf8(p []byte) string {
 	index := runeIndex(p)
 	if index == len(p) {
 		return string(p)
@@ -156,7 +156,7 @@ func runeIndexInString(s string) int {
 	return ns
 }
 
-func FomratStringToUtf8(s string) string {
+func FormatStringToUtf8(s string) string {
 	index := runeIndexInString(s)
 	if index == len(s) {
 		return s
