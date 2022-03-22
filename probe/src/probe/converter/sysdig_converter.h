@@ -2,7 +2,6 @@
 #define KINDLING_PROBE_SYSDIG_CONVERTER_H
 #include "sinsp.h"
 #include "src/probe/converter/converter.h"
-#include "src/probe/container/match_container.h"
 using namespace kindling;
 
 class sysdig_converter : public converter
