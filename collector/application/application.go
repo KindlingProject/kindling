@@ -3,12 +3,14 @@ package application
 import (
 	"flag"
 	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
 	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/uprobeanalyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/logexporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter"
 	"github.com/Kindling-project/kindling/collector/consumer/processor/k8sprocessor"
 	"github.com/Kindling-project/kindling/collector/consumer/processor/kindlingformatprocessor"
@@ -79,6 +81,7 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterAnalyzer(tcpmetricanalyzer.TcpMetric.String(), tcpmetricanalyzer.NewTcpMetricAnalyzer, &tcpmetricanalyzer.Config{})
 	a.componentsFactory.RegisterAnalyzer(uprobeanalyzer.UprobeType.String(), uprobeanalyzer.NewUprobeAnalyzer, &uprobeanalyzer.Config{})
 	a.componentsFactory.RegisterProcessor(nodemetricprocessor.Type, nodemetricprocessor.New, &nodemetricprocessor.Config{})
+	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
 }
 
 func (a *Application) readInConfig(path string) error {
