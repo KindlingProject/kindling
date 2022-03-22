@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -39,14 +40,15 @@ type NetworkAnalyzer struct {
 	protocolMap      map[string]*protocol.ProtocolParser
 	parsers          []*protocol.ProtocolParser
 
-	gaugeGroupPool *GaugeGroupPool
-	requestMonitor sync.Map
-	telemetry      *component.TelemetryTools
+	gaugeGroupPool     *GaugeGroupPool
+	requestMonitor     sync.Map
+	tcpMessagePairSize int64
+	udpMessagePairSize int64
+	telemetry          *component.TelemetryTools
 }
 
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
-	newSelfMetrics(telemetry.MeterProvider)
 	return &NetworkAnalyzer{
 		cfg:            config,
 		gaugeGroupPool: NewGaugePool(),
@@ -56,6 +58,8 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 }
 
 func (na *NetworkAnalyzer) Start() error {
+	// TODO When import multi annalyzers, this part should move to factory. The metric will relate with analyzers.
+	newSelfMetrics(na.telemetry.MeterProvider, na)
 	if na.cfg.EnableConntrack {
 		na.conntracker, _ = conntracker.NewConntracker(na.cfg.ConntrackMaxStateSize)
 	}
@@ -196,11 +200,11 @@ func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 }
 
 func (na *NetworkAnalyzer) recordMessagePairSize(evt *model.KindlingEvent, count int64) {
-	protocolType := "tcp"
 	if evt.IsUdp() == 1 {
-		protocolType = "udp"
+		atomic.AddInt64(&na.udpMessagePairSize, count)
+	} else {
+		atomic.AddInt64(&na.tcpMessagePairSize, count)
 	}
-	netanalyzerMessagePairSize.Add(context.Background(), count, attribute.String("type", protocolType))
 }
 
 func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
