@@ -3,6 +3,7 @@ package receiver
 import (
 	"errors"
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/analyzer/loganalyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
 )
@@ -32,7 +33,7 @@ func (r *MockReceiver) Start() error {
 	// Receive events
 	events := make([]*model.KindlingEvent, 5)
 	// Distribute events to different analyzers
-	analyzer, ok := r.analyzerManager.GetAnalyzer(analyzerpackage.MockAnalyzerType)
+	analyzer, ok := r.analyzerManager.GetAnalyzer(loganalyzer.Type)
 	if !ok {
 		return errors.New("no mock_analyzer found")
 	}
