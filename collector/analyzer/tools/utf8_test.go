@@ -82,24 +82,93 @@ func TestFomratStringToUtf8(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	datas := []string{
-		"",
-		"a",
-		"abc",
-		"Ж",
-		"ЖЖ",
-		"брэд-ЛГТМ",
-		"☺☻☹",
-		"aa\xe2",
-		string([]byte{66, 250}),
-		string([]byte{66, 250, 67}),
-		"a\uFFFDb",
-		string("\xF4\x8F\xBF\xBF"),     // U+10FFFF
-		string("\xF4\x90\x80\x80"),     // U+10FFFF+1; out of range
-		string("\xF7\xBF\xBF\xBF"),     // 0x1FFFFF; out of range
-		string("\xFB\xBF\xBF\xBF\xBF"), // 0x3FFFFFF; out of range
-		string("\xc0\x80"),             // U+0000 encoded in two bytes: incorrect
-		string("\xed\xa0\x80"),         // U+D800 high surrogate (sic)
-		string("\xed\xbf\xbf"),         // U+DFFF low surrogate (sic)
+		// Valid
+		string("\x45\x00\x45"), // UTF8-1 0x00-0x7F
+		string("\x45\x80\x45"), // UTF8-1 Invalid
+
+		string("\x45\xc2\x80\x45"), // UTF8-2 0xC2-0xDF 0x80-0xBF
+		string("\x45\xc2\x45"),     // UTF8-2 SubString
+		string("\x45\xc2\x7f\x45"), // UTF8-2 Invalid-1
+
+		string("\x45\xe0\xa0\x80\x45"), // UTF8-3 0xE0 0xA0-0xBF 0x80-0xBF
+		string("\x45\xe0\xa0\x45"),     // UTF8-3 SubString
+		string("\x45\xe0\x45"),         // UTF8-3 SubString
+		string("\x45\xe0\xa0\x7f\x45"), // UTF8-3 Invalid-1
+		string("\x45\xe0\x9f\x80\x45"), // UTF8-3 Invalid-1
+		string("\x45\xe0\x9f\x7f\x45"), // UTF8-3 Invalid-2
+		string("\x45\xe0\x9f\x45"),     // UTF8-3 Invalid-1-SubString
+
+		string("\x45\xe1\x80\x80\x45"), // UTF8-3 0xE1-0xEC 0x80-0xBF 0x80-0xBF
+		string("\x45\xe1\x80\x45"),     // UTF8-3 SubString
+		string("\x45\xe1\x45"),         // UTF8-3 SubString
+		string("\x45\xe1\x80\x7f\x45"), // UTF8-3 Invalid-1
+		string("\x45\xe1\x7f\x80\x45"), // UTF8-3 Invalid-1
+		string("\x45\xe1\x7f\x7f\x45"), // UTF8-3 Invalid-2
+		string("\x45\xe1\x7f\x45"),     // UTF8-3 Invalid-1-SubString
+
+		string("\x45\xed\x80\x80\x45"), // UTF8-3 0xED 0x80-0x9F 0x80-0xBF
+		string("\x45\xed\x80\x45"),     // UTF8-3 SubString
+		string("\x45\xed\x45"),         // UTF8-3 SubString
+		string("\x45\xed\x80\x7f\x45"), // UTF8-3 Invalid-1
+		string("\x45\xed\x7f\x80\x45"), // UTF8-3 Invalid-1
+		string("\x45\xed\x7f\x7f\x45"), // UTF8-3 Invalid-2
+		string("\x45\xed\x7f\x45"),     // UTF8-3 Invalid-1-SubString
+
+		string("\x45\xee\x80\x80\x45"), // UTF8-3 0xEE-0xEF 0x80-0xBF 0x80-0xBF
+		string("\x45\xee\x80\x45"),     // UTF8-3 SubString
+		string("\x45\xee\x45"),         // UTF8-3 SubString
+		string("\x45\xee\x80\x7f\x45"), // UTF8-3 Invalid-1
+		string("\x45\xee\x7f\x80\x45"), // UTF8-3 Invalid-1
+		string("\x45\xee\x7f\x7f\x45"), // UTF8-3 Invalid-2
+		string("\x45\xee\x7f\x45"),     // UTF8-3 Invalid-1-SubString
+
+		string("\x45\xf0\x90\x80\x80\x45"), // UTF8-4 0xF0 0x90-0xBF 0x80-0xBF 0x80-0xBF
+		string("\x45\xf0\x90\x80\x45"),     // UTF8-4 SubString
+		string("\x45\xf0\x90\x45"),         // UTF8-4 SubString
+		string("\x45\xf0\x45"),             // UTF8-4 SubString
+		string("\x45\xf0\x90\x80\x7f\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf0\x90\x7f\x80\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf0\x8f\x80\x80\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf0\x90\x7f\x7f\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf0\x8f\x80\x7f\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf0\x8f\x7f\x80\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf0\x8f\x7f\x7f\x45"), // UTF8-4 Invalid-3
+		string("\x45\xf0\x90\x7f\x45"),     // UTF8-4 Invalid-1-SubString
+		string("\x45\xf0\x8f\x80\x45"),     // UTF8-4 Invalid-1-SubString
+		string("\x45\xf0\x8f\x7f\x45"),     // UTF8-4 Invalid-2-SubString
+		string("\x45\xf0\x8f\x45"),         // UTF8-4 Invalid-SubString
+
+		string("\x45\xf1\x80\x80\x80\x45"), // UTF8-4 0xF1-0xF3 0x80-0xBF 0x80-0xBF 0x80-0xBF
+		string("\x45\xf1\x80\x80\x45"),     // UTF8-4 SubString
+		string("\x45\xf1\x80\x45"),         // UTF8-4 SubString
+		string("\x45\xf1\x45"),             // UTF8-4 SubString
+		string("\x45\xf1\x80\x80\x7f\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf1\x80\x7f\x80\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf1\x7f\x80\x80\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf1\x80\x7f\x7f\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf1\x7f\x80\x7f\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf1\x7f\x7f\x80\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf1\x7f\x7f\x7f\x45"), // UTF8-4 Invalid-3
+		string("\x45\xf1\x80\x7f\x45"),     // UTF8-4 Invalid-1-SubString
+		string("\x45\xf1\x7f\x80\x45"),     // UTF8-4 Invalid-1-SubString
+		string("\x45\xf1\x7f\x7f\x45"),     // UTF8-4 Invalid-2-SubString
+		string("\x45\xf1\x7f\x45"),         // UTF8-4 Invalid-SubString
+
+		string("\x45\xf4\x80\x80\x80\x45"), // UTF8-4 0xF4 0x80-0x8F 0x80-0xBF 0x80-0xBF
+		string("\x45\xf4\x80\x80\x45"),     // UTF8-4 SubString
+		string("\x45\xf4\x80\x45"),         // UTF8-4 SubString
+		string("\x45\xf4\x45"),             // UTF8-4 SubString
+		string("\x45\xf4\x80\x80\x7f\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf4\x80\x7f\x80\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf4\x7f\x80\x80\x45"), // UTF8-4 Invalid-1
+		string("\x45\xf4\x80\x7f\x7f\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf4\x7f\x80\x7f\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf4\x7f\x7f\x80\x45"), // UTF8-4 Invalid-2
+		string("\x45\xf4\x7f\x7f\x7f\x45"), // UTF8-4 Invalid-3
+		string("\x45\xf4\x80\x7f\x45"),     // UTF8-4 Invalid-1-SubString
+		string("\x45\xf4\x7f\x80\x45"),     // UTF8-4 Invalid-1-SubString
+		string("\x45\xf4\x7f\x7f\x45"),     // UTF8-4 Invalid-2-SubString
+		string("\x45\xf4\x7f\x45"),         // UTF8-4 Invalid-SubString
 	}
 
 	for _, data := range datas {

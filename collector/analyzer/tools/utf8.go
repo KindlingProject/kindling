@@ -1,3 +1,4 @@
+// Copyright 2009 The Go Authors. All rights reserved.
 package tools
 
 import (
@@ -69,7 +70,7 @@ func runeIndex(p []byte) int {
 		c := p[i]
 		if c < utf8.RuneSelf {
 			// ASCII fast path
-			if n > 0 && n < 3 {
+			if n > 0 && n < 3 { // Just set 3 for chinese characters as it's size is 3.
 				return i - n
 			}
 			i++
