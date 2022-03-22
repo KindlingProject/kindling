@@ -42,8 +42,8 @@ func parseMysqlPrepare() protocol.ParsePkgFn {
 		if !isSql(sql) {
 			return false, true
 		}
-		message.AddStringAttribute(constlabels.Sql, sql)
-		message.AddStringAttribute(constlabels.ContentKey, tools.SQL_MERGER.ParseStatement(sql))
+		message.AddUtf8StringAttribute(constlabels.Sql, sql)
+		message.AddUtf8StringAttribute(constlabels.ContentKey, tools.SQL_MERGER.ParseStatement(sql))
 		return true, true
 	}
 }
@@ -66,8 +66,8 @@ func parseMysqlQuery() protocol.ParsePkgFn {
 			return false, true
 		}
 
-		message.AddStringAttribute(constlabels.Sql, sql)
-		message.AddStringAttribute(constlabels.ContentKey, tools.SQL_MERGER.ParseStatement(sql))
+		message.AddUtf8StringAttribute(constlabels.Sql, sql)
+		message.AddUtf8StringAttribute(constlabels.ContentKey, tools.SQL_MERGER.ParseStatement(sql))
 		return true, true
 	}
 }
