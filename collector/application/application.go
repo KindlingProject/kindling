@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Kindling-project/kindling/collector/analyzer"
+	"github.com/Kindling-project/kindling/collector/analyzer/loganalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
 	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/uprobeanalyzer"
@@ -82,6 +83,7 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterAnalyzer(uprobeanalyzer.UprobeType.String(), uprobeanalyzer.NewUprobeAnalyzer, &uprobeanalyzer.Config{})
 	a.componentsFactory.RegisterProcessor(nodemetricprocessor.Type, nodemetricprocessor.New, &nodemetricprocessor.Config{})
 	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
+	a.componentsFactory.RegisterAnalyzer(loganalyzer.Type.String(), loganalyzer.New, &loganalyzer.Config{})
 }
 
 func (a *Application) readInConfig(path string) error {
