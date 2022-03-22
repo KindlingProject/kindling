@@ -32,7 +32,6 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         ":kindling_event_pl_cc_proto",
-        "//src/probe/container:cc_library",
         "//third_party:agent-libs_build",
         "@px//:px_headers",
     ],
