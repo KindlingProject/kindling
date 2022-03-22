@@ -1,8 +1,9 @@
 package http
 
 import (
-	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 	"strings"
+
+	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
@@ -45,14 +46,14 @@ func parseHttpRequest() protocol.ParsePkgFn {
 		}
 
 		message.AddStringAttribute(constlabels.HttpMethod, string(method))
-		message.AddStringAttribute(constlabels.HttpUrl, string(url))
-		message.AddStringAttribute(constlabels.HttpRequestPayload, string(message.GetData(0, protocol.GetHttpPayLoadLength())))
+		message.AddByteArrayUtf8Attribute(constlabels.HttpUrl, url)
+		message.AddByteArrayUtf8Attribute(constlabels.HttpRequestPayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 
 		contentKey := getContentKey(string(url))
 		if len(contentKey) == 0 {
 			contentKey = "*"
 		}
-		message.AddStringAttribute(constlabels.ContentKey, contentKey)
+		message.AddUtf8StringAttribute(constlabels.ContentKey, contentKey)
 		return true, true
 	}
 }
