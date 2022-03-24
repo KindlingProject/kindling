@@ -31,7 +31,7 @@ func newGauges(g *model.GaugeGroup) *gauges {
 	return &gauges{
 		GaugeGroup:   gaugeGroupCp,
 		targetValues: make([]*model.Gauge, 0, len(g.Values)),
-		targetLabels: model.NewAttributeMap(),
+		targetLabels: g.Labels,
 	}
 }
 
