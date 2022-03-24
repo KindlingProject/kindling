@@ -17,14 +17,19 @@
 
 #include "src/probe/catch_sig.h"
 
+DEFINE_int32(sysdig_snaplen, 80, "The len of one sysdig event");
+DEFINE_int32(list_batch_size, 100, "The batch size of convert/send list");
+DEFINE_int32(list_max_size, INT_MAX, "The max size of convert/send list");
+DEFINE_bool(sysdig_output, false, "If true, sysdig will print events log");
+DEFINE_int32(sysdig_filter_out_pid_event, -1, "When sysdig_output is true, sysdig will print the exact process's events");
+DEFINE_bool(sysdig_bpf, true, "If true, sysdig will use eBPF mode");
+
 #define KINDLING_PROBE_VERSION "v0.1-2021-1221"
-void do_inspect(sinsp *inspector, sinsp_evt_formatter *formatter, int pid, int syscallOn, publisher* pub) {
+void do_inspect(sinsp *inspector, sinsp_evt_formatter *formatter, int pid, publisher* pub) {
     int32_t res;
     sinsp_evt *ev;
     string line;
-    int filter_out_pid_event = -1;
-    int is_syscall_out = 0;
-    converter *sysdigConverter = new sysdig_converter(inspector);
+    converter *sysdigConverter = new sysdig_converter(inspector, FLAGS_list_batch_size, FLAGS_list_max_size);
     while (true) {
         res = inspector->next(&ev);
         if (res == SCAP_TIMEOUT) {
@@ -56,13 +61,11 @@ void do_inspect(sinsp *inspector, sinsp_evt_formatter *formatter, int pid, int s
         }
 
         pub->consume_sysdig_event(ev, threadInfo->m_pid, sysdigConverter);
-        if (is_syscall_out == 1 && filter_out_pid_event == threadInfo->m_pid && formatter->tostring(ev, &line)) {
-            cout<< line << endl;
+        if (FLAGS_sysdig_output && (FLAGS_sysdig_filter_out_pid_event == -1 || FLAGS_sysdig_filter_out_pid_event == threadInfo->m_pid)) {
+            if (formatter->tostring(ev, &line)) {
+                cout<< line << endl;
+            }
         }
-
-//        if (formatter->tostring(ev, &line)) {
-//            cout << line << endl;
-//        }
     }
 }
 
@@ -103,7 +106,6 @@ int main(int argc, char** argv) {
 
 
     int pid = getpid();
-    int is_syscall_on = 0;
     sinsp *inspector = nullptr;
     bool bpf = false;
     string bpf_probe;
@@ -117,7 +119,7 @@ int main(int argc, char** argv) {
         inspector = new sinsp();
         inspector->set_hostname_and_port_resolution_mode(false);
         sinsp_evt_formatter formatter(inspector, output_format);
-        inspector->set_snaplen(80);
+        inspector->set_snaplen(FLAGS_sysdig_snaplen);
 
         inspector->suppress_events_comm("containerd");
         inspector->suppress_events_comm("dockerd");
@@ -171,7 +173,7 @@ int main(int argc, char** argv) {
 		    std::cout << "***** kernel version is " << kernel_version.version << "." << kernel_version.major_rev << " , do not init stirling ... *****" << std::endl;
 		}
 
-        uprobe_converter* uconv = new uprobe_converter();
+        uprobe_converter* uconv = new uprobe_converter(FLAGS_list_batch_size, FLAGS_list_max_size);
         publisher *pub = new publisher(inspector, uconv);
 
         std::unique_ptr<px::stirling::Stirling> stirling_;
@@ -190,7 +192,7 @@ int main(int argc, char** argv) {
 		}
 
         TerminationHandler::set_sinsp(inspector);
-        thread inspect(do_inspect, inspector, &formatter, pid, is_syscall_on, pub);
+        thread inspect(do_inspect, inspector, &formatter, pid, pub);
         pub->start();
 
         inspector->close();

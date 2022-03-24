@@ -6,11 +6,11 @@ using namespace std;
 using namespace kindling;
 
 
-sysdig_converter::sysdig_converter(sinsp *inspector) : converter(100, INT_MAX), m_inspector(inspector) {
-}
+sysdig_converter::sysdig_converter(sinsp *inspector) : converter(100, INT_MAX), m_inspector(inspector) {}
 
-sysdig_converter::~sysdig_converter() {
-}
+sysdig_converter::sysdig_converter(sinsp *inspector, int batch_size, int max_size) : converter(batch_size, max_size), m_inspector(inspector) {}
+
+sysdig_converter::~sysdig_converter() {}
 
 void sysdig_converter::convert(void *evt) {
     auto kevt = get_kindlingEventList()->add_kindling_event_list();

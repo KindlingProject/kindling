@@ -8,7 +8,8 @@ class sysdig_converter : public converter
 {
 public:
     void convert(void *evt);
-    sysdig_converter(sinsp *);
+    sysdig_converter(sinsp *inspector);
+    sysdig_converter(sinsp *inspector, int batch_size, int max_size);
     ~sysdig_converter();
     Category get_kindling_category(sinsp_evt *pEvt);
     Source get_kindling_source(uint16_t etype);

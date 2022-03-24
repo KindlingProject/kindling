@@ -42,10 +42,9 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
     }
     // convert sysdig event to kindling event
     if (m_selector->select(evt->get_type(), ((sysdig_converter *) sysdigConverter)->get_kindling_category(evt))) {
-        // TODO determine max_size
-//        if (sysdigConverter->judge_max_size()) {
-//            return;
-//        }
+        if (sysdigConverter->judge_max_size()) {
+            return;
+        }
         auto it = m_kindlingEventLists.find(sysdigConverter);
         KindlingEventList* kindlingEventList;
         if (it == m_kindlingEventLists.end()) {
@@ -245,12 +244,14 @@ px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID
             std::cout << "[qianlu] cannot find container_id for pid:" << pid << std::endl;
         }
 
-        // convert to kindling event
-        uprobe_converter_->convert(&gevt);
-        // if send list was sent
-        if (uprobe_converter_->judge_batch_size() && !m_ready[kindlingEventList]) {
-            m_kindlingEventLists[uprobe_converter_] = uprobe_converter_->swap_list(kindlingEventList);
-            m_ready[kindlingEventList] = true;
+        if (uprobe_converter_->judge_max_size() == false) {
+            // convert to kindling event
+            uprobe_converter_->convert(&gevt);
+            // if send list was sent
+            if (uprobe_converter_->judge_batch_size() && !m_ready[kindlingEventList]) {
+                m_kindlingEventLists[uprobe_converter_] = uprobe_converter_->swap_list(kindlingEventList);
+                m_ready[kindlingEventList] = true;
+            }
         }
     }
     return px::Status::OK();

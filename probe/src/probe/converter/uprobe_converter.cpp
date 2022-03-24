@@ -5,7 +5,7 @@
 #include "src/probe/converter/uprobe_converter.h"
 
 uprobe_converter::uprobe_converter() : converter(100, INT_MAX) {}
-
+uprobe_converter::uprobe_converter(int batch_size, int max_size) : converter(batch_size, max_size) {}
 uprobe_converter::~uprobe_converter() {}
 
 void uprobe_converter::convert(void *evt) {
