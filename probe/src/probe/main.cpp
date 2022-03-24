@@ -33,23 +33,30 @@ void do_inspect(sinsp *inspector, sinsp_evt_formatter *formatter, int pid, int s
             cerr << "res = " << res << endl;
             break;
         }
-
         if (!inspector->is_debug_enabled() &&
             ev->get_category() & EC_INTERNAL) {
             continue;
         }
-        if (ev->get_thread_info() == nullptr) {
+        auto threadInfo = ev->get_thread_info();
+        if (threadInfo == nullptr) {
             continue;
         }
-        if (ev->get_thread_info()->m_ptid == (__int64_t) pid || ev->get_thread_info()->m_pid == (__int64_t) pid) {
+        // filter out kindling-probe itself and 0
+        if (threadInfo->m_ptid == (__int64_t) pid || threadInfo->m_pid == (__int64_t) pid || threadInfo->m_pid == 0) {
             continue;
         }
 
-        if (ev->get_thread_info()->m_comm == "sshd" || ev->get_type() == PPME_SCHEDSWITCH_6_E || ev->get_type() == PPME_SCHEDSWITCH_6_X || ev->get_thread_info()->m_comm == "containerd" || ev->get_thread_info()->m_comm == "dockerd" || ev->get_thread_info()->m_comm == "container-shim") {
-            continue;
+        // filter out io-related events that do not contain message
+        auto category = ev->get_category();
+        if (category & EC_IO_BASE) {
+            auto pres = ev->get_param_value_raw("res");
+            if (pres && *(int64_t *) pres->m_val <= 0) {
+                continue;
+            }
         }
-        pub->consume_sysdig_event(ev, pid, sysdigConverter);
-        if (is_syscall_out == 1 && filter_out_pid_event == ev->get_thread_info()->m_pid && formatter->tostring(ev, &line)) {
+
+        pub->consume_sysdig_event(ev, threadInfo->m_pid, sysdigConverter);
+        if (is_syscall_out == 1 && filter_out_pid_event == threadInfo->m_pid && formatter->tostring(ev, &line)) {
             cout<< line << endl;
         }
 
@@ -111,6 +118,12 @@ int main(int argc, char** argv) {
         inspector->set_hostname_and_port_resolution_mode(false);
         sinsp_evt_formatter formatter(inspector, output_format);
         inspector->set_snaplen(80);
+
+        inspector->suppress_events_comm("containerd");
+        inspector->suppress_events_comm("dockerd");
+        inspector->suppress_events_comm("containerd-shim");
+        inspector->suppress_events_comm("kindling-collector");
+        inspector->suppress_events_comm("sshd");
 
         const char *probe = scap_get_bpf_probe_from_env();
         if (probe) {

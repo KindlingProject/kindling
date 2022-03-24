@@ -34,14 +34,9 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
         return;
     }
 
-    // filter out kindling-probe itself and pid in filter_pid
-    sinsp_threadinfo *evThreadInfo = evt->get_thread_info();
-    if (evThreadInfo->m_ptid == pid || evThreadInfo->m_pid == pid || evThreadInfo->m_pid == 0) {
-        return;
-    }
-
+    // filter out pid in filter_pid
     for (int i : filter_pid) {
-        if (i == evThreadInfo->m_pid) {
+        if (i == pid) {
             return;
         }
     }
