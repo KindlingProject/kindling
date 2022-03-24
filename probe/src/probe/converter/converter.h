@@ -7,7 +7,7 @@ class converter {
 public:
     converter();
     converter(uint64_t batch_size, uint64_t max_size);
-    ~converter();
+    virtual ~converter();
 	// source evt -> kindling evt
 	virtual void convert(void * evt);
     bool judge_batch_size();
