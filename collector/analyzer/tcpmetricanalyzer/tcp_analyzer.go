@@ -11,6 +11,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/hashicorp/go-multierror"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -69,7 +70,11 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		gaugeGroup, err = a.generateRetransmit(event)
 	}
 	if err != nil {
-		a.telemetry.Logger.Debug("Event Skip,", zap.Error(err))
+		if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, "Event Skip, "); ce != nil {
+			ce.Write(
+				zap.Error(err),
+			)
+		}
 		return nil
 	}
 	if gaugeGroup == nil {
