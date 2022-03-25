@@ -303,3 +303,7 @@ func If(condition bool, trueVal, falseVal interface{}) interface{} {
 	}
 	return falseVal
 }
+
+func cleanSrcPort(cfg *Config, g *gauges) {
+	g.targetLabels.RemoveAttribute(constlabels.SrcPort)
+}

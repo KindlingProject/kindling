@@ -45,7 +45,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		// Trace as Metric
 		trace := newGauges(gaugeGroup)
 		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo,
-			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo))
+			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo, cleanSrcPort))
 	}
 	if r.cfg.NeedTraceAsResourceSpan {
 		var isSample = false
@@ -80,7 +80,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		// Do not emit detail protocol metric at this version
 		//protocol := newGauges(gaugeGroup)
 		//protocolErr := r.nextConsumer.Consume(protocol.Process(r.cfg, ProtocolDetailMetricName, ServiceInstanceInfo, ServiceK8sInfo, ProtocolDetailInfo))
-		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo))
+		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo, cleanSrcPort))
 		var metricErr2 error
 		if r.cfg.StoreExternalSrcIP {
 			srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
@@ -90,7 +90,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 				// Here we have to modify the field "IsServer" to generate the metric.
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, false)
 				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, MetricName, TopologyInstanceInfo,
-					TopologyK8sInfo, DstContainerInfo, TopologyProtocolInfo))
+					TopologyK8sInfo, DstContainerInfo, TopologyProtocolInfo, cleanSrcPort))
 				// In case of using the original data later, we reset the field "IsServer".
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, true)
 			}
@@ -98,7 +98,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		return multierr.Combine(traceErr, spanErr, metricErr, metricErr2)
 	} else {
 		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo,
-			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo))
+			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo, cleanSrcPort))
 		return multierr.Combine(traceErr, metricErr)
 	}
 }
