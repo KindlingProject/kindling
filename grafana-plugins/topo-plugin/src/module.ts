@@ -4,34 +4,24 @@ import { TopologyPanel } from './topologyPanel';
 
 export const plugin = new PanelPlugin<SimpleOptions>(TopologyPanel).setPanelOptions(builder => {
   return builder
-    // .addTextInput({
-    //   path: 'text',
-    //   name: 'Simple text option',
-    //   description: 'Description of panel option',
-    //   defaultValue: 'Default value of text input option',
-    // })
-    // .addRadio({
-    //   path: 'seriesCountSize',
-    //   defaultValue: 'sm',
-    //   name: 'Normal',
-    //   settings: {
-    //     options: [
-    //       {
-    //         value: 'sm',
-    //         label: 'Small',
-    //       },
-    //       {
-    //         value: 'md',
-    //         label: 'Medium',
-    //       },
-    //       {
-    //         value: 'lg',
-    //         label: 'Large',
-    //       },
-    //     ],
-    //   },
-    //   showIf: config => config.showLatency,
-    // })
+    .addSelect({
+      path: 'layout', 
+      name: 'Layout',
+      defaultValue: 'dagre',
+      description: 'change topology layout。',
+      settings: {
+        options: [
+          {
+            value: 'dagre',
+            label: 'Dagre Layout',
+          },
+          {
+            value: 'force',
+            label: 'Force Layout',
+          }
+        ],
+      },
+    })
     .addBooleanSwitch({
       path: 'showLatency',
       name: 'Latency Config',
