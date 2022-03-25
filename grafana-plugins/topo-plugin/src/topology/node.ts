@@ -138,7 +138,7 @@ G6.registerNode('custom-node', {
                 class: 'node_text',
                 fontSize: 10,
                 lineHeight: 10,
-                text: nodeTextHandle(node.name, 11),
+                text: nodeTextHandle(node.name),
                 fill: '#C2C8D5',
             },
             id: 'node-name',
@@ -147,10 +147,10 @@ G6.registerNode('custom-node', {
         if (node.showNamespace) {
             group.addShape('rect', {
                 attrs: {
-                    x: -ImgW * 1.5 / 2,
+                    x: -ImgW * 2 / 2,
                     y: ImgH / 2 + 19,
                     radius: 5,
-                    width: ImgW * 1.5,
+                    width: ImgW * 2,
                     height: 10,
                     class: 'node_ns_rect',
                     fill: '#F3FF69',
@@ -168,7 +168,7 @@ G6.registerNode('custom-node', {
                     class: 'node_text',
                     fontSize: 10,
                     lineHeight: 10,
-                    text: nodeTextHandle(`ns:${node.namespace}`, 10),
+                    text: nodeTextHandle(`ns:${node.namespace}`, 15),
                     fill: '#595959',
                 },
                 id: 'node-ns-name',
