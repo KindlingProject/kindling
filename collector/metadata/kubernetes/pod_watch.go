@@ -63,6 +63,20 @@ func (m *podMap) delete(namespace string, name string) {
 	m.mutex.Unlock()
 }
 
+func (m *podMap) get(namespace string, name string) (*PodInfo, bool) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	podInfoMap, ok := m.info[namespace]
+	if !ok {
+		return nil, false
+	}
+	podInfo, ok := podInfoMap[name]
+	if !ok {
+		return nil, false
+	}
+	return podInfo, true
+}
+
 // getPodsMatchSelectors gets PodInfo(s) whose labels match with selectors in such namespace.
 // Return empty slice if not found. Note there may be multiple match.
 func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]string) []*PodInfo {
