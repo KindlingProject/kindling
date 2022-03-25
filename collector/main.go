@@ -15,12 +15,7 @@ func main() {
 	}
 	
 	//print version information
-	fmt.Printf("%s\n", core.Version())
 	log.Printf("GitCommitInfo:%s\n", core.Version())
-	log.Printf("-------------")
-	log.Printf("-------------")
-	log.Printf("-------------")
-	log.Printf("-------------")
 
 	
 	err = app.Run()
