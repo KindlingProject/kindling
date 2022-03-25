@@ -3,7 +3,7 @@ module github.com/Kindling-project/kindling/collector
 go 1.16
 
 require (
-	github.com/golang/protobuf v1.5.2
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mdlayher/netlink v1.5.0

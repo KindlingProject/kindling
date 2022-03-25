@@ -10,7 +10,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/receiver"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
