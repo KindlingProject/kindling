@@ -84,6 +84,7 @@
         },
         {
           "expr": "sum by(namespace, workload_name, pod) (kindling_entity_request_duration_nanoseconds_count{namespace=~\"$namespace\",workload_name=~\"$workload\", response_content=~\"400|404|500|503\"}) / sum by(namespace, workload_name, pod) (kindling_entity_request_duration_nanoseconds_count{namespace=~\"$namespace\",workload_name=~\"$workload\"}) * 100",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -111,7 +112,7 @@
           "refId": "J"
         },
         {
-          "expr": "kindling_tcp_rtt_milliseconds",
+          "expr": "avg_over_time(kindling_tcp_rtt_microseconds[$__interval])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
