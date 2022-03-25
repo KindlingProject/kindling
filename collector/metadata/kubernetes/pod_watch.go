@@ -100,7 +100,7 @@ func PodWatch(clientSet *kubernetes.Clientset) {
 		runtime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
-	go podDeleteLoop(10*time.Second, 30*time.Second, stopper)
+	go podDeleteLoop(10*time.Second, 60*time.Second, stopper)
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    onAdd,
 		UpdateFunc: OnUpdate,
