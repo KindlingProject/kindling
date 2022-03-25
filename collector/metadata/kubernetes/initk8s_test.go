@@ -15,7 +15,7 @@ func TestWatch(t *testing.T) {
 	go NodeWatch(clientSet)
 	go RsWatch(clientSet)
 	go ServiceWatch(clientSet)
-	go PodWatch(clientSet)
+	go PodWatch(clientSet, 60*time.Second)
 	time.Sleep(2 * time.Second)
 	content, _ := json.Marshal(globalRsInfo)
 	fmt.Println(string(content))

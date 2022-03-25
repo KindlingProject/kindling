@@ -63,7 +63,6 @@ analyzers:
 processors:
   k8smetadataprocessor:
     kube_auth_type: kubeConfig
-    kube_config_dir: /root/.kube/config
   kindlingformatprocessor:
     need_trace_as_metric: true
     need_pod_detail: true
