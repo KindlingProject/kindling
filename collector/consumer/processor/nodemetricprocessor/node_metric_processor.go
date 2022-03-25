@@ -10,6 +10,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/hashicorp/go-multierror"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"time"
 )
 
@@ -57,7 +58,11 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 	dstNodeIp := labels.GetStringValue(constlabels.DstNodeIp)
 	srcNodeIp := labels.GetStringValue(constlabels.SrcNodeIp)
 	if dstNodeIp == "" || srcNodeIp == "" {
-		p.telemetry.Logger.Debug("dstNodeIp or srcNodeIp is empty which is not expected, skip: ", zap.String("gaugeGroup", gaugeGroup.String()))
+		if ce := p.telemetry.Logger.Check(zapcore.DebugLevel, "dstNodeIp or srcNodeIp is empty which is not expected, skip: "); ce != nil {
+			ce.Write(
+				zap.String("gaugeGroup", gaugeGroup.String()),
+			)
+		}
 		return nil
 	}
 	// NodeName could be empty
