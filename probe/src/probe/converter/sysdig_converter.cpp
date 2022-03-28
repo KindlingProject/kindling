@@ -327,7 +327,7 @@ int sysdig_converter::setTuple(kindling::KindlingEvent* kevt, const sinsp_evt_pa
 
                 auto dip = kevt->add_user_attributes();
                 dip->set_key("dip");
-                dip->set_key(tuple+7, 4);
+                dip->set_value(tuple+7, 4);
                 dip->set_value_type(UINT32);
 
                 auto dport = kevt->add_user_attributes();
