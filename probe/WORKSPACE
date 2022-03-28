@@ -22,9 +22,9 @@ http_archive(
 
 http_archive(
         name = "agent-libs",
-        urls = ["https://github.com/Kindling-project/agent-libs/archive/eb3233624ff313cb936541bcf0a145dcada4da19.tar.gz"],
-        sha256 = "925b78d74abf40b3652cac0bfc581a69c8537d01d76556205f851a1ac2272423",
-        strip_prefix = "agent-libs-eb3233624ff313cb936541bcf0a145dcada4da19",
+        urls = ["https://github.com/Kindling-project/agent-libs/archive/5b96701cba83b925c66ab90b947565bf08acc739.tar.gz"],
+        sha256 = "fece03cfa5e5bad393702c45620c7c94652371ac2d192af1c28891bf7a4e945f",
+        strip_prefix = "agent-libs-5b96701cba83b925c66ab90b947565bf08acc739",
         build_file_content = BUILD_ALL_CONTENT,
     )
 
