@@ -39,6 +39,7 @@ class uprobe_converter : public converter {
 public:
     void convert(void *evt);
     uprobe_converter();
+    uprobe_converter(int batch_size, int max_size);
     ~uprobe_converter();
 };
 
