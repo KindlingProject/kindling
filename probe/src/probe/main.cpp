@@ -176,10 +176,10 @@ int main(int argc, char** argv) {
         thread catch_signal(sigsetup);
         thread stat(get_capture_statistics, inspector);
 
-		    uprobe_converter* uconv = new uprobe_converter(FLAGS_list_batch_size, FLAGS_list_max_size);
+        uprobe_converter* uconv = new uprobe_converter(FLAGS_list_batch_size, FLAGS_list_max_size);
         publisher *pub = new publisher(inspector, uconv);
 
-		    auto kernel_version = px::stirling::utils::GetKernelVersion().ValueOrDie();
+        auto kernel_version = px::stirling::utils::GetKernelVersion().ValueOrDie();
         LOG(INFO) << absl::Substitute("kernel version is $0.$1.$2", kernel_version.version, kernel_version.major_rev, kernel_version.minor_rev);
 	std::unique_ptr<px::stirling::Stirling> stirling_;
         if (!FLAGS_enable_stirling) {
