@@ -26,8 +26,6 @@ private:
 
 	sinsp *m_inspector;
 
-    int setValue(AnyValue *pValue, ppm_param_type type, sinsp_evt_param *pParam);
-
     int setTuple(kindling::KindlingEvent* kevt, const sinsp_evt_param *pParam);
 };
 
