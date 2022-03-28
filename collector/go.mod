@@ -11,7 +11,6 @@ require (
 	github.com/pebbe/zmq4 v1.2.7
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.0
-	github.com/sugary199/collector-version v0.0.0-20220328073313-09762999a2c0
 	github.com/ti-mo/conntrack v0.4.0
 	github.com/ti-mo/netfilter v0.3.1
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect

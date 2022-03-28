@@ -3,9 +3,7 @@ package main
 import (
 	"github.com/Kindling-project/kindling/collector/application"
 	"log"
-//  package in formal kindlingproject if merged:
-//  "github.com/Kindling-project/kindling/collector/version"
-	"github.com/sugary199/collector-version/version"
+    "github.com/Kindling-project/kindling/collector/version"
 )
 
 func main() {

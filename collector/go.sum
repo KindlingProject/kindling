@@ -461,8 +461,6 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
-github.com/sugary199/collector-version v0.0.0-20220328073313-09762999a2c0 h1:2ewdFl8e+Cyvjov3ji+HR7MHeJ3pSFULsdZkZKX+hiM=
-github.com/sugary199/collector-version v0.0.0-20220328073313-09762999a2c0/go.mod h1:C4/rk4X3w8K0bLViOjeC0HnOe++Bw4bzVVPq3sih+FI=
 github.com/ti-mo/conntrack v0.4.0 h1:6TZXNqhsJmeBl1Pyzg43Y0V1Nx8jyZ4dpOtItCVXE+8=
 github.com/ti-mo/conntrack v0.4.0/go.mod h1:L0vkIzG/TECsuVYMMlID9QWmZQLjyP9gDq8XKTlbg4Q=
 github.com/ti-mo/netfilter v0.3.1 h1:+ZTmeTx+64Jw2N/1gmqm42kruDWjQ90SMjWEB1e6VDs=
