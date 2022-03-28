@@ -21,27 +21,6 @@ message KindlingEvent {
   Context ctx = 7;
 }
 
-message AnyValue {
-  oneof value {
-    string string_value = 1;
-    bool bool_value = 2;
-    int64 int_value = 3;
-    uint64 uint_value = 4;
-    double double_value = 5;
-    bytes bytes_value = 6;
-    ArrayValue array_value = 7;
-  }
-}
-
-message ArrayValue {
-  repeated AnyValue values = 1;
-}
-
-message KeyValue {
-  string key = 1;
-  AnyValue value = 2;
-}
-
 enum Source {
   SOURCE_UNKNOWN = 0;
   SYSCALL_ENTER = 1;
@@ -76,7 +55,7 @@ message Property {
   repeated KeyValue ret = 2;
 }
 
-message Pair {
+message KeyValue {
   // Arguments' Name or Attributions' Name.
   string key = 1;
   // Type of Value.
