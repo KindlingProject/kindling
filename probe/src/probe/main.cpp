@@ -14,9 +14,15 @@
 #include <src/stirling/stirling.h>
 #include "src/probe/converter/uprobe_converter.h"
 #include <src/stirling/utils/linux_headers.h>
+#include <src/common/metrics/metrics.h>
 
 #include "src/probe/catch_sig.h"
 
+#include <prometheus/exposer.h>
+#include <prometheus/registry.h>
+
+DEFINE_bool(enable_stirling, false, "If true, pixie stirling module is enabled.");
+DEFINE_int32(port, 9112, "The port to export prometheus metrics.");
 DEFINE_int32(sysdig_snaplen, 80, "The len of one sysdig event");
 DEFINE_int32(list_batch_size, 100, "The batch size of convert/send list");
 DEFINE_int32(list_max_size, INT_MAX, "The max size of convert/send list");
@@ -103,6 +109,13 @@ int main(int argc, char** argv) {
     px::EnvironmentGuard env_guard(&argc, argv);
 //  absl::flat_hash_set<std::string_view>& source_names = ;
 //  auto sr = px::stirling::CreateProdSourceRegistry();
+// init prometheus
+    // create an http server running on port 8080
+    LOG(INFO) << "init prometheus ... ";
+    prometheus::Exposer exposer{"0.0.0.0:" + std::to_string(FLAGS_port)};
+    std::shared_ptr s_registry = std::shared_ptr<prometheus::Registry>(&(GetMetricsRegistry()));
+    exposer.RegisterCollectable(s_registry);
+    LOG(INFO) << "metrics registry succesfully registerd!";
 
 
     int pid = getpid();
@@ -161,35 +174,38 @@ int main(int argc, char** argv) {
             inspector->open("");
         }
         thread catch_signal(sigsetup);
-		thread stat(get_capture_statistics, inspector);
+        thread stat(get_capture_statistics, inspector);
 
-		// check kernel version
-		bool init_stirling = true;
-		auto kernel_version = px::stirling::utils::GetKernelVersion().ValueOrDie();
-		std::cout << absl::Substitute("kernel version is $0.$1.$2", kernel_version.version, kernel_version.major_rev, kernel_version.minor_rev) << std::endl;
-        if ((kernel_version.version == 4 && kernel_version.major_rev < 14) || kernel_version.version < 4) {
-		    init_stirling = false;
-            LOG(WARNING) << absl::Substitute("kernel version is $0.$1.$2, do not init stirling ... ", kernel_version.version, kernel_version.major_rev, kernel_version.minor_rev);
-		    std::cout << "***** kernel version is " << kernel_version.version << "." << kernel_version.major_rev << " , do not init stirling ... *****" << std::endl;
-		}
-
-        uprobe_converter* uconv = new uprobe_converter(FLAGS_list_batch_size, FLAGS_list_max_size);
+		    uprobe_converter* uconv = new uprobe_converter(FLAGS_list_batch_size, FLAGS_list_max_size);
         publisher *pub = new publisher(inspector, uconv);
 
-        std::unique_ptr<px::stirling::Stirling> stirling_;
-
-		if (init_stirling) {
-            // init bcc & stirling
-            auto stirling = px::stirling::Stirling::Create(px::stirling::CreateSourceRegistry(px::stirling::GetSourceNamesForGroup(px::stirling::SourceConnectorGroup::kTracers))
-                                                                   .ConsumeValueOrDie());
-            stirling->RegisterDataPushCallback(std::bind(&publisher::consume_uprobe_data, pub,
-                                                         std::placeholders::_1, std::placeholders::_2,
-                                                         std::placeholders::_3));
-            TerminationHandler::set_stirling(stirling.get());
-            auto status = stirling->RunAsThread();
-            std::cout << status.ok() << "begin to run core" << std::endl;
-            stirling_ = std::move(stirling);
-		}
+		    auto kernel_version = px::stirling::utils::GetKernelVersion().ValueOrDie();
+        LOG(INFO) << absl::Substitute("kernel version is $0.$1.$2", kernel_version.version, kernel_version.major_rev, kernel_version.minor_rev);
+	std::unique_ptr<px::stirling::Stirling> stirling_;
+        if (!FLAGS_enable_stirling) {
+            LOG(WARNING) << "stirling module is set to disable, add --enable_stirling to enable ... ";
+        } else {
+            // check kernel version
+            bool init_stirling = true;
+            if ((kernel_version.version == 4 && kernel_version.major_rev < 14) || kernel_version.version < 4) {
+                init_stirling = false;
+                LOG(WARNING) << absl::Substitute("kernel version is $0.$1.$2, do not init stirling ... ", kernel_version.version, kernel_version.major_rev, kernel_version.minor_rev);
+            }
+          
+            if (init_stirling) {
+                // init bcc & stirling
+                LOG(INFO) << "begin to init stirling ...";
+                auto stirling = px::stirling::Stirling::Create(px::stirling::CreateSourceRegistry(px::stirling::GetSourceNamesForGroup(px::stirling::SourceConnectorGroup::kTracers))
+                                                                       .ConsumeValueOrDie());
+                stirling->RegisterDataPushCallback(std::bind(&publisher::consume_uprobe_data, pub,
+                                                             std::placeholders::_1, std::placeholders::_2,
+                                                             std::placeholders::_3));
+                TerminationHandler::set_stirling(stirling.get());
+                auto status = stirling->RunAsThread();
+                LOG(INFO) << absl::Substitute("stirling begin to run core, status:$0", status.ok());
+                stirling_ = std::move(stirling);
+            }
+        }
 
         TerminationHandler::set_sinsp(inspector);
         thread inspect(do_inspect, inspector, &formatter, pid, pub);

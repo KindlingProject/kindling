@@ -25,6 +25,8 @@ const (
 	AuthTypeKubeConfig AuthType = "kubeConfig"
 	// Default kubeconfig path
 	DefaultKubeConfigPath string = "~/.kube/config"
+	// Default grace delete period is 60 seconds
+	DefaultGraceDeletePeriod time.Duration = time.Second * 60
 )
 
 var authTypes = map[AuthType]bool{
@@ -64,6 +66,7 @@ func InitK8sHandler(options ...Option) error {
 		k8sConfig := config{
 			KubeAuthType:  AuthTypeKubeConfig,
 			KubeConfigDir: DefaultKubeConfigPath,
+			GraceDeletePeriod: DefaultGraceDeletePeriod,
 		}
 		for _, option := range options {
 			option(&k8sConfig)
@@ -80,7 +83,7 @@ func InitK8sHandler(options ...Option) error {
 		time.Sleep(1 * time.Second)
 		go ServiceWatch(clientSet)
 		time.Sleep(1 * time.Second)
-		go PodWatch(clientSet)
+		go PodWatch(clientSet, k8sConfig.GraceDeletePeriod)
 		time.Sleep(1 * time.Second)
 		KubeClient = clientSet
 	})

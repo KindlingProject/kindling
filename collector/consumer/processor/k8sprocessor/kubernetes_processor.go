@@ -32,6 +32,7 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	var options []kubernetes.Option
 	options = append(options, kubernetes.WithAuthType(config.KubeAuthType))
 	options = append(options, kubernetes.WithKubeConfigDir(config.KubeConfigDir))
+	options = append(options, kubernetes.WithGraceDeletePeriod(config.GraceDeletePeriod))
 	err := kubernetes.InitK8sHandler(options...)
 	if err != nil {
 		telemetry.Logger.Sugar().Panicf("Failed to initialize [%s]: %v", K8sMetadata, err)
@@ -52,11 +53,6 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 		localNodeName: localNodeName,
 		telemetry:     telemetry,
 	}
-}
-
-type Config struct {
-	KubeAuthType  kubernetes.AuthType `mapstructure:"kube_auth_type"`
-	KubeConfigDir string              `mapstructure:"kube_config_dir"`
 }
 
 func (p *K8sMetadataProcessor) Consume(gaugeGroup *model.GaugeGroup) error {

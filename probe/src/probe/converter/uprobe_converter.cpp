@@ -48,6 +48,20 @@ void uprobe_converter::convert(void *evt) {
     rp_value->set_uint_value(gevt->remote_port);
     rp_attr->set_allocated_value(rp_value);
 
+    // source_addr
+  auto sa_attr = kevt->add_user_attributes();
+  sa_attr->set_key("source_addr");
+  auto sa_value = new AnyValue();
+  sa_value->set_string_value(gevt->source_addr);
+  sa_attr->set_allocated_value(sa_value);
+
+  // source_port
+  auto sp_attr = kevt->add_user_attributes();
+  sp_attr->set_key("source_port");
+  auto sp_value = new AnyValue();
+  sp_value->set_uint_value(gevt->source_port);
+  sp_attr->set_allocated_value(sp_value);
+
     // trace_role
     auto tc_attr = kevt->add_user_attributes();
     tc_attr->set_key("trace_role");

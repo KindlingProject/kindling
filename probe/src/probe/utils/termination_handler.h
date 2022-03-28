@@ -22,7 +22,7 @@ public:
     }
 
     static void set_stirling(px::stirling::Stirling* stirling_) { m_stirling_ = stirling_; }
-    static void set_sinsp(sinsp* sinsp_) { sinsp_ = m_sinsp_; }
+    static void set_sinsp(sinsp* sinsp_) { m_sinsp_ = sinsp_; }
 
     static void OnTerminate(int signum) {
         if (m_sinsp_ != nullptr) {

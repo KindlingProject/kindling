@@ -21,6 +21,8 @@ struct grpc_event_t {
     std::string remote_addr;
     int64_t remote_port;
     int64_t trace_role;
+    std::string source_addr;
+    int64_t source_port;
     std::string req_headers;
     std::string req_method;
     std::string req_path;

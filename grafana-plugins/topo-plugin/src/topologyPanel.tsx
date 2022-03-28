@@ -5,12 +5,12 @@ import './topology/node';
 import './topology/edge';
 import { formatTime, formatCount, formatKMBT, formatPercent, nodeTooltip } from './topology/tooltip';
 import TopoLegend from './topology/legend';
-import { metricList, directionOptions, viewRadioOptions, showServiceOptions, 
-  NodeDataProps, EdgeDataProps, nsRelationHandle, detailRelationHandle, detailNodesHandle, detailEdgesHandle } from './topology/services'; 
+import { metricList, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, buildLayout,
+  transformData, nsRelationHandle, detailRelationHandle, detailNodesHandle, detailEdgesHandle } from './topology/services'; 
 import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
-import { stylesFactory, Select, RadioButtonGroup, Icon, Tooltip } from '@grafana/ui';
+import { stylesFactory, Select, RadioButtonGroup, Icon, Tooltip, Spinner } from '@grafana/ui';
 
 interface VolumeProps {
   maxSentVolume: number; 
@@ -28,6 +28,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const namespace = replaceVariables('$namespace');
   const workload = replaceVariables('$workload');
   const styles = getStyles();
+  const [loading, setLoading] = useState<boolean>(true); 
   const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace.split(',').length === 1);
   const [showService, setShowService] = useState<boolean>(false);
   const [showView, setShowView] = useState<boolean>(false);
@@ -105,7 +106,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           edgeModel.label = formatTime(edgeModel.latency);
         } else if (metric === 'rtt') {
           color = edgeModel.rtt > options.abnormalRtt ? '#ff4c4c' : (edgeModel.rtt > options.normalRtt ? '#f3ff69' : '#C2C8D5');
-          edgeModel.label = formatTime(edgeModel.latency);
+          edgeModel.label = formatTime(edgeModel.rtt);
         } else {
           color = edgeModel.errorRate > 0 ? '#ff4c4c' : '#C2C8D5';
           edgeModel.label = formatPercent(edgeModel.errorRate);
@@ -195,7 +196,6 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const draw = (gdata: any, serviceLine = showService) => {
     const inner: any = document.getElementById('kindling_topo');
     inner.innerHTML = '';
-
     const graph = new G6.Graph({
       // renderer: 'svg',
       container: 'kindling_topo',
@@ -221,14 +221,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           'drag-node'
         ]
       },
-      layout: {
-        type: 'dagre',
-        rankdir: direction,
-        align: 'DL',
-        ranksep: 60
-        // controlPoints: true,
-        // workerEnabled: nodeNum > 200
-      },
+      layout: buildLayout(options.layout),
       defaultNode: {
         type: 'custom-node'
       },
@@ -264,15 +257,12 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     let result: any[] = [];
     if (workload.split(',').length > 1) {
       // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
-      result = _.filter(topoData, (item: any) => item.fields[1].labels.dst_namespace === namespace || item.fields[1].labels.src_namespace === namespace);
-      // console.log('workload Topology', result);
+      result = _.filter(topoData, (item: any) => item.dst_namespace === namespace || item.src_namespace === namespace);
     } else {
       // 具体namespace和workload下的所有调用数据
-      result = _.filter(topoData, (item: any) => (item.fields[1].labels.dst_namespace === namespace && item.fields[1].labels.dst_workload_name === workload) || (item.fields[1].labels.src_namespace === namespace && item.fields[1].labels.src_workload_name === workload));
-      // console.log('pod Topology', result);
+      result = _.filter(topoData, (item: any) => (item.dst_namespace === namespace && item.dst_workload_name === workload) || (item.src_namespace === namespace && item.src_workload_name === workload));
     }
-    _.forEach(result, item => {
-      let tdata: any = item.fields[1].labels;
+    _.forEach(result, tdata => {
       let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', showPod, serviceLine);
       let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', showPod, serviceLine);
       sourceNode && nodes.push(sourceNode);
@@ -315,12 +305,12 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const initData = () => {
     // 处理grafana查询数据生成对应的拓扑调用数据结构
     let nodes: any[] = [], edges: any[] = [];
-    topoData = _.filter(data.series, (item: any) => item.refId === 'A');
-    let edgeTimeData: any = _.filter(data.series, (item: any) => item.refId === 'I');
-    let edgeSendVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'B');
-    let edgeReceiveVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'C');
-    let edgeRetransmitData: any = _.filter(data.series, (item: any) => item.refId === 'J');
-    let edgeRTTData: any = _.filter(data.series, (item: any) => item.refId === 'K');
+    topoData = transformData(_.filter(data.series, (item: any) => item.refId === 'A'));
+    let edgeTimeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'I'));
+    let edgeSendVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'B'));
+    let edgeReceiveVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'C'));
+    let edgeRetransmitData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'J'));
+    let edgeRTTData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'K'));
     edgeData = {
       edgeCallData: topoData,
       edgeTimeData,
@@ -330,15 +320,13 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       edgeRTTData
     };
     
-    let nodeCallsData: any = _.filter(data.series, (item: any) => item.refId === 'D'); // 次数调用增长
-    let nodeTimeData: any = _.filter(data.series, (item: any) => item.refId === 'E');
-    let nodeErrorRateData: any = _.filter(data.series, (item: any) => item.refId === 'F');
-    let nodeSendVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'G');
-    let nodeReceiveVolumeData: any = _.filter(data.series, (item: any) => item.refId === 'H');
+    let nodeCallsData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'D'));
+    let nodeTimeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'E'));
+    let nodeSendVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'G'));
+    let nodeReceiveVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'H'));
     nodeData = {
       nodeCallsData,
       nodeTimeData,
-      nodeErrorRateData,
       nodeSendVolumeData,
       nodeReceiveVolumeData
     };
@@ -374,6 +362,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   }, [volumes]);
 
   useEffect(() => {
+    setLoading(true);
     if (namespace.split(',').length === 1) {
       setShowCheckbox(true);
       if (workload.split(',').length === 1) {
@@ -388,6 +377,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   }, [namespace, workload]);
   useEffect(() => {
     if (data.state === 'Done') {
+      setLoading(false);
       initData();
     }
 	// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -398,6 +388,23 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     setLineMetric(opt.value);
     updateLinesAndNodes(opt.value);
   }
+  // const changeLayout = (opt: any) => {
+  //   if (opt.value === layout) {
+  //     return;
+  //   }
+  //   setLayout(opt.value);
+  //   // setFirstChangeDir(false);
+  //   let layoutOpts = buildLayout(opt.value);
+  //   SGraph.destroyLayout();
+  //   SGraph.updateLayout(layoutOpts);
+  //   SGraph.changeData(graphData);
+  //   // // SGraph.on('afterlayout', () => {
+  //   // //   SGraph.fitView(10);
+  //   // // });
+  //   // setTimeout(() => {
+  //   //   SGraph.fitView(10);
+  //   // }, 16);
+  // } 
   const changeDirection = (value: any) => {
     setDirection(value);
     SGraph.updateLayout({
@@ -450,15 +457,28 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
         </div>
       </div>
       <div className={styles.topRightWarp}>
-        <div className={styles.viewRadioMode}>
+        {/* <div className={styles.viewRadioMode}>
           <div>
-            <span>Layout Direction</span>
-            <Tooltip content="change topology layout。TB mean top to bottom，LR mean left to right。">
+            <span>Layout</span>
+            <Tooltip content="change topology layout。">
               <Icon name="question-circle" />
             </Tooltip>
           </div>
-          <RadioButtonGroup options={directionOptions} value={direction} onChange={changeDirection}/>
-        </div>
+          <div style={{ width: 150 }}>
+            <Select value={layout} options={layoutOptions} onChange={changeLayout}/>
+          </div>
+        </div> */}
+        {
+          options.layout === 'dagre' ? <div className={styles.viewRadioMode}>
+            <div>
+              <span>Layout Direction</span>
+              <Tooltip content="change Dargre topology layout direction mean top to bottom，LR mean left to right。">
+                <Icon name="question-circle" />
+              </Tooltip>
+            </div>
+            <RadioButtonGroup options={directionOptions} value={direction} onChange={changeDirection}/>
+          </div> : null
+        }
         {
           showView ? <div className={styles.viewRadioMode}>
             <span>View Mode</span>
@@ -479,6 +499,11 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
         <TopoLegend typeList={nodeTypesList} metric={lineMetric} volumes={volumes} options={options}/>
       </div>
       <div id="kindling_topo" style={{ height: '100%' }} ref={graphRef}></div>
+      {
+        loading ? <div className={styles.spinner_warp}>
+          <Spinner className={styles.spinner_icon}/>
+        </div> : null
+      }
     </div>
   );
 };
@@ -526,6 +551,21 @@ const getStyles = stylesFactory(() => {
       bottom: 0;
       left: 0;
       padding: 10px;
+    `,
+    spinner_warp: css`
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #181b1fc2;
+      z-index: 20;
+    `,
+    spinner_icon: css`
+      position: absolute;
+      font-size: xx-large;
+      top: 48%;
+      left: 49%;
     `,
   };
 });
