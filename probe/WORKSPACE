@@ -3,9 +3,8 @@ workspace(name = "kp")
 load("@bazel_tools//tools/build_defs/repo:git.bzl","git_repository")
 git_repository(
     name = "px",
-    remote = "https://github.com/KayzzzZ/pixie.git",
-    commit = "6b853b96987e570e0979620537c23df5850c7b76",
-#    branch = "kindling",
+    remote = "https://github.com/Kindling-project/pixie.git",
+    commit = "2d45f14dc69c060260c5634b7718f05f3f0c7bdb",
 )
 
 BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
@@ -60,6 +59,10 @@ protobuf_deps()
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
+
+load("@com_github_jupp0r_prometheus_cpp//bazel:repositories.bzl", "prometheus_cpp_repositories")
+
+prometheus_cpp_repositories()
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 

@@ -29,6 +29,8 @@ pl_cc_binary(
         "//src/probe/converter:cc_library",
         "//src/probe/publisher:cc_library",
         "//src/probe/utils:cc_library",
+	"@com_github_jupp0r_prometheus_cpp//pull",
+	"@px//src/common/metrics:cc_library",
         "@px//src/common/signal:cc_library",
         "@px//:px_headers",
         "@px//src/stirling:cc_library",
