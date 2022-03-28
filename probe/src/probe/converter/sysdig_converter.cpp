@@ -64,6 +64,7 @@ int sysdig_converter::add_user_attributes(kindling::KindlingEvent *kevt, sinsp_e
                 auto attr = kevt->add_user_attributes();
                 attr->set_key("rtt");
                 attr->set_value(pRtt->m_val, pRtt->m_len);
+                attr->set_value_type(UINT32);
             }
             break;
         }
@@ -317,18 +318,22 @@ int sysdig_converter::setTuple(kindling::KindlingEvent* kevt, const sinsp_evt_pa
                 auto sip = kevt->add_user_attributes();
                 sip->set_key("sip");
                 sip->set_value(tuple+1, 4);
+                sip->set_value_type(UINT32);
 
                 auto sport = kevt->add_user_attributes();
                 sport->set_key("sport");
                 sport->set_value(tuple+5, 2);
+                sport->set_value_type(UINT16);
 
                 auto dip = kevt->add_user_attributes();
                 dip->set_key("dip");
                 dip->set_key(tuple+7, 4);
+                dip->set_value_type(UINT32);
 
                 auto dport = kevt->add_user_attributes();
                 dport->set_key("dport");
                 dport->set_value(tuple+11, 2);
+                dport->set_value_type(UINT16);
             }
         }
     }
