@@ -87,6 +87,8 @@ int publisher::start() {
 
 void publisher::send_server(publisher *mpublisher) {
     cout << "Thread sender start" << endl;
+    uint64_t total= 0;
+    uint64_t msg_total_size = 0;
     while (true) {
         usleep(100000);
         for (auto list : mpublisher->m_kindlingEventLists) {
@@ -98,6 +100,9 @@ void publisher::send_server(publisher *mpublisher) {
             if (pKindlingEventList->kindling_event_list_size() > 0) {
                 string msg;
                 pKindlingEventList->SerializeToString(&msg);
+                int num = pKindlingEventList->kindling_event_list_size();
+                total = total + num;
+                printf("Send %d kindling events, sending size: %.2f KB. Total count of kindling events: %lu\n", num, msg.length() / 1024.0, total);
 //                cout << pKindlingEventList->Utf8DebugString() << endl;
                 zmq_send(mpublisher->m_socket, msg.data(), msg.size(), ZMQ_DONTWAIT);
                 pKindlingEventList->clear_kindling_event_list();
