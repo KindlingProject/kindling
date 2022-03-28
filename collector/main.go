@@ -3,9 +3,8 @@ package main
 import (
 	"github.com/Kindling-project/kindling/collector/application"
 	"log"
-	"fmt"
 
-	"github.com/sugary199/collector-version/core"
+	"github.com/sugary199/collector-version/version"
 )
 
 func main() {
@@ -15,7 +14,7 @@ func main() {
 	}
 	
 	//print version information
-	log.Printf("GitCommitInfo:%s\n", core.Version())
+	log.Printf("GitCommitInfo:%s\n", version.Version())
 
 	
 	err = app.Run()
