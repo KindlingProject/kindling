@@ -7,10 +7,9 @@ package(default_visibility = ["//visibility:public"])
 configure_make(
     name = "zmq_build",
     autogen = True,
+    configure_in_place = True,
+    args = ["-j$(nproc)","-l$(nproc)"],
     lib_source = "@lib_zmq//:all",
-    make_commands = [
-	    "make install",
-    ],
     out_static_libs = ["libzmq.a"],
 )
 

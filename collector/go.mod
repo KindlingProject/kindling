@@ -29,6 +29,7 @@ require (
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/api v0.21.1
