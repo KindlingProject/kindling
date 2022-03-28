@@ -86,7 +86,7 @@ int publisher::start() {
 }
 
 void publisher::send_server(publisher *mpublisher) {
-    cout << "Thread sender start" << endl;
+    LOG(INFO) << "Thread sender start";
     uint64_t total= 0;
     uint64_t msg_total_size = 0;
     while (true) {
@@ -102,8 +102,9 @@ void publisher::send_server(publisher *mpublisher) {
                 pKindlingEventList->SerializeToString(&msg);
                 int num = pKindlingEventList->kindling_event_list_size();
                 total = total + num;
-                printf("Send %d kindling events, sending size: %.2f KB. Total count of kindling events: %lu\n", num, msg.length() / 1024.0, total);
-//                cout << pKindlingEventList->Utf8DebugString() << endl;
+                LOG(INFO) << "Send " << num << " kindling events, sending size: " << setprecision(2) <<
+                    msg.length() / 1024.0 <<" KB. Total count of kindling events: " << total;
+//                cout << pKindlingEventList->Utf8DebugString();
                 zmq_send(mpublisher->m_socket, msg.data(), msg.size(), ZMQ_DONTWAIT);
                 pKindlingEventList->clear_kindling_event_list();
             }
@@ -113,7 +114,7 @@ void publisher::send_server(publisher *mpublisher) {
 }
 
 void publisher::subscribe_server(publisher *mpublisher, Socket subscribe_socket) {
-    cout << "Subcribe server start" << endl;
+    LOG(INFO) << "Subcribe server start";
     while (true) {
         char result[1000];
         memset(result, 0, 1000);
@@ -129,7 +130,7 @@ void publisher::subscribe(string sub_event, string &reason) {
     void *socket;
 
     subEvent.ParseFromString(sub_event);
-    cout << "subscribe info: " << subEvent.Utf8DebugString() << endl;
+    LOG(INFO) << "subscribe info: " << subEvent.Utf8DebugString();
     string address = subEvent.address().data();
 
     // filter out subscriber
@@ -284,7 +285,7 @@ void selector::parse(const google::protobuf::RepeatedPtrField<::kindling::Label>
             auto v = m_labels->find(it->second);
             auto c = get_category(label.category());
             if (label.category() != "" && c == CAT_NONE) {
-                cout << "Subscribe: Kindling event category err: " << label.category() << endl;
+                LOG(INFO) << "Subscribe: Kindling event category err: " << label.category();
                 continue;
             }
             if (v != m_labels->end()) {
@@ -296,9 +297,9 @@ void selector::parse(const google::protobuf::RepeatedPtrField<::kindling::Label>
                 }
                 m_labels->insert(pair<ppm_event_type, vector<Category> *> (it->second, categories));
             }
-            cout << "Subscribe info: type: " << it->second << " category: " << (label.category() != "" ? label.category() : "none") << endl;
+            LOG(INFO) << "Subscribe info: type: " << it->second << " category: " << (label.category() != "" ? label.category() : "none");
         } else {
-            cout << "Subscribe: Kindling event name err: " << label.name() << endl;
+            LOG(INFO) << "Subscribe: Kindling event name err: " << label.name();
         }
     }
     // notify kernel, set eventmask
