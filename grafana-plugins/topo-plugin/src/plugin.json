@@ -2,12 +2,12 @@
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "panel",
   "name": "Kindling Topology Panel",
-  "id": "yiqianxu-kindling-panel",
+  "id": "kindlingproject-topology-panel",
   "info": {
     "description": "",
     "author": {
-      "name": "yiqianxu",
-      "url": "https://github.com/thousandxu"
+      "name": "kindlingproject",
+      "url": "https://github.com/Kindling-project/kindling"
     },
     "keywords": [
       "kindling topology"
@@ -20,10 +20,6 @@
       {
         "name": "Kindling",
         "url": "https://github.com/Kindling-project/kindling"
-      }, 
-      {
-        "name": "topo-plugin",
-        "url": "https://github.com/thousandxu/topo-plugin"
       }
     ],
     "screenshots": [
