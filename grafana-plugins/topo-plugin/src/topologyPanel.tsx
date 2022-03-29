@@ -5,8 +5,8 @@ import './topology/node';
 import './topology/edge';
 import { formatTime, formatCount, formatKMBT, formatPercent, nodeTooltip } from './topology/tooltip';
 import TopoLegend from './topology/legend';
-import { metricList, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, buildLayout,
-  transformData, nsRelationHandle, detailRelationHandle, detailNodesHandle, detailEdgesHandle } from './topology/services'; 
+import { metricList, layoutOptions, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, 
+  buildLayout, transformData, nsRelationHandle, workloadRelationHandle } from './topology/services'; 
 import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
@@ -28,6 +28,8 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const namespace = replaceVariables('$namespace');
   const workload = replaceVariables('$workload');
   const styles = getStyles();
+  const [graphData, setGraphData] = useState<any>({}); 
+  const [layout, setLayout] = useState<string>('dagre'); 
   const [loading, setLoading] = useState<boolean>(true); 
   const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace.split(',').length === 1);
   const [showService, setShowService] = useState<boolean>(false);
@@ -196,6 +198,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const draw = (gdata: any, serviceLine = showService) => {
     const inner: any = document.getElementById('kindling_topo');
     inner.innerHTML = '';
+    let data = _.cloneDeep(gdata);
     const graph = new G6.Graph({
       // renderer: 'svg',
       container: 'kindling_topo',
@@ -221,7 +224,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           'drag-node'
         ]
       },
-      layout: buildLayout(options.layout),
+      layout: buildLayout(layout, direction),
       defaultNode: {
         type: 'custom-node'
       },
@@ -244,45 +247,14 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
         }
       }
     });
-    graph.data(gdata);
+    graph.data(data);
     graph.render();
 
     SGraph = graph;
     serviceLineUpdate();
     updateLinesAndNodes(lineMetric, serviceLine);
   };
-  // 只勾选一个namespace是workload为all或者workload为单个值的调用关系处理
-  const workloadRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps, showPod: boolean, serviceLine = showService) => {
-    let nodes: any[] = [], edges: any[] = [];
-    let result: any[] = [];
-    if (workload.split(',').length > 1) {
-      // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
-      result = _.filter(topoData, (item: any) => item.dst_namespace === namespace || item.src_namespace === namespace);
-    } else {
-      // 具体namespace和workload下的所有调用数据
-      result = _.filter(topoData, (item: any) => (item.dst_namespace === namespace && item.dst_workload_name === workload) || (item.src_namespace === namespace && item.src_workload_name === workload));
-    }
-    _.forEach(result, tdata => {
-      let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', showPod, serviceLine);
-      let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', showPod, serviceLine);
-      sourceNode && nodes.push(sourceNode);
-      targetNode && nodes.push(targetNode);
-      let edgeId = `edge_${source}_${target}${service ? '_' + service : ''}`
-      if (_.findIndex(edges, {id: edgeId}) === -1) {
-        let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
-        edges.push({
-          id: edgeId,
-          source: source,
-          target: target,
-          service: service || '',
-          opposite
-        });
-      }
-    });
-    nodes = detailNodesHandle(nodes, nodeData);
-    edges = detailEdgesHandle(nodes, edges, edgeData, serviceLine);
-    return { nodes, edges };
-  }
+ 
   // 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
   const getNodeTypes = (nodes: any[]) => {
     let nodeByType = _.groupBy(nodes, 'nodeType');
@@ -340,7 +312,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     } else {
       let showPod = workload.split(',').length === 1;
       setView(showPod ? 'pod_view' : 'workload_view');
-      let result: any = workloadRelationHandle(topoData, nodeData, edgeData, showPod);
+      let result: any = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, showPod, showService);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     }
@@ -349,11 +321,18 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodes: nodes,
       edges: edges
     }
-    console.log(gdata);
+    // console.log(gdata);
+    setGraphData(gdata);
     draw(gdata);
     handleResult(gdata);
   }
 
+  useEffect(() => {
+    if (SGraph) {
+      draw(graphData);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout]);
   useEffect(() => {
     if (SGraph) {
       updateLinesAndNodes();
@@ -388,23 +367,13 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     setLineMetric(opt.value);
     updateLinesAndNodes(opt.value);
   }
-  // const changeLayout = (opt: any) => {
-  //   if (opt.value === layout) {
-  //     return;
-  //   }
-  //   setLayout(opt.value);
-  //   // setFirstChangeDir(false);
-  //   let layoutOpts = buildLayout(opt.value);
-  //   SGraph.destroyLayout();
-  //   SGraph.updateLayout(layoutOpts);
-  //   SGraph.changeData(graphData);
-  //   // // SGraph.on('afterlayout', () => {
-  //   // //   SGraph.fitView(10);
-  //   // // });
-  //   // setTimeout(() => {
-  //   //   SGraph.fitView(10);
-  //   // }, 16);
-  // } 
+  const changeLayout = (opt: any) => {
+    if (opt.value === layout) {
+      return;
+    }
+    setLayout(opt.value);
+    // draw(graphData);
+  } 
   const changeDirection = (value: any) => {
     setDirection(value);
     SGraph.updateLayout({
@@ -420,23 +389,25 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const changeShowService = () => {
     let show = !showService ? true : false;
     setShowService(show);
-    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, view === 'pod_view', show);
+    let { nodes, edges } = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, view === 'pod_view', show);
     let gdata = {
       nodes: nodes,
       edges: edges
     }
     draw(gdata, show);
+    setGraphData(gdata);
     handleResult(gdata);
   }
   // 切换View Mode。workload视图下切换workload跟pod视图
   const changeView = (value: any) => {
     setView(value);
-    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, value === 'pod_view', showService);
+    let { nodes, edges } = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, value === 'pod_view', showService);
     let gdata = {
       nodes: nodes,
       edges: edges
     }
     draw(gdata);
+    setGraphData(gdata);
     handleResult(gdata);
   }
 
@@ -457,7 +428,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
         </div>
       </div>
       <div className={styles.topRightWarp}>
-        {/* <div className={styles.viewRadioMode}>
+        <div className={styles.viewRadioMode}>
           <div>
             <span>Layout</span>
             <Tooltip content="change topology layout。">
@@ -467,9 +438,9 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           <div style={{ width: 150 }}>
             <Select value={layout} options={layoutOptions} onChange={changeLayout}/>
           </div>
-        </div> */}
+        </div>
         {
-          options.layout === 'dagre' ? <div className={styles.viewRadioMode}>
+          layout === 'dagre' ? <div className={styles.viewRadioMode}>
             <div>
               <span>Layout Direction</span>
               <Tooltip content="change Dargre topology layout direction mean top to bottom，LR mean left to right。">

@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "panel",
-  "name": "topo-plugin",
-  "id": "thousand-topo-plugin",
+  "name": "Kindling Topology Panel",
+  "id": "yiqianxu-kindling-panel",
   "info": {
     "description": "",
     "author": {
@@ -33,7 +33,7 @@
       }
     ],
     "version": "0.0.1",
-    "updated": "2022-03-25"
+    "updated": "2022-03-28"
   },
   "dependencies": {
     "grafanaDependency": ">=7.0.0",

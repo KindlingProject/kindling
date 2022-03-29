@@ -6,7 +6,7 @@ export const metricList: Array<{label: string; value: any; description?: string}
     { label: 'Error Rate', value: 'errorRate' },
     { label: 'Sent Volume', value: 'sentVolume' },
     { label: 'Receive Volume', value: 'receiveVolume' },
-    { label: 'RTT', value: 'rtt' },
+    { label: 'SRTT', value: 'rtt' },
     { label: 'Retransmit', value: 'retransmit' }
 ];
 export const layoutOptions = [
@@ -76,10 +76,10 @@ export interface EdgeDataProps {
 }
 
 // 根据配置中的layout字段，构建对应的拓扑布局
-export const buildLayout = (type: string) => {
+export const buildLayout = (type: string, direction: string) => {
     const layout: any = {
         type: 'dagre',
-        rankdir: 'LR',
+        rankdir: direction,
         align: 'DL',
         ranksep: 60
     }
@@ -90,7 +90,7 @@ export const buildLayout = (type: string) => {
         return {
             type: 'fruchterman',
             center: [0, 0],
-            gravity: 2.5,
+            gravity: 2,
             gpuEnabled: true
             // type: 'gForce', // 布局名称
             // center: [0, 0],
@@ -234,6 +234,39 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
     return { nodes, edges };
 }
 
+// 只勾选一个namespace是workload为all或者workload为单个值的调用关系处理
+export const workloadRelationHandle = (workload: string, namespace: string, topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps, showPod: boolean, serviceLine: boolean) => {
+    let nodes: any[] = [], edges: any[] = [];
+    let result: any[] = [];
+    if (workload.split(',').length > 1) {
+        // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
+        result = _.filter(topoData, (item: any) => item.dst_namespace === namespace || item.src_namespace === namespace);
+    } else {
+        // 具体namespace和workload下的所有调用数据
+        result = _.filter(topoData, (item: any) => (item.dst_namespace === namespace && item.dst_workload_name === workload) || (item.src_namespace === namespace && item.src_workload_name === workload));
+    }
+    console.log('topology data', result);
+    _.forEach(result, tdata => {
+        let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', showPod, serviceLine);
+        let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', showPod, serviceLine);
+        sourceNode && nodes.push(sourceNode);
+        targetNode && nodes.push(targetNode);
+        let edgeId = `edge_${source}_${target}${service ? '_' + service : ''}`
+        if (_.findIndex(edges, {id: edgeId}) === -1) {
+            let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
+                edges.push({
+                id: edgeId,
+                source: source,
+                target: target,
+                service: service || '',
+                opposite
+            });
+        }
+    });
+    nodes = detailNodesHandle(nodes, nodeData);
+    edges = detailEdgesHandle(nodes, edges, edgeData, serviceLine);
+    return { nodes, edges };
+}
 /**
  * 构造workload下的对应节点数据和对应调用source、target
  * @param nodes 当前节点数组
@@ -315,7 +348,7 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
                         id: `${tdata[`${pre}_namespace`]}_${tdata[`${pre}_workload_name`]}`,
                         name: tdata[`${pre}_workload_name`],
                         namespace: tdata[`${pre}_namespace`],
-                        nodeType: 'unknow',
+                        nodeType: tdata[`${pre}_workload_kind`] || 'unknow',
                         showNamespace: tdata[`${pre}_namespace`] !== namespace
                     };
                 }

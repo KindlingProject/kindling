@@ -758,7 +758,7 @@
           "value": "kube-system"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_entity_request_duration_nanoseconds_count{protocol=\"dns\"}",
+        "definition": "label_values(kindling_topology_request_duration_nanoseconds_count{protocol=\"dns\"}, src_namespace)",
         "hide": 0,
         "includeAll": false,
         "label": "Namespace",
@@ -766,11 +766,11 @@
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "kindling_entity_request_duration_nanoseconds_count{protocol=\"dns\"}",
+          "query": "label_values(kindling_topology_request_duration_nanoseconds_count{protocol=\"dns\"}, src_namespace)",
           "refId": "Prometheus-namespace-Variable-Query"
         },
         "refresh": 2,
-        "regex": "/namespace=\"(.+?)\\\"/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 2,
         "tagValuesQuery": "",
@@ -785,7 +785,7 @@
           "value": "coredns"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\", protocol=\"dns\"} ",
+        "definition": "label_values(kindling_topology_request_duration_nanoseconds_count{src_namespace =\"$namespace\", protocol=\"dns\"},  src_workload_name)",
         "hide": 0,
         "includeAll": false,
         "label": "Workload",
@@ -793,11 +793,11 @@
         "name": "workload",
         "options": [],
         "query": {
-          "query": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\", protocol=\"dns\"} ",
+          "query": "label_values(kindling_topology_request_duration_nanoseconds_count{src_namespace =\"$namespace\", protocol=\"dns\"},  src_workload_name)",
           "refId": "Prometheus-workload-Variable-Query"
         },
         "refresh": 2,
-        "regex": "/workload_name=\"(.+?)\\\"/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
