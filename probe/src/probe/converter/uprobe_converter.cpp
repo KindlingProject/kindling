@@ -5,7 +5,7 @@
 #include "src/probe/converter/uprobe_converter.h"
 
 uprobe_converter::uprobe_converter() : converter(100, INT_MAX) {}
-
+uprobe_converter::uprobe_converter(int batch_size, int max_size) : converter(batch_size, max_size) {}
 uprobe_converter::~uprobe_converter() {}
 
 void uprobe_converter::convert(void *evt) {
@@ -47,6 +47,20 @@ void uprobe_converter::convert(void *evt) {
     auto rp_value = new AnyValue();
     rp_value->set_uint_value(gevt->remote_port);
     rp_attr->set_allocated_value(rp_value);
+
+    // source_addr
+  auto sa_attr = kevt->add_user_attributes();
+  sa_attr->set_key("source_addr");
+  auto sa_value = new AnyValue();
+  sa_value->set_string_value(gevt->source_addr);
+  sa_attr->set_allocated_value(sa_value);
+
+  // source_port
+  auto sp_attr = kevt->add_user_attributes();
+  sp_attr->set_key("source_port");
+  auto sp_value = new AnyValue();
+  sp_value->set_uint_value(gevt->source_port);
+  sp_attr->set_allocated_value(sp_value);
 
     // trace_role
     auto tc_attr = kevt->add_user_attributes();

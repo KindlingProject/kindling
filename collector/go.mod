@@ -3,7 +3,7 @@ module github.com/Kindling-project/kindling/collector
 go 1.16
 
 require (
-	github.com/golang/protobuf v1.5.2
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mdlayher/netlink v1.5.0
@@ -29,6 +29,7 @@ require (
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/api v0.21.1

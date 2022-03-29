@@ -3,9 +3,8 @@ workspace(name = "kp")
 load("@bazel_tools//tools/build_defs/repo:git.bzl","git_repository")
 git_repository(
     name = "px",
-    remote = "https://github.com/KayzzzZ/pixie.git",
-    commit = "6b853b96987e570e0979620537c23df5850c7b76",
-#    branch = "kindling",
+    remote = "https://github.com/Kindling-project/pixie.git",
+    commit = "2d45f14dc69c060260c5634b7718f05f3f0c7bdb",
 )
 
 BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
@@ -22,9 +21,9 @@ http_archive(
 
 http_archive(
         name = "agent-libs",
-        urls = ["https://github.com/Kindling-project/agent-libs/archive/eb3233624ff313cb936541bcf0a145dcada4da19.tar.gz"],
-        sha256 = "925b78d74abf40b3652cac0bfc581a69c8537d01d76556205f851a1ac2272423",
-        strip_prefix = "agent-libs-eb3233624ff313cb936541bcf0a145dcada4da19",
+        urls = ["https://github.com/Kindling-project/agent-libs/archive/9079e62f2eaaf2a688b0553bc23c7d5dcac16637.tar.gz"],
+        sha256 = "fa5ba69b3f1fc1eb4e751ce60dc2d74fc0b44695262b994c2c467dd68886cbd0",
+        strip_prefix = "agent-libs-9079e62f2eaaf2a688b0553bc23c7d5dcac16637",
         build_file_content = BUILD_ALL_CONTENT,
     )
 
@@ -60,6 +59,10 @@ protobuf_deps()
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
+
+load("@com_github_jupp0r_prometheus_cpp//bazel:repositories.bzl", "prometheus_cpp_repositories")
+
+prometheus_cpp_repositories()
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 

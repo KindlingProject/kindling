@@ -21,6 +21,8 @@ struct grpc_event_t {
     std::string remote_addr;
     int64_t remote_port;
     int64_t trace_role;
+    std::string source_addr;
+    int64_t source_port;
     std::string req_headers;
     std::string req_method;
     std::string req_path;
@@ -37,6 +39,7 @@ class uprobe_converter : public converter {
 public:
     void convert(void *evt);
     uprobe_converter();
+    uprobe_converter(int batch_size, int max_size);
     ~uprobe_converter();
 };
 

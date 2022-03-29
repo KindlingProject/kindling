@@ -75,6 +75,7 @@ processors:
   k8smetadataprocessor:
     kube_auth_type: serviceAccount
     kube_config_dir: ~/.kube/config
+    grace_delete_period: 60
   kindlingformatprocessor:
     need_trace_as_metric: true
     need_pod_detail: true
