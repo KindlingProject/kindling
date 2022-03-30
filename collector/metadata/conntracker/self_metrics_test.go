@@ -1,6 +1,7 @@
 package conntracker
 
 import (
+	"context"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -18,9 +19,10 @@ func TestNewSelfMetric(t *testing.T) {
 	cont := controller.New(
 		otelprocessor.NewFactory(selector.NewWithInexpensiveDistribution(), exp),
 		controller.WithExporter(exp),
-		controller.WithCollectPeriod(1),
+		controller.WithCollectPeriod(1*time.Second),
 	)
 
+	_ = cont.Start(context.Background())
 	// Create conntracker self-telemetry
 	noopConntracker := NewNoopConntracker(nil)
 	newSelfMetrics(cont, noopConntracker)
@@ -30,14 +32,16 @@ func TestNewSelfMetric(t *testing.T) {
 	// Cannot assert the result of opentelemetry-exporter,
 	// so here we just wait to see the log.
 	var stats int64 = 1
+	// Wait first to see whether the first output is zero
+	time.Sleep(time.Millisecond * 1000)
 	go func() {
-		// Wait first to see whether the first output is zero
-		time.Sleep(time.Millisecond * 1100)
 		for _, metric := range metricNames {
 			noopConntracker.stats[metric] = stats
 		}
 		stats++
+		time.Sleep(time.Millisecond * 500)
 	}()
 
 	time.Sleep(time.Second * 5)
+	_ = cont.Stop(context.Background())
 }
