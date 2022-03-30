@@ -12,7 +12,6 @@
 package testutil
 
 import (
-	nettestutil "github.com/DataDog/datadog-agent/pkg/network/testutil"
 	"os/exec"
 	"strings"
 	"testing"
@@ -47,7 +46,7 @@ func TeardownDNAT(t *testing.T) {
 }
 
 func getDefaultInterfaceName(t *testing.T) string {
-	out := nettestutil.RunCommands(t, []string{"ip route get 8.8.8.8"}, false)
+	out := RunCommands(t, []string{"ip route get 8.8.8.8"}, false)
 	if len(out) > 0 {
 		parts := strings.Split(out[0], " ")
 		if len(parts) > 5 {

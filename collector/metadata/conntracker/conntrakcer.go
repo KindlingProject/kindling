@@ -2,12 +2,10 @@ package conntracker
 
 import (
 	"fmt"
-	"github.com/DataDog/datadog-agent/pkg/network"
-	"github.com/DataDog/datadog-agent/pkg/network/netlink"
-	"github.com/DataDog/datadog-agent/pkg/process/util"
 	"github.com/Kindling-project/kindling/collector/metadata/conntracker/internal"
 	"go.opentelemetry.io/otel/metric/global"
 	"log"
+	"net"
 	"sync"
 )
 
@@ -53,40 +51,40 @@ func NewConntracker(config *Config) (Conntracker, error) {
 }
 
 type NetlinkConntracker struct {
-	conntracker netlink.Conntracker
+	conntracker internal.Conntracker
 	cfg         *Config
 }
 
 func (ctr *NetlinkConntracker) GetDNATTupleWithString(srcIP string, dstIP string, srcPort uint16, dstPort uint16, isUdp uint32) *IPTranslation {
-	conn := network.ConnectionStats{
-		Source: util.AddressFromString(srcIP),
+	conn := internal.ConnectionStats{
+		Source: net.ParseIP(srcIP),
 		SPort:  srcPort,
-		Dest:   util.AddressFromString(dstIP),
+		Dest:   net.ParseIP(dstIP),
 		DPort:  dstPort,
-		Type:   network.ConnectionType(isUdp),
+		Type:   internal.ConnectionType(isUdp),
 	}
 
 	ret := ctr.conntracker.GetTranslationForConn(conn)
 	return &IPTranslation{
-		ReplSrcIP:   ret.ReplSrcIP.Bytes(),
-		ReplDstIP:   ret.ReplDstIP.Bytes(),
+		ReplSrcIP:   ret.ReplSrcIP,
+		ReplDstIP:   ret.ReplDstIP,
 		ReplSrcPort: ret.ReplSrcPort,
 		ReplDstPort: ret.ReplDstPort,
 	}
 }
 
 func (ctr *NetlinkConntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16, dstPort uint16, isUdp uint32) *IPTranslation {
-	conn := network.ConnectionStats{
-		Source: util.AddressFromNetIP(int32ToIp(srcIP)),
+	conn := internal.ConnectionStats{
+		Source: int32ToIp(srcIP),
 		SPort:  srcPort,
-		Dest:   util.AddressFromNetIP(int32ToIp(dstIP)),
+		Dest:   int32ToIp(dstIP),
 		DPort:  dstPort,
-		Type:   network.ConnectionType(isUdp),
+		Type:   internal.ConnectionType(isUdp),
 	}
 	ret := ctr.conntracker.GetTranslationForConn(conn)
 	return &IPTranslation{
-		ReplSrcIP:   ret.ReplSrcIP.Bytes(),
-		ReplDstIP:   ret.ReplDstIP.Bytes(),
+		ReplSrcIP:   ret.ReplSrcIP,
+		ReplDstIP:   ret.ReplDstIP,
 		ReplSrcPort: ret.ReplSrcPort,
 		ReplDstPort: ret.ReplDstPort,
 	}
