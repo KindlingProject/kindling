@@ -7,153 +7,258 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-type valueType int
-
-type dictionary struct {
-	originKey string
-	newKey    string
-	valueType
-}
-
-const (
-	Int64  valueType = 0
-	String valueType = 1
-	Bool   valueType = 3
-)
-
-var entityCommonMetricsDicList = []dictionary{
-	{"", "", String},
-}
-
-var entityAggMetricsDicList = []dictionary{
-	{"", "", String},
-}
-
-var entityDetailMetricsDicList = []dictionary{
-	{"", "", String},
-}
-
-var topologyCommonMetricsDicList = []dictionary{
-	{"", "", String},
-}
-
-var topologyAggMetricsDicList = []dictionary{
-	{"", "", String},
-}
-
-var topologyDetailMetricsDicList = []dictionary{
-	{"", "", String},
-}
-
-var ServerEntity *metricAdapter = creatMetricAdapter(nil, entityCommonMetricsDicList, true, nil)
-
 type metricAdapter struct {
+	// labelsMap key: protocolType value: a list of realAttributes
 	labelsMap            map[extraLabelsKey]realAttributes
-	paramMap             []attribute.KeyValue
-	metricsDicList       []dictionary
 	metricAggregationMap map[string]MetricAggregationKind
 	isServer             bool
+	updateKeys           []updateKey
+
+	// valueLabelKey dic won't contain origin Key
+	valueLabelsFunc valueToLabels
+
+	// to fix some special labels
+	adjustLabels []adjustLabels
+}
+
+type metricAdapterBuilder struct {
+	baseAndCommonLabelsDict []dictionary
+	metricAggregationMap    map[string]MetricAggregationKind
+	isServer                bool
+
+	extraLabelsParamList []extraLabelsParam
+	extraLabelsKey       []extraLabelsKey
+	updateKeys           []updateKey
+
+	// valueLabelKey dic won't contain origin Key
+	valueLabelsKey  []dictionary
+	valueLabelsFunc valueToLabels
+
+	constLabels []attribute.KeyValue
+
+	adjustLabels []adjustLabels
 }
 
 type realAttributes struct {
-	paramMap       []attribute.KeyValue
+	// paramMap A list contain baseLabels,commonLabels,extraLabelsParamList,valueLabels,constLabels
+	paramMap []attribute.KeyValue
+	// metricsDicList A list contain dict of baseLabels,commonLabels,extraLabelsParamList,
 	metricsDicList []dictionary
 }
-
-type Protocol int
-
-type Granularity int
-
-const (
-	HTTP Protocol = iota
-	KAFKA
-)
 
 type extraLabelsKey struct {
 	protocol Protocol
 }
 
-type ProtocolLabels struct {
-	Protocol
-	labels  []attribute.KeyValue
+type extraLabelsParam struct {
 	dicList []dictionary
+	extraLabelsKey
 }
 
-func withProtocols() []ProtocolLabels {
-	return []ProtocolLabels{
-		{
-			Protocol: HTTP,
-			labels:   nil,
-			dicList:  nil,
-		},
+func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey {
+	switch labels.GetStringValue(constlabels.Protocol) {
+	case http:
+		key.protocol = HTTP
+	case grpc:
+		key.protocol = GRPC
+	case mysql:
+		key.protocol = MYSQL
+	case dns:
+		key.protocol = DNS
+	case kafka:
+		key.protocol = KAFKA
+	}
+	return key
+}
+
+type valueToLabels func(gauges []model.Gauge) []attribute.Value
+type updateKey func(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey
+type adjustLabels func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue
+
+func (key *extraLabelsKey) simpleMergeKey(labelsKey *extraLabelsKey) *extraLabelsKey {
+	if key == nil {
+		return labelsKey
+	}
+	if key.protocol == empty {
+		key.protocol = labelsKey.protocol
+	}
+	return key
+}
+
+func (param *extraLabelsParam) simpleMergeParam(extraParams *extraLabelsParam) *extraLabelsParam {
+	if param == nil {
+		return extraParams
+	} else {
+		param.dicList = append(param.dicList, extraParams.dicList...)
+		return param
 	}
 }
 
-func creatMetricAdapter(
-	commonLabels []attribute.KeyValue,
-	metricsDicList []dictionary,
-	isServer bool,
-	protocols []ProtocolLabels,
-	extraLabels ...[]dictionary) *metricAdapter {
-	//TODO Value to labels
-	//serviceMetricDefaultLabels := make([]attribute.KeyValue, len(metricsDicList))
-	//for i := 0; i < len(metricsDicList); i++ {
-	//	serviceMetricDefaultLabels[i].Key = attribute.Key(metricsDicList[i].newKey)
-	//}
-	//return &metricAdapter{
-	//	paramMap:       append(serviceMetricDefaultLabels, commonLabels...),
-	//	metricsDicList: metricsDicList,
-	//	isServer:       isServer,
-	//}
+func newMetricAdapterBuilder(
+	baseDict []dictionary,
+	commonLabels [][]dictionary,
+	metricAggregationMap map[string]MetricAggregationKind,
+	isServer bool) *metricAdapterBuilder {
 
-	baseLabels := make([]attribute.KeyValue, len(metricsDicList))
+	baseLabels := make([]attribute.KeyValue, len(baseDict))
 	// baseLabels
-	for j := 0; j < len(metricsDicList); j++ {
-		baseLabels[j].Key = attribute.Key(metricsDicList[j].newKey)
+	for j := 0; j < len(baseDict); j++ {
+		baseLabels[j].Key = attribute.Key(baseDict[j].newKey)
 	}
-	// extraLabels
-	for j := 0; j < len(extraLabels); j++ {
-		for k := 0; k < len(extraLabels[j]); k++ {
+	// commonLabels
+	for j := 0; j < len(commonLabels); j++ {
+		for k := 0; k < len(commonLabels[j]); k++ {
 			baseLabels = append(baseLabels, attribute.KeyValue{
-				Key: attribute.Key(extraLabels[j][k].newKey),
+				Key: attribute.Key(commonLabels[j][k].newKey),
 			})
-			metricsDicList = append(metricsDicList, extraLabels[j][k])
+			baseDict = append(baseDict, commonLabels[j][k])
 		}
 	}
 
-	realAttributesMap := make(map[extraLabelsKey]realAttributes, len(protocols))
-	tmpAttributesKey := extraLabelsKey{}
-	for i := 0; i < len(protocols); i++ {
-		// Protocols
-		tmpAttributesKey.protocol = protocols[i].Protocol
-		realAttributesMap[tmpAttributesKey] = realAttributes{
-			metricsDicList: append(metricsDicList, protocols[i].dicList...),
-		}
+	return &metricAdapterBuilder{
+		baseAndCommonLabelsDict: baseDict,
+		metricAggregationMap:    metricAggregationMap,
+		isServer:                isServer,
+		extraLabelsKey:          make([]extraLabelsKey, 0),
+		adjustLabels:            make([]adjustLabels, 0),
 	}
-
-	return &metricAdapter{}
 }
 
-func (a *metricAdapter) adapter(baseLabels *model.AttributeMap) ([]attribute.KeyValue, error) {
-	//TODO protocol labels
-	for i := 0; i < len(a.metricsDicList); i++ {
-		switch a.metricsDicList[i].valueType {
+func (m *metricAdapterBuilder) withProtocols(params []extraLabelsParam, update updateKey) *metricAdapterBuilder {
+	if m.extraLabelsKey == nil {
+		m.extraLabelsKey = make([]extraLabelsKey, 0, len(params))
+		for i := 0; i < len(params); i++ {
+			m.extraLabelsKey = append(m.extraLabelsKey, params[i].extraLabelsKey)
+		}
+		m.extraLabelsParamList = params
+		m.updateKeys = make([]updateKey, 0, 1)
+		m.updateKeys[0] = update
+		return m
+	}
+
+	tmpNewExtraParamsList := make([]extraLabelsParam, 0, len(m.extraLabelsParamList)*len(params))
+	tmpNewExtraKeyList := make([]extraLabelsKey, 0, len(m.extraLabelsKey)*len(params))
+
+	if len(tmpNewExtraParamsList) != len(tmpNewExtraKeyList) {
+		// TODO Error Info!
+		return m
+	}
+
+	for i := 0; i < len(params); i++ {
+		for s := 0; s < len(m.extraLabelsKey); s++ {
+			newKey := m.extraLabelsKey[s].simpleMergeKey(&params[i].extraLabelsKey)
+			newParam := m.extraLabelsParamList[s].simpleMergeParam(&params[i])
+
+			tmpNewExtraKeyList = append(tmpNewExtraKeyList, *newKey)
+			tmpNewExtraParamsList = append(tmpNewExtraParamsList, *newParam)
+		}
+	}
+
+	m.extraLabelsParamList = tmpNewExtraParamsList
+	m.extraLabelsKey = tmpNewExtraKeyList
+
+	return m
+}
+
+func (m *metricAdapterBuilder) withTraceStatus(keys []dictionary, valueToLabel valueToLabels) *metricAdapterBuilder {
+	m.valueLabelsFunc = valueToLabel
+	m.valueLabelsKey = keys
+	return m
+}
+
+func (m *metricAdapterBuilder) withConstLabels(constLabels []attribute.KeyValue) *metricAdapterBuilder {
+	m.constLabels = constLabels
+	return m
+}
+
+func (m *metricAdapterBuilder) build() (*metricAdapter, error) {
+	labelsMap := make(map[extraLabelsKey]realAttributes, len(m.extraLabelsKey))
+	baseAndCommonParams := make([]attribute.KeyValue, 0, len(m.baseAndCommonLabelsDict))
+
+	for i := 0; i < len(m.baseAndCommonLabelsDict); i++ {
+		baseAndCommonParams[i] = attribute.KeyValue{
+			Key: attribute.Key(m.baseAndCommonLabelsDict[i].newKey),
+		}
+	}
+
+	for i := 0; i < len(m.extraLabelsKey); i++ {
+		//TODO Check length of extraLabelsKey is equal to extraLabelsParamList , or return error
+		tmpDict := append(m.baseAndCommonLabelsDict, m.extraLabelsParamList[i].dicList...)
+		tmpParamList := baseAndCommonParams
+		for s := 0; s < len(m.extraLabelsParamList[i].dicList); s++ {
+			tmpParamList = append(tmpParamList, attribute.KeyValue{
+				Key: attribute.Key(m.extraLabelsParamList[i].dicList[s].newKey),
+			})
+		}
+
+		// valueLabels
+		if m.valueLabelsKey != nil {
+			for s := 0; s < len(m.valueLabelsKey); s++ {
+				tmpParamList = append(tmpParamList, attribute.KeyValue{
+					Key: attribute.Key(m.valueLabelsKey[s].newKey),
+				})
+			}
+		}
+
+		// constLabels
+		if m.constLabels != nil {
+			tmpParamList = append(tmpParamList, m.constLabels...)
+		}
+
+		labelsMap[m.extraLabelsKey[i]] = realAttributes{
+			paramMap:       tmpParamList,
+			metricsDicList: tmpDict,
+		}
+	}
+
+	return &metricAdapter{
+		labelsMap:            labelsMap,
+		metricAggregationMap: m.metricAggregationMap,
+		isServer:             m.isServer,
+		updateKeys:           m.updateKeys,
+		valueLabelsFunc:      m.valueLabelsFunc,
+		adjustLabels:         m.adjustLabels,
+	}, nil
+}
+
+func (m *metricAdapter) adapter(labels *model.AttributeMap, values []model.Gauge) ([]attribute.KeyValue, error) {
+	tmpExtraKey := &extraLabelsKey{protocol: empty}
+	for i := 0; i < len(m.updateKeys); i++ {
+		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
+	}
+	attrs := m.labelsMap[*tmpExtraKey]
+
+	for i := 0; i < len(attrs.metricsDicList); i++ {
+		switch attrs.metricsDicList[i].valueType {
 		case String:
-			a.paramMap[i].Value = attribute.StringValue(baseLabels.GetStringValue(a.metricsDicList[i].originKey))
+			attrs.paramMap[i].Value = attribute.StringValue(labels.GetStringValue(attrs.metricsDicList[i].originKey))
 		case Int64:
-			a.paramMap[i].Value = attribute.Int64Value(baseLabels.GetIntValue(a.metricsDicList[i].originKey))
+			attrs.paramMap[i].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
 		case Bool:
-			a.paramMap[i].Value = attribute.BoolValue(baseLabels.GetBoolValue(a.metricsDicList[i].originKey))
+			attrs.paramMap[i].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
 		}
 	}
-	return a.paramMap, nil
+
+	if m.valueLabelsFunc != nil {
+		valueLabels := m.valueLabelsFunc(values)
+		for i := 0; i < len(valueLabels); i++ {
+			attrs.paramMap[i+len(attrs.metricsDicList)].Value = valueLabels[i]
+		}
+	}
+
+	for i := 0; i < len(m.adjustLabels); i++ {
+		attrs.paramMap = m.adjustLabels[i](labels, attrs.paramMap)
+	}
+	return attrs.paramMap, nil
 }
 
-func (a *metricAdapter) GetMeasurement(insFactory *instrumentFactory, gauges []model.Gauge) {
+func (m *metricAdapter) GetMeasurement(insFactory *instrumentFactory, gauges []model.Gauge) []metric.Measurement {
 	// TODO Label to Measurement
 	measurements := make([]metric.Measurement, 0, len(gauges))
 	for i := 0; i < len(gauges); i++ {
-		name := constlabels.ToKindlingMetricName(gauges[i].Name, a.isServer)
-		measurements = append(measurements, insFactory.getInstrument(name, a.metricAggregationMap[name]).Measurement(gauges[i].Value))
+		name := constlabels.ToKindlingMetricName(gauges[i].Name, m.isServer)
+		measurements = append(measurements, insFactory.getInstrument(name, m.metricAggregationMap[name]).Measurement(gauges[i].Value))
 	}
+
+	return measurements
 }

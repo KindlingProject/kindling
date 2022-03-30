@@ -80,7 +80,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		// Do not emit detail protocol metric at this version
 		//protocol := newGauges(gaugeGroup)
 		//protocolErr := r.nextConsumer.Consume(protocol.Process(r.cfg, ProtocolDetailMetricName, ServiceInstanceInfo, ServiceK8sInfo, ProtocolDetailInfo))
-		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo, cleanSrcPort))
+		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo))
 		var metricErr2 error
 		if r.cfg.StoreExternalSrcIP {
 			srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
