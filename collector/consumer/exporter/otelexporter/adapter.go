@@ -5,6 +5,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"strconv"
 )
 
 type metricAdapter struct {
@@ -171,6 +172,11 @@ func (m *metricAdapterBuilder) withConstLabels(constLabels []attribute.KeyValue)
 	return m
 }
 
+func (m *metricAdapterBuilder) withAdjust(adjustFunc adjustLabels) *metricAdapterBuilder {
+	m.adjustLabels = append(m.adjustLabels, adjustFunc)
+	return m
+}
+
 func (m *metricAdapterBuilder) build() (*metricAdapter, error) {
 	labelsMap := make(map[extraLabelsKey]realAttributes, len(m.extraLabelsKey))
 	baseAndCommonParams := make([]attribute.KeyValue, 0, len(m.baseAndCommonLabelsDict))
@@ -236,6 +242,10 @@ func (m *metricAdapter) adapter(labels *model.AttributeMap, values []model.Gauge
 			attrs.paramMap[i].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
 		case Bool:
 			attrs.paramMap[i].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
+		case FromInt64ToString:
+			attrs.paramMap[i].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+		case StrEmpty:
+			attrs.paramMap[i].Value = attribute.StringValue(constlabels.STR_EMPTY)
 		}
 	}
 

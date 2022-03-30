@@ -15,9 +15,17 @@ func createBaseAdapterManager(metricAggMap map[string]MetricAggregationKind, con
 		metricAggMap, true).
 		withProtocols(entityProtocol, updateProtocolKey).
 		withConstLabels(constLabels).
+		withAdjust(RemoveDstPodInfoForNonExternalAggTopology).
+		build()
+
+	detailEntityAdapter, _ := newMetricAdapterBuilder(entityMetricDicList, [][]dictionary{instanceMetricDicList, entityDetailMetricDicList},
+		metricAggMap, true).
+		withProtocols(entityProtocol, updateProtocolKey).
+		withConstLabels(constLabels).
 		build()
 
 	return &BaseAdapterManager{
-		aggEntityAdapter: aggEntityAdapter,
+		aggEntityAdapter:    aggEntityAdapter,
+		detailEntityAdapter: detailEntityAdapter,
 	}
 }
