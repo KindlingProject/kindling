@@ -7,6 +7,7 @@
 // 1. Use the subset config in directory "internal" to replace the original one.
 // 2. Replace log package and remove logs with trace/debug level.
 // 3. Remove the dependencies of pkg/network, process/util
+// 4. Remove unnecessary telemetry metrics: getTimeTotal, registersTotalTime, unregistersTotalTime
 
 //go:build linux && !android
 // +build linux,!android
@@ -72,14 +73,11 @@ type realConntracker struct {
 
 	compactTicker *time.Ticker
 	stats         struct {
-		gets                 int64
-		getTimeTotal         int64
-		registers            int64
-		registersDropped     int64
-		registersTotalTime   int64
-		unregisters          int64
-		unregistersTotalTime int64
-		evicts               int64
+		gets             int64
+		registers        int64
+		registersDropped int64
+		unregisters      int64
+		evicts           int64
 	}
 }
 
@@ -132,10 +130,8 @@ func newConntrackerOnce(procRoot string, maxStateSize, targetRateLimit int, list
 }
 
 func (ctr *realConntracker) GetTranslationForConn(c ConnectionStats) *IPTranslation {
-	then := time.Now().UnixNano()
 	defer func() {
 		atomic.AddInt64(&ctr.stats.gets, 1)
-		atomic.AddInt64(&ctr.stats.getTimeTotal, time.Now().UnixNano()-then)
 	}()
 
 	ctr.Lock()
@@ -171,24 +167,18 @@ func (ctr *realConntracker) GetStats() map[string]int64 {
 
 	gets := atomic.LoadInt64(&ctr.stats.gets)
 	if gets != 0 {
-		getTimeTotal := atomic.LoadInt64(&ctr.stats.getTimeTotal)
 		m["gets_total"] = gets
-		m["nanoseconds_per_get"] = getTimeTotal / gets
 	}
 
 	registers := atomic.LoadInt64(&ctr.stats.registers)
 	if registers != 0 {
-		registersTotalTime := atomic.LoadInt64(&ctr.stats.registersTotalTime)
 		m["registers_total"] = registers
-		m["nanoseconds_per_register"] = registersTotalTime / registers
 	}
 	m["registers_dropped"] = atomic.LoadInt64(&ctr.stats.registersDropped)
 
 	unregisters := atomic.LoadInt64(&ctr.stats.unregisters)
 	if unregisters != 0 {
-		unregisterTotalTime := atomic.LoadInt64(&ctr.stats.unregistersTotalTime)
 		m["unregisters_total"] = unregisters
-		m["nanoseconds_per_unregister"] = unregisterTotalTime / unregisters
 	}
 	m["evicts_total"] = atomic.LoadInt64(&ctr.stats.evicts)
 
@@ -201,11 +191,6 @@ func (ctr *realConntracker) GetStats() map[string]int64 {
 }
 
 func (ctr *realConntracker) DeleteTranslation(c ConnectionStats) {
-	then := time.Now().UnixNano()
-	defer func() {
-		atomic.AddInt64(&ctr.stats.unregistersTotalTime, time.Now().UnixNano()-then)
-	}()
-
 	ctr.Lock()
 	defer ctr.Unlock()
 
@@ -255,8 +240,6 @@ func (ctr *realConntracker) register(c Con) int {
 		return 0
 	}
 
-	then := time.Now().UnixNano()
-
 	ctr.Lock()
 	defer ctr.Unlock()
 
@@ -264,7 +247,6 @@ func (ctr *realConntracker) register(c Con) int {
 
 	atomic.AddInt64(&ctr.stats.registers, 1)
 	atomic.AddInt64(&ctr.stats.evicts, int64(evicts))
-	atomic.AddInt64(&ctr.stats.registersTotalTime, time.Now().UnixNano()-then)
 
 	return 0
 }
