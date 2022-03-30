@@ -3,6 +3,7 @@ package otelexporter
 import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
 	"strconv"
 )
@@ -53,15 +54,15 @@ type extraLabelsParam struct {
 
 func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey {
 	switch labels.GetStringValue(constlabels.Protocol) {
-	case http:
+	case constvalues.ProtocolHttp:
 		key.protocol = HTTP
-	case grpc:
+	case constvalues.ProtocolGrpc:
 		key.protocol = GRPC
-	case mysql:
+	case constvalues.ProtocolMysql:
 		key.protocol = MYSQL
-	case dns:
+	case constvalues.ProtocolDns:
 		key.protocol = DNS
-	case kafka:
+	case constvalues.ProtocolKafka:
 		key.protocol = KAFKA
 	default:
 		key.protocol = UNSUPPORT
@@ -119,19 +120,19 @@ func newAdapterBuilder(
 }
 
 func (m *metricAdapterBuilder) withExtraLabels(params []extraLabelsParam, update updateKey) *metricAdapterBuilder {
-	if m.extraLabelsKey == nil {
-		m.extraLabelsKey = make([]extraLabelsKey, 0, len(params))
+	if m.extraLabelsKey == nil || len(m.extraLabelsKey) == 0 {
+		m.extraLabelsKey = make([]extraLabelsKey, len(params))
 		for i := 0; i < len(params); i++ {
-			m.extraLabelsKey = append(m.extraLabelsKey, params[i].extraLabelsKey)
+			m.extraLabelsKey[i] = params[i].extraLabelsKey
 		}
 		m.extraLabelsParamList = params
-		m.updateKeys = make([]updateKey, 0, 1)
+		m.updateKeys = make([]updateKey, 1)
 		m.updateKeys[0] = update
 		return m
 	}
 
-	tmpNewExtraParamsList := make([]extraLabelsParam, 0, len(m.extraLabelsParamList)*len(params))
-	tmpNewExtraKeyList := make([]extraLabelsKey, 0, len(m.extraLabelsKey)*len(params))
+	tmpNewExtraParamsList := make([]extraLabelsParam, len(m.extraLabelsParamList)*len(params))
+	tmpNewExtraKeyList := make([]extraLabelsKey, len(m.extraLabelsKey)*len(params))
 
 	if len(tmpNewExtraParamsList) != len(tmpNewExtraKeyList) {
 		// TODO Error Info!
@@ -172,7 +173,7 @@ func (m *metricAdapterBuilder) withAdjust(adjustFunc adjustLabels) *metricAdapte
 
 func (m *metricAdapterBuilder) build() (*Adapter, error) {
 	labelsMap := make(map[extraLabelsKey]realAttributes, len(m.extraLabelsKey))
-	baseAndCommonParams := make([]attribute.KeyValue, 0, len(m.baseAndCommonLabelsDict))
+	baseAndCommonParams := make([]attribute.KeyValue, len(m.baseAndCommonLabelsDict))
 
 	for i := 0; i < len(m.baseAndCommonLabelsDict); i++ {
 		baseAndCommonParams[i] = attribute.KeyValue{

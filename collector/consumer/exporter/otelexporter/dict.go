@@ -7,16 +7,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-const (
-	http  = "http"
-	http2 = "http2"
-	grpc  = "grpc"
-	dubbo = "dubbo"
-	dns   = "dns"
-	kafka = "kafka"
-	mysql = "mysql"
-)
-
 type Protocol int
 
 const (
