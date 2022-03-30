@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/binary"
 	"errors"
 	"math"
 	"net"
@@ -18,7 +19,7 @@ var (
 func (x *KindlingEvent) GetData() []byte {
 	keyValue := x.GetUserAttribute("data")
 	if keyValue != nil {
-		return keyValue.GetValue().GetBytesValue()
+		return keyValue.GetValue()
 	}
 	return nil
 }
@@ -26,7 +27,7 @@ func (x *KindlingEvent) GetData() []byte {
 func (x *KindlingEvent) GetDataLen() int {
 	keyValue := x.GetUserAttribute("data")
 	if keyValue != nil {
-		return len(keyValue.GetValue().GetBytesValue())
+		return len(keyValue.GetValue())
 	}
 	return 0
 }
@@ -34,7 +35,7 @@ func (x *KindlingEvent) GetDataLen() int {
 func (x *KindlingEvent) GetResVal() int64 {
 	keyValue := x.GetUserAttribute("res")
 	if keyValue != nil {
-		return keyValue.GetValue().GetIntValue()
+		return int64(binary.BigEndian.Uint64(keyValue.GetValue()))
 	}
 	return -1
 }
@@ -42,9 +43,25 @@ func (x *KindlingEvent) GetResVal() int64 {
 func (x *KindlingEvent) GetLatency() uint64 {
 	keyValue := x.GetUserAttribute("latency")
 	if keyValue != nil {
-		return uint64(keyValue.GetValue().GetIntValue())
+		return binary.BigEndian.Uint64(keyValue.GetValue())
 	}
 	return 0
+}
+
+func (x *KindlingEvent) GetUint64UserAtrribute(key string) uint64 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil {
+		return binary.BigEndian.Uint64(keyValue.GetValue())
+	}
+	return 0
+}
+
+func (x *KindlingEvent) GetStringUserAtrribute(key string) string {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil {
+		return string(keyValue.GetValue())
+	}
+	return ""
 }
 
 func (x *KindlingEvent) GetStartTime() uint64 {

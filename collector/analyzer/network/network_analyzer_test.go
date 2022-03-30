@@ -1,12 +1,14 @@
 package network
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/component"
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/Kindling-project/kindling/collector/component"
 
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/model"
@@ -281,9 +283,9 @@ func (evt *TraceEvent) exchange(common *EventCommon) *model.KindlingEvent {
 		Category:         model.Category(common.Category),
 		NativeAttributes: &model.Property{},
 		UserAttributes: []*model.KeyValue{
-			{Key: "latency", Value: &model.AnyValue{Value: &model.AnyValue_IntValue{IntValue: evt.UserAttributes.Latency}}},
-			{Key: "res", Value: &model.AnyValue{Value: &model.AnyValue_IntValue{IntValue: evt.UserAttributes.Res}}},
-			{Key: "data", Value: &model.AnyValue{Value: &model.AnyValue_BytesValue{BytesValue: byteData}}},
+			{Key: "latency", ValueType: model.ValueType_UINT64, Value: Int64ToBytes(evt.UserAttributes.Latency)},
+			{Key: "res", ValueType: model.ValueType_INT64, Value: Int64ToBytes(evt.UserAttributes.Res)},
+			{Key: "data", ValueType: model.ValueType_BYTEBUF, Value: byteData},
 		},
 		Ctx: &model.Context{
 			ThreadInfo: &model.Thread{
@@ -364,6 +366,12 @@ type UserAttributes struct {
 	Latency int64    `mapstructure:"latency"`
 	Res     int64    `mapstructure:"res"`
 	Data    []string `mapstructure:"data"`
+}
+
+func Int64ToBytes(value int64) []byte {
+	var buf = make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(value))
+	return buf
 }
 
 type TraceExpect struct {

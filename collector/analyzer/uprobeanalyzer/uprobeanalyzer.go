@@ -1,6 +1,8 @@
 package uprobeanalyzer
 
 import (
+	"strings"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/tools"
 	"github.com/Kindling-project/kindling/collector/component"
@@ -12,7 +14,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/hashicorp/go-multierror"
 	"go.uber.org/zap"
-	"strings"
 )
 
 var httpMerger = tools.NewHttpMergeCache()
@@ -62,25 +63,25 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		return nil
 	}
 
-	role := event.GetUserAttribute("trace_role").Value.GetUintValue()
-	pid := event.GetUserAttribute("pid").GetValue().GetUintValue()
-	fd := event.GetUserAttribute("fd").GetValue().GetUintValue()
+	role := event.GetUint64UserAtrribute("trace_role")
+	pid := event.GetUint64UserAtrribute("pid")
+	fd := event.GetUint64UserAtrribute("fd")
 	if role != clientRole && role != serverRole {
 		a.telemetry.Logger.Warn("Skip a Event: UprobeAnalyzer received a unexpected role event", zap.Uint64("pid", pid), zap.Uint64("fd", fd))
 		return nil
 	}
 
-	remoteIp := event.GetUserAttribute("remote_addr").GetValue().GetStringValue()
-	remotePort := event.GetUserAttribute("remote_port").GetValue().GetUintValue()
-	containerId := event.GetUserAttribute("containerid").GetValue().GetStringValue()
-	reqMethod := event.GetUserAttribute("req_method").GetValue().GetStringValue()
-	reqPath := event.GetUserAttribute("req_path").GetValue().GetStringValue()
-	statusCode := event.GetUserAttribute("resp_status").GetValue().GetUintValue()
-	reqBody := event.GetUserAttribute("req_body").GetValue().GetBytesValue()
-	respBody := event.GetUserAttribute("resp_body").GetValue().GetBytesValue()
+	remoteIp := event.GetStringUserAtrribute("remote_addr")
+	remotePort := event.GetUint64UserAtrribute("remote_port")
+	containerId := event.GetStringUserAtrribute("containerid")
+	reqMethod := event.GetStringUserAtrribute("req_method")
+	reqPath := event.GetStringUserAtrribute("req_path")
+	statusCode := event.GetUint64UserAtrribute("resp_status")
+	reqBody := event.GetUserAttribute("req_body").GetValue()
+	respBody := event.GetUserAttribute("resp_body").GetValue()
 
 	// unit: nanosecond
-	latency := event.GetUserAttribute("latency").GetValue().GetUintValue()
+	latency := event.GetLatency()
 	isSlow := latency >= a.cfg.ResponseSlowThreshold*MillisecondToNanosecond
 
 	labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -109,8 +110,8 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		var srcIpValue string
 		var srcPortValue uint64
 		if srcIp != nil && srcPort != nil {
-			srcIpValue = srcIp.Value.GetStringValue()
-			srcPortValue = srcPort.Value.GetUintValue()
+			srcIpValue = string(srcIp.Value)
+			srcPortValue = event.GetUint64UserAtrribute("src_port")
 		}
 		labels.Merge(model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcIp:    model.NewStringValue(srcIpValue),
@@ -141,11 +142,11 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	}
 	requestIoGauge := &model.Gauge{
 		Name:  constvalues.RequestIo,
-		Value: int64(event.GetUserAttribute("req_body_size").GetValue().GetUintValue()),
+		Value: int64(event.GetUint64UserAtrribute("req_body_size")),
 	}
 	responseIoGauge := &model.Gauge{
 		Name:  constvalues.ResponseIo,
-		Value: int64(event.GetUserAttribute("resp_body_size").GetValue().GetUintValue()),
+		Value: int64(event.GetUint64UserAtrribute("resp_body_size")),
 	}
 	gaugeGroup := model.NewGaugeGroup("GrpcUprobeGroup", labels, event.Timestamp,
 		latencyGauge, requestIoGauge, responseIoGauge)
