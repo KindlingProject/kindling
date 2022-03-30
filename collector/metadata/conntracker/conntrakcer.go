@@ -65,6 +65,9 @@ func (ctr *NetlinkConntracker) GetDNATTupleWithString(srcIP string, dstIP string
 	}
 
 	ret := ctr.conntracker.GetTranslationForConn(conn)
+	if ret == nil {
+		return nil
+	}
 	return &IPTranslation{
 		ReplSrcIP:   ret.ReplSrcIP,
 		ReplDstIP:   ret.ReplDstIP,
@@ -82,6 +85,9 @@ func (ctr *NetlinkConntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort 
 		Type:   internal.ConnectionType(isUdp),
 	}
 	ret := ctr.conntracker.GetTranslationForConn(conn)
+	if ret == nil {
+		return nil
+	}
 	return &IPTranslation{
 		ReplSrcIP:   ret.ReplSrcIP,
 		ReplDstIP:   ret.ReplDstIP,
