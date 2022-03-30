@@ -73,6 +73,28 @@ const (
 	ResponseIoBytes   = "responseio_bytes"
 	Timestamp         = "timestamp"
 	IsConvergent      = "is_convergent"
+
+	SpanSrcContainerId   = "src_containerid"
+	SpanSrcContainerName = "src_container_name"
+	SpanDstContainerId   = "dst_containerid"
+	SpanDstContainerName = "dst_container_name"
+
+	SpanHttpMethod          = "http.method"
+	SpanHttpEndpoint        = "http.endpoint"
+	SpanHttpStatusCode      = "http.status_code"
+	SpanHttpTraceId         = "http.trace_id"
+	SpanHttpTraceType       = "http.trace_type"
+	SpanHttpRequestHeaders  = "http.request_headers"
+	SpanHttpRequestBody     = "http.request_body"
+	SpanHttpResponseHeaders = "http.response_headers"
+	SpanHttpResponseBody    = "http.response_body"
+
+	SpanDnsDomain = "dns.domain"
+	SpanDnsRCode  = "dns.rcode"
+
+	SpanMysqlSql       = "mysql.sql"
+	SpanMysqlErrorCode = "mysql.error_code"
+	SpanMysqlErrorMsg  = "mysql.error_msg"
 )
 const (
 	STR_EMPTY = ""
