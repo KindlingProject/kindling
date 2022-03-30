@@ -2,11 +2,10 @@ package conntracker
 
 import (
 	"fmt"
-	"github.com/DataDog/datadog-agent/pkg/ebpf"
 	"github.com/DataDog/datadog-agent/pkg/network"
-	datadogcfg "github.com/DataDog/datadog-agent/pkg/network/config"
 	"github.com/DataDog/datadog-agent/pkg/network/netlink"
 	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/Kindling-project/kindling/collector/metadata/conntracker/internal"
 	"go.opentelemetry.io/otel/metric/global"
 	"log"
 	"sync"
@@ -28,17 +27,15 @@ func NewConntracker(config *Config) (Conntracker, error) {
 			log.Printf("Conntracker is not enabled.")
 			singletonConntracker = NewNoopConntracker(config)
 		} else {
-			cfg := &datadogcfg.Config{
-				Config: ebpf.Config{
-					ProcRoot: config.ProcRoot,
-				},
+			cfg := &internal.Config{
+				Enabled:                      config.Enabled,
+				ProcRoot:                     config.ProcRoot,
 				ConntrackInitTimeout:         config.ConntrackInitTimeout,
 				ConntrackRateLimit:           config.ConntrackRateLimit,
 				ConntrackMaxStateSize:        config.ConntrackMaxStateSize,
 				EnableConntrackAllNamespaces: config.EnableConntrackAllNamespaces,
 			}
-
-			conntracker, err := netlink.NewConntracker(cfg)
+			conntracker, err := internal.NewConntracker(cfg)
 			if err != nil {
 				errMessage = fmt.Errorf("failed to create conntracker: %w", err)
 				singletonConntracker = NewNoopConntracker(config)

@@ -3,7 +3,6 @@ module github.com/Kindling-project/kindling/collector
 go 1.16
 
 require (
-	github.com/DataDog/datadog-agent v0.9.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/golang-lru v0.5.4
