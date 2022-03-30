@@ -218,7 +218,8 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 	}, nil
 }
 
-func (m *Adapter) adapter(labels *model.AttributeMap, group *model.GaugeGroup) ([]attribute.KeyValue, error) {
+func (m *Adapter) adapter(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
+	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
 		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)

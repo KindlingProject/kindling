@@ -230,7 +230,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 
 	// Only networkAnalyzer gauges will be adapterd
 	if gaugeGroup.Name == constlabels.NetWorkAnalyzeGaugeGroup {
-		e.pushMetric(gaugeGroup)
+		e.PushNetMetric(gaugeGroup)
 
 		// TODO NeedTraceAsMetric
 		//if e.cfg.AdapterConfig.NeedTraceAsMetric {
@@ -245,7 +245,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 			if e.defaultTracer == nil {
 				return errors.New("send span failed: this exporter can not support Span Data")
 			} else {
-				attrs, _ := e.adapterManager.traceToSpanAdapter.adapter(gaugeGroup.Labels, gaugeGroup)
+				attrs, _ := e.adapterManager.traceToSpanAdapter.adapter(gaugeGroup)
 				_, span := e.defaultTracer.Start(
 					context.Background(),
 					constvalues.SpanInfo,
@@ -269,7 +269,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 	}
 }
 
-func (e *OtelExporter) pushMetric(gaugeGroup *model.GaugeGroup) {
+func (e *OtelExporter) PushNetMetric(gaugeGroup *model.GaugeGroup) {
 	var metricAdapter *Adapter
 	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
 	if e.cfg.AdapterConfig.NeedPodDetail {
@@ -287,7 +287,7 @@ func (e *OtelExporter) pushMetric(gaugeGroup *model.GaugeGroup) {
 	}
 
 	// TODO deal with error
-	attrs, _ := metricAdapter.adapter(gaugeGroup.Labels, gaugeGroup)
+	attrs, _ := metricAdapter.adapter(gaugeGroup)
 	e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup.Values, isServer)...)
 }
 
