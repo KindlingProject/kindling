@@ -120,6 +120,8 @@ func (a *Application) buildPipeline() error {
 	// Initialize all analyzers
 	// 1. Common network request analyzer
 	networkAnalyzerFactory := a.componentsFactory.Analyzers[network.Network.String()]
+	// Now NetworkAnalyzer must be initialized before any other analyzers, because it will
+	// use its configuration to initialize the conntracker module which is also used by others.
 	networkAnalyzer := networkAnalyzerFactory.NewFunc(networkAnalyzerFactory.Config, a.telemetry.Telemetry, []consumer.Consumer{k8sMetadataProcessor, k8sMetadataProcessorForNodeMetric})
 	// 2. Analyzer which supports gRPC protocol based on uProbe method
 	uprobeAnalyzerFactory := a.componentsFactory.Analyzers[uprobeanalyzer.UprobeType.String()]

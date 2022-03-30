@@ -33,7 +33,7 @@ const (
 type NetworkAnalyzer struct {
 	cfg           *Config
 	nextConsumers []consumer.Consumer
-	conntracker   *conntracker.Conntracker
+	conntracker   conntracker.Conntracker
 
 	staticPortMap    map[uint32]string
 	slowThresholdMap map[string]int
@@ -61,7 +61,15 @@ func (na *NetworkAnalyzer) Start() error {
 	// TODO When import multi annalyzers, this part should move to factory. The metric will relate with analyzers.
 	newSelfMetrics(na.telemetry.MeterProvider, na)
 	if na.cfg.EnableConntrack {
-		na.conntracker, _ = conntracker.NewConntracker(na.cfg.ConntrackMaxStateSize)
+		connConfig := &conntracker.Config{
+			Enabled:                      na.cfg.EnableConntrack,
+			ProcRoot:                     na.cfg.ProcRoot,
+			ConntrackInitTimeout:         30 * time.Second,
+			ConntrackRateLimit:           na.cfg.ConntrackRateLimit,
+			ConntrackMaxStateSize:        na.cfg.ConntrackMaxStateSize,
+			EnableConntrackAllNamespaces: true,
+		}
+		na.conntracker, _ = conntracker.NewConntracker(connConfig)
 	}
 	go na.consumerFdNoReusingTrace()
 

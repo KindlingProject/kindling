@@ -31,7 +31,7 @@ var consumableEvents = map[string]bool{
 
 type TcpMetricAnalyzer struct {
 	consumers   []consumer.Consumer
-	conntracker *conntrackerpackge.Conntracker
+	conntracker conntrackerpackge.Conntracker
 	telemetry   *component.TelemetryTools
 }
 
@@ -40,9 +40,9 @@ func NewTcpMetricAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, 
 		consumers: nextConsumers,
 		telemetry: telemetry,
 	}
-	conntracker, err := conntrackerpackge.NewConntracker(10000)
+	conntracker, err := conntrackerpackge.NewConntracker(nil)
 	if err != nil {
-		telemetry.Logger.Panic("Failed to create TcpMetricAnalyzer: ", zap.Error(err))
+		telemetry.Logger.Warn("Failed to create TcpMetricAnalyzer: ", zap.Error(err))
 	}
 	retAnalyzer.conntracker = conntracker
 	return retAnalyzer

@@ -29,7 +29,7 @@ const (
 type UprobeAnalyzer struct {
 	cfg         *Config
 	consumers   []consumer.Consumer
-	conntracker *conntrackerpackge.Conntracker
+	conntracker conntrackerpackge.Conntracker
 
 	telemetry *component.TelemetryTools
 }
@@ -44,9 +44,9 @@ func NewUprobeAnalyzer(config interface{}, telemetry *component.TelemetryTools, 
 		consumers: consumers,
 		telemetry: telemetry,
 	}
-	conntracker, err := conntrackerpackge.NewConntracker(10000)
+	conntracker, err := conntrackerpackge.NewConntracker(nil)
 	if err != nil {
-		telemetry.Logger.Panic("Failed to create UprobeAnalyzer: ", zap.Error(err))
+		telemetry.Logger.Warn("Failed to create UprobeAnalyzer: ", zap.Error(err))
 	}
 	retAnalyzer.conntracker = conntracker
 	return retAnalyzer
