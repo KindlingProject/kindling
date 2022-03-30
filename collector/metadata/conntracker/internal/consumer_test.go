@@ -3,6 +3,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+// Modification: Copy StartServerTCP from github.com/DataDog/datadog-agent/pkg/network/testutil to remove its dependency
+
 //go:build linux_bpf
 // +build linux_bpf
 
@@ -14,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	nettestutil "github.com/DataDog/datadog-agent/pkg/network/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,7 +47,7 @@ func TestConsumerKeepsRunningAfterCircuitBreakerTrip(t *testing.T) {
 		return isRecvLoopRunning()
 	}, 3*time.Second, 100*time.Millisecond)
 
-	srv := nettestutil.StartServerTCP(t, net.ParseIP("127.0.0.1"), 0)
+	srv := StartServerTCP(t, net.ParseIP("127.0.0.1"), 0)
 	defer srv.Close()
 
 	l := srv.(net.Listener)
@@ -79,4 +80,35 @@ func TestConsumerKeepsRunningAfterCircuitBreakerTrip(t *testing.T) {
 		require.True(t, isRecvLoopRunning())
 	}
 
+}
+
+// StartServerTCP starts a TCP server listening at provided IP address and port.
+// It will respond to any connection with "hello" and then close the connection.
+// It returns an io.Closer that should be Close'd when you are finished with it.
+func StartServerTCP(t *testing.T, ip net.IP, port int) io.Closer {
+	ch := make(chan struct{})
+	addr := fmt.Sprintf("%s:%d", ip, port)
+	network := "tcp"
+	if isIpv6(ip) {
+		network = "tcp6"
+		addr = fmt.Sprintf("[%s]:%d", ip, port)
+	}
+
+	l, err := net.Listen(network, addr)
+	require.NoError(t, err)
+	go func() {
+		close(ch)
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+
+			_, _ = conn.Write([]byte("hello"))
+			conn.Close()
+		}
+	}()
+	<-ch
+
+	return l
 }

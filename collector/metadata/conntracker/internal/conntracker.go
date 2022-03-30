@@ -17,12 +17,11 @@ import (
 	"container/list"
 	"fmt"
 	"log"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/network"
-	"github.com/DataDog/datadog-agent/pkg/process/util"
 	ct "github.com/florianl/go-conntrack"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/sys/unix"
@@ -35,26 +34,26 @@ const (
 
 // Conntracker is a wrapper around go-conntracker that keeps a record of all connections in user space
 type Conntracker interface {
-	GetTranslationForConn(network.ConnectionStats) *network.IPTranslation
-	DeleteTranslation(network.ConnectionStats)
+	GetTranslationForConn(ConnectionStats) *IPTranslation
+	DeleteTranslation(ConnectionStats)
 	IsSampling() bool
 	GetStats() map[string]int64
 	Close()
 }
 
 type connKey struct {
-	srcIP   util.Address
+	srcIP   net.IP
 	srcPort uint16
 
-	dstIP   util.Address
+	dstIP   net.IP
 	dstPort uint16
 
 	// the transport protocol of the connection, using the same values as specified in the agent payload.
-	transport network.ConnectionType
+	transport ConnectionType
 }
 
 type translationEntry struct {
-	*network.IPTranslation
+	*IPTranslation
 	orphan *list.Element
 }
 
@@ -133,7 +132,7 @@ func newConntrackerOnce(procRoot string, maxStateSize, targetRateLimit int, list
 	return ctr, nil
 }
 
-func (ctr *realConntracker) GetTranslationForConn(c network.ConnectionStats) *network.IPTranslation {
+func (ctr *realConntracker) GetTranslationForConn(c ConnectionStats) *IPTranslation {
 	then := time.Now().UnixNano()
 	defer func() {
 		atomic.AddInt64(&ctr.stats.gets, 1)
@@ -202,7 +201,7 @@ func (ctr *realConntracker) GetStats() map[string]int64 {
 	return m
 }
 
-func (ctr *realConntracker) DeleteTranslation(c network.ConnectionStats) {
+func (ctr *realConntracker) DeleteTranslation(c ConnectionStats) {
 	then := time.Now().UnixNano()
 	defer func() {
 		atomic.AddInt64(&ctr.stats.unregistersTotalTime, time.Now().UnixNano()-then)
@@ -424,16 +423,16 @@ func IsNAT(c Con) bool {
 		*c.Origin.Proto.DstPort != *c.Reply.Proto.SrcPort
 }
 
-func formatIPTranslation(tuple *ct.IPTuple) *network.IPTranslation {
+func formatIPTranslation(tuple *ct.IPTuple) *IPTranslation {
 	srcIP := *tuple.Src
 	dstIP := *tuple.Dst
 
 	srcPort := *tuple.Proto.SrcPort
 	dstPort := *tuple.Proto.DstPort
 
-	return &network.IPTranslation{
-		ReplSrcIP:   util.AddressFromNetIP(srcIP),
-		ReplDstIP:   util.AddressFromNetIP(dstIP),
+	return &IPTranslation{
+		ReplSrcIP:   srcIP,
+		ReplDstIP:   dstIP,
 		ReplSrcPort: srcPort,
 		ReplDstPort: dstPort,
 	}
@@ -441,17 +440,17 @@ func formatIPTranslation(tuple *ct.IPTuple) *network.IPTranslation {
 
 func formatKey(tuple *ct.IPTuple) (k connKey, ok bool) {
 	ok = true
-	k.srcIP = util.AddressFromNetIP(*tuple.Src)
-	k.dstIP = util.AddressFromNetIP(*tuple.Dst)
+	k.srcIP = *tuple.Src
+	k.dstIP = *tuple.Dst
 	k.srcPort = *tuple.Proto.SrcPort
 	k.dstPort = *tuple.Proto.DstPort
 
 	proto := *tuple.Proto.Number
 	switch proto {
 	case unix.IPPROTO_TCP:
-		k.transport = network.TCP
+		k.transport = TCP
 	case unix.IPPROTO_UDP:
-		k.transport = network.UDP
+		k.transport = UDP
 	default:
 		ok = false
 	}

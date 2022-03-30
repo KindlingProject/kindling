@@ -3,6 +3,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+// Modification: Remove the dependency of github.com/DataDog/datadog-agent/pkg/util/log
+
 //go:build linux && !android
 // +build linux,!android
 
@@ -13,7 +15,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/DataDog/datadog-agent/pkg/util/log"
 	ct "github.com/florianl/go-conntrack"
 )
 
@@ -74,12 +75,10 @@ func (d *Decoder) DecodeAndReleaseEvent(e Event) []Con {
 	for _, msg := range msgs {
 		c := &Con{NetNS: e.netns}
 		if err := d.scanner.ResetTo(msg.Data); err != nil {
-			log.Debugf("error decoding netlink message: %s", err)
 			continue
 		}
 		err := d.unmarshalCon(c)
 		if err != nil {
-			log.Debugf("error decoding netlink message: %s", err)
 			continue
 		}
 		conns = append(conns, *c)

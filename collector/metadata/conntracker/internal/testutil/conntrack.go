@@ -3,16 +3,19 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+// Modification: Copy github.com/DataDog/datadog-agent/pkg/network/testutil.RunCommands to here
+// to remove the dependency on it.
+
 //go:build linux
 // +build linux
 
 package testutil
 
 import (
+	nettestutil "github.com/DataDog/datadog-agent/pkg/network/testutil"
+	"os/exec"
 	"strings"
 	"testing"
-
-	nettestutil "github.com/DataDog/datadog-agent/pkg/network/testutil"
 )
 
 // SetupDNAT sets up a NAT translation from:
@@ -26,7 +29,7 @@ func SetupDNAT(t *testing.T) {
 		"iptables -t nat -A OUTPUT --dest 2.2.2.2 -j DNAT --to-destination 1.1.1.1",
 		"iptables -t nat -A PREROUTING --dest 3.3.3.3 -j DNAT --to-destination 1.1.1.1",
 	}
-	nettestutil.RunCommands(t, cmds, false)
+	RunCommands(t, cmds, false)
 }
 
 // TeardownDNAT cleans up the resources created by SetupDNAT
@@ -40,7 +43,7 @@ func TeardownDNAT(t *testing.T) {
 		// clear out the conntrack table
 		"conntrack -F",
 	}
-	nettestutil.RunCommands(t, cmds, true)
+	RunCommands(t, cmds, true)
 }
 
 func getDefaultInterfaceName(t *testing.T) string {
@@ -64,7 +67,7 @@ func SetupDNAT6(t *testing.T) {
 		"ip -6 route add fd00::2 dev " + ifName,
 		"ip6tables -t nat -A OUTPUT --dest fd00::2 -j DNAT --to-destination fd00::1",
 	}
-	nettestutil.RunCommands(t, cmds, false)
+	RunCommands(t, cmds, false)
 }
 
 // TeardownDNAT6 cleans up the resources created by SetupDNAT6
@@ -80,7 +83,7 @@ func TeardownDNAT6(t *testing.T) {
 		// clear out the conntrack table
 		"conntrack -F",
 	}
-	nettestutil.RunCommands(t, cmds, true)
+	RunCommands(t, cmds, true)
 }
 
 // SetupVethPair sets up a network namespace, named "test", along with two IP addresses
@@ -97,7 +100,7 @@ func SetupVethPair(t *testing.T) {
 		"ip -n test link set veth2 up",
 		"ip netns exec test ip route add default via 2.2.2.3",
 	}
-	nettestutil.RunCommands(t, cmds, false)
+	RunCommands(t, cmds, false)
 }
 
 // TeardownVethPair cleans up the resources created by SetupVethPair
@@ -107,7 +110,7 @@ func TeardownVethPair(t *testing.T) {
 		"ip -n test link del veth2",
 		"ip netns del test",
 	}
-	nettestutil.RunCommands(t, cmds, true)
+	RunCommands(t, cmds, true)
 }
 
 // SetupCrossNsDNAT sets up a network namespace, named "test", a veth pair, and a NAT
@@ -124,7 +127,7 @@ func SetupCrossNsDNAT(t *testing.T) {
 		"ip netns exec test iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 8080",
 		"ip netns exec test iptables -A PREROUTING -t nat -p udp --dport 80 -j REDIRECT --to-port 8080",
 	}
-	nettestutil.RunCommands(t, cmds, false)
+	RunCommands(t, cmds, false)
 }
 
 // TeardownCrossNsDNAT cleans up the resources created by SetupCrossNsDNAT
@@ -136,5 +139,26 @@ func TeardownCrossNsDNAT(t *testing.T) {
 
 		"conntrack -F",
 	}
-	nettestutil.RunCommands(t, cmds, true)
+	RunCommands(t, cmds, true)
+}
+
+// RunCommands runs each command in cmds individually and returns the output
+// as a []string, with each element corresponding to the respective command.
+// If ignoreErrors is true, it will fail the test via t.Fatal immediately upon error.
+// Otherwise, the output on errors will be logged via t.Log.
+func RunCommands(t *testing.T, cmds []string, ignoreErrors bool) []string {
+	t.Helper()
+	var output []string
+
+	for _, c := range cmds {
+		args := strings.Split(c, " ")
+		c := exec.Command(args[0], args[1:]...)
+		out, err := c.CombinedOutput()
+		output = append(output, string(out))
+		if err != nil && !ignoreErrors {
+			t.Fatalf("%s returned %s: %s", c, err, out)
+			return nil
+		}
+	}
+	return output
 }

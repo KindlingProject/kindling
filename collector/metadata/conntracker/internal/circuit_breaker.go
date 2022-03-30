@@ -3,14 +3,16 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+// Modification: Replace github.com/DataDog/datadog-agent/pkg/util/log with log package to
+// remove logs with trace/debug level.
+
 package internal
 
 import (
+	"log"
 	"math"
 	"sync/atomic"
 	"time"
-
-	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -136,7 +138,7 @@ func (c *CircuitBreaker) update(now time.Time) {
 
 	// Update circuit breaker status accordingly
 	if int64(newEventRate) > c.maxEventsPerSec {
-		log.Warnf(
+		log.Printf(
 			"exceeded maximum number of netlink messages per second. expected=%d actual=%d",
 			c.maxEventsPerSec,
 			int(newEventRate),

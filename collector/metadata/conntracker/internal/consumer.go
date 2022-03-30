@@ -3,6 +3,10 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+// Modification:
+// 1. Replace log package and remove logs with trace/debug level.
+// 2. Remove the dependencies of pkg/process/util, process/util/kernel, process/util/log
+
 //go:build linux && !android
 // +build linux,!android
 
@@ -10,15 +14,13 @@ package internal
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
 
-	"github.com/DataDog/datadog-agent/pkg/process/util"
-	"github.com/DataDog/datadog-agent/pkg/util/kernel"
-	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/mdlayher/netlink"
 	"github.com/pkg/errors"
 	"github.com/vishvananda/netns"
@@ -55,8 +57,8 @@ var errShortErrorMessage = errors.New("not enough data for netlink error code")
 var pre315Kernel bool
 
 func init() {
-	if vers, err := kernel.HostVersion(); err == nil {
-		pre315Kernel = vers < kernel.VersionCode(3, 15, 0)
+	if vers, err := HostVersion(); err == nil {
+		pre315Kernel = vers < VersionCode(3, 15, 0)
 	}
 }
 
@@ -145,7 +147,7 @@ func (c *Consumer) Events() (<-chan Event, error) {
 
 	go func() {
 		defer func() {
-			log.Info("exited conntrack netlink receive loop")
+			log.Println("exited conntrack netlink receive loop")
 			close(output)
 		}()
 
@@ -164,7 +166,7 @@ func (c *Consumer) isPeerNS(conn *netlink.Conn, ns netns.NsHandle) bool {
 	encoder.Uint32(unix.NETNSA_FD, uint32(ns))
 	data, err := encoder.Encode()
 	if err != nil {
-		log.Errorf("isPeerNS: err encoding attributes netlink attributes: %s", err)
+		log.Printf("isPeerNS: err encoding attributes netlink attributes: %s", err)
 		return false
 	}
 
@@ -180,17 +182,15 @@ func (c *Consumer) isPeerNS(conn *netlink.Conn, ns netns.NsHandle) bool {
 	msg.Data = append(msg.Data, data...)
 
 	if msg, err = conn.Send(msg); err != nil {
-		log.Errorf("isPeerNS: err sending netlink request: %s", err)
+		log.Printf("isPeerNS: err sending netlink request: %s", err)
 		return false
 	}
 
 	msgs, err := conn.Receive()
 	if err != nil {
-		log.Errorf("isPeerNS: error receiving netlink reply: %s", err)
+		log.Printf("isPeerNS: error receiving netlink reply: %s", err)
 		return false
 	}
-
-	log.Tracef("netlink reply: %v", msgs)
 
 	if msgs[0].Header.Type == netlink.Error {
 		return false
@@ -222,13 +222,13 @@ func (c *Consumer) DumpTable(family uint8) (<-chan Event, error) {
 	var nss []netns.NsHandle
 	var err error
 	if c.listenAllNamespaces {
-		nss, err = util.GetNetNamespaces(c.procRoot)
+		nss, err = GetNetNamespaces(c.procRoot)
 		if err != nil {
 			return nil, fmt.Errorf("error dumping conntrack table, could not get network namespaces: %w", err)
 		}
 	}
 
-	rootNS, err := util.GetRootNetNamespace(c.procRoot)
+	rootNS, err := GetRootNetNamespace(c.procRoot)
 	if err != nil {
 		return nil, fmt.Errorf("error dumping conntrack table, could not get root namespace: %w", err)
 	}
@@ -255,7 +255,7 @@ func (c *Consumer) DumpTable(family uint8) (<-chan Event, error) {
 
 		// root ns first
 		if err := c.dumpTable(family, output, rootNS); err != nil {
-			log.Errorf("error dumping conntrack table for root namespace, some NAT info may be missing: %s", err)
+			log.Printf("error dumping conntrack table for root namespace, some NAT info may be missing: %s", err)
 		}
 
 		for _, ns := range nss {
@@ -265,12 +265,11 @@ func (c *Consumer) DumpTable(family uint8) (<-chan Event, error) {
 			}
 
 			if !c.isPeerNS(conn, ns) {
-				log.Tracef("not dumping ns %s since it is not a peer of the root ns", ns)
 				continue
 			}
 
 			if err := c.dumpTable(family, output, ns); err != nil {
-				log.Errorf("error dumping conntrack table for namespace %d: %s", ns, err)
+				log.Printf("error dumping conntrack table for namespace %d: %s", ns, err)
 			}
 		}
 	}()
@@ -279,9 +278,7 @@ func (c *Consumer) DumpTable(family uint8) (<-chan Event, error) {
 }
 
 func (c *Consumer) dumpTable(family uint8, output chan Event, ns netns.NsHandle) error {
-	return util.WithNS(c.procRoot, ns, func() error {
-
-		log.Tracef("dumping table for ns %s family %d", ns, family)
+	return WithNS(c.procRoot, ns, func() error {
 
 		sock, err := NewSocket()
 		if err != nil {
@@ -337,7 +334,7 @@ func (c *Consumer) Stop() {
 }
 
 func (c *Consumer) initNetlinkSocket(samplingRate float64) error {
-	err := util.WithRootNS(c.procRoot, func() error {
+	err := WithRootNS(c.procRoot, func() error {
 		var err error
 		c.socket, err = NewSocket()
 		return err
@@ -353,16 +350,16 @@ func (c *Consumer) initNetlinkSocket(samplingRate float64) error {
 	// set a value higher than /proc/sys/net/core/rmem_default (which is around 200kb for most systems)
 	// if you use SO_RCVBUFFORCE with CAP_NET_ADMIN (https://linux.die.net/man/7/socket).
 	if err := c.socket.SetSockoptInt(syscall.SOL_SOCKET, syscall.SO_RCVBUFFORCE, netlinkBufferSize); err != nil {
-		log.Errorf("error setting rcv buffer size for netlink socket: %s", err)
+		log.Printf("error setting rcv buffer size for netlink socket: %s", err)
 	}
 
 	if size, err := c.socket.GetSockoptInt(syscall.SOL_SOCKET, syscall.SO_RCVBUF); err == nil {
-		log.Debugf("rcv buffer size for netlink socket is %d bytes", size)
+		log.Printf("rcv buffer size for netlink socket is %d bytes", size)
 	}
 
 	if c.listenAllNamespaces {
 		if err := c.socket.SetSockoptInt(unix.SOL_NETLINK, unix.NETLINK_LISTEN_ALL_NSID, 1); err != nil {
-			log.Errorf("error enabling listen for all namespaces on netlink socket: %s", err)
+			log.Printf("error enabling listen for all namespaces on netlink socket: %s", err)
 		}
 	}
 
@@ -373,7 +370,7 @@ func (c *Consumer) initNetlinkSocket(samplingRate float64) error {
 		return nil
 	}
 
-	log.Infof("attaching netlink BPF filter with sampling rate: %.2f", c.samplingRate)
+	log.Printf("attaching netlink BPF filter with sampling rate: %.2f", c.samplingRate)
 	sampler, _ := GenerateBPFSampler(c.samplingRate)
 	err = c.socket.SetBPF(sampler)
 	if err != nil {
@@ -408,7 +405,6 @@ ReadLoop:
 		msgs, netns, err := c.socket.ReceiveInto(*buffer)
 
 		if err != nil {
-			log.Tracef("consumer netlink socket error: %s", err)
 			switch socketError(err) {
 			case errEOF:
 				// EOFs are usually indicative of normal program termination, so we simply exit
@@ -421,7 +417,7 @@ ReadLoop:
 		}
 
 		if err := c.throttle(len(msgs)); err != nil {
-			log.Errorf("exiting conntrack netlink consumer loop due to throttling error: %s", err)
+			log.Printf("exiting conntrack netlink consumer loop due to throttling error: %s", err)
 			return
 		}
 
@@ -479,7 +475,7 @@ func (c *Consumer) throttle(numMessages int) error {
 	if pre315Kernel {
 		// we cannot recreate the socket and set a bpf filter on
 		// kernels before 3.15, so we bail here
-		log.Errorf("conntrack sampling not supported on kernel versions < 3.15. Please adjust system_probe_config.conntrack_rate_limit (currently set to %d) to accommodate higher conntrack update rate detected", c.targetRateLimit)
+		log.Printf("conntrack sampling not supported on kernel versions < 3.15. Please adjust system_probe_config.conntrack_rate_limit (currently set to %d) to accommodate higher conntrack update rate detected", c.targetRateLimit)
 		return fmt.Errorf("conntrack sampling rate not supported")
 	}
 
@@ -488,7 +484,7 @@ func (c *Consumer) throttle(numMessages int) error {
 	samplingRate := (float64(c.targetRateLimit) / float64(c.breaker.Rate())) * c.samplingRate * overshootFactor
 	err := c.initNetlinkSocket(samplingRate)
 	if err != nil {
-		log.Errorf("failed to re-create netlink socket. exiting conntrack: %s", err)
+		log.Printf("failed to re-create netlink socket. exiting conntrack: %s", err)
 		return err
 	}
 

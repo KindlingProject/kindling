@@ -1,9 +1,26 @@
 package internal
 
 import (
-	"github.com/DataDog/datadog-agent/pkg/process/util"
 	"net"
 )
+
+// ConnectionType will be either TCP or UDP
+type ConnectionType uint8
+
+const (
+	// TCP connection type
+	TCP ConnectionType = 0
+
+	// UDP connection type
+	UDP ConnectionType = 1
+)
+
+func (c ConnectionType) String() string {
+	if c == TCP {
+		return "TCP"
+	}
+	return "UDP"
+}
 
 type IPTranslation struct {
 	ReplSrcIP   net.IP
@@ -14,10 +31,10 @@ type IPTranslation struct {
 
 // ConnectionStats stores statistics for a single connection.  Field order in the struct should be 8-byte aligned
 type ConnectionStats struct {
-	Source util.Address
-	Dest   util.Address
+	Source net.IP
+	Dest   net.IP
 
 	SPort uint16
 	DPort uint16
-	Type  uint8
+	Type  ConnectionType
 }
