@@ -277,9 +277,9 @@ func TestConntrackCacheAdd(t *testing.T) {
 		}{
 			{
 				k: connKey{
-					srcIP:   net.ParseIP("1.1.1.1"),
+					srcIP:   AddressFromString("1.1.1.1"),
 					srcPort: 12345,
-					dstIP:   net.ParseIP("3.3.3.3"),
+					dstIP:   AddressFromString("3.3.3.3"),
 					dstPort: 80,
 				},
 				expectedReplSrcIP:   "2.2.2.2",
@@ -287,9 +287,9 @@ func TestConntrackCacheAdd(t *testing.T) {
 			},
 			{
 				k: connKey{
-					srcIP:   net.ParseIP("2.2.2.2"),
+					srcIP:   AddressFromString("2.2.2.2"),
 					srcPort: 80,
-					dstIP:   net.ParseIP("1.1.1.1"),
+					dstIP:   AddressFromString("1.1.1.1"),
 					dstPort: 12345,
 				},
 				expectedReplSrcIP:   "1.1.1.1",
@@ -355,9 +355,9 @@ func TestConntrackCacheAdd(t *testing.T) {
 		}{
 			{
 				k: connKey{
-					srcIP:   net.ParseIP("1.1.1.1"),
+					srcIP:   AddressFromString("1.1.1.1"),
 					srcPort: 12345,
-					dstIP:   net.ParseIP("3.3.3.3"),
+					dstIP:   AddressFromString("3.3.3.3"),
 					dstPort: 80,
 				},
 				expectedReplSrcIP:   "4.4.4.4",
@@ -365,9 +365,9 @@ func TestConntrackCacheAdd(t *testing.T) {
 			},
 			{
 				k: connKey{
-					srcIP:   net.ParseIP("4.4.4.4"),
+					srcIP:   AddressFromString("4.4.4.4"),
 					srcPort: 80,
-					dstIP:   net.ParseIP("1.1.1.1"),
+					dstIP:   AddressFromString("1.1.1.1"),
 					dstPort: 12345,
 				},
 				expectedReplSrcIP:   "1.1.1.1",
@@ -375,9 +375,9 @@ func TestConntrackCacheAdd(t *testing.T) {
 			},
 			{
 				k: connKey{
-					srcIP:   net.ParseIP("2.2.2.2"),
+					srcIP:   AddressFromString("2.2.2.2"),
 					srcPort: 80,
-					dstIP:   net.ParseIP("1.1.1.1"),
+					dstIP:   AddressFromString("1.1.1.1"),
 					dstPort: 12345,
 				},
 				expectedReplSrcIP:   "1.1.1.1",

@@ -17,7 +17,6 @@ import (
 	"container/list"
 	"fmt"
 	"log"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -42,10 +41,10 @@ type Conntracker interface {
 }
 
 type connKey struct {
-	srcIP   net.IP
+	srcIP   Address
 	srcPort uint16
 
-	dstIP   net.IP
+	dstIP   Address
 	dstPort uint16
 
 	// the transport protocol of the connection, using the same values as specified in the agent payload.
@@ -143,9 +142,9 @@ func (ctr *realConntracker) GetTranslationForConn(c ConnectionStats) *IPTranslat
 	defer ctr.Unlock()
 
 	k := connKey{
-		srcIP:     c.Source,
+		srcIP:     AddressFromNetIP(c.Source),
 		srcPort:   c.SPort,
-		dstIP:     c.Dest,
+		dstIP:     AddressFromNetIP(c.Dest),
 		dstPort:   c.DPort,
 		transport: c.Type,
 	}
@@ -211,9 +210,9 @@ func (ctr *realConntracker) DeleteTranslation(c ConnectionStats) {
 	defer ctr.Unlock()
 
 	k := connKey{
-		srcIP:     c.Source,
+		srcIP:     AddressFromNetIP(c.Source),
 		srcPort:   c.SPort,
-		dstIP:     c.Dest,
+		dstIP:     AddressFromNetIP(c.Dest),
 		dstPort:   c.DPort,
 		transport: c.Type,
 	}
@@ -440,8 +439,8 @@ func formatIPTranslation(tuple *ct.IPTuple) *IPTranslation {
 
 func formatKey(tuple *ct.IPTuple) (k connKey, ok bool) {
 	ok = true
-	k.srcIP = *tuple.Src
-	k.dstIP = *tuple.Dst
+	k.srcIP = AddressFromNetIP(*tuple.Src)
+	k.dstIP = AddressFromNetIP(*tuple.Dst)
 	k.srcPort = *tuple.Proto.SrcPort
 	k.dstPort = *tuple.Proto.DstPort
 
