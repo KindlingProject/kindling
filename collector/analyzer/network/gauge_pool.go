@@ -2,6 +2,7 @@ package network
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"sync"
 	"time"
@@ -17,7 +18,7 @@ func createGaugeGroup() interface{} {
 		{Name: constvalues.RequestIo, Value: 0},
 		{Name: constvalues.ResponseIo, Value: 0},
 	}
-	gaugeGroup := model.NewGaugeGroup("", model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
+	gaugeGroup := model.NewGaugeGroup(constlabels.NetWorkAnalyzeGaugeGroup, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
 	return gaugeGroup
 }
 

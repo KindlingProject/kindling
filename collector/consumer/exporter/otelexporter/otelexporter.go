@@ -7,6 +7,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -62,6 +63,7 @@ type OtelOutputExporters struct {
 }
 
 type OtelExporter struct {
+	cfg                  *Config
 	metricController     *controller.Controller
 	traceProvider        *sdktrace.TracerProvider
 	defaultTracer        trace.Tracer
@@ -69,6 +71,7 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
+	adapterManager       *BaseAdapterManager
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
@@ -134,6 +137,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		}
 
 		otelexporter = &OtelExporter{
+			cfg:                  cfg,
 			metricController:     c,
 			traceProvider:        nil,
 			defaultTracer:        nil,
@@ -141,6 +145,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			adapterManager:       createBaseAdapterManager(customLabels),
 		}
 		go func() {
 			err := StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
@@ -191,6 +196,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		tracer := tracerProvider.Tracer(TracerName)
 
 		otelexporter = &OtelExporter{
+			cfg:                  cfg,
 			metricController:     cont,
 			traceProvider:        tracerProvider,
 			defaultTracer:        tracer,
@@ -198,6 +204,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			adapterManager:       createBaseAdapterManager(customLabels),
 		}
 
 		if err = cont.Start(context.Background()); err != nil {
@@ -220,6 +227,38 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 			zap.String("gaugeGroup", gaugeGroup.String()),
 		)
 	}
+
+	// Only networkAnalyzer gauges will be adapterd
+	if gaugeGroup.Name == constlabels.NetWorkAnalyzeGaugeGroup {
+		e.pushMetric(gaugeGroup)
+
+		// TODO NeedTraceAsMetric
+		//if e.cfg.AdapterConfig.NeedTraceAsMetric {
+		//	e.instrumentFactory.recordGaugeAsync(constlabels.ToKindlingTraceAsMetricName(), model.GaugeGroup{
+		//		Values:    []*model.Gauge{value},
+		//		Labels:    gaugeGroup.Labels,
+		//		Timestamp: gaugeGroup.Timestamp,
+		//	})
+		//}
+
+		if e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
+			if e.defaultTracer == nil {
+				return errors.New("send span failed: this exporter can not support Span Data")
+			} else {
+				attrs, _ := e.adapterManager.traceToSpanAdapter.adapter(gaugeGroup.Labels, gaugeGroup)
+				_, span := e.defaultTracer.Start(
+					context.Background(),
+					constvalues.SpanInfo,
+					apitrace.WithAttributes(attrs...),
+				)
+				span.End()
+			}
+		}
+
+		return nil
+	}
+
+	// For Other metric
 	if gaugeGroup.Name == constvalues.SpanInfo {
 		if e.defaultTracer == nil {
 			return errors.New("send span failed: this exporter can not support Span Data")
@@ -228,6 +267,28 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 	} else {
 		return e.PushMetric(gaugeGroup)
 	}
+}
+
+func (e *OtelExporter) pushMetric(gaugeGroup *model.GaugeGroup) {
+	var metricAdapter *Adapter
+	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
+	if e.cfg.AdapterConfig.NeedPodDetail {
+		if isServer {
+			metricAdapter = e.adapterManager.detailEntityAdapter
+		} else {
+			metricAdapter = e.adapterManager.detailTopologyAdapter
+		}
+	} else {
+		if isServer {
+			metricAdapter = e.adapterManager.aggEntityAdapter
+		} else {
+			metricAdapter = e.adapterManager.aggTopologyAdapter
+		}
+	}
+
+	// TODO deal with error
+	attrs, _ := metricAdapter.adapter(gaugeGroup.Labels, gaugeGroup)
+	e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup.Values, isServer)...)
 }
 
 func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
@@ -352,3 +413,13 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 	}
 	return
 }(exponentialInt64Boundaries)
+
+func (e *OtelExporter) GetMetricMeasurement(gauges []*model.Gauge, isServer bool) []metric.Measurement {
+	// TODO Label to Measurement
+	measurements := make([]metric.Measurement, 0, len(gauges))
+	for i := 0; i < len(gauges); i++ {
+		name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
+		measurements = append(measurements, e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value))
+	}
+	return measurements
+}

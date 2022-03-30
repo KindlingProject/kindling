@@ -95,6 +95,8 @@ const (
 	SpanMysqlSql       = "mysql.sql"
 	SpanMysqlErrorCode = "mysql.error_code"
 	SpanMysqlErrorMsg  = "mysql.error_msg"
+
+	NetWorkAnalyzeGaugeGroup = "netAnalyzeGauges"
 )
 const (
 	STR_EMPTY = ""

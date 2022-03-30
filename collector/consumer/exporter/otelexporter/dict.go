@@ -236,7 +236,7 @@ var traceSpanStatus = []dictionary{
 	{constlabels.Timestamp, constlabels.STR_EMPTY, Int64},
 }
 
-func getTraceSpanStatusLabels(gaugeGroup model.GaugeGroup) []attribute.Value {
+func getTraceSpanStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.Value {
 	valueLabels := make([]attribute.Value, 0, 11)
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		switch gaugeGroup.Values[i].Name {
@@ -271,7 +271,7 @@ var traceStatus = []dictionary{
 	{constlabels.IsServer, constlabels.STR_EMPTY, Bool},
 }
 
-func getTraceStatusLabels(gaugeGroup model.GaugeGroup) []attribute.Value {
+func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.Value {
 	var requestSend, waitingTtfb, contentDownload, requestTotalTime int64
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		if gaugeGroup.Values[i].Name == constvalues.RequestSentTime {

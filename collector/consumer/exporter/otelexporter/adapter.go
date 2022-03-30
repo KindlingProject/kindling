@@ -3,18 +3,14 @@ package otelexporter
 import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
-	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"strconv"
 )
 
-type metricAdapter struct {
+type Adapter struct {
 	// labelsMap key: protocolType value: a list of realAttributes
-	labelsMap            map[extraLabelsKey]realAttributes
-	metricAggregationMap map[string]MetricAggregationKind
-	isServer             bool
-	updateKeys           []updateKey
+	labelsMap  map[extraLabelsKey]realAttributes
+	updateKeys []updateKey
 
 	// valueLabelKey dic won't contain origin Key
 	valueLabelsFunc valueToLabels
@@ -25,8 +21,6 @@ type metricAdapter struct {
 
 type metricAdapterBuilder struct {
 	baseAndCommonLabelsDict []dictionary
-	metricAggregationMap    map[string]MetricAggregationKind
-	isServer                bool
 
 	extraLabelsParamList []extraLabelsParam
 	extraLabelsKey       []extraLabelsKey
@@ -75,7 +69,7 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 	return key
 }
 
-type valueToLabels func(gaugeGroup model.GaugeGroup) []attribute.Value
+type valueToLabels func(gaugeGroup *model.GaugeGroup) []attribute.Value
 type updateKey func(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey
 type adjustLabels func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue
 
@@ -100,9 +94,7 @@ func (param *extraLabelsParam) simpleMergeParam(extraParams *extraLabelsParam) *
 
 func newAdapterBuilder(
 	baseDict []dictionary,
-	commonLabels [][]dictionary,
-	metricAggregationMap map[string]MetricAggregationKind,
-	isServer bool) *metricAdapterBuilder {
+	commonLabels [][]dictionary) *metricAdapterBuilder {
 
 	baseLabels := make([]attribute.KeyValue, len(baseDict))
 	// baseLabels
@@ -121,8 +113,6 @@ func newAdapterBuilder(
 
 	return &metricAdapterBuilder{
 		baseAndCommonLabelsDict: baseDict,
-		metricAggregationMap:    metricAggregationMap,
-		isServer:                isServer,
 		extraLabelsKey:          make([]extraLabelsKey, 0),
 		adjustLabels:            make([]adjustLabels, 0),
 	}
@@ -180,7 +170,7 @@ func (m *metricAdapterBuilder) withAdjust(adjustFunc adjustLabels) *metricAdapte
 	return m
 }
 
-func (m *metricAdapterBuilder) build() (*metricAdapter, error) {
+func (m *metricAdapterBuilder) build() (*Adapter, error) {
 	labelsMap := make(map[extraLabelsKey]realAttributes, len(m.extraLabelsKey))
 	baseAndCommonParams := make([]attribute.KeyValue, 0, len(m.baseAndCommonLabelsDict))
 
@@ -220,17 +210,15 @@ func (m *metricAdapterBuilder) build() (*metricAdapter, error) {
 		}
 	}
 
-	return &metricAdapter{
-		labelsMap:            labelsMap,
-		metricAggregationMap: m.metricAggregationMap,
-		isServer:             m.isServer,
-		updateKeys:           m.updateKeys,
-		valueLabelsFunc:      m.valueLabelsFunc,
-		adjustLabels:         m.adjustLabels,
+	return &Adapter{
+		labelsMap:       labelsMap,
+		updateKeys:      m.updateKeys,
+		valueLabelsFunc: m.valueLabelsFunc,
+		adjustLabels:    m.adjustLabels,
 	}, nil
 }
 
-func (m *metricAdapter) adapter(labels *model.AttributeMap, group model.GaugeGroup) ([]attribute.KeyValue, error) {
+func (m *Adapter) adapter(labels *model.AttributeMap, group *model.GaugeGroup) ([]attribute.KeyValue, error) {
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
 		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
@@ -263,26 +251,4 @@ func (m *metricAdapter) adapter(labels *model.AttributeMap, group model.GaugeGro
 		attrs.paramMap = m.adjustLabels[i](labels, attrs.paramMap)
 	}
 	return attrs.paramMap, nil
-}
-
-func (m *metricAdapter) GetMetricMeasurement(insFactory *instrumentFactory, gauges []model.Gauge) []metric.Measurement {
-	// TODO Label to Measurement
-	measurements := make([]metric.Measurement, 0, len(gauges))
-	for i := 0; i < len(gauges); i++ {
-		name := constlabels.ToKindlingMetricName(gauges[i].Name, m.isServer)
-		measurements = append(measurements, insFactory.getInstrument(name, m.metricAggregationMap[name]).Measurement(gauges[i].Value))
-	}
-	return measurements
-}
-
-func (m *metricAdapter) GetTraceAsMetricMeasurement(insFactory *instrumentFactory, gauges []model.Gauge) []metric.Measurement {
-	measurements := make([]metric.Measurement, 0, 1)
-	name := constlabels.ToKindlingTraceAsMetricName()
-	for i := 0; i < len(gauges); i++ {
-		if gauges[i].Name == constvalues.RequestTotalTime {
-			measurements[0] = insFactory.getInstrument(name, m.metricAggregationMap[name]).Measurement(gauges[i].Value)
-			break
-		}
-	}
-	return measurements
 }

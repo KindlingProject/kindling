@@ -11,6 +11,7 @@ type Config struct {
 	StdoutCfg            *StdoutConfig                    `mapstructure:"stdout"`
 	CustomLabels         map[string]string                `mapstructure:"custom_labels"`
 	MetricAggregationMap map[string]MetricAggregationKind `mapstructure:"metric_aggregation_map"`
+	AdapterConfig        *AdapterConfig                   `mapstructure:"adapter_config"`
 }
 
 type PrometheusConfig struct {
