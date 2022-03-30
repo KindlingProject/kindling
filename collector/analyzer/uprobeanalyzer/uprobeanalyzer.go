@@ -46,7 +46,7 @@ func NewUprobeAnalyzer(config interface{}, telemetry *component.TelemetryTools, 
 	}
 	conntracker, err := conntrackerpackge.NewConntracker(nil)
 	if err != nil {
-		telemetry.Logger.Warn("Failed to create UprobeAnalyzer: ", zap.Error(err))
+		telemetry.Logger.Warn("Conntracker cannot work as expected:", zap.Error(err))
 	}
 	retAnalyzer.conntracker = conntracker
 	return retAnalyzer
