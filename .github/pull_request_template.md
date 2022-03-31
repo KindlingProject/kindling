@@ -5,12 +5,11 @@
 
 ## Related Issue
 <!--- If suggesting a new feature or change, please discuss it in an issue first -->
-<!--- If fixing a bug, there should be an issue describing it with details -->
+<!--- If fixing a bug, there should be an open issue describing it with details -->
 <!--- Please link to the issue here: -->
 
 ## Motivation and Context
 <!--- Why is this change required? What problem does it solve? -->
-<!--- If it fixes an open issue, please link to the issue here. -->
 
 ## How Has This Been Tested?
 <!--- Please describe in detail how you tested your changes. -->
