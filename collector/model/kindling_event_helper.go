@@ -46,7 +46,7 @@ func (x *KindlingEvent) GetDataLen() int {
 func (x *KindlingEvent) GetResVal() int64 {
 	keyValue := x.GetUserAttribute("res")
 	if keyValue != nil {
-		return int64(binary.BigEndian.Uint64(keyValue.GetValue()))
+		return int64(byteOrder.Uint64(keyValue.Value))
 	}
 	return -1
 }
@@ -54,7 +54,7 @@ func (x *KindlingEvent) GetResVal() int64 {
 func (x *KindlingEvent) GetLatency() uint64 {
 	keyValue := x.GetUserAttribute("latency")
 	if keyValue != nil {
-		return binary.BigEndian.Uint64(keyValue.GetValue())
+		return byteOrder.Uint64(keyValue.Value)
 	}
 	return 0
 }
