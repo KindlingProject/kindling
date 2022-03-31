@@ -472,12 +472,12 @@ func (c *Consumer) throttle(numMessages int) error {
 	c.conn.Close()
 	c.conn = nil
 
-	if pre315Kernel {
-		// we cannot recreate the socket and set a bpf filter on
-		// kernels before 3.15, so we bail here
-		log.Printf("conntrack sampling not supported on kernel versions < 3.15. Please adjust system_probe_config.conntrack_rate_limit (currently set to %d) to accommodate higher conntrack update rate detected", c.targetRateLimit)
-		return fmt.Errorf("conntrack sampling rate not supported")
-	}
+	// if pre315Kernel {
+	// 	// we cannot recreate the socket and set a bpf filter on
+	// 	// kernels before 3.15, so we bail here
+	// 	log.Printf("conntrack sampling not supported on kernel versions < 3.15. Please adjust system_probe_config.conntrack_rate_limit (currently set to %d) to accommodate higher conntrack update rate detected", c.targetRateLimit)
+	// 	return fmt.Errorf("conntrack sampling rate not supported")
+	// }
 
 	// Create new socket with the desired sampling rate
 	// We calculate the required sampling rate to reach the target maxMessagesPersecond
