@@ -14,7 +14,18 @@ const (
 
 var (
 	ErrMessageNotSocket = errors.New("not a network receive/send event")
+	byteOrder           = getByteOrder()
 )
+
+func getByteOrder() binary.ByteOrder {
+	// Check if littleendian or bigendian
+	s := int16(0x1234)
+	littleVal := byte(0x34)
+	if littleVal == byte(int8(s)) {
+		return binary.LittleEndian
+	}
+	return binary.BigEndian
+}
 
 func (x *KindlingEvent) GetData() []byte {
 	keyValue := x.GetUserAttribute("data")
@@ -48,12 +59,54 @@ func (x *KindlingEvent) GetLatency() uint64 {
 	return 0
 }
 
-func (x *KindlingEvent) GetUint64UserAtrribute(key string) uint64 {
+func (x *KindlingEvent) GetUintUserAtrribute(key string) uint64 {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil {
-		return binary.BigEndian.Uint64(keyValue.GetValue())
+		switch keyValue.ValueType {
+		case ValueType_UINT8:
+			return uint64(keyValue.Value[0])
+		case ValueType_UINT16:
+			return uint64(byteOrder.Uint16(keyValue.Value))
+		case ValueType_UINT32:
+			return uint64(byteOrder.Uint32(keyValue.Value))
+		case ValueType_UINT64:
+			return byteOrder.Uint64(keyValue.Value)
+		}
 	}
 	return 0
+}
+
+func (x *KindlingEvent) GetIntUserAtrribute(key string) int64 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil {
+		switch keyValue.ValueType {
+		case ValueType_INT8:
+			return int64(int8(keyValue.Value[0]))
+		case ValueType_INT16:
+			return int64(int16(byteOrder.Uint16(keyValue.Value)))
+		case ValueType_INT32:
+			return int64(int32(byteOrder.Uint32(keyValue.Value)))
+		case ValueType_INT64:
+			return int64(byteOrder.Uint64(keyValue.Value))
+		}
+	}
+	return 0
+}
+
+func (x *KindlingEvent) GetFloatUserAtrribute(key string) float32 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil && keyValue.ValueType == ValueType_FLOAT {
+		return math.Float32frombits(byteOrder.Uint32(keyValue.Value))
+	}
+	return 0.0
+}
+
+func (x *KindlingEvent) GetDoubleUserAtrribute(key string) float64 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil && keyValue.ValueType == ValueType_FLOAT {
+		return math.Float64frombits(byteOrder.Uint64(keyValue.Value))
+	}
+	return 0.0
 }
 
 func (x *KindlingEvent) GetStringUserAtrribute(key string) string {

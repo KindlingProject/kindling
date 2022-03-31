@@ -63,20 +63,20 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		return nil
 	}
 
-	role := event.GetUint64UserAtrribute("trace_role")
-	pid := event.GetUint64UserAtrribute("pid")
-	fd := event.GetUint64UserAtrribute("fd")
+	role := event.GetIntUserAtrribute("trace_role")
+	pid := event.GetIntUserAtrribute("pid")
+	fd := event.GetIntUserAtrribute("fd")
 	if role != clientRole && role != serverRole {
-		a.telemetry.Logger.Warn("Skip a Event: UprobeAnalyzer received a unexpected role event", zap.Uint64("pid", pid), zap.Uint64("fd", fd))
+		a.telemetry.Logger.Warn("Skip a Event: UprobeAnalyzer received a unexpected role event", zap.Int64("pid", pid), zap.Int64("fd", fd))
 		return nil
 	}
 
 	remoteIp := event.GetStringUserAtrribute("remote_addr")
-	remotePort := event.GetUint64UserAtrribute("remote_port")
+	remotePort := event.GetIntUserAtrribute("remote_port")
 	containerId := event.GetStringUserAtrribute("containerid")
 	reqMethod := event.GetStringUserAtrribute("req_method")
 	reqPath := event.GetStringUserAtrribute("req_path")
-	statusCode := event.GetUint64UserAtrribute("resp_status")
+	statusCode := event.GetIntUserAtrribute("resp_status")
 	reqBody := event.GetUserAttribute("req_body").GetValue()
 	respBody := event.GetUserAttribute("resp_body").GetValue()
 
@@ -85,7 +85,7 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	isSlow := latency >= a.cfg.ResponseSlowThreshold*MillisecondToNanosecond
 
 	labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-		constlabels.Pid:                 model.NewIntValue(int64(pid)),
+		constlabels.Pid:                 model.NewIntValue(pid),
 		constlabels.DnatIp:              model.NewStringValue(constlabels.STR_EMPTY),
 		constlabels.DnatPort:            model.NewIntValue(-1),
 		constlabels.ContainerId:         model.NewStringValue(containerId),
@@ -95,7 +95,7 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		constlabels.HttpUrl:             model.NewStringValue(reqPath),
 		constlabels.HttpRequestPayload:  model.NewStringValue(string(reqBody)),
 		constlabels.HttpResponsePayload: model.NewStringValue(string(respBody)),
-		constlabels.HttpStatusCode:      model.NewIntValue(int64(statusCode)),
+		constlabels.HttpStatusCode:      model.NewIntValue(statusCode),
 		constlabels.ContentKey:          model.NewStringValue(getContentKey(reqPath)),
 	})
 
@@ -108,16 +108,16 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		srcIp := event.GetUserAttribute("src_ip")
 		srcPort := event.GetUserAttribute("src_port")
 		var srcIpValue string
-		var srcPortValue uint64
+		var srcPortValue int64
 		if srcIp != nil && srcPort != nil {
 			srcIpValue = string(srcIp.Value)
-			srcPortValue = event.GetUint64UserAtrribute("src_port")
+			srcPortValue = event.GetIntUserAtrribute("src_port")
 		}
 		labels.Merge(model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcIp:    model.NewStringValue(srcIpValue),
 			constlabels.DstIp:    model.NewStringValue(remoteIp),
-			constlabels.SrcPort:  model.NewIntValue(int64(srcPortValue)),
-			constlabels.DstPort:  model.NewIntValue(int64(remotePort)),
+			constlabels.SrcPort:  model.NewIntValue(srcPortValue),
+			constlabels.DstPort:  model.NewIntValue(remotePort),
 			constlabels.IsServer: model.NewBoolValue(false),
 		}))
 		// Find dst NAT information
@@ -130,7 +130,7 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		labels.Merge(model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcIp:    model.NewStringValue(remoteIp),
 			constlabels.DstIp:    model.NewStringValue(""),
-			constlabels.SrcPort:  model.NewIntValue(int64(remotePort)),
+			constlabels.SrcPort:  model.NewIntValue(remotePort),
 			constlabels.DstPort:  model.NewIntValue(-1),
 			constlabels.IsServer: model.NewBoolValue(true),
 		}))
@@ -142,11 +142,11 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	}
 	requestIoGauge := &model.Gauge{
 		Name:  constvalues.RequestIo,
-		Value: int64(event.GetUint64UserAtrribute("req_body_size")),
+		Value: event.GetIntUserAtrribute("req_body_size"),
 	}
 	responseIoGauge := &model.Gauge{
 		Name:  constvalues.ResponseIo,
-		Value: int64(event.GetUint64UserAtrribute("resp_body_size")),
+		Value: event.GetIntUserAtrribute("resp_body_size"),
 	}
 	gaugeGroup := model.NewGaugeGroup("GrpcUprobeGroup", labels, event.Timestamp,
 		latencyGauge, requestIoGauge, responseIoGauge)

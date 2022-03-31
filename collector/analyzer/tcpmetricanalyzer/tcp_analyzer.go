@@ -98,7 +98,7 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Gaug
 		return nil, err
 	}
 	// Unit is microsecond
-	rtt := event.GetUint64UserAtrribute("rtt")
+	rtt := event.GetUintUserAtrribute("rtt")
 	// rtt is zero when the kprobe is invoked in the first time, which should be filtered
 	if rtt == 0 {
 		return nil, nil
@@ -145,10 +145,10 @@ func (a *TcpMetricAnalyzer) getTupleLabels(event *model.KindlingEvent) (*model.A
 	if sIp == nil || sPort == nil || dIp == nil || dPort == nil {
 		return nil, fmt.Errorf("one of sip or dip or dport is nil for event %s", event.Name)
 	}
-	sIpString := model.IPLong2String(uint32(event.GetUint64UserAtrribute("sip")))
-	sPortUint := event.GetUint64UserAtrribute("sport")
-	dIpString := model.IPLong2String(uint32(event.GetUint64UserAtrribute("dip")))
-	dPortUint := event.GetUint64UserAtrribute("dport")
+	sIpString := model.IPLong2String(uint32(event.GetUintUserAtrribute("sip")))
+	sPortUint := event.GetUintUserAtrribute("sport")
+	dIpString := model.IPLong2String(uint32(event.GetUintUserAtrribute("dip")))
+	dPortUint := event.GetUintUserAtrribute("dport")
 
 	labels := model.NewAttributeMap()
 	labels.AddStringValue(constlabels.SrcIp, sIpString)
