@@ -5,7 +5,7 @@
 
 ## Related Issue
 <!--- If suggesting a new feature or change, please discuss it in an issue first -->
-<!--- If fixing a bug, there should be an issue describing it with steps to reproduce -->
+<!--- If fixing a bug, there should be an issue describing it with details -->
 <!--- Please link to the issue here: -->
 
 ## Motivation and Context
