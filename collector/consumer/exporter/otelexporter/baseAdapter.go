@@ -28,18 +28,21 @@ func createBaseAdapterManager(constLabels []attribute.KeyValue) *BaseAdapterMana
 		[][]dictionary{}).
 		withExtraLabels(topologyProtocol, updateProtocolKey).
 		withAdjust(RemoveDstPodInfoForNonExternalAggTopology).
+		withConstLabels(constLabels).
 		build()
 
 	detailTopologyAdapter, _ := newAdapterBuilder(topologyMetricDicList,
 		[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
 		withExtraLabels(topologyProtocol, updateProtocolKey).
 		withAdjust(ReplaceDstIpOrDstPortByDNatIpAndDNatPortForDetailTopology).
+		withConstLabels(constLabels).
 		build()
 
 	traceToSpanAdapter, _ := newAdapterBuilder(topologyMetricDicList,
 		[][]dictionary{topologyInstanceMetricDicList, SpanDicList}).
 		withExtraLabels(spanProtocol, updateProtocolKey).
 		withValueToLabels(traceSpanStatus, getTraceSpanStatusLabels).
+		withConstLabels(constLabels).
 		build()
 
 	return &BaseAdapterManager{

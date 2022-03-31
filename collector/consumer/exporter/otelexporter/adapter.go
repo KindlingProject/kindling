@@ -183,6 +183,7 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 
 	for i := 0; i < len(m.extraLabelsKey); i++ {
 		//TODO Check length of extraLabelsKey is equal to extraLabelsParamList , or return error
+		//TODO Seem that golang reuse the space of tmpDict in DetailTopologyAdapter unexpected ,need more test
 		tmpDict := append(m.baseAndCommonLabelsDict, m.extraLabelsParamList[i].dicList...)
 		tmpParamList := baseAndCommonParams
 		for s := 0; s < len(m.extraLabelsParamList[i].dicList); s++ {

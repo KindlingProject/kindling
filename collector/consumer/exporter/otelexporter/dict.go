@@ -197,6 +197,7 @@ var topologyProtocol = []extraLabelsParam{
 	}, extraLabelsKey{HTTP}},
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.STR_EMPTY, StrEmpty},
+		//{constlabels.HttpStatusCode, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{KAFKA}},
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.SqlErrCode, FromInt64ToString},
