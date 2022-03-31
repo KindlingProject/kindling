@@ -19,29 +19,31 @@ func parseResponseProduce() protocol.ParsePkgFn {
 			topicNum     int32
 			topicName    string
 			partitionNum int32
-			partition    int32
 			errorCode    int16
 		)
 		version := message.GetIntAttribute(constlabels.KafkaVersion)
 		compact := version >= 9
 		offset = message.Offset
-		if offset, err = message.ReadArraySize(offset, compact, &topicNum); err != nil || topicNum != 1 {
+		if offset, err = message.ReadArraySize(offset, compact, &topicNum); err != nil {
 			return false, true
 		}
-		if offset, err = message.ReadString(offset, compact, &topicName); err != nil {
-			return false, true
+		if topicNum > 0 {
+			if offset, err = message.ReadString(offset, compact, &topicName); err != nil {
+				return false, true
+			}
+			if offset, err = message.ReadArraySize(offset, compact, &partitionNum); err != nil {
+				return false, true
+			}
+			if partitionNum > 0 {
+				offset += 4
+				// Read ErrorCode in First Partition
+				if _, err = message.ReadInt16(offset, &errorCode); err != nil {
+					return false, true
+				}
+			}
+			// Read First TopicName
+			message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		}
-		if offset, err = message.ReadArraySize(offset, compact, &partitionNum); err != nil || partitionNum != 1 {
-			return false, true
-		}
-		if offset, err = message.ReadInt32(offset, &partition); err != nil {
-			return false, true
-		}
-		if _, err = message.ReadInt16(offset, &errorCode); err != nil {
-			return false, true
-		}
-		message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
-		message.AddIntAttribute(constlabels.KafkaPartition, int64(partition))
 		message.AddIntAttribute(constlabels.KafkaErrorCode, int64(errorCode))
 		return true, true
 	}
