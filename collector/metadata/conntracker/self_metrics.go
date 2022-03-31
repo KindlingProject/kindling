@@ -37,7 +37,8 @@ func newSelfMetrics(meterProvider metric.MeterProvider, conntracker Conntracker)
 		cacheSizeInstrument = meter.NewInt64GaugeObserver(cacheSizeMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				conntrackerStaticStates = conntracker.GetStats()
-				result.Observe(conntrackerStaticStates["state_size"])
+				result.Observe(conntrackerStaticStates["state_size"], attribute.String("type", "general"))
+				result.Observe(conntrackerStaticStates["orphan_size"], attribute.String("type", "orphan"))
 			})
 		cacheMaxSizeInstrument = meter.NewInt64GaugeObserver(cacheMaxSizeMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
@@ -46,6 +47,8 @@ func newSelfMetrics(meterProvider metric.MeterProvider, conntracker Conntracker)
 		operationTimesInstrument = meter.NewInt64CounterObserver(operationTimesTotal,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(conntrackerStaticStates["registers_total"], attribute.String("op", "add"))
+				result.Observe(conntrackerStaticStates["registers_dropped"], attribute.String("op", "drop"))
+				result.Observe(conntrackerStaticStates["unregisters_total"], attribute.String("op", "remove"))
 				result.Observe(conntrackerStaticStates["gets_total"], attribute.String("op", "get"))
 				result.Observe(conntrackerStaticStates["evicts_total"], attribute.String("op", "evict"))
 			})
