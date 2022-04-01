@@ -6,6 +6,8 @@
 // Modification:
 // 1. Replace log package and remove logs with trace/debug level.
 // 2. Remove the dependencies of pkg/process/util, process/util/kernel, process/util/log
+// 3. Don't exit the netlink connection if the kernel version is less than 3.15 when trying
+//    to enable sampling, we would rather use more CPU to continue to receive the messages.
 
 //go:build linux && !android
 // +build linux,!android
@@ -468,16 +470,15 @@ func (c *Consumer) throttle(numMessages int) error {
 	}
 	atomic.AddInt64(&c.throttles, 1)
 
+	if pre315Kernel {
+		log.Printf("conntrack sampling not supported on kernel versions < 3.15. Please adjust config.conntrack_rate_limit (currently set to %d) to accommodate higher conntrack update rate detected", c.targetRateLimit)
+		// Reset circuit breaker
+		c.breaker.Reset()
+		return nil
+	}
 	// Close current socket
 	c.conn.Close()
 	c.conn = nil
-
-	// if pre315Kernel {
-	// 	// we cannot recreate the socket and set a bpf filter on
-	// 	// kernels before 3.15, so we bail here
-	// 	log.Printf("conntrack sampling not supported on kernel versions < 3.15. Please adjust system_probe_config.conntrack_rate_limit (currently set to %d) to accommodate higher conntrack update rate detected", c.targetRateLimit)
-	// 	return fmt.Errorf("conntrack sampling rate not supported")
-	// }
 
 	// Create new socket with the desired sampling rate
 	// We calculate the required sampling rate to reach the target maxMessagesPersecond
