@@ -15,22 +15,38 @@ func TestAdapter_adapter(t *testing.T) {
 		attribute.Int("constLabels2", 2),
 	}
 	baseAdapterManager := createBaseAdapterManager(constLabels)
-	attrs, _ := baseAdapterManager.detailTopologyAdapter.adapter(makeOriginGaugeGroup(300000))
-	for i := 0; i < len(attrs); i++ {
-		fmt.Printf("%+v\n", attrs[i])
+	detailTopologyAttrs, _ := baseAdapterManager.detailTopologyAdapter.adapter(makeOriginGaugeGroup(300000))
+	for i := 0; i < len(detailTopologyAttrs); i++ {
+		fmt.Printf("%+v\n", detailTopologyAttrs[i])
 	}
+
+	detailTraceSpanAttrs, _ := baseAdapterManager.traceToSpanAdapter.adapter(makeOriginGaugeGroup(300000))
+	for i := 0; i < len(detailTopologyAttrs); i++ {
+		fmt.Printf("%+v\n", detailTraceSpanAttrs[i])
+	}
+
 }
 
 func makeOriginGaugeGroup(latency int64) *model.GaugeGroup {
 	labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-		constlabels.DstNode:             model.NewStringValue("test-node"),
-		constlabels.DstNamespace:        model.NewStringValue("test-namespace"),
-		constlabels.DstWorkloadKind:     model.NewStringValue("deployment"),
-		constlabels.DstWorkloadName:     model.NewStringValue("test-deploy"),
-		constlabels.DstPod:              model.NewStringValue("test-pod"),
-		constlabels.DstContainer:        model.NewStringValue("test-container"),
+		constlabels.DstNode:             model.NewStringValue("Dst-node"),
+		constlabels.DstNamespace:        model.NewStringValue("Dst-namespace"),
+		constlabels.DstWorkloadKind:     model.NewStringValue("Dst-deployment"),
+		constlabels.DstWorkloadName:     model.NewStringValue("Dst-deploy"),
+		constlabels.DstPod:              model.NewStringValue("Dst-pod"),
+		constlabels.DstContainer:        model.NewStringValue("Dst-container"),
+		constlabels.DstContainerId:      model.NewStringValue("Dst-containerid"),
 		constlabels.DstIp:               model.NewStringValue("10.0.0.1"),
 		constlabels.DstPort:             model.NewIntValue(80),
+		constlabels.SrcNode:             model.NewStringValue("Src-node"),
+		constlabels.SrcNamespace:        model.NewStringValue("Src-namespace"),
+		constlabels.SrcWorkloadKind:     model.NewStringValue("Src-deployment"),
+		constlabels.SrcWorkloadName:     model.NewStringValue("Src-deploy"),
+		constlabels.SrcPod:              model.NewStringValue("Src-pod"),
+		constlabels.SrcContainer:        model.NewStringValue("Src-container"),
+		constlabels.SrcContainerId:      model.NewStringValue("Src-containerid"),
+		constlabels.SrcIp:               model.NewStringValue("10.0.0.2"),
+		constlabels.SrcPort:             model.NewIntValue(36002),
 		constlabels.ContentKey:          model.NewStringValue("/test"),
 		constlabels.ResponseContent:     model.NewIntValue(201),
 		constlabels.IsSlow:              model.NewBoolValue(true),

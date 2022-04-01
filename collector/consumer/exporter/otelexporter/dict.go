@@ -228,7 +228,7 @@ var traceSpanStatus = []dictionary{
 }
 
 func getTraceSpanStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.Value {
-	valueLabels := make([]attribute.Value, 0, 11)
+	valueLabels := make([]attribute.Value, 11)
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		switch gaugeGroup.Values[i].Name {
 		case constvalues.RequestSentTime:
