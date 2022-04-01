@@ -41,7 +41,11 @@ func parseRequestFetch() protocol.ParsePkgFn {
 			if _, err = message.ReadString(offset, compact, &topicName); err != nil {
 				return false, true
 			}
-			// Read First TopicName
+			/*
+				TODO Get all topicNames(Ver 0~12)
+				There is not enough cases to cover multi-topics, just read first topicName.
+				Since Version 13, topicName will be repalced with topicId as uuid, this will not got.
+			*/
 			message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		}
 
