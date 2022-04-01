@@ -107,7 +107,7 @@ func (message PayloadMessage) HasAttribute(key string) bool {
 
 // =============== PayLoad ===============
 func (message *PayloadMessage) ReadUInt16(offset int) (complete bool, value uint16) {
-	if offset+2 >= len(message.Data) {
+	if offset+2 > len(message.Data) {
 		return true, 0
 	}
 	return false, uint16(message.Data[offset])<<8 | uint16(message.Data[offset+1])
@@ -117,7 +117,7 @@ func (message *PayloadMessage) ReadInt16(offset int, v *int16) (toOffset int, er
 	if offset < 0 {
 		return -1, ErrMessageInvalid
 	}
-	if offset+2 >= len(message.Data) {
+	if offset+2 > len(message.Data) {
 		return -1, ErrMessageShort
 	}
 	*v = int16(message.Data[offset])<<8 | int16(message.Data[offset+1])
@@ -128,7 +128,7 @@ func (message *PayloadMessage) ReadInt32(offset int, v *int32) (toOffset int, er
 	if offset < 0 {
 		return -1, ErrMessageInvalid
 	}
-	if offset+4 >= len(message.Data) {
+	if offset+4 > len(message.Data) {
 		return -1, ErrMessageShort
 	}
 	*v = int32(message.Data[offset])<<24 | int32(message.Data[offset+1])<<16 | int32(message.Data[offset+2])<<8 | int32(message.Data[offset+3])

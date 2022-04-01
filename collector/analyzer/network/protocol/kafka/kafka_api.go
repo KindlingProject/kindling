@@ -65,7 +65,7 @@ const (
 )
 
 var kafka_apis = map[int]apiVersion{
-	_apiProduce:                      {1, 9},
+	_apiProduce:                      {0, 9},
 	_apiFetch:                        {0, 12},
 	_apiListOffsets:                  {0, 7},
 	_apiMetadata:                     {0, 11},

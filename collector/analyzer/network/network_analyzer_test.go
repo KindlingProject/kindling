@@ -3,10 +3,11 @@ package network
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/component"
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/Kindling-project/kindling/collector/component"
 
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/model"
@@ -42,6 +43,9 @@ func TestKafkaProtocol(t *testing.T) {
 
 	testProtocol(t, "kafka/consumer-event.yml",
 		"kafka/consumer-trace-fetch-split.yml")
+
+	testProtocol(t, "kafka/consumer-event.yml",
+		"kafka/consumer-trace-fetch-multi-topics.yml")
 }
 
 type NopProcessor struct {
