@@ -2,6 +2,7 @@ package udsreceiver
 
 import (
 	"context"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/metric"
@@ -26,8 +27,10 @@ func runTest(counter eventCounter, workerNum int, loopNum int) {
 	wg.Wait()
 }
 
-var eventLists = []string{"read", "write", "readv", "writev", "sendto", "recvfrom", "sendmsg", "recvmsg",
-	"grpc_uprobe", "tcp_close", "tcp_rcv_established", "tcp_drop", "tcp_retransmit_skb", "another_event"}
+var eventLists = []string{constnames.ReadEvent, constnames.WriteEvent, constnames.ReadvEvent, constnames.WritevEvent,
+	constnames.SendToEvent, constnames.RecvFromEvent, constnames.SendMsgEvent, constnames.RecvMsgEvent,
+	constnames.GrpcUprobeEvent, constnames.TcpCloseEvent, constnames.TcpRcvEstablishedEvent, constnames.TcpDropEvent,
+	constnames.TcpRetransmitSkbEvent, "another_event"}
 
 func runRecordCounter(loopNum int, counter eventCounter) {
 	for i := 0; i < loopNum; i++ {
