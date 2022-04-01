@@ -57,11 +57,8 @@ func parseResponseFetch() protocol.ParsePkgFn {
 					}
 				}
 			}
-			/*
-				TODO Get all topicNames(Ver 0~12)
-				There is not enough cases to cover multi-topics, just read first topicName.
-				Since Version 13, topicName will be repalced with topicId as uuid, this will not got.
-			*/
+			// Get TopicName
+			// Since version 13, topicName will be repalced with topicId as uuid, therefore topicName is not able to be got.
 			message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		}
 		message.AddIntAttribute(constlabels.KafkaErrorCode, int64(errorCode))

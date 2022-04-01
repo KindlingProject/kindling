@@ -38,10 +38,7 @@ func parseRequestProduce() protocol.ParsePkgFn {
 			if _, err = message.ReadString(offset, compact, &topicName); err != nil {
 				return false, true
 			}
-			/*
-				TODO Get all topicNames
-				There is not enough cases to cover multi-topics, just read first topicName.
-			*/
+			// Get TopicName
 			message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		}
 		return true, true

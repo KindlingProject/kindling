@@ -42,9 +42,13 @@ func parseRequestFetch() protocol.ParsePkgFn {
 				return false, true
 			}
 			/*
-				TODO Get all topicNames(Ver 0~12)
-				There is not enough cases to cover multi-topics, just read first topicName.
-				Since Version 13, topicName will be repalced with topicId as uuid, this will not got.
+				Based on following case, we	just read first topicName.
+
+				1. The payload is substr with fixed length(1K), it's not able to get all topic names
+				2. Even if we get enough length for payload, the parser will take more performance cost
+				3. There is not enough cases to cover multi-topics
+
+				Since version 13, topicName will be repalced with topicId as uuid, therefore topicName is not able to be got.
 			*/
 			message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		}
