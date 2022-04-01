@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"math/rand"
 	"os"
 	"time"
 )
@@ -232,26 +233,49 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 	if gaugeGroup.Name == constlabels.NetWorkAnalyzeGaugeGroup {
 		e.PushNetMetric(gaugeGroup)
 
-		// TODO NeedTraceAsMetric
-		//if e.cfg.AdapterConfig.NeedTraceAsMetric {
-		//	e.instrumentFactory.recordGaugeAsync(constlabels.ToKindlingTraceAsMetricName(), model.GaugeGroup{
-		//		Values:    []*model.Gauge{value},
-		//		Labels:    gaugeGroup.Labels,
-		//		Timestamp: gaugeGroup.Timestamp,
-		//	})
-		//}
+		if e.cfg.AdapterConfig.NeedTraceAsMetric {
+			// TODO We have to impl a better Agg tools to record the traceAsMetric data
+			// It 's dangerous to cache the gaugeGroup.Labels since this label was reused by analyzer
+			var requestLatency int64
+			for i := 0; i < len(gaugeGroup.Values); i++ {
+				if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
+					requestLatency = gaugeGroup.Values[i].Value
+				}
+			}
+			e.instrumentFactory.recordGaugeAsync(constlabels.ToKindlingTraceAsMetricName(), model.GaugeGroup{
+				Values:    []*model.Gauge{{constlabels.ToKindlingTraceAsMetricName(), requestLatency}},
+				Labels:    gaugeGroup.Labels,
+				Timestamp: gaugeGroup.Timestamp,
+			})
+		}
 
 		if e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
 			if e.defaultTracer == nil {
 				return errors.New("send span failed: this exporter can not support Span Data")
 			} else {
-				attrs, _ := e.adapterManager.traceToSpanAdapter.adapter(gaugeGroup)
-				_, span := e.defaultTracer.Start(
-					context.Background(),
-					constvalues.SpanInfo,
-					apitrace.WithAttributes(attrs...),
-				)
-				span.End()
+				var isSample = false
+				randSeed := rand.Intn(100)
+				if gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) || gaugeGroup.Labels.GetBoolValue(constlabels.IsError) {
+					if (randSeed < e.cfg.AdapterConfig.SamplingRate.SlowData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) {
+						isSample = true
+					}
+					if (randSeed < e.cfg.AdapterConfig.SamplingRate.ErrorData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsError) {
+						isSample = true
+					}
+				} else {
+					if randSeed < e.cfg.AdapterConfig.SamplingRate.NormalData {
+						isSample = true
+					}
+				}
+				if isSample {
+					attrs, _ := e.adapterManager.traceToSpanAdapter.adapter(gaugeGroup)
+					_, span := e.defaultTracer.Start(
+						context.Background(),
+						constvalues.SpanInfo,
+						apitrace.WithAttributes(attrs...),
+					)
+					span.End()
+				}
 			}
 		}
 
@@ -270,6 +294,13 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 }
 
 func (e *OtelExporter) PushNetMetric(gaugeGroup *model.GaugeGroup) {
+	if e.cfg.AdapterConfig.StoreExternalSrcIP {
+		srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
+		if srcNamespace == constlabels.ExternalClusterNamespace {
+			attrs, _ := e.adapterManager.detailTopologyAdapter.adapter(gaugeGroup)
+			e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup.Values, false)...)
+		}
+	}
 	var metricAdapter *Adapter
 	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
 	if e.cfg.AdapterConfig.NeedPodDetail {

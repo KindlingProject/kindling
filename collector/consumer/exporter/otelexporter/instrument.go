@@ -81,48 +81,50 @@ func (i *instrumentFactory) recordGaugeAsync(metricName string, singleGauge mode
 	}, WithDescription(metricName))
 }
 
-//
-//func (i *instrumentFactory) recordTraceAsMetric(metricName string, singleGauge model.GaugeGroup) {
-//	i.gaugeChan.put(&singleGauge, i.logger)
-//	if i.isGaugeAsyncInitialized(metricName) {
-//		return
-//	}
-//
-//	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
-//		if adapter, ok := i.adapters[metricName]; ok {
-//			channel := i.gaugeChan.getChannel(metricName)
-//			for {
-//				select {
-//				case gaugeGroup := <-channel:
-//					attrs, _ := adapter.adapter(gaugeGroup.Labels, gaugeGroup)
-//					result.Observe(gaugeGroup.Values[0].Value, attrs...)
-//				default:
-//					return
-//				}
-//			}
-//		} else {
-//			newAdapter, _ := newAdapterBuilder(topologyMetricDicList,
-//				[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
-//				withExtraLabels(entityProtocol, updateProtocolKey).
-//				withValueToLabels(traceStatus, getTraceStatusLabels).
-//				withConstLabels(i.customLabels).
-//				build()
-//			adapterRWMutex.Lock()
-//			i.adapters[metricName] = newAdapter
-//			adapterRWMutex.Unlock()
-//			channel := i.gaugeChan.getChannel(metricName)
-//			for {
-//				select {
-//				case gaugeGroup := <-channel:
-//					attrs, _ := newAdapter.adapter(gaugeGroup.Labels, gaugeGroup)
-//					result.Observe(gaugeGroup.Values[0].Value, attrs...)
-//				default:
-//					return
-//				}
-//			}
-//		}
-//	}, WithDescription(metricName))
-//}
+func (i *instrumentFactory) recordTraceAsMetric(metricName string, singleGauge model.GaugeGroup) {
+	i.gaugeChan.put(&singleGauge, i.logger)
+	if i.isGaugeAsyncInitialized(metricName) {
+		return
+	}
+
+	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
+		adapterRWMutex.RLock()
+		adapter, ok := i.adapters[metricName]
+		adapterRWMutex.RUnlock()
+		if ok {
+			channel := i.gaugeChan.getChannel(metricName)
+			for {
+				select {
+				case gaugeGroup := <-channel:
+					attrs, _ := adapter.adapter(gaugeGroup)
+					result.Observe(gaugeGroup.Values[0].Value, attrs...)
+				default:
+					return
+				}
+			}
+		} else {
+			newAdapter, _ := newAdapterBuilder(topologyMetricDicList,
+				[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
+				withExtraLabels(entityProtocol, updateProtocolKey).
+				withValueToLabels(traceStatus, getTraceStatusLabels).
+				withConstLabels(i.customLabels).
+				build()
+			adapterRWMutex.Lock()
+			i.adapters[metricName] = newAdapter
+			adapterRWMutex.Unlock()
+			channel := i.gaugeChan.getChannel(metricName)
+			for {
+				select {
+				case gaugeGroup := <-channel:
+					attrs, _ := newAdapter.adapter(gaugeGroup)
+					result.Observe(gaugeGroup.Values[0].Value, attrs...)
+				default:
+					return
+				}
+			}
+		}
+	}, WithDescription(metricName))
+}
 
 func WithDescription(metricName string) metric.InstrumentOption {
 	var option metric.InstrumentOption
