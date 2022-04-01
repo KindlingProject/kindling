@@ -5,8 +5,8 @@ import './topology/node';
 import './topology/edge';
 import { formatTime, formatCount, formatKMBT, formatPercent, nodeTooltip } from './topology/tooltip';
 import TopoLegend from './topology/legend';
-import { metricList, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, buildLayout,
-  transformData, nsRelationHandle, detailRelationHandle, detailNodesHandle, detailEdgesHandle } from './topology/services'; 
+import { metricList, layoutOptions, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, 
+  buildLayout, transformData, nsRelationHandle, workloadRelationHandle } from './topology/services'; 
 import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
@@ -28,6 +28,8 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const namespace = replaceVariables('$namespace');
   const workload = replaceVariables('$workload');
   const styles = getStyles();
+  const [graphData, setGraphData] = useState<any>({}); 
+  const [layout, setLayout] = useState<string>('dagre'); 
   const [loading, setLoading] = useState<boolean>(true); 
   const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace.split(',').length === 1);
   const [showService, setShowService] = useState<boolean>(false);
@@ -92,7 +94,10 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       }
     });
   }
-  // 根据当前指标选择更新边的样式
+  /**
+   * update edge style based on the current metric
+   * 根据当前指标选择更新边的样式
+   */
   const updateLinesAndNodes = (metric = lineMetric, serviceLine = showService) => {
     const nodes = SGraph.getNodes();
     const edges = SGraph.getEdges();
@@ -192,10 +197,11 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       });
     }
   }
-  // 绘制拓扑图
+  // draw topology
   const draw = (gdata: any, serviceLine = showService) => {
     const inner: any = document.getElementById('kindling_topo');
     inner.innerHTML = '';
+    let data = _.cloneDeep(gdata);
     const graph = new G6.Graph({
       // renderer: 'svg',
       container: 'kindling_topo',
@@ -221,7 +227,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           'drag-node'
         ]
       },
-      layout: buildLayout(options.layout),
+      layout: buildLayout(layout, direction),
       defaultNode: {
         type: 'custom-node'
       },
@@ -244,52 +250,27 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
         }
       }
     });
-    graph.data(gdata);
+    graph.data(data);
     graph.render();
 
     SGraph = graph;
     serviceLineUpdate();
     updateLinesAndNodes(lineMetric, serviceLine);
   };
-  // 只勾选一个namespace是workload为all或者workload为单个值的调用关系处理
-  const workloadRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps, showPod: boolean, serviceLine = showService) => {
-    let nodes: any[] = [], edges: any[] = [];
-    let result: any[] = [];
-    if (workload.split(',').length > 1) {
-      // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
-      result = _.filter(topoData, (item: any) => item.dst_namespace === namespace || item.src_namespace === namespace);
-    } else {
-      // 具体namespace和workload下的所有调用数据
-      result = _.filter(topoData, (item: any) => (item.dst_namespace === namespace && item.dst_workload_name === workload) || (item.src_namespace === namespace && item.src_workload_name === workload));
-    }
-    _.forEach(result, tdata => {
-      let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', showPod, serviceLine);
-      let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', showPod, serviceLine);
-      sourceNode && nodes.push(sourceNode);
-      targetNode && nodes.push(targetNode);
-      let edgeId = `edge_${source}_${target}${service ? '_' + service : ''}`
-      if (_.findIndex(edges, {id: edgeId}) === -1) {
-        let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
-        edges.push({
-          id: edgeId,
-          source: source,
-          target: target,
-          service: service || '',
-          opposite
-        });
-      }
-    });
-    nodes = detailNodesHandle(nodes, nodeData);
-    edges = detailEdgesHandle(nodes, edges, edgeData, serviceLine);
-    return { nodes, edges };
-  }
-  // 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
+ 
+  /**
+   * Gets an array of node types in the current topology for legend drawing on the right
+   * 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
+   */
   const getNodeTypes = (nodes: any[]) => {
     let nodeByType = _.groupBy(nodes, 'nodeType');
     let types: string[] = _.keys(nodeByType);
     return types;
   }
-  // 重新回去拓扑绘制数据时，更新对应的节点的类型数组和边上流量max、min的数值
+  /**
+   * When you go back to the topology drawing data, update the type array of the corresponding node and the value of Max and min of the flow on the side
+   * 重新回去拓扑绘制数据时，更新对应的节点的类型数组和边上流量max、min的数值
+   */
   const handleResult = (gdata: any) => {
     let nodeTypesList = getNodeTypes(gdata.nodes);
     setNodeTypesList(nodeTypesList);
@@ -301,9 +282,8 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     }
     setVolumes(volumeData);
   }
-  // 初始化数据处理：生成拓扑数据，获取调用关系流量最大值
+  // Initial data processing: Generates topology data
   const initData = () => {
-    // 处理grafana查询数据生成对应的拓扑调用数据结构
     let nodes: any[] = [], edges: any[] = [];
     topoData = transformData(_.filter(data.series, (item: any) => item.refId === 'A'));
     let edgeTimeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'I'));
@@ -311,13 +291,15 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     let edgeReceiveVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'C'));
     let edgeRetransmitData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'J'));
     let edgeRTTData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'K'));
+    let edgePackageLostData = transformData(_.filter(data.series, (item: any) => item.refId === 'F'));
     edgeData = {
       edgeCallData: topoData,
       edgeTimeData,
       edgeSendVolumeData,
       edgeReceiveVolumeData,
       edgeRetransmitData,
-      edgeRTTData
+      edgeRTTData,
+      edgePackageLostData
     };
     
     let nodeCallsData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'D'));
@@ -330,9 +312,8 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodeSendVolumeData,
       nodeReceiveVolumeData
     };
-    // console.log('edgeData', edgeData);
-    // console.log('nodeData', nodeData);
-    // 当namespace为all的时候，只绘制对应namespace的调用关系
+    console.log('edgeData', edgeData);
+    console.log('nodeData', nodeData);
     if (namespace.indexOf(',') > -1) {
       let result: any = nsRelationHandle(topoData, nodeData, edgeData);
       nodes = [].concat(result.nodes);
@@ -340,7 +321,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     } else {
       let showPod = workload.split(',').length === 1;
       setView(showPod ? 'pod_view' : 'workload_view');
-      let result: any = workloadRelationHandle(topoData, nodeData, edgeData, showPod);
+      let result: any = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, showPod, showService);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     }
@@ -350,10 +331,17 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       edges: edges
     }
     console.log(gdata);
+    setGraphData(gdata);
     draw(gdata);
     handleResult(gdata);
   }
 
+  useEffect(() => {
+    if (SGraph) {
+      draw(graphData);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout]);
   useEffect(() => {
     if (SGraph) {
       updateLinesAndNodes();
@@ -383,28 +371,18 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
 	// eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, namespace]);
 
-  // 切换线段指标时，相应的线段样式更新
+  // When the segment indicator is switched, the corresponding segment style is updated
   const lineMetricChange = (opt: any) => {
     setLineMetric(opt.value);
     updateLinesAndNodes(opt.value);
   }
-  // const changeLayout = (opt: any) => {
-  //   if (opt.value === layout) {
-  //     return;
-  //   }
-  //   setLayout(opt.value);
-  //   // setFirstChangeDir(false);
-  //   let layoutOpts = buildLayout(opt.value);
-  //   SGraph.destroyLayout();
-  //   SGraph.updateLayout(layoutOpts);
-  //   SGraph.changeData(graphData);
-  //   // // SGraph.on('afterlayout', () => {
-  //   // //   SGraph.fitView(10);
-  //   // // });
-  //   // setTimeout(() => {
-  //   //   SGraph.fitView(10);
-  //   // }, 16);
-  // } 
+  const changeLayout = (opt: any) => {
+    if (opt.value === layout) {
+      return;
+    }
+    setLayout(opt.value);
+    // draw(graphData);
+  } 
   const changeDirection = (value: any) => {
     setDirection(value);
     SGraph.updateLayout({
@@ -416,27 +394,29 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       setFirstChangeDir(true);
     }
   }
-  // 是否显示调用关系上的service调用
+  // Whether to display service calls on invocation relationships
   const changeShowService = () => {
     let show = !showService ? true : false;
     setShowService(show);
-    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, view === 'pod_view', show);
+    let { nodes, edges } = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, view === 'pod_view', show);
     let gdata = {
       nodes: nodes,
       edges: edges
     }
     draw(gdata, show);
+    setGraphData(gdata);
     handleResult(gdata);
   }
-  // 切换View Mode。workload视图下切换workload跟pod视图
+  // toggle View Mode。Switch between the workload view and pod view
   const changeView = (value: any) => {
     setView(value);
-    let { nodes, edges } = workloadRelationHandle(topoData, nodeData, edgeData, value === 'pod_view', showService);
+    let { nodes, edges } = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, value === 'pod_view', showService);
     let gdata = {
       nodes: nodes,
       edges: edges
     }
     draw(gdata);
+    setGraphData(gdata);
     handleResult(gdata);
   }
 
@@ -457,7 +437,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
         </div>
       </div>
       <div className={styles.topRightWarp}>
-        {/* <div className={styles.viewRadioMode}>
+        <div className={styles.viewRadioMode}>
           <div>
             <span>Layout</span>
             <Tooltip content="change topology layout。">
@@ -467,9 +447,9 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
           <div style={{ width: 150 }}>
             <Select value={layout} options={layoutOptions} onChange={changeLayout}/>
           </div>
-        </div> */}
+        </div>
         {
-          options.layout === 'dagre' ? <div className={styles.viewRadioMode}>
+          layout === 'dagre' ? <div className={styles.viewRadioMode}>
             <div>
               <span>Layout Direction</span>
               <Tooltip content="change Dargre topology layout direction mean top to bottom，LR mean left to right。">

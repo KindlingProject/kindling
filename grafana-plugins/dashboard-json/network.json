@@ -22,7 +22,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 41,
-  "iteration": 1645602645355,
+  "iteration": 1648725278811,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -48,7 +48,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -70,10 +70,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval]))",
+          "datasource": "Prometheus",
+          "exemplar": true,
+          "expr": "sum(increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__range]))",
           "interval": "",
           "intervalFactor": 5,
-          "legendFormat": "",
+          "legendFormat": "Retransmit",
           "refId": "A"
         }
       ],
@@ -131,7 +133,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -153,9 +155,11 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_tcp_packet_loss_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval]))",
+          "datasource": "Prometheus",
+          "exemplar": true,
+          "expr": "sum(increase(kindling_tcp_packet_loss_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__range]))",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "Package Lost",
           "refId": "A"
         }
       ],
@@ -235,6 +239,8 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": "Prometheus",
+          "exemplar": true,
           "expr": "topk(10, sum by (src_workload_name, dst_workload_name) (kindling_tcp_rtt_microseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}))",
           "interval": "",
           "intervalFactor": 1,
@@ -244,7 +250,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "RTT",
+      "title": "SRTT",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -318,13 +324,17 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_topology_request_request_bytes_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval]))",
+          "datasource": "Prometheus",
+          "exemplar": true,
+          "expr": "sum(increase(kindling_topology_request_request_bytes_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__range]))",
           "interval": "",
           "legendFormat": "Sent Volume",
           "refId": "A"
         },
         {
-          "expr": "sum(increase(kindling_topology_request_response_bytes_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval]))",
+          "datasource": "Prometheus",
+          "exemplar": true,
+          "expr": "sum(increase(kindling_topology_request_response_bytes_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__range]))",
           "interval": "",
           "legendFormat": "Received Volume",
           "refId": "B"
@@ -423,7 +433,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "RTT"
+              "options": "SRTT"
             },
             "properties": [
               {
@@ -520,7 +530,7 @@
           "refId": "F"
         }
       ],
-      "title": "Connections Details",
+      "title": "Connections Detail",
       "transformations": [
         {
           "id": "organize",
@@ -557,9 +567,10 @@
             "renameByName": {
               "Value #A": "Latency",
               "Value #B": "Retransmit",
+              "Value #C": "Package Lost",
               "Value #D": "Sent Volume",
               "Value #E": "Receive Volume",
-              "Value #F": "RTT",
+              "Value #F": "SRTT",
               "dst_workload_name": "Destination",
               "src_workload_name": "Source"
             }
@@ -622,7 +633,7 @@
         {
           "datasource": "Prometheus",
           "exemplar": false,
-          "expr": "increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])",
+          "expr": "increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__range])",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -634,7 +645,7 @@
           "exemplar": false,
           "expr": "increase(kindling_tcp_packet_loss_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])",
           "format": "table",
-          "hide": false,
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -645,13 +656,14 @@
           "exemplar": false,
           "expr": "kindling_tcp_rtt_milliseconds{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"} and on (src_pod, dst_pod) increase(kindling_tcp_retransmit_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__interval])",
           "format": "table",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "C"
         }
       ],
-      "title": "Retransmit Details",
+      "title": "Retransmit Detail",
       "transformations": [
         {
           "id": "organize",
@@ -705,21 +717,25 @@
             "excludeByName": {
               "dst_container": true,
               "dst_node": true,
-              "dst_node_ip": true
+              "dst_node_ip": true,
+              "dst_port": true,
+              "src_port": true
             },
             "indexByName": {
-              "Value #A": 8,
-              "dst_container": 9,
-              "dst_ip": 6,
-              "dst_namespace": 5,
-              "dst_node": 10,
-              "dst_node_ip": 11,
-              "dst_pod": 7,
-              "dst_workload_name": 4,
-              "src_ip": 2,
-              "src_namespace": 1,
-              "src_pod": 3,
-              "src_workload_name": 0
+              "Value": 11,
+              "dst_container": 8,
+              "dst_ip": 7,
+              "dst_namespace": 4,
+              "dst_node": 9,
+              "dst_node_ip": 10,
+              "dst_pod": 6,
+              "dst_port": 13,
+              "dst_workload_name": 5,
+              "src_ip": 3,
+              "src_namespace": 0,
+              "src_pod": 2,
+              "src_port": 12,
+              "src_workload_name": 1
             },
             "renameByName": {
               "Value": "Retransmit",
@@ -729,6 +745,137 @@
               "dst_node": "",
               "dst_node_ip": "",
               "dst_pod": "Destination Pod",
+              "dst_workload_name": "Destination",
+              "src_ip": "Source IP",
+              "src_namespace": "Source Namespace",
+              "src_pod": "Source Pod",
+              "src_workload_name": "Source"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "id": 14,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "8.3.6",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "exemplar": false,
+          "expr": "increase(kindling_tcp_packet_loss_total{src_workload_name=~\"$source\", dst_workload_name=~\"$destination\"}[$__range])",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Package Lost Detail",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "dst_container": true,
+              "dst_node": true,
+              "dst_node_ip": true,
+              "dst_port": true,
+              "dst_service": true,
+              "dst_workload_kind": true,
+              "instance": true,
+              "job": true,
+              "service_instance_id": true,
+              "service_name": true,
+              "src_container": true,
+              "src_ip": false,
+              "src_namespace": false,
+              "src_node": true,
+              "src_node_ip": true,
+              "src_port": true,
+              "src_service": true,
+              "src_workload_kind": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "Value": 25,
+              "dst_container": 5,
+              "dst_ip": 9,
+              "dst_namespace": 6,
+              "dst_node": 10,
+              "dst_node_ip": 11,
+              "dst_pod": 8,
+              "dst_port": 12,
+              "dst_service": 24,
+              "dst_workload_kind": 13,
+              "dst_workload_name": 7,
+              "instance": 14,
+              "job": 15,
+              "service_instance_id": 16,
+              "service_name": 17,
+              "src_container": 18,
+              "src_ip": 4,
+              "src_namespace": 1,
+              "src_node": 19,
+              "src_node_ip": 20,
+              "src_pod": 3,
+              "src_port": 23,
+              "src_service": 21,
+              "src_workload_kind": 22,
+              "src_workload_name": 2
+            },
+            "renameByName": {
+              "Value": "Package Lost",
+              "Value #A": "Package Lost",
+              "dst_ip": "Destination IP",
+              "dst_namespace": "Destination Namespace",
+              "dst_pod": "Destination Pod",
+              "dst_port": "",
               "dst_workload_name": "Destination",
               "src_ip": "Source IP",
               "src_namespace": "Source Namespace",
@@ -822,6 +969,6 @@
   "timezone": "",
   "title": "Kindling Network Detail",
   "uid": "4Jq_VCtnz",
-  "version": 8,
+  "version": 14,
   "weekStart": ""
 }
