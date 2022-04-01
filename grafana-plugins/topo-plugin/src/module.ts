@@ -4,24 +4,24 @@ import { TopologyPanel } from './topologyPanel';
 
 export const plugin = new PanelPlugin<SimpleOptions>(TopologyPanel).setPanelOptions(builder => {
   return builder
-    .addSelect({
-      path: 'layout', 
-      name: 'Layout',
-      defaultValue: 'dagre',
-      description: 'change topology layout。',
-      settings: {
-        options: [
-          {
-            value: 'dagre',
-            label: 'Dagre Layout',
-          },
-          {
-            value: 'force',
-            label: 'Force Layout',
-          }
-        ],
-      },
-    })
+    // .addSelect({
+    //   path: 'layout', 
+    //   name: 'Layout',
+    //   defaultValue: 'dagre',
+    //   description: 'change topology layout。',
+    //   settings: {
+    //     options: [
+    //       {
+    //         value: 'dagre',
+    //         label: 'Dagre Layout',
+    //       },
+    //       {
+    //         value: 'force',
+    //         label: 'Force Layout',
+    //       }
+    //     ],
+    //   },
+    // })
     .addBooleanSwitch({
       path: 'showLatency',
       name: 'Latency Config',
