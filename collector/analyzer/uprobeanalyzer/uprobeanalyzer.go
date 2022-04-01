@@ -72,6 +72,8 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 
 	remoteIp := event.GetUserAttribute("remote_addr").GetValue().GetStringValue()
 	remotePort := event.GetUserAttribute("remote_port").GetValue().GetUintValue()
+	sourceIp := event.GetUserAttribute("source_addr").GetValue().GetStringValue()
+	sourcePort := event.GetUserAttribute("source_port").GetValue().GetUintValue()
 	containerId := event.GetUserAttribute("containerid").GetValue().GetStringValue()
 	reqMethod := event.GetUserAttribute("req_method").GetValue().GetStringValue()
 	reqPath := event.GetUserAttribute("req_path").GetValue().GetStringValue()
@@ -104,23 +106,15 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	}
 
 	if role == clientRole {
-		srcIp := event.GetUserAttribute("src_ip")
-		srcPort := event.GetUserAttribute("src_port")
-		var srcIpValue string
-		var srcPortValue uint64
-		if srcIp != nil && srcPort != nil {
-			srcIpValue = srcIp.Value.GetStringValue()
-			srcPortValue = srcPort.Value.GetUintValue()
-		}
 		labels.Merge(model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-			constlabels.SrcIp:    model.NewStringValue(srcIpValue),
+			constlabels.SrcIp:    model.NewStringValue(sourceIp),
 			constlabels.DstIp:    model.NewStringValue(remoteIp),
-			constlabels.SrcPort:  model.NewIntValue(int64(srcPortValue)),
+			constlabels.SrcPort:  model.NewIntValue(int64(sourcePort)),
 			constlabels.DstPort:  model.NewIntValue(int64(remotePort)),
 			constlabels.IsServer: model.NewBoolValue(false),
 		}))
 		// Find dst NAT information
-		dNatInfo := a.conntracker.GetDNATTupleWithString(srcIpValue, remoteIp, uint16(srcPortValue), uint16(remotePort), 0)
+		dNatInfo := a.conntracker.GetDNATTupleWithString(srcIpValue, remoteIp, uint16(sourcePort), uint16(remotePort), 0)
 		if dNatInfo != nil {
 			labels.AddStringValue(constlabels.DnatIp, dNatInfo.ReplSrcIP.String())
 			labels.AddIntValue(constlabels.DnatPort, int64(dNatInfo.ReplSrcPort))
@@ -128,9 +122,9 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	} else if role == serverRole {
 		labels.Merge(model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcIp:    model.NewStringValue(remoteIp),
-			constlabels.DstIp:    model.NewStringValue(""),
+			constlabels.DstIp:    model.NewStringValue(sourceIp),
 			constlabels.SrcPort:  model.NewIntValue(int64(remotePort)),
-			constlabels.DstPort:  model.NewIntValue(-1),
+			constlabels.DstPort:  model.NewIntValue(int64(sourcePort)),
 			constlabels.IsServer: model.NewBoolValue(true),
 		}))
 	}

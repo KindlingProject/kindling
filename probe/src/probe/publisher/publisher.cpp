@@ -176,6 +176,7 @@ px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID
     if (it == m_kindlingEventLists.end()) {
         kindlingEventList = new KindlingEventList();
         m_kindlingEventLists[uprobe_converter_] = kindlingEventList;
+	m_ready[kindlingEventList] = false;
     } else {
         kindlingEventList = it->second;
     }
@@ -239,7 +240,9 @@ px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID
                 m_kindlingEventLists[uprobe_converter_] = uprobe_converter_->swap_list(kindlingEventList);
                 m_ready[kindlingEventList] = true;
             }
-        }
+        } else {
+		LOG(WARNING) << absl::Substitute("[stirling][grpc] converter queue reach max size, current_size:$0 drop events ... ", uprobe_converter_->current_list_size());
+	}
     }
     return px::Status::OK();
 }

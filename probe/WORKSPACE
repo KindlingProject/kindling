@@ -4,7 +4,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl","git_repository")
 git_repository(
     name = "px",
     remote = "https://github.com/Kindling-project/pixie.git",
-    commit = "2d45f14dc69c060260c5634b7718f05f3f0c7bdb",
+    commit = "8031e38c954f3f51ea999e92173e1adda2db7f7d",
 )
 
 BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
