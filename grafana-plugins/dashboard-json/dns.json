@@ -70,7 +70,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (dst_ip) (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\", protocol=\"dns\"}[$__interval]))",
+          "expr": "sum by (dst_ip) (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\", protocol=\"dns\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{ dst_ip }}",
@@ -155,7 +155,7 @@
         {
           "datasource": "Prometheus",
           "exemplar": true,
-          "expr": "sum by (dst_ip) (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__interval]))",
+          "expr": "sum by (dst_ip) (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{dst_ip}}",
@@ -249,7 +249,7 @@
       "pluginVersion": "7.1.1",
       "targets": [
         {
-          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\",src_workload_name=\"$workload\",le=\"+Inf\"}[$__interval])) - sum(increase(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\",src_workload_name=\"$workload\",le=\"5e+08\"}[$__interval]))",
+          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\",src_workload_name=\"$workload\",le=\"+Inf\"}[$__range])) - sum(increase(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\",src_workload_name=\"$workload\",le=\"5e+08\"}[$__range]))",
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
@@ -306,7 +306,7 @@
         {
           "datasource": "Prometheus",
           "exemplar": true,
-          "expr": "topk(10, sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__interval])) by (dst_ip))",
+          "expr": "topk(10, sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__range])) by (dst_ip))",
           "interval": "",
           "legendFormat": "{{ dst_ip }}",
           "refId": "A"
@@ -399,7 +399,7 @@
       "pluginVersion": "7.1.1",
       "targets": [
         {
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__interval])) by (status_code), \"status_code\", \"FormatErr\", \"status_code\", \"1.*\"), \"status_code\", \"ServFail\", \"status_code\", \"2.*\"), \"status_code\", \"NXDomain\", \"status_code\", \"3.*\"), \"status_code\", \"NotImp\", \"status_code\", \"4.*\"), \"status_code\", \"Refused\", \"status_code\", \"5.*\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\", status_code!=\"0\"}[$__range])) by (status_code), \"status_code\", \"FormatErr\", \"status_code\", \"1.*\"), \"status_code\", \"ServFail\", \"status_code\", \"2.*\"), \"status_code\", \"NXDomain\", \"status_code\", \"3.*\"), \"status_code\", \"NotImp\", \"status_code\", \"4.*\"), \"status_code\", \"Refused\", \"status_code\", \"5.*\")",
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
@@ -454,7 +454,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (dst_ip) /\nsum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}[$__interval])) by (dst_ip)",
+          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}[$__range])) by (dst_ip) /\nsum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}[$__range])) by (dst_ip)",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{dst_ip}}",
@@ -651,7 +651,7 @@
       "pluginVersion": "8.3.6",
       "targets": [
         {
-          "expr": "kindling_trace_request_duration_nanoseconds{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}",
+          "expr": "kindling_trace_request_duration_nanoseconds{src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"dns\"}[$__range]",
           "format": "table",
           "hide": false,
           "instant": true,

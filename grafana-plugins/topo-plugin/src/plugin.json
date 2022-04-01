@@ -25,7 +25,7 @@
     "screenshots": [
       {
         "name": "topology",
-        "path": "https://github.com/thousandxu/zipImage/raw/main/topo-plugin/topo.png"
+        "path": "img/topo.png"
       }
     ],
     "version": "0.0.1",
