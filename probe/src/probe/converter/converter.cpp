@@ -31,3 +31,7 @@ kindling::KindlingEventList * converter::swap_list(kindling::KindlingEventList *
 bool converter::judge_batch_size() {
     return m_kindlingEventList->kindling_event_list_size() >= batch_size;
 }
+
+uint64_t converter::current_list_size() {
+    return m_kindlingEventList->kindling_event_list_size();
+}
