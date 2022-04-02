@@ -42,10 +42,9 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
     }
     // convert sysdig event to kindling event
     if (m_selector->select(evt->get_type(), ((sysdig_converter *) sysdigConverter)->get_kindling_category(evt))) {
-        // TODO determine max_size
-//        if (sysdigConverter->judge_max_size()) {
-//            return;
-//        }
+        if (sysdigConverter->judge_max_size()) {
+            return;
+        }
         auto it = m_kindlingEventLists.find(sysdigConverter);
         KindlingEventList* kindlingEventList;
         if (it == m_kindlingEventLists.end()) {
@@ -87,7 +86,9 @@ int publisher::start() {
 }
 
 void publisher::send_server(publisher *mpublisher) {
-    cout << "Thread sender start" << endl;
+    LOG(INFO) << "Thread sender start";
+    uint64_t total= 0;
+    uint64_t msg_total_size = 0;
     while (true) {
         usleep(100000);
         for (auto list : mpublisher->m_kindlingEventLists) {
@@ -99,7 +100,11 @@ void publisher::send_server(publisher *mpublisher) {
             if (pKindlingEventList->kindling_event_list_size() > 0) {
                 string msg;
                 pKindlingEventList->SerializeToString(&msg);
-//                cout << pKindlingEventList->Utf8DebugString() << endl;
+                int num = pKindlingEventList->kindling_event_list_size();
+                total = total + num;
+                LOG(INFO) << "Send " << num << " kindling events, sending size: " << setprecision(2) <<
+                    msg.length() / 1024.0 <<" KB. Total count of kindling events: " << total;
+//                cout << pKindlingEventList->Utf8DebugString();
                 zmq_send(mpublisher->m_socket, msg.data(), msg.size(), ZMQ_DONTWAIT);
                 pKindlingEventList->clear_kindling_event_list();
             }
@@ -109,7 +114,7 @@ void publisher::send_server(publisher *mpublisher) {
 }
 
 void publisher::subscribe_server(publisher *mpublisher, Socket subscribe_socket) {
-    cout << "Subcribe server start" << endl;
+    LOG(INFO) << "Subcribe server start";
     while (true) {
         char result[1000];
         memset(result, 0, 1000);
@@ -125,7 +130,7 @@ void publisher::subscribe(string sub_event, string &reason) {
     void *socket;
 
     subEvent.ParseFromString(sub_event);
-    cout << "subscribe info: " << subEvent.Utf8DebugString() << endl;
+    LOG(INFO) << "subscribe info: " << subEvent.Utf8DebugString();
     string address = subEvent.address().data();
 
     // filter out subscriber
@@ -158,19 +163,13 @@ void publisher::subscribe(string sub_event, string &reason) {
 px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID tablet_id,
                   std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch) {
 
-    // std::cout << "[qianlu][grpc] table_id:" << table_id << " tablet_id:" << tablet_id << std::endl;
-
     if (record_batch->empty() || record_batch->at(0)->Size() == 0) {
-        // std::cout << "[qianlu][grpc] record_batch is empty. table_id:" << table_id << std::endl;
         return px::Status::OK();
     }
 
-    if (record_batch->size() != 20) {
-//        std::cout << "[qianlu] size not match" << " table_id:" << table_id << " tablet_id:" << tablet_id << "column size:" << record_batch->size() << std::endl;
+    if (record_batch->size() != 22) {
         return px::Status::OK();
     }
-
-    // std::cout << "[qianlu][grpc] record_batch cols is " << record_batch->size() << " samples:" << record_batch->at(0)->Size() << std::endl;
 
     auto it = m_kindlingEventLists.find(uprobe_converter_);
     KindlingEventList* kindlingEventList;
@@ -183,49 +182,37 @@ px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID
 
     auto batch_size = record_batch->at(0)->Size();
     for (size_t i = 0; i < batch_size; ++ i ) {
-        // std::cout << "[qianlu][grpc] begin to process record " << i << " ... " << std::endl;
         int64_t ts = record_batch->at(px::stirling::kHTTPTimeIdx)->Get<px::types::Time64NSValue>(i).val;
-        // std::cout << "ts:" << ts << " idx:" << px::stirling::kHTTPTimeIdx << std::endl;
         int32_t pid = record_batch->at(px::stirling::kHTTPUPIDIdx)->Get<px::types::UInt128Value>(i).High64();
-        // std::cout << "pid:" << pid << " idx:" << px::stirling::kHTTPUPIDIdx << std::endl;
         std::string remote_addr = record_batch->at(px::stirling::kHTTPRemoteAddrIdx)->Get<px::types::StringValue>(i);
-        // std::cout << "remote_addr:" << remote_addr << " idx:" << px::stirling::kHTTPRemoteAddrIdx << std::endl;
         int64_t remote_port = record_batch->at(px::stirling::kHTTPRemotePortIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "remote_port:" << remote_port << " idx:" << px::stirling::kHTTPRemotePortIdx << std::endl;
+	std::string source_addr = record_batch->at(px::stirling::kHTTPSourceAddrIdx)->Get<px::types::StringValue>(i);
+        int64_t source_port = record_batch->at(px::stirling::kHTTPSourcePortIdx)->Get<px::types::Int64Value>(i).val;
         int64_t trace_role = record_batch->at(px::stirling::kHTTPTraceRoleIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "trace_role:" << trace_role << " idx:" << px::stirling::kHTTPTraceRoleIdx << std::endl;
         int64_t major_version = record_batch->at(px::stirling::kHTTPMajorVersionIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "major_version:" << major_version << " idx:" << px::stirling::kHTTPMajorVersionIdx << std::endl;
         int64_t minor_version = record_batch->at(px::stirling::kHTTPMinorVersionIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "minor_version:" << minor_version << " idx:" << px::stirling::kHTTPMinorVersionIdx << std::endl;
         int64_t content_type = record_batch->at(px::stirling::kHTTPContentTypeIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "content_type:" << content_type << " idx:" << px::stirling::kHTTPContentTypeIdx << std::endl;
         std::string req_headers = record_batch->at(px::stirling::kHTTPReqHeadersIdx)->Get<px::types::StringValue>(i);
-        // std::cout << "req_headers:" << req_headers << " idx:" << px::stirling::kHTTPReqHeadersIdx << std::endl;
         std::string req_method = record_batch->at(px::stirling::kHTTPReqMethodIdx)->Get<px::types::StringValue>(i);
-        // std::cout << "req_method:" << req_method << " idx:" << px::stirling::kHTTPReqMethodIdx << std::endl;
         std::string req_path = record_batch->at(px::stirling::kHTTPReqPathIdx)->Get<px::types::StringValue>(i);
-        // std::cout << "req_path:" << req_path << std::endl;
         std::string req_body = record_batch->at(px::stirling::kHTTPReqBodyIdx)->Get<px::types::StringValue>(i);
-        // std::cout << "req_body:" << req_body << std::endl;
         int64_t req_body_size = record_batch->at(px::stirling::kHTTPReqBodySizeIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "req_body_size:" << req_body_size << std::endl;
         std::string resp_headers = record_batch->at(px::stirling::kHTTPRespHeadersIdx)->Get<px::types::StringValue>(i);
-        // std::cout << "resp_headers:" << resp_headers << std::endl;
         int64_t resp_status = record_batch->at(px::stirling::kHTTPRespStatusIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "resp_status:" << resp_status << std::endl;
         std::string resp_body = record_batch->at(px::stirling::kHTTPRespBodyIdx)->Get<px::types::StringValue>(i);
-        // std::cout << "resp_body:" << resp_body << std::endl;
         int64_t resp_body_size = record_batch->at(px::stirling::kHTTPRespBodySizeIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "resp_body_size:" << resp_body_size << std::endl;
         int64_t latency = record_batch->at(px::stirling::kHTTPLatencyIdx)->Get<px::types::Int64Value>(i).val;
-        // std::cout << "latency:" << latency << std::endl;
+	
+	VLOG(1) << absl::Substitute("[stirling][grpc] ts:$0 pid:$1 remote_addr:$2 remote_port:$3 trace_role:$4 source_addr:$5 req_method:$6 req_path:$7 latency:$8 source_port:$9",
+                                    ts, pid, remote_addr, remote_port, trace_role, source_addr, req_method, req_path, latency, source_port);
 
         struct grpc_event_t gevt;
         gevt.timestamp = ts;
         gevt.pid = pid;
         gevt.remote_addr = remote_addr;
         gevt.remote_port = remote_port;
+	gevt.source_addr = source_addr;
+        gevt.source_port = source_port;
         gevt.trace_role = trace_role;
         gevt.req_headers = req_headers;
         gevt.req_method = req_method;
@@ -240,17 +227,18 @@ px::Status publisher::consume_uprobe_data(uint64_t table_id, px::types::TabletID
         auto tinfo = m_inspector->get_thread_ref(pid, true, true, true);
         if (tinfo) {
             gevt.container_id = tinfo->m_container_id;
-            // std::cout << "[qianlu] find container_id for pid:" << pid << " container_id:" << gevt.container_id << std::endl;
         } else {
-            std::cout << "[qianlu] cannot find container_id for pid:" << pid << std::endl;
+		    VLOG(1) << "[stirling] cannot find container_id for pid:" << pid << std::endl;
         }
 
-        // convert to kindling event
-        uprobe_converter_->convert(&gevt);
-        // if send list was sent
-        if (uprobe_converter_->judge_batch_size() && !m_ready[kindlingEventList]) {
-            m_kindlingEventLists[uprobe_converter_] = uprobe_converter_->swap_list(kindlingEventList);
-            m_ready[kindlingEventList] = true;
+        if (uprobe_converter_->judge_max_size() == false) {
+            // convert to kindling event
+            uprobe_converter_->convert(&gevt);
+            // if send list was sent
+            if (uprobe_converter_->judge_batch_size() && !m_ready[kindlingEventList]) {
+                m_kindlingEventLists[uprobe_converter_] = uprobe_converter_->swap_list(kindlingEventList);
+                m_ready[kindlingEventList] = true;
+            }
         }
     }
     return px::Status::OK();
@@ -297,7 +285,7 @@ void selector::parse(const google::protobuf::RepeatedPtrField<::kindling::Label>
             auto v = m_labels->find(it->second);
             auto c = get_category(label.category());
             if (label.category() != "" && c == CAT_NONE) {
-                cout << "Subscribe: Kindling event category err: " << label.category() << endl;
+                LOG(INFO) << "Subscribe: Kindling event category err: " << label.category();
                 continue;
             }
             if (v != m_labels->end()) {
@@ -309,9 +297,9 @@ void selector::parse(const google::protobuf::RepeatedPtrField<::kindling::Label>
                 }
                 m_labels->insert(pair<ppm_event_type, vector<Category> *> (it->second, categories));
             }
-            cout << "Subscribe info: type: " << it->second << " category: " << (label.category() != "" ? label.category() : "none") << endl;
+            LOG(INFO) << "Subscribe info: type: " << it->second << " category: " << (label.category() != "" ? label.category() : "none");
         } else {
-            cout << "Subscribe: Kindling event name err: " << label.name() << endl;
+            LOG(INFO) << "Subscribe: Kindling event name err: " << label.name();
         }
     }
     // notify kernel, set eventmask

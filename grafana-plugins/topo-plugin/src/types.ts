@@ -1,7 +1,7 @@
 type SeriesSize = 'sm' | 'md' | 'lg';
 
 export interface SimpleOptions {
-  text: string;
+  layout: string;
   showLatency: boolean;
   normalLatency: number;
   abnormalLatency: number;

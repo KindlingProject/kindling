@@ -1,5 +1,5 @@
 {
-  "name": "thousand-topo-plugin",
+  "name": "yiqianxu-kindling-panel",
   "version": "1.0.0",
   "description": "",
   "scripts": {
@@ -10,7 +10,7 @@
     "sign": "grafana-toolkit plugin:sign",
     "start": "yarn watch"
   },
-  "author": "thousand",
+  "author": "yiqianxu",
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/data": "latest",

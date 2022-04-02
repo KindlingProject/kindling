@@ -19,7 +19,6 @@ func parseResponseFetch() protocol.ParsePkgFn {
 			topicNum     int32
 			topicName    string
 			partitionNum int32
-			partition    int32
 			errorCode    int16
 		)
 
@@ -37,27 +36,31 @@ func parseResponseFetch() protocol.ParsePkgFn {
 			offset += 4 //session_id
 		}
 
-		if offset, err = message.ReadArraySize(offset, compact, &topicNum); err != nil || topicNum != 1 {
+		if offset, err = message.ReadArraySize(offset, compact, &topicNum); err != nil {
 			return false, true
 		}
 
-		if offset, err = message.ReadString(offset, compact, &topicName); err != nil {
-			return false, true
-		}
-
-		if offset, err = message.ReadArraySize(offset, compact, &partitionNum); err != nil || partitionNum != 1 {
-			return false, true
-		}
-		if offset, err = message.ReadInt32(offset, &partition); err != nil {
-			return false, true
-		}
-		if version < 7 {
-			if _, err = message.ReadInt16(offset, &errorCode); err != nil {
+		if topicNum > 0 {
+			if offset, err = message.ReadString(offset, compact, &topicName); err != nil {
 				return false, true
 			}
+
+			if version < 7 {
+				if offset, err = message.ReadArraySize(offset, compact, &partitionNum); err != nil {
+					return false, true
+				}
+				if partitionNum > 0 {
+					offset += 4
+					// Read ErrorCode in First Partition when version less than 7.
+					if _, err = message.ReadInt16(offset, &errorCode); err != nil {
+						return false, true
+					}
+				}
+			}
+			// Get TopicName
+			// Since version 13, topicName will be repalced with topicId as uuid, therefore topicName is not able to be got.
+			message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		}
-		message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
-		message.AddIntAttribute(constlabels.KafkaPartition, int64(partition))
 		message.AddIntAttribute(constlabels.KafkaErrorCode, int64(errorCode))
 		return true, true
 	}

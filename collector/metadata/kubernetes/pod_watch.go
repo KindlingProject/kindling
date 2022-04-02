@@ -2,6 +2,11 @@ package kubernetes
 
 import (
 	"fmt"
+	_ "path/filepath"
+	"strings"
+	"sync"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	_ "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -10,9 +15,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	_ "k8s.io/client-go/tools/clientcmd"
 	_ "k8s.io/client-go/util/homedir"
-	_ "path/filepath"
-	"strings"
-	"sync"
 )
 
 type PodInfo struct {
@@ -61,6 +63,20 @@ func (m *podMap) delete(namespace string, name string) {
 	m.mutex.Unlock()
 }
 
+func (m *podMap) get(namespace string, name string) (*PodInfo, bool) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	podInfoMap, ok := m.info[namespace]
+	if !ok {
+		return nil, false
+	}
+	podInfo, ok := podInfoMap[name]
+	if !ok {
+		return nil, false
+	}
+	return podInfo, true
+}
+
 // getPodsMatchSelectors gets PodInfo(s) whose labels match with selectors in such namespace.
 // Return empty slice if not found. Note there may be multiple match.
 func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]string) []*PodInfo {
@@ -82,7 +98,7 @@ func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]st
 	return retPodInfoSlice
 }
 
-func PodWatch(clientSet *kubernetes.Clientset) {
+func PodWatch(clientSet *kubernetes.Clientset, graceDeletePeriod time.Duration) {
 	stopper := make(chan struct{})
 	defer close(stopper)
 
@@ -98,7 +114,7 @@ func PodWatch(clientSet *kubernetes.Clientset) {
 		runtime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
-
+	go podDeleteLoop(10*time.Second, graceDeletePeriod, stopper)
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    onAdd,
 		UpdateFunc: OnUpdate,
@@ -225,22 +241,15 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 
 func onDelete(obj interface{}) {
 	pod := obj.(*corev1.Pod)
+	// Delete the intermediate data first
 	globalPodInfo.delete(pod.Namespace, pod.Name)
-
-	for i := 0; i < len(pod.Status.ContainerStatuses); i++ {
-		containerId := pod.Status.ContainerStatuses[i].ContainerID
-		realContainerId := TruncateContainerId(containerId)
-		if realContainerId == "" {
-			continue
-		}
-		MetaDataCache.DeleteByContainerId(realContainerId)
-	}
-
-	for _, container := range pod.Spec.Containers {
-		for _, port := range container.Ports {
-			MetaDataCache.DeleteContainerByIpPort(pod.Status.PodIP, uint32(port.ContainerPort))
-		}
-	}
+	// Wait for a few seconds to remove the cache data
+	podDeleteQueueMut.Lock()
+	podDeleteQueue = append(podDeleteQueue, deleteRequest{
+		pod: pod,
+		ts:  time.Now(),
+	})
+	podDeleteQueueMut.Unlock()
 }
 
 // TruncateContainerId slices the input containerId into two parts separated by "://",

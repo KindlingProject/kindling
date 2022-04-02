@@ -1,16 +1,16 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "panel",
-  "name": "topo-plugin",
-  "id": "thousand-topo-plugin",
+  "name": "Kindling Topology Panel",
+  "id": "kindlingproject-topology-panel",
   "info": {
     "description": "",
     "author": {
-      "name": "thousand",
-      "url": ""
+      "name": "kindlingproject",
+      "url": "https://github.com/Kindling-project/kindling"
     },
     "keywords": [
-      "topology"
+      "kindling topology"
     ],
     "logos": {
       "small": "img/logo.svg",
@@ -18,17 +18,18 @@
     },
     "links": [
       {
-        "name": "Website",
-        "url": "https://github.com/grafana/grafana-starter-panel"
-      },
-      {
-        "name": "License",
-        "url": "https://github.com/grafana/grafana-starter-panel/blob/master/LICENSE"
+        "name": "Kindling",
+        "url": "https://github.com/Kindling-project/kindling"
       }
     ],
-    "screenshots": [],
-    "version": "1.0.0",
-    "updated": "2022-02-22"
+    "screenshots": [
+      {
+        "name": "topology",
+        "path": "img/topo.png"
+      }
+    ],
+    "version": "0.0.1",
+    "updated": "2022-04-01"
   },
   "dependencies": {
     "grafanaDependency": ">=7.0.0",

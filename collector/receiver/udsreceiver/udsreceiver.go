@@ -1,7 +1,6 @@
 package udsreceiver
 
 import (
-	"context"
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
 	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
@@ -10,9 +9,8 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/receiver"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -36,6 +34,7 @@ type UdsReceiver struct {
 	shutdownWG      sync.WaitGroup
 	shutdwonState   bool
 	telemetry       *component.TelemetryTools
+	stats           eventCounter
 }
 
 type Config struct {
@@ -104,12 +103,14 @@ func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 	if !ok {
 		telemetry.Logger.Sugar().Panicf("Cannot convert [%s] config", Uds)
 	}
-	newSelfMetrics(telemetry.MeterProvider)
-	return &UdsReceiver{
+	udsReceiver := &UdsReceiver{
 		cfg:             cfg,
 		analyzerManager: analyzerManager,
 		telemetry:       telemetry,
+		stats:           &stats{},
 	}
+	newSelfMetrics(telemetry.MeterProvider, udsReceiver.stats)
+	return udsReceiver
 }
 
 func (r *UdsReceiver) startZeroMqPull() error {
@@ -227,7 +228,7 @@ func (r *UdsReceiver) Shutdown() error {
 func (r *UdsReceiver) SendToNextConsumer(events *model.KindlingEventList) error {
 	// TODO: Decouple dispatching logic from receiver and conduct it at analyzerManager via configuration
 	for _, evt := range events.KindlingEventList {
-		globalEventSentCounter.Add(context.Background(), 1, attribute.String("name", evt.Name))
+		r.stats.add(evt.Name, 1)
 		var analyzer analyzerpackage.Analyzer
 		var isFound bool
 		switch evt.Name {

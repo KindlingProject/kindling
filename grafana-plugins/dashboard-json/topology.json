@@ -39,21 +39,21 @@
       "pluginVersion": "7.1.1",
       "targets": [
         {
-          "expr": "increase(kindling_topology_request_duration_nanoseconds_count[$__interval])",
+          "expr": "increase(kindling_topology_request_duration_nanoseconds_count[$__range])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         },
         {
-          "expr": "increase(kindling_topology_request_duration_nanoseconds_sum[$__interval])",
+          "expr": "increase(kindling_topology_request_duration_nanoseconds_sum[$__range])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "I"
         },
         {
-          "expr": "increase(kindling_topology_request_request_bytes_total[$__interval])",
+          "expr": "increase(kindling_topology_request_request_bytes_total[$__range])",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -61,7 +61,7 @@
           "refId": "B"
         },
         {
-          "expr": "increase(kindling_topology_request_response_bytes_total[$__interval])",
+          "expr": "increase(kindling_topology_request_response_bytes_total[$__range])",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -69,14 +69,14 @@
           "refId": "C"
         },
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count[$__interval])) by(namespace, workload_name, pod)",
+          "expr": "increase(kindling_entity_request_duration_nanoseconds_count[$__range])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "D"
         },
         {
-          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_sum[$__interval])) by (namespace, workload_name, pod)",
+          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_sum[$__range])) by (namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -84,44 +84,52 @@
         },
         {
           "expr": "sum by(namespace, workload_name, pod) (kindling_entity_request_duration_nanoseconds_count{namespace=~\"$namespace\",workload_name=~\"$workload\", response_content=~\"400|404|500|503\"}) / sum by(namespace, workload_name, pod) (kindling_entity_request_duration_nanoseconds_count{namespace=~\"$namespace\",workload_name=~\"$workload\"}) * 100",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "F"
         },
         {
-          "expr": "sum(increase(kindling_entity_request_send_bytes_total[$__interval])) by(namespace, workload_name, pod)",
+          "expr": "sum(increase(kindling_entity_request_send_bytes_total[$__range])) by(namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "G"
         },
         {
-          "expr": "sum(increase(kindling_entity_request_receive_bytes_total[$__interval])) by(namespace, workload_name, pod)",
+          "expr": "sum(increase(kindling_entity_request_receive_bytes_total[$__range])) by(namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "H"
         },
         {
-          "expr": "increase(kindling_tcp_retransmit_total[$__interval])",
+          "expr": "increase(kindling_tcp_retransmit_total[$__range])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "J"
         },
         {
-          "expr": "kindling_tcp_rtt_milliseconds",
+          "expr": "avg_over_time(kindling_tcp_rtt_microseconds[$__range])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "K"
+        },
+        {
+          "expr": "increase(kindling_tcp_packet_loss_total[$__range])",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "F"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
       "title": "topology",
-      "type": "thousand-topo-plugin"
+      "type": "kindlingproject-topology-panel"
     }
   ],
   "schemaVersion": 26,

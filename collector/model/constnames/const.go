@@ -1,13 +1,23 @@
 package constnames
 
 const (
-	TcpCloseEvent          string = "tcp_close"
-	TcpRcvEstablishedEvent string = "tcp_rcv_established"
-	TcpDropEvent           string = "tcp_drop"
-	TcpRetransmitSkbEvent  string = "tcp_retransmit_skb"
+	ReadEvent     = "read"
+	WriteEvent    = "write"
+	ReadvEvent    = "readv"
+	WritevEvent   = "writev"
+	SendToEvent   = "sendto"
+	RecvFromEvent = "recvfrom"
+	SendMsgEvent  = "sendmsg"
+	RecvMsgEvent  = "recvmsg"
 
-	GrpcUprobeEvent          string = "grpc_uprobe"
-	NetRequestGaugeGroupName        = "net_request_gauge_group"
-	TcpGaugeGroupName               = "tcp_metric_gauge_group"
-	NodeGaugeGroupName              = "node_metric_gauge_group"
+	TcpCloseEvent          = "tcp_close"
+	TcpRcvEstablishedEvent = "tcp_rcv_established"
+	TcpDropEvent           = "tcp_drop"
+	TcpRetransmitSkbEvent  = "tcp_retransmit_skb"
+	OtherEvent             = "other"
+
+	GrpcUprobeEvent          = "grpc_uprobe"
+	NetRequestGaugeGroupName = "net_request_gauge_group"
+	TcpGaugeGroupName        = "tcp_metric_gauge_group"
+	NodeGaugeGroupName       = "node_metric_gauge_group"
 )
