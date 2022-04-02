@@ -60,7 +60,6 @@ trace:
         kafka_version: 11
         kafka_id: 6801
         kafka_topic: "container-monitor"
-        kafka_partition: 0
         kafka_error_code: 0
         is_error: false
         error_type: 0

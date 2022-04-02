@@ -4,7 +4,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl","git_repository")
 git_repository(
     name = "px",
     remote = "https://github.com/Kindling-project/pixie.git",
-    commit = "2d45f14dc69c060260c5634b7718f05f3f0c7bdb",
+    commit = "c98c1e8c041038d535db1fb2590087dcb91cf92f",
 )
 
 BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
@@ -21,9 +21,9 @@ http_archive(
 
 http_archive(
         name = "agent-libs",
-        urls = ["https://github.com/Kindling-project/agent-libs/archive/9079e62f2eaaf2a688b0553bc23c7d5dcac16637.tar.gz"],
-        sha256 = "fa5ba69b3f1fc1eb4e751ce60dc2d74fc0b44695262b994c2c467dd68886cbd0",
-        strip_prefix = "agent-libs-9079e62f2eaaf2a688b0553bc23c7d5dcac16637",
+        urls = ["https://github.com/Kindling-project/agent-libs/archive/c6e7b1a7a16956479c56137e3af7eb251f462f41.tar.gz"],
+        sha256 = "66ae395992ef4768792a36088ecf1a96e1920d1445e7875b9fec351e0b7cb984",
+        strip_prefix = "agent-libs-c6e7b1a7a16956479c56137e3af7eb251f462f41",
         build_file_content = BUILD_ALL_CONTENT,
     )
 

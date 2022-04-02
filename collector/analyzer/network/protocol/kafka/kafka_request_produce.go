@@ -14,12 +14,10 @@ func fastfailRequestProduce() protocol.FastFailFn {
 func parseRequestProduce() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		var (
-			offset       int
-			err          error
-			topicNum     int32
-			topicName    string
-			partitionNum int32
-			partition    int32
+			offset    int
+			err       error
+			topicNum  int32
+			topicName string
 		)
 		version := message.GetIntAttribute(constlabels.KafkaVersion)
 		compact := version >= 9
@@ -28,27 +26,21 @@ func parseRequestProduce() protocol.ParsePkgFn {
 		if version >= 3 {
 			var transactionId string
 			if offset, err = message.ReadNullableString(offset, compact, &transactionId); err != nil {
-				//TODO maybe pass this error to caller if we need output the exact error msg to log
 				return false, true
 			}
 		}
 		// acks, timeout_ms
 		offset += 6
-		if offset, err = message.ReadArraySize(offset, compact, &topicNum); err != nil || topicNum != 1 {
+		if offset, err = message.ReadArraySize(offset, compact, &topicNum); err != nil {
 			return false, true
 		}
-		if offset, err = message.ReadString(offset, compact, &topicName); err != nil {
-			return false, true
+		if topicNum > 0 {
+			if _, err = message.ReadString(offset, compact, &topicName); err != nil {
+				return false, true
+			}
+			// Get TopicName
+			message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
 		}
-		if offset, err = message.ReadArraySize(offset, compact, &partitionNum); err != nil || partitionNum != 1 {
-			return false, true
-		}
-		if _, err = message.ReadInt32(offset, &partition); err != nil {
-			return false, true
-		}
-
-		message.AddUtf8StringAttribute(constlabels.KafkaTopic, topicName)
-		message.AddIntAttribute(constlabels.KafkaPartition, int64(partition))
 		return true, true
 	}
 }

@@ -368,69 +368,8 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 
 func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.ProtocolParser) []*model.GaugeGroup {
 	if parser.MultiRequests() {
-		// Match with key when disordering.
-		size := mps.requests.size()
-		parsedReqMsgs := make([]*protocol.PayloadMessage, size)
-		for i := 0; i < size; i++ {
-			req := mps.requests.getEvent(i)
-			requestMsg := protocol.NewRequestMessage(req.GetData())
-			if !parser.ParseRequest(requestMsg) {
-				// Parse failure
-				return nil
-			}
-			parsedReqMsgs[i] = requestMsg
-		}
-
-		records := make([]*model.GaugeGroup, 0)
-		if mps.responses == nil {
-			size := mps.requests.size()
-			for i := 0; i < size; i++ {
-				req := mps.requests.getEvent(i)
-				mp := &messagePair{
-					request:  req,
-					response: nil,
-				}
-				records = append(records, na.getRecord(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
-			}
-			return records
-		} else {
-			matchedRequestIdx := make(map[int]bool)
-			size := mps.responses.size()
-			for i := 0; i < size; i++ {
-				resp := mps.responses.getEvent(i)
-				responseMsg := protocol.NewResponseMessage(resp.GetData(), model.NewAttributeMap())
-				if !parser.ParseResponse(responseMsg) {
-					// Parse failure
-					return nil
-				}
-				// Match Request with repsone
-				matchIdx := parser.PairMatch(parsedReqMsgs, responseMsg)
-				if matchIdx == -1 {
-					return nil
-				}
-				matchedRequestIdx[matchIdx] = true
-
-				mp := &messagePair{
-					request:  mps.requests.getEvent(matchIdx),
-					response: resp,
-				}
-				records = append(records, na.getRecord(mps, mp, parser.GetProtocol(), responseMsg.GetAttributes()))
-			}
-			// 498 Case
-			reqSize := mps.requests.size()
-			for i := 0; i < reqSize; i++ {
-				req := mps.requests.getEvent(i)
-				if _, matched := matchedRequestIdx[i]; !matched {
-					mp := &messagePair{
-						request:  req,
-						response: nil,
-					}
-					records = append(records, na.getRecord(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
-				}
-			}
-
-			return records
-		}
+		// Not mergable requests
+		return na.parseMultipleRequests(mps, parser)
 	}
 
 	// Mergable Data
@@ -450,6 +389,73 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 	}
 
 	return na.getRecords(mps, parser.GetProtocol(), responseMsg.GetAttributes())
+}
+
+// parseMultipleRequests parses the messagePairs when we know there could be multiple read requests.
+// This is used only when the protocol is DNS now.
+func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *protocol.ProtocolParser) []*model.GaugeGroup {
+	// Match with key when disordering.
+	size := mps.requests.size()
+	parsedReqMsgs := make([]*protocol.PayloadMessage, size)
+	for i := 0; i < size; i++ {
+		req := mps.requests.getEvent(i)
+		requestMsg := protocol.NewRequestMessage(req.GetData())
+		if !parser.ParseRequest(requestMsg) {
+			// Parse failure
+			return nil
+		}
+		parsedReqMsgs[i] = requestMsg
+	}
+
+	records := make([]*model.GaugeGroup, 0)
+	if mps.responses == nil {
+		size := mps.requests.size()
+		for i := 0; i < size; i++ {
+			req := mps.requests.getEvent(i)
+			mp := &messagePair{
+				request:  req,
+				response: nil,
+			}
+			records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
+		}
+		return records
+	} else {
+		matchedRequestIdx := make(map[int]bool)
+		size := mps.responses.size()
+		for i := 0; i < size; i++ {
+			resp := mps.responses.getEvent(i)
+			responseMsg := protocol.NewResponseMessage(resp.GetData(), model.NewAttributeMap())
+			if !parser.ParseResponse(responseMsg) {
+				// Parse failure
+				return nil
+			}
+			// Match Request with repsone
+			matchIdx := parser.PairMatch(parsedReqMsgs, responseMsg)
+			if matchIdx == -1 {
+				return nil
+			}
+			matchedRequestIdx[matchIdx] = true
+
+			mp := &messagePair{
+				request:  mps.requests.getEvent(matchIdx),
+				response: resp,
+			}
+			records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), responseMsg.GetAttributes()))
+		}
+		// 498 Case
+		reqSize := mps.requests.size()
+		for i := 0; i < reqSize; i++ {
+			req := mps.requests.getEvent(i)
+			if _, matched := matchedRequestIdx[i]; !matched {
+				mp := &messagePair{
+					request:  req,
+					response: nil,
+				}
+				records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
+			}
+		}
+		return records
+	}
 }
 
 func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.GaugeGroup {
@@ -522,7 +528,10 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	return []*model.GaugeGroup{ret}
 }
 
-func (na *NetworkAnalyzer) getRecord(mps *messagePairs, mp *messagePair, protocol string, attributes *model.AttributeMap) *model.GaugeGroup {
+// getRecordWithSinglePair generates a record whose metrics are copied from the input messagePair,
+// instead of messagePairs. This is used only when there could be multiple real requests in messagePairs.
+// For now, only messagePairs with DNS protocol would run into this method.
+func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messagePair, protocol string, attributes *model.AttributeMap) *model.GaugeGroup {
 	evt := mp.request
 
 	slow := na.isSlow(mp.getDuration(), protocol)
@@ -555,12 +564,12 @@ func (na *NetworkAnalyzer) getRecord(mps *messagePairs, mp *messagePair, protoco
 	}
 
 	ret.UpdateAddGauge(constvalues.ConnectTime, 0)
-	ret.UpdateAddGauge(constvalues.RequestSentTime, mps.getSentTime())
-	ret.UpdateAddGauge(constvalues.WaitingTtfbTime, mps.getWaitingTime())
-	ret.UpdateAddGauge(constvalues.ContentDownloadTime, mps.getDownloadTime())
-	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mps.getDuration()))
-	ret.UpdateAddGauge(constvalues.RequestIo, int64(mps.getRquestSize()))
-	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mps.getResponseSize()))
+	ret.UpdateAddGauge(constvalues.RequestSentTime, mp.getSentTime())
+	ret.UpdateAddGauge(constvalues.WaitingTtfbTime, mp.getWaitingTime())
+	ret.UpdateAddGauge(constvalues.ContentDownloadTime, mp.getDownloadTime())
+	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mp.getDuration()))
+	ret.UpdateAddGauge(constvalues.RequestIo, int64(mp.getRquestSize()))
+	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mp.getResponseSize()))
 
 	ret.Timestamp = evt.GetStartTime()
 	return ret

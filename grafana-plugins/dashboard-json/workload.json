@@ -83,7 +83,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\", protocol=\"$protocol\"}[$__interval])) by(namespace, workload_name)",
+          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\", protocol=\"$protocol\"}[$__range])) by(namespace, workload_name)",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "count",
@@ -164,7 +164,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__interval])) / sum by(namespace, workload_name) \n (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__interval]))",
+          "expr": "sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__range])) / sum by(namespace, workload_name) \n (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "value",
@@ -245,7 +245,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\",response_content=~\"4..|5..|1|2|3\"}[$__interval])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) * 100",
+          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\",response_content=~\"4..|5..|1|2|3\"}[$__range])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "Err rate",
@@ -329,7 +329,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) by(request_content))",
+          "expr": "topk(10, sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) by(request_content))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -416,7 +416,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) / sum by(request_content)  (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval]))) ",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) / sum by(request_content)  (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))) ",
           "format": "time_series",
           "interval": "",
           "legendFormat": "{{request_content}}",
@@ -497,7 +497,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\", response_content=~\"4..|5..|1|2|3\"}[$__interval])) / sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) * 100)",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\", response_content=~\"4..|5..|1|2|3\"}[$__range])) / sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100)",
           "interval": "",
           "legendFormat": "{{ request_content }}",
           "refId": "A"
@@ -801,7 +801,7 @@
         {
           "datasource": "Prometheus",
           "exemplar": false,
-          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"$protocol\"}",
+          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"$protocol\"}[$__range]",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -829,7 +829,9 @@
           "options": {
             "excludeByName": {
               "__name__": true,
-              "dst_namespace": true,
+              "dst_container": true,
+              "dst_container_id": true,
+              "dst_namespace": false,
               "dst_node": true,
               "dst_port": true,
               "dst_service": true,
@@ -842,7 +844,8 @@
               "request_duration_status": true,
               "service_instance_id": true,
               "service_name": true,
-              "src_namespace": true
+              "src_namespace": false,
+              "src_node": true
             },
             "indexByName": {},
             "renameByName": {}
@@ -856,6 +859,8 @@
           "id": "organize",
           "options": {
             "excludeByName": {
+              "dst_container": true,
+              "dst_container_id": true,
               "exported_job": true,
               "src_container": true,
               "src_container_id": true,
@@ -867,22 +872,24 @@
             "indexByName": {
               "Time": 1,
               "Value": 5,
-              "dst_ip": 9,
-              "dst_pod": 10,
-              "dst_workload_name": 8,
+              "dst_ip": 11,
+              "dst_namespace": 9,
+              "dst_pod": 12,
+              "dst_workload_name": 10,
               "request_content": 6,
               "request_processing_status": 3,
               "request_reqxfer_status": 2,
               "response_content": 0,
               "response_rspxfer_status": 4,
-              "src_ip": 7,
-              "src_node": 11
+              "src_ip": 8,
+              "src_namespace": 7
             },
             "renameByName": {
               "Value": "Latency",
               "Value #A": "Latency",
               "Value #B": "P99 Latency",
               "dst_ip": "Destination IP",
+              "dst_namespace": "Destination Namespace",
               "dst_pod": "Destination Pod",
               "dst_workload_name": "Destination",
               "request_content": "URL",
@@ -891,6 +898,7 @@
               "response_content": "Status",
               "response_rspxfer_status": "RspXFer",
               "src_ip": "Source IP",
+              "src_namespace": "Source Namespace",
               "src_pod": "Source Pod",
               "src_workload_kind": "Source",
               "src_workload_name": "Source"
@@ -957,7 +965,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval]))",
+          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "count",
@@ -1038,7 +1046,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(src_namespace, src_workload_name) (increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) / sum by(src_namespace, src_workload_name) \n (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval]))",
+          "expr": "sum by(src_namespace, src_workload_name) (increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) / sum by(src_namespace, src_workload_name) \n (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "latency",
@@ -1121,7 +1129,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\",status_code=~\"4..|5..|1|2|3\"}[$__interval])) / sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) * 100",
+          "expr": "sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\",status_code=~\"4..|5..|1|2|3\"}[$__range])) / sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
@@ -1416,7 +1424,7 @@
         {
           "datasource": "Prometheus",
           "exemplar": false,
-          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"false\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"$protocol\"}",
+          "expr": "kindling_trace_request_duration_nanoseconds{is_server=\"false\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"$protocol\"}[$__range]",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1442,7 +1450,7 @@
           "options": {
             "excludeByName": {
               "__name__": true,
-              "dst_namespace": true,
+              "dst_namespace": false,
               "dst_port": true,
               "instance": true,
               "is_server": true,
@@ -1451,11 +1459,13 @@
               "request_duration_status": true,
               "service_instance_id": true,
               "service_name": true,
-              "src_namespace": true,
+              "src_container": true,
+              "src_container_id": true,
+              "src_namespace": false,
               "src_node": true,
               "src_service": true,
               "src_workload_kind": true,
-              "src_workload_name": true
+              "src_workload_name": false
             },
             "indexByName": {},
             "renameByName": {}
@@ -1479,20 +1489,24 @@
             "indexByName": {
               "Time": 1,
               "Value": 5,
-              "dst_ip": 9,
+              "dst_ip": 12,
+              "dst_namespace": 11,
               "request_content": 6,
               "request_processing_status": 3,
               "request_reqxfer_status": 2,
               "response_content": 0,
               "response_rspxfer_status": 4,
-              "src_ip": 7,
-              "src_pod": 8
+              "src_ip": 10,
+              "src_namespace": 7,
+              "src_pod": 9,
+              "src_workload_name": 8
             },
             "renameByName": {
               "Value": "Latency",
               "Value #A": "Latency",
               "Value #B": "P99 Latency",
               "dst_ip": "Destination IP",
+              "dst_namespace": "Destination Namespace",
               "dst_pod": "Destination Pod",
               "dst_service": "",
               "dst_workload_name": "Destination",
@@ -1502,7 +1516,9 @@
               "response_content": "Status",
               "response_rspxfer_status": "RspXRef",
               "src_ip": "Source IP",
-              "src_pod": "Source Pod"
+              "src_namespace": "Source Namespace",
+              "src_pod": "Source Pod",
+              "src_workload_name": "Source"
             }
           }
         }
@@ -1522,7 +1538,7 @@
           "value": "kube-system"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_entity_request_duration_nanoseconds_count",
+        "definition": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
         "hide": 0,
         "includeAll": false,
         "label": "Namespace",
@@ -1530,11 +1546,11 @@
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "kindling_entity_request_duration_nanoseconds_count",
-          "refId": "Prometheus-namespace-Variable-Query"
+          "query": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
+          "refId": "StandardVariableQuery"
         },
         "refresh": 2,
-        "regex": "/namespace=\"(.+?)\\\"/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 2,
         "tagValuesQuery": "",
@@ -1549,7 +1565,7 @@
           "value": "coredns"
         },
         "datasource": "Prometheus",
-        "definition": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
+        "definition": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"} , workload_name)",
         "hide": 0,
         "includeAll": false,
         "label": "Workload",
@@ -1557,11 +1573,11 @@
         "name": "workload",
         "options": [],
         "query": {
-          "query": "kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"}",
-          "refId": "Prometheus-workload-Variable-Query"
+          "query": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"} , workload_name)",
+          "refId": "StandardVariableQuery"
         },
         "refresh": 2,
-        "regex": "/workload_name=\"(.+?)\\\"/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 2,
         "tagValuesQuery": "",
@@ -1571,31 +1587,27 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "http",
           "value": "http"
         },
+        "datasource": "Prometheus",
+        "definition": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\",workload_name=\"$workload\",protocol!=\"NOSUPPORT\"}, protocol)",
         "hide": 0,
         "includeAll": false,
         "label": "Protocol",
         "multi": false,
         "name": "protocol",
-        "options": [
-          {
-            "selected": true,
-            "text": "http",
-            "value": "http"
-          },
-          {
-            "selected": false,
-            "text": "dns",
-            "value": "dns"
-          }
-        ],
-        "query": "http,dns",
-        "queryValue": "",
+        "options": [],
+        "query": {
+          "query": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\",workload_name=\"$workload\",protocol!=\"NOSUPPORT\"}, protocol)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
         "skipUrlSync": false,
-        "type": "custom"
+        "sort": 0,
+        "type": "query"
       }
     ]
   },

@@ -73,6 +73,8 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 
 	remoteIp := event.GetStringUserAttribute("remote_addr")
 	remotePort := event.GetIntUserAttribute("remote_port")
+  sourceIp := event.GetStringUserAttribute("source_addr")
+	sourcePort := event.GetIntUserAttribute("source_port")
 	containerId := event.GetStringUserAttribute("containerid")
 	reqMethod := event.GetStringUserAttribute("req_method")
 	reqPath := event.GetStringUserAttribute("req_path")
@@ -105,23 +107,15 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	}
 
 	if role == clientRole {
-		srcIp := event.GetUserAttribute("src_ip")
-		srcPort := event.GetUserAttribute("src_port")
-		var srcIpValue string
-		var srcPortValue int64
-		if srcIp != nil && srcPort != nil {
-			srcIpValue = string(srcIp.Value)
-			srcPortValue = event.GetIntUserAttribute("src_port")
-		}
 		labels.Merge(model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-			constlabels.SrcIp:    model.NewStringValue(srcIpValue),
+			constlabels.SrcIp:    model.NewStringValue(sourceIp),
 			constlabels.DstIp:    model.NewStringValue(remoteIp),
-			constlabels.SrcPort:  model.NewIntValue(srcPortValue),
+			constlabels.SrcPort:  model.NewIntValue(sourcePort),
 			constlabels.DstPort:  model.NewIntValue(remotePort),
 			constlabels.IsServer: model.NewBoolValue(false),
 		}))
 		// Find dst NAT information
-		dNatInfo := a.conntracker.GetDNATTupleWithString(srcIpValue, remoteIp, uint16(srcPortValue), uint16(remotePort), 0)
+		dNatInfo := a.conntracker.GetDNATTupleWithString(sourceIp, remoteIp, uint16(sourcePort), uint16(remotePort), 0)
 		if dNatInfo != nil {
 			labels.AddStringValue(constlabels.DnatIp, dNatInfo.ReplSrcIP.String())
 			labels.AddIntValue(constlabels.DnatPort, int64(dNatInfo.ReplSrcPort))
@@ -129,9 +123,9 @@ func (a *UprobeAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	} else if role == serverRole {
 		labels.Merge(model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcIp:    model.NewStringValue(remoteIp),
-			constlabels.DstIp:    model.NewStringValue(""),
+			constlabels.DstIp:    model.NewStringValue(sourceIp),
 			constlabels.SrcPort:  model.NewIntValue(remotePort),
-			constlabels.DstPort:  model.NewIntValue(-1),
+			constlabels.DstPort:  model.NewIntValue(sourcePort),
 			constlabels.IsServer: model.NewBoolValue(true),
 		}))
 	}
