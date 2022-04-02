@@ -5,6 +5,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
+	"sort"
 	"strconv"
 )
 
@@ -41,6 +42,8 @@ type realAttributes struct {
 	paramMap []attribute.KeyValue
 	// metricsDicList A list contain dict of baseLabels,commonLabels,extraLabelsParamList,
 	metricsDicList []dictionary
+	// sortCache
+	sortCache map[int]int
 }
 
 type extraLabelsKey struct {
@@ -208,9 +211,28 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 			tmpParamList = append(tmpParamList, m.constLabels...)
 		}
 
+		// manual sort
+		tmpKeysList := make([]string, len(tmpParamList))
+		for s := 0; s < len(tmpParamList); s++ {
+			tmpKeysList[s] = string(tmpParamList[s].Key)
+		}
+		sort.Strings(tmpKeysList)
+		sortCache := make(map[int]int, len(tmpParamList))
+		realParamList := make([]attribute.KeyValue, len(tmpParamList))
+		for s := 0; s < len(tmpKeysList); s++ {
+			for j := 0; j < len(tmpParamList); j++ {
+				if tmpKeysList[s] == string(tmpParamList[j].Key) {
+					sortCache[j] = s
+					realParamList[s] = tmpParamList[j]
+					break
+				}
+			}
+		}
+
 		labelsMap[m.extraLabelsKey[i]] = realAttributes{
-			paramMap:       tmpParamList,
+			paramMap:       realParamList,
 			metricsDicList: tmpDict,
+			sortCache:      sortCache,
 		}
 	}
 
@@ -233,22 +255,22 @@ func (m *Adapter) adapter(group *model.GaugeGroup) ([]attribute.KeyValue, error)
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
 		case String:
-			attrs.paramMap[i].Value = attribute.StringValue(labels.GetStringValue(attrs.metricsDicList[i].originKey))
+			attrs.paramMap[attrs.sortCache[i]].Value = attribute.StringValue(labels.GetStringValue(attrs.metricsDicList[i].originKey))
 		case Int64:
-			attrs.paramMap[i].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
+			attrs.paramMap[attrs.sortCache[i]].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
 		case Bool:
-			attrs.paramMap[i].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
+			attrs.paramMap[attrs.sortCache[i]].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
 		case FromInt64ToString:
-			attrs.paramMap[i].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+			attrs.paramMap[attrs.sortCache[i]].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
 		case StrEmpty:
-			attrs.paramMap[i].Value = attribute.StringValue(constlabels.STR_EMPTY)
+			attrs.paramMap[attrs.sortCache[i]].Value = attribute.StringValue(constlabels.STR_EMPTY)
 		}
 	}
 
 	if m.valueLabelsFunc != nil {
 		valueLabels := m.valueLabelsFunc(group)
 		for i := 0; i < len(valueLabels); i++ {
-			attrs.paramMap[i+len(attrs.metricsDicList)].Value = valueLabels[i]
+			attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Value = valueLabels[i]
 		}
 	}
 

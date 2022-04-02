@@ -1,30 +1,96 @@
 package otelexporter
 
 import (
+	"context"
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
+	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"testing"
+	"time"
 )
 
 func TestAdapter_adapter(t *testing.T) {
+
+	cfg := &Config{
+		ExportKind:   StdoutKindExporter,
+		PromCfg:      nil,
+		OtlpGrpcCfg:  nil,
+		StdoutCfg:    &StdoutConfig{CollectPeriod: 30 * time.Second},
+		CustomLabels: nil,
+		MetricAggregationMap: map[string]MetricAggregationKind{
+			"kindling_entity_request_duration_nanoseconds":   2,
+			"kindling_entity_request_send_bytes_total":       1,
+			"kindling_entity_request_receive_bytes_total":    1,
+			"kindling_topology_request_duration_nanoseconds": 2,
+			"kindling_topology_request_request_bytes_total":  1,
+			"kindling_topology_request_response_bytes_total": 1,
+			"kindling_trace_request_duration_nanoseconds":    0,
+			"kindling_tcp_rtt_milliseconds":                  0,
+			"kindling_tcp_retransmit_total":                  1,
+			"kindling_tcp_packet_loss_total":                 1,
+		},
+	}
+
 	constLabels := []attribute.KeyValue{
 		attribute.String("constLabels1", "constValues1"),
 		attribute.Int("constLabels2", 2),
 	}
 	baseAdapterManager := createBaseAdapterManager(constLabels)
 	detailTopologyAttrs, _ := baseAdapterManager.detailTopologyAdapter.adapter(makeOriginGaugeGroup(300000))
+	//for i := 0; i < len(detailTopologyAttrs); i++ {
+	//	fmt.Printf("%+v\n", detailTopologyAttrs[i])
+	//}
+	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
+		Filename:   "test.log",
+		MaxSize:    500,
+		MaxAge:     10,
+		MaxBackups: 1,
+		LocalTime:  true,
+		Compress:   false,
+	})
+	exporter, _ := newExporters(context.Background(), cfg, logger)
+
+	cont := controller.New(
+		otelprocessor.NewFactory(simple.NewWithHistogramDistribution(
+			histogram.WithExplicitBoundaries(exponentialInt64NanosecondsBoundaries),
+		), exporter.metricExporter),
+		controller.WithExporter(exporter.metricExporter),
+		controller.WithCollectPeriod(cfg.StdoutCfg.CollectPeriod),
+		controller.WithResource(nil),
+	)
+
+	otelexporter := &OtelExporter{
+		metricController:     cont,
+		traceProvider:        nil,
+		defaultTracer:        nil,
+		customLabels:         nil,
+		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, nil),
+		metricAggregationMap: cfg.MetricAggregationMap,
+		telemetry:            component.NewDefaultTelemetryTools(),
+	}
+
+	if err := cont.Start(context.Background()); err != nil {
+		logger.Panic("failed to start controller:", zap.Error(err))
+	}
+	otelexporter.instrumentFactory.meter.RecordBatch(context.Background(), detailTopologyAttrs, otelexporter.GetMetricMeasurement(makeOriginGaugeGroup(300000).Values, false)...)
 	for i := 0; i < len(detailTopologyAttrs); i++ {
 		fmt.Printf("%+v\n", detailTopologyAttrs[i])
 	}
 
-	detailTraceSpanAttrs, _ := baseAdapterManager.traceToSpanAdapter.adapter(makeOriginGaugeGroup(300000))
+	detailTopologyAttrs, _ = baseAdapterManager.detailTopologyAdapter.adapter(makeOriginGaugeGroup(300000))
 	for i := 0; i < len(detailTopologyAttrs); i++ {
-		fmt.Printf("%+v\n", detailTraceSpanAttrs[i])
+		fmt.Printf("%+v\n", detailTopologyAttrs[i])
 	}
-
 }
 
 func makeOriginGaugeGroup(latency int64) *model.GaugeGroup {
