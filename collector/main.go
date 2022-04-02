@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	//print version information
+	// Print version information
 	log.Printf("GitCommitInfo:%s\n", version.Version())
 
 	app, err := application.New()

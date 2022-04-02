@@ -33,7 +33,7 @@ const (
 type NetworkAnalyzer struct {
 	cfg           *Config
 	nextConsumers []consumer.Consumer
-	conntracker   *conntracker.Conntracker
+	conntracker   conntracker.Conntracker
 
 	staticPortMap    map[uint32]string
 	slowThresholdMap map[string]int
@@ -49,20 +49,31 @@ type NetworkAnalyzer struct {
 
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
-	return &NetworkAnalyzer{
+	na := &NetworkAnalyzer{
 		cfg:            config,
 		gaugeGroupPool: NewGaugePool(),
 		nextConsumers:  consumers,
 		telemetry:      telemetry,
 	}
+	if config.EnableConntrack {
+		connConfig := &conntracker.Config{
+			Enabled:                      config.EnableConntrack,
+			ProcRoot:                     config.ProcRoot,
+			ConntrackInitTimeout:         30 * time.Second,
+			ConntrackRateLimit:           config.ConntrackRateLimit,
+			ConntrackMaxStateSize:        config.ConntrackMaxStateSize,
+			EnableConntrackAllNamespaces: true,
+		}
+		na.conntracker, _ = conntracker.NewConntracker(connConfig)
+	}
+
+	return na
 }
 
 func (na *NetworkAnalyzer) Start() error {
 	// TODO When import multi annalyzers, this part should move to factory. The metric will relate with analyzers.
 	newSelfMetrics(na.telemetry.MeterProvider, na)
-	if na.cfg.EnableConntrack {
-		na.conntracker, _ = conntracker.NewConntracker(na.cfg.ConntrackMaxStateSize)
-	}
+
 	go na.consumerFdNoReusingTrace()
 
 	protocol.SetHttpPayLoadLength(na.cfg.getHttpPayloadLength())
