@@ -125,13 +125,13 @@ func RemoveDstPodInfoForNonExternalAggTopology(labels *model.AttributeMap, attrs
 func ReplaceDstIpOrDstPortByDNatIpAndDNatPortForDetailTopology(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue {
 	dNatIp := labels.GetStringValue(constlabels.DnatIp)
 	dNatPort := labels.GetIntValue(constlabels.DnatPort)
-	if dNatIp == "" && dNatPort == 0 {
+	if dNatIp == "" && dNatPort < 1 {
 		return attrs
 	} else {
 		for i := 0; i < len(attrs); i++ {
 			if attrs[i].Key == constlabels.DstIp && dNatIp != "" {
 				attrs[i].Value = attribute.StringValue(dNatIp)
-			} else if attrs[i].Key == constlabels.DstPort && dNatPort != 0 {
+			} else if attrs[i].Key == constlabels.DstPort && dNatPort > 0 {
 				attrs[i].Value = attribute.Int64Value(dNatPort)
 			}
 		}

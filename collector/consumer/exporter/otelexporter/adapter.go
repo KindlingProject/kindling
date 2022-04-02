@@ -186,7 +186,8 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 		tmpDict := make([]dictionary, 0, len(m.baseAndCommonLabelsDict)+len(m.extraLabelsParamList[i].dicList))
 		tmpDict = append(tmpDict, m.baseAndCommonLabelsDict...)
 		tmpDict = append(tmpDict, m.extraLabelsParamList[i].dicList...)
-		tmpParamList := baseAndCommonParams
+		tmpParamList := make([]attribute.KeyValue, len(baseAndCommonParams))
+		copy(tmpParamList, baseAndCommonParams)
 		for s := 0; s < len(m.extraLabelsParamList[i].dicList); s++ {
 			tmpParamList = append(tmpParamList, attribute.KeyValue{
 				Key: attribute.Key(m.extraLabelsParamList[i].dicList[s].newKey),
