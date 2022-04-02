@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetUintUserAtrribute(t *testing.T) {
+func TestGetUintUserAttribute(t *testing.T) {
 	tests := []struct {
 		key       string
 		valueType ValueType
@@ -30,12 +30,12 @@ func TestGetUintUserAtrribute(t *testing.T) {
 					{Key: test.key, ValueType: test.valueType, Value: test.value},
 				},
 			}
-			assert.Equal(t, test.expect, event.GetUintUserAtrribute(test.key))
+			assert.Equal(t, test.expect, event.GetUintUserAttribute(test.key))
 		})
 	}
 }
 
-func TestGetIntUserAtrribute(t *testing.T) {
+func TestGetIntUserAttribute(t *testing.T) {
 	tests := []struct {
 		key       string
 		valueType ValueType
@@ -59,12 +59,12 @@ func TestGetIntUserAtrribute(t *testing.T) {
 					{Key: test.key, ValueType: test.valueType, Value: test.value},
 				},
 			}
-			assert.Equal(t, test.expect, event.GetIntUserAtrribute(test.key))
+			assert.Equal(t, test.expect, event.GetIntUserAttribute(test.key))
 		})
 	}
 }
 
-func TestGetFloatUserAtrribute(t *testing.T) {
+func TestGetFloatUserAttribute(t *testing.T) {
 	tests := []struct {
 		key    string
 		value  []byte
@@ -82,12 +82,12 @@ func TestGetFloatUserAtrribute(t *testing.T) {
 					{Key: test.key, ValueType: ValueType_FLOAT, Value: test.value},
 				},
 			}
-			assert.Equal(t, test.expect, event.GetFloatUserAtrribute(test.key))
+			assert.Equal(t, test.expect, event.GetFloatUserAttribute(test.key))
 		})
 	}
 }
 
-func TestGetDoubleUserAtrribute(t *testing.T) {
+func TestGetDoubleUserAttribute(t *testing.T) {
 	tests := []struct {
 		key    string
 		value  []byte
@@ -105,7 +105,7 @@ func TestGetDoubleUserAtrribute(t *testing.T) {
 					{Key: test.key, ValueType: ValueType_FLOAT, Value: test.value},
 				},
 			}
-			assert.Equal(t, test.expect, event.GetDoubleUserAtrribute(test.key))
+			assert.Equal(t, test.expect, event.GetDoubleUserAttribute(test.key))
 		})
 	}
 }

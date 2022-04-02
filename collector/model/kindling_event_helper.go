@@ -59,7 +59,7 @@ func (x *KindlingEvent) GetLatency() uint64 {
 	return 0
 }
 
-func (x *KindlingEvent) GetUintUserAtrribute(key string) uint64 {
+func (x *KindlingEvent) GetUintUserAttribute(key string) uint64 {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil {
 		switch keyValue.ValueType {
@@ -76,7 +76,7 @@ func (x *KindlingEvent) GetUintUserAtrribute(key string) uint64 {
 	return 0
 }
 
-func (x *KindlingEvent) GetIntUserAtrribute(key string) int64 {
+func (x *KindlingEvent) GetIntUserAttribute(key string) int64 {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil {
 		switch keyValue.ValueType {
@@ -93,7 +93,7 @@ func (x *KindlingEvent) GetIntUserAtrribute(key string) int64 {
 	return 0
 }
 
-func (x *KindlingEvent) GetFloatUserAtrribute(key string) float32 {
+func (x *KindlingEvent) GetFloatUserAttribute(key string) float32 {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil && keyValue.ValueType == ValueType_FLOAT {
 		return math.Float32frombits(byteOrder.Uint32(keyValue.Value))
@@ -101,7 +101,7 @@ func (x *KindlingEvent) GetFloatUserAtrribute(key string) float32 {
 	return 0.0
 }
 
-func (x *KindlingEvent) GetDoubleUserAtrribute(key string) float64 {
+func (x *KindlingEvent) GetDoubleUserAttribute(key string) float64 {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil && keyValue.ValueType == ValueType_FLOAT {
 		return math.Float64frombits(byteOrder.Uint64(keyValue.Value))
@@ -109,7 +109,7 @@ func (x *KindlingEvent) GetDoubleUserAtrribute(key string) float64 {
 	return 0.0
 }
 
-func (x *KindlingEvent) GetStringUserAtrribute(key string) string {
+func (x *KindlingEvent) GetStringUserAttribute(key string) string {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil {
 		return string(keyValue.GetValue())
