@@ -51,27 +51,21 @@ func TestRelabelProcessor_Consume(t *testing.T) {
 
 func makeGaugeGroup(latency int64) *model.GaugeGroup {
 	labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-		constlabels.DstNode:             model.NewStringValue("test-node"),
-		constlabels.DstNamespace:        model.NewStringValue("test-namespace"),
-		constlabels.DstWorkloadKind:     model.NewStringValue("deployment"),
-		constlabels.DstWorkloadName:     model.NewStringValue("test-deploy"),
-		constlabels.DstPod:              model.NewStringValue("test-pod"),
-		constlabels.DstContainer:        model.NewStringValue("test-container"),
-		constlabels.DstIp:               model.NewStringValue("10.0.0.1"),
-		constlabels.DstPort:             model.NewIntValue(80),
-		constlabels.ContentKey:          model.NewStringValue("/test"),
-		constlabels.ResponseContent:     model.NewIntValue(201),
-		constlabels.IsSlow:              model.NewBoolValue(true),
-		constlabels.HttpUrl:             model.NewStringValue("/test"),
-		constlabels.HttpRequestPayload:  model.NewStringValue("GET /test HTTP/1.1"),
-		constlabels.HttpApmTraceId:      model.NewStringValue("asd1231"),
-		constlabels.HttpMethod:          model.NewStringValue("GET"),
-		constlabels.HttpResponsePayload: model.NewStringValue("200 HTTP/1.1 adads"),
-		constlabels.HttpStatusCode:      model.NewIntValue(200),
+		constlabels.Node:            model.NewStringValue("test-node"),
+		constlabels.Namespace:       model.NewStringValue("test-namespace"),
+		constlabels.WorkloadKind:    model.NewStringValue("deployment"),
+		constlabels.WorkloadName:    model.NewStringValue("test-deploy"),
+		constlabels.Pod:             model.NewStringValue("test-pod"),
+		constlabels.Container:       model.NewStringValue("test-container"),
+		constlabels.Ip:              model.NewStringValue("10.0.0.1"),
+		constlabels.Port:            model.NewIntValue(80),
+		constlabels.RequestContent:  model.NewStringValue("/test"),
+		constlabels.ResponseContent: model.NewIntValue(201),
+		constlabels.IsSlow:          model.NewBoolValue(true),
 	})
 
 	latencyGauge := &model.Gauge{
-		Name:  constvalues.RequestTotalTime,
+		Name:  "kindling_entity_request_duration_nanoseconds",
 		Value: latency,
 	}
 

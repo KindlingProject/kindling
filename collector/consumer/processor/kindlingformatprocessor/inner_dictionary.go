@@ -31,7 +31,7 @@ func newGauges(g *model.GaugeGroup) *gauges {
 	return &gauges{
 		GaugeGroup:   gaugeGroupCp,
 		targetValues: make([]*model.Gauge, 0, len(g.Values)),
-		targetLabels: g.Labels,
+		targetLabels: model.NewAttributeMap(),
 	}
 }
 
@@ -302,8 +302,4 @@ func If(condition bool, trueVal, falseVal interface{}) interface{} {
 		return trueVal
 	}
 	return falseVal
-}
-
-func cleanSrcPort(cfg *Config, g *gauges) {
-	g.targetLabels.RemoveAttribute(constlabels.SrcPort)
 }
