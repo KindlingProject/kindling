@@ -273,3 +273,31 @@ func (x *KindlingEvent) isRequest(in bool) (bool, error) {
 func (x *KindlingEvent) GetSocketKey() uint64 {
 	return uint64(int64(x.Ctx.ThreadInfo.Pid)<<32) | uint64(x.Ctx.FdInfo.Num)&LOWER32
 }
+
+func (kv *KeyValue) GetUintValue() uint64 {
+	switch kv.ValueType {
+	case ValueType_UINT8:
+		return uint64(kv.Value[0])
+	case ValueType_UINT16:
+		return uint64(byteOrder.Uint16(kv.Value))
+	case ValueType_UINT32:
+		return uint64(byteOrder.Uint32(kv.Value))
+	case ValueType_UINT64:
+		return byteOrder.Uint64(kv.Value)
+	}
+	return 0
+}
+
+func (kv *KeyValue) GetIntValue() int64 {
+	switch kv.ValueType {
+	case ValueType_INT8:
+		return int64(int8(kv.Value[0]))
+	case ValueType_INT16:
+		return int64(int16(byteOrder.Uint16(kv.Value)))
+	case ValueType_INT32:
+		return int64(int32(byteOrder.Uint32(kv.Value)))
+	case ValueType_INT64:
+		return int64(byteOrder.Uint64(kv.Value))
+	}
+	return 0
+}

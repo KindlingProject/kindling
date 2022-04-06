@@ -145,10 +145,10 @@ func (a *TcpMetricAnalyzer) getTupleLabels(event *model.KindlingEvent) (*model.A
 	if sIp == nil || sPort == nil || dIp == nil || dPort == nil {
 		return nil, fmt.Errorf("one of sip or dip or dport is nil for event %s", event.Name)
 	}
-	sIpString := model.IPLong2String(uint32(event.GetUintUserAttribute("sip")))
-	sPortUint := event.GetUintUserAttribute("sport")
-	dIpString := model.IPLong2String(uint32(event.GetUintUserAttribute("dip")))
-	dPortUint := event.GetUintUserAttribute("dport")
+	sIpString := model.IPLong2String(uint32(sIp.GetUintValue()))
+	sPortUint := sPort.GetUintValue()
+	dIpString := model.IPLong2String(uint32(dIp.GetUintValue()))
+	dPortUint := dPort.GetUintValue()
 
 	labels := model.NewAttributeMap()
 	labels.AddStringValue(constlabels.SrcIp, sIpString)
