@@ -298,7 +298,7 @@ func (e *OtelExporter) PushNetMetric(gaugeGroup *model.GaugeGroup) {
 		srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
 		if srcNamespace == constlabels.ExternalClusterNamespace {
 			attrs, _ := e.adapterManager.detailTopologyAdapter.adapter(gaugeGroup)
-			e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup.Values, false)...)
+			e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup, false)...)
 		}
 	}
 	var metricAdapter *Adapter
@@ -319,11 +319,11 @@ func (e *OtelExporter) PushNetMetric(gaugeGroup *model.GaugeGroup) {
 
 	// TODO deal with error
 	attrs, _ := metricAdapter.adapter(gaugeGroup)
-	e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup.Values, isServer)...)
+	e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup, isServer)...)
 }
 
 func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
-	storeGaugeGroupKeys(gaugeGroup)
+	//storeGaugeGroupKeys(gaugeGroup)
 	values := gaugeGroup.Values
 	measurements := make([]metric.Measurement, 0, len(values))
 	for _, value := range values {
@@ -445,11 +445,19 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 	return
 }(exponentialInt64Boundaries)
 
-func (e *OtelExporter) GetMetricMeasurement(gauges []*model.Gauge, isServer bool) []metric.Measurement {
+func (e *OtelExporter) GetMetricMeasurement(gaugeGroup *model.GaugeGroup, isServer bool) []metric.Measurement {
+	gauges := gaugeGroup.Values
 	// TODO Label to Measurement
 	measurements := make([]metric.Measurement, 0, len(gauges))
 	for i := 0; i < len(gauges); i++ {
 		name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
+		if name == "" {
+			continue
+		}
+		if gauges[i].Value < 0 {
+			e.telemetry.Logger.Warn("Exporter received an negative value!", zap.String("gauge", gaugeGroup.String()))
+			continue
+		}
 		measurements = append(measurements, e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value))
 	}
 	return measurements

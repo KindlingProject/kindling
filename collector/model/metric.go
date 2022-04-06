@@ -62,7 +62,9 @@ func (g *GaugeGroup) String() string {
 	var str strings.Builder
 	str.WriteString(fmt.Sprintf("GagugeGroup:\n"))
 	str.WriteString(fmt.Sprintf("\tName: %s\n", g.Name))
-	str.WriteString(fmt.Sprintf("\tValues: %v\n", g.Values))
+	for i := 0; i < len(g.Values); i++ {
+		str.WriteString(fmt.Sprintf("\tValues#%d: %v\n", i, *g.Values[i]))
+	}
 	str.WriteString(fmt.Sprintf("\tLabels: %v\n", g.Labels))
 	str.WriteString(fmt.Sprintf("\tTimestamp: %d\n", g.Timestamp))
 	return str.String()

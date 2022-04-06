@@ -2,17 +2,19 @@ package otelexporter
 
 import (
 	"context"
-	"fmt"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"testing"
@@ -22,10 +24,10 @@ import (
 func TestAdapter_adapter(t *testing.T) {
 
 	cfg := &Config{
-		ExportKind:   StdoutKindExporter,
-		PromCfg:      nil,
+		ExportKind:   PrometheusKindExporter,
+		PromCfg:      &PrometheusConfig{Port: ":8080"},
 		OtlpGrpcCfg:  nil,
-		StdoutCfg:    &StdoutConfig{CollectPeriod: 30 * time.Second},
+		StdoutCfg:    nil,
 		CustomLabels: nil,
 		MetricAggregationMap: map[string]MetricAggregationKind{
 			"kindling_entity_request_duration_nanoseconds":   2,
@@ -58,6 +60,79 @@ func TestAdapter_adapter(t *testing.T) {
 		LocalTime:  true,
 		Compress:   false,
 	})
+
+	config := prometheus.Config{}
+	// Create a meter
+
+	c := controller.New(
+		otelprocessor.NewFactory(
+			selector.NewWithHistogramDistribution(
+				histogram.WithExplicitBoundaries(exponentialInt64NanosecondsBoundaries),
+			),
+			aggregation.CumulativeTemporalitySelector(),
+		),
+	)
+	exp, _ := prometheus.New(config, c)
+
+	otelexporter := &OtelExporter{
+		cfg:                  cfg,
+		metricController:     c,
+		traceProvider:        nil,
+		defaultTracer:        nil,
+		customLabels:         constLabels,
+		instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), logger, constLabels),
+		metricAggregationMap: cfg.MetricAggregationMap,
+		telemetry:            component.NewDefaultTelemetryTools(),
+		adapterManager:       createBaseAdapterManager(constLabels),
+	}
+
+	go func() {
+		err := StartServer(exp, otelexporter.telemetry.Logger, cfg.PromCfg.Port)
+		if err != nil {
+			otelexporter.telemetry.Logger.Warn("error starting otelexporter prometheus server: ", zap.Error(err))
+		}
+	}()
+
+	for {
+		otelexporter.instrumentFactory.meter.RecordBatch(context.Background(), detailTopologyAttrs, otelexporter.GetMetricMeasurement(makeOriginGaugeGroup(300000), false)...)
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func TestNegativeValue_adapter(t *testing.T) {
+	cfg := &Config{
+		ExportKind:   StdoutKindExporter,
+		PromCfg:      nil,
+		OtlpGrpcCfg:  nil,
+		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
+		CustomLabels: nil,
+		MetricAggregationMap: map[string]MetricAggregationKind{
+			"kindling_entity_request_duration_nanoseconds":   2,
+			"kindling_entity_request_send_bytes_total":       1,
+			"kindling_entity_request_receive_bytes_total":    1,
+			"kindling_topology_request_duration_nanoseconds": 2,
+			"kindling_topology_request_request_bytes_total":  1,
+			"kindling_topology_request_response_bytes_total": 1,
+			"kindling_trace_request_duration_nanoseconds":    0,
+			"kindling_tcp_rtt_milliseconds":                  0,
+			"kindling_tcp_retransmit_total":                  1,
+			"kindling_tcp_packet_loss_total":                 1,
+		},
+	}
+
+	constLabels := []attribute.KeyValue{
+		attribute.String("constLabels1", "constValues1"),
+		attribute.Int("constLabels2", 2),
+	}
+	baseAdapterManager := createBaseAdapterManager(constLabels)
+	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
+		Filename:   "test.log",
+		MaxSize:    500,
+		MaxAge:     10,
+		MaxBackups: 1,
+		LocalTime:  true,
+		Compress:   false,
+	})
 	exporter, _ := newExporters(context.Background(), cfg, logger)
 
 	cont := controller.New(
@@ -82,15 +157,12 @@ func TestAdapter_adapter(t *testing.T) {
 	if err := cont.Start(context.Background()); err != nil {
 		logger.Panic("failed to start controller:", zap.Error(err))
 	}
-	otelexporter.instrumentFactory.meter.RecordBatch(context.Background(), detailTopologyAttrs, otelexporter.GetMetricMeasurement(makeOriginGaugeGroup(300000).Values, false)...)
-	for i := 0; i < len(detailTopologyAttrs); i++ {
-		fmt.Printf("%+v\n", detailTopologyAttrs[i])
-	}
 
-	detailTopologyAttrs, _ = baseAdapterManager.detailTopologyAdapter.adapter(makeOriginGaugeGroup(300000))
-	for i := 0; i < len(detailTopologyAttrs); i++ {
-		fmt.Printf("%+v\n", detailTopologyAttrs[i])
-	}
+	gauges := makeOriginGaugeGroup(-30)
+
+	attrs, _ := baseAdapterManager.detailTopologyAdapter.adapter(gauges)
+	otelexporter.instrumentFactory.meter.RecordBatch(context.Background(), attrs, otelexporter.GetMetricMeasurement(gauges, false)...)
+
 }
 
 func makeOriginGaugeGroup(latency int64) *model.GaugeGroup {
