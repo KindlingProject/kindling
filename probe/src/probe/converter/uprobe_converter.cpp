@@ -14,6 +14,8 @@ void uprobe_converter::convert(void *evt) {
     auto kevt = get_kindlingEventList()->add_kindling_event_list();
     struct grpc_event_t* gevt = static_cast<struct grpc_event_t*>(evt);
 
+    VLOG(1) << absl::Substitute("[grpc] entering uprobe converter ... ");
+
     kevt->set_source(UPROBE);
     kevt->set_name("grpc_uprobe");
     kevt->set_category(CAT_NET);
@@ -114,6 +116,8 @@ void uprobe_converter::convert(void *evt) {
     cid_attr->set_key("containerid");
     cid_attr->set_value_type(CHARBUF);
     cid_attr->set_value(gevt->container_id);
+    
+    VLOG(1) << absl::Substitute("[grpc] uprobe convert end ");
 
     return;
 }

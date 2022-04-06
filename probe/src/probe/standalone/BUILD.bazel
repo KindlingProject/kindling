@@ -11,10 +11,11 @@ pl_cc_binary(
             "*_main.cc",
         ],
     ),
-    copts = ["-Wno-unused-parameter","-Wno-unused-variable","-Wno-mismatched-tags"],
+    copts = ["-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libscap", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp/third-party/jsoncpp", "-Ibazel-out/k8-fastbuild/bin/third_party/agent-libs_build/include/userspace/libsinsp", "-Wno-unused-parameter","-Wno-unused-variable","-Wno-mismatched-tags"],
     deps = [
         "//src/probe/utils:cc_library",
         "@px//src/common/signal:cc_library",
+	"//third_party:agent-libs_build",
         "@px//src/stirling:cc_library",
 	"@com_github_jupp0r_prometheus_cpp//pull",
 	"@px//src/common/metrics:cc_library",

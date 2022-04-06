@@ -104,7 +104,7 @@ const nodeImgHandle = (node: any) => {
     }
 };
 
-// 注册自定义节点
+// register custom node
 G6.registerNode('custom-node', {
     // getAnchorPoints() {
     //     return [

@@ -17,6 +17,7 @@ const imgs: any = {
     external: externalPng,
     namespace: namespacePng,
     workload: workloadPng,
+    node: workloadPng,
     deployment: deploymentPng,
     daemonset: daemonsetPng,
     statefulset: statefulsetPng,

@@ -44,6 +44,9 @@ func TestKafkaProtocol(t *testing.T) {
 
 	testProtocol(t, "kafka/consumer-event.yml",
 		"kafka/consumer-trace-fetch-split.yml")
+
+	testProtocol(t, "kafka/consumer-event.yml",
+		"kafka/consumer-trace-fetch-multi-topics.yml")
 }
 
 type NopProcessor struct {
