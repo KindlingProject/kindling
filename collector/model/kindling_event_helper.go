@@ -62,16 +62,7 @@ func (x *KindlingEvent) GetLatency() uint64 {
 func (x *KindlingEvent) GetUintUserAttribute(key string) uint64 {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil {
-		switch keyValue.ValueType {
-		case ValueType_UINT8:
-			return uint64(keyValue.Value[0])
-		case ValueType_UINT16:
-			return uint64(byteOrder.Uint16(keyValue.Value))
-		case ValueType_UINT32:
-			return uint64(byteOrder.Uint32(keyValue.Value))
-		case ValueType_UINT64:
-			return byteOrder.Uint64(keyValue.Value)
-		}
+		return keyValue.GetUintValue()
 	}
 	return 0
 }
@@ -79,16 +70,7 @@ func (x *KindlingEvent) GetUintUserAttribute(key string) uint64 {
 func (x *KindlingEvent) GetIntUserAttribute(key string) int64 {
 	keyValue := x.GetUserAttribute(key)
 	if keyValue != nil {
-		switch keyValue.ValueType {
-		case ValueType_INT8:
-			return int64(int8(keyValue.Value[0]))
-		case ValueType_INT16:
-			return int64(int16(byteOrder.Uint16(keyValue.Value)))
-		case ValueType_INT32:
-			return int64(int32(byteOrder.Uint32(keyValue.Value)))
-		case ValueType_INT64:
-			return int64(byteOrder.Uint64(keyValue.Value))
-		}
+		return keyValue.GetIntValue()
 	}
 	return 0
 }
