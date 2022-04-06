@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/binary"
 	"errors"
 	"math"
 	"net"
@@ -13,12 +14,23 @@ const (
 
 var (
 	ErrMessageNotSocket = errors.New("not a network receive/send event")
+	byteOrder           = getByteOrder()
 )
+
+func getByteOrder() binary.ByteOrder {
+	// Check if littleendian or bigendian
+	s := int16(0x1234)
+	littleVal := byte(0x34)
+	if littleVal == byte(int8(s)) {
+		return binary.LittleEndian
+	}
+	return binary.BigEndian
+}
 
 func (x *KindlingEvent) GetData() []byte {
 	keyValue := x.GetUserAttribute("data")
 	if keyValue != nil {
-		return keyValue.GetValue().GetBytesValue()
+		return keyValue.GetValue()
 	}
 	return nil
 }
@@ -26,7 +38,7 @@ func (x *KindlingEvent) GetData() []byte {
 func (x *KindlingEvent) GetDataLen() int {
 	keyValue := x.GetUserAttribute("data")
 	if keyValue != nil {
-		return len(keyValue.GetValue().GetBytesValue())
+		return len(keyValue.GetValue())
 	}
 	return 0
 }
@@ -34,7 +46,7 @@ func (x *KindlingEvent) GetDataLen() int {
 func (x *KindlingEvent) GetResVal() int64 {
 	keyValue := x.GetUserAttribute("res")
 	if keyValue != nil {
-		return keyValue.GetValue().GetIntValue()
+		return int64(byteOrder.Uint64(keyValue.Value))
 	}
 	return -1
 }
@@ -42,9 +54,49 @@ func (x *KindlingEvent) GetResVal() int64 {
 func (x *KindlingEvent) GetLatency() uint64 {
 	keyValue := x.GetUserAttribute("latency")
 	if keyValue != nil {
-		return uint64(keyValue.GetValue().GetIntValue())
+		return byteOrder.Uint64(keyValue.Value)
 	}
 	return 0
+}
+
+func (x *KindlingEvent) GetUintUserAttribute(key string) uint64 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil {
+		return keyValue.GetUintValue()
+	}
+	return 0
+}
+
+func (x *KindlingEvent) GetIntUserAttribute(key string) int64 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil {
+		return keyValue.GetIntValue()
+	}
+	return 0
+}
+
+func (x *KindlingEvent) GetFloatUserAttribute(key string) float32 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil && keyValue.ValueType == ValueType_FLOAT {
+		return math.Float32frombits(byteOrder.Uint32(keyValue.Value))
+	}
+	return 0.0
+}
+
+func (x *KindlingEvent) GetDoubleUserAttribute(key string) float64 {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil && keyValue.ValueType == ValueType_FLOAT {
+		return math.Float64frombits(byteOrder.Uint64(keyValue.Value))
+	}
+	return 0.0
+}
+
+func (x *KindlingEvent) GetStringUserAttribute(key string) string {
+	keyValue := x.GetUserAttribute(key)
+	if keyValue != nil {
+		return string(keyValue.GetValue())
+	}
+	return ""
 }
 
 func (x *KindlingEvent) GetStartTime() uint64 {
@@ -202,4 +254,32 @@ func (x *KindlingEvent) isRequest(in bool) (bool, error) {
 
 func (x *KindlingEvent) GetSocketKey() uint64 {
 	return uint64(int64(x.Ctx.ThreadInfo.Pid)<<32) | uint64(x.Ctx.FdInfo.Num)&LOWER32
+}
+
+func (kv *KeyValue) GetUintValue() uint64 {
+	switch kv.ValueType {
+	case ValueType_UINT8:
+		return uint64(kv.Value[0])
+	case ValueType_UINT16:
+		return uint64(byteOrder.Uint16(kv.Value))
+	case ValueType_UINT32:
+		return uint64(byteOrder.Uint32(kv.Value))
+	case ValueType_UINT64:
+		return byteOrder.Uint64(kv.Value)
+	}
+	return 0
+}
+
+func (kv *KeyValue) GetIntValue() int64 {
+	switch kv.ValueType {
+	case ValueType_INT8:
+		return int64(int8(kv.Value[0]))
+	case ValueType_INT16:
+		return int64(int16(byteOrder.Uint16(kv.Value)))
+	case ValueType_INT32:
+		return int64(int32(byteOrder.Uint32(kv.Value)))
+	case ValueType_INT64:
+		return int64(byteOrder.Uint64(kv.Value))
+	}
+	return 0
 }

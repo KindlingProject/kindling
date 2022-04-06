@@ -2,6 +2,7 @@ package tcpmetricanalyzer
 
 import (
 	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
@@ -97,7 +98,7 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Gaug
 		return nil, err
 	}
 	// Unit is microsecond
-	rtt := event.GetUserAttribute("rtt").Value.GetUintValue()
+	rtt := event.GetUintUserAttribute("rtt")
 	// rtt is zero when the kprobe is invoked in the first time, which should be filtered
 	if rtt == 0 {
 		return nil, nil
@@ -144,10 +145,10 @@ func (a *TcpMetricAnalyzer) getTupleLabels(event *model.KindlingEvent) (*model.A
 	if sIp == nil || sPort == nil || dIp == nil || dPort == nil {
 		return nil, fmt.Errorf("one of sip or dip or dport is nil for event %s", event.Name)
 	}
-	sIpString := model.IPLong2String(uint32(sIp.Value.GetUintValue()))
-	sPortUint := sPort.Value.GetUintValue()
-	dIpString := model.IPLong2String(uint32(dIp.Value.GetUintValue()))
-	dPortUint := dPort.Value.GetUintValue()
+	sIpString := model.IPLong2String(uint32(sIp.GetUintValue()))
+	sPortUint := sPort.GetUintValue()
+	dIpString := model.IPLong2String(uint32(dIp.GetUintValue()))
+	dPortUint := dPort.GetUintValue()
 
 	labels := model.NewAttributeMap()
 	labels.AddStringValue(constlabels.SrcIp, sIpString)

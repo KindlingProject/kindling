@@ -49,9 +49,8 @@ int sysdig_converter::add_user_attributes(kindling::KindlingEvent *kevt, sinsp_e
         auto latency_attr = kevt->add_user_attributes();
         auto latency = s_tinfo->m_latency;
         latency_attr->set_key("latency");
-        auto anyValue = new AnyValue();
-        anyValue->set_int_value(latency);
-        latency_attr->set_allocated_value(anyValue);
+        latency_attr->set_value_type(UINT64);
+        latency_attr->set_value(&latency, 8);
     }
     // set params
     switch (sevt->get_type()) {
@@ -64,9 +63,8 @@ int sysdig_converter::add_user_attributes(kindling::KindlingEvent *kevt, sinsp_e
             if (pRtt != NULL) {
                 auto attr = kevt->add_user_attributes();
                 attr->set_key("rtt");
-                auto rttValue = new AnyValue();
-                rttValue->set_uint_value(*(uint32_t *) pRtt->m_val);
-                attr->set_allocated_value(rttValue);
+                attr->set_value(pRtt->m_val, pRtt->m_len);
+                attr->set_value_type(UINT32);
             }
             break;
         }
@@ -80,11 +78,9 @@ int sysdig_converter::add_user_attributes(kindling::KindlingEvent *kevt, sinsp_e
             for (auto i = 0; i < sevt->get_num_params(); i++) {
                 auto attr = kevt->add_user_attributes();
                 attr->set_key(sevt->get_param_name(i));
-                auto anyValue = new AnyValue();
-                setValue(anyValue, sevt->get_param_info(i)->type, sevt->get_param(i));
-                attr->set_allocated_value(anyValue);
+                attr->set_value(sevt->get_param(i)->m_val, sevt->get_param(i)->m_len);
+                attr->set_value_type(get_type(sevt->get_param_info(i)->type));
             }
-
     }
     return 0;
 }
@@ -314,64 +310,6 @@ string sysdig_converter::get_kindling_name(sinsp_evt *pEvt) {
     return pEvt->get_name();
 }
 
-int sysdig_converter::setValue(AnyValue *pValue, ppm_param_type type, sinsp_evt_param *pParam) {
-    switch (type) {
-        case PT_INT8:
-            pValue->set_int_value(*(int8_t *) pParam->m_val);
-            break;
-        case PT_INT16:
-            pValue->set_int_value(*(int16_t *) pParam->m_val);
-            break;
-        case PT_INT32:
-            pValue->set_int_value(*(int32_t *) pParam->m_val);
-            break;
-        case PT_INT64:
-        case PT_FD:
-        case PT_PID:
-        case PT_ERRNO:
-            pValue->set_int_value(*(int64_t *) pParam->m_val);
-            break;
-        case PT_FLAGS8:
-        case PT_UINT8:
-        case PT_SIGTYPE:
-            pValue->set_uint_value(*(uint8_t *) pParam->m_val);
-            break;
-        case PT_FLAGS16:
-        case PT_UINT16:
-        case PT_SYSCALLID:
-            pValue->set_uint_value(*(uint16_t *) pParam->m_val);
-            break;
-        case PT_UINT32:
-        case PT_FLAGS32:
-        case PT_MODE:
-        case PT_UID:
-        case PT_GID:
-        case PT_BOOL:
-        case PT_SIGSET:
-            pValue->set_uint_value(*(uint32_t *) pParam->m_val);
-            break;
-        case PT_UINT64:
-        case PT_RELTIME:
-        case PT_ABSTIME:
-            pValue->set_uint_value(*(uint64_t *) pParam->m_val);
-            break;
-        case PT_CHARBUF:
-        case PT_FSPATH:
-            pValue->set_string_value(string(pParam->m_val));
-            break;
-        case PT_DOUBLE:
-            break;
-        case PT_BYTEBUF:
-        case PT_SOCKADDR:
-        case PT_SOCKTUPLE:
-        case PT_FDLIST:
-        default:
-            pValue->set_bytes_value(pParam->m_val, pParam->m_len);
-            break;
-    }
-    return 0;
-}
-
 int sysdig_converter::setTuple(kindling::KindlingEvent* kevt, const sinsp_evt_param *pTuple) {
     if (NULL != pTuple) {
         auto tuple = pTuple->m_val;
@@ -379,27 +317,23 @@ int sysdig_converter::setTuple(kindling::KindlingEvent* kevt, const sinsp_evt_pa
             if (pTuple->m_len == 1 + 4 + 2 + 4 + 2) {
                 auto sip = kevt->add_user_attributes();
                 sip->set_key("sip");
-                auto sipValue = new AnyValue();
-                sipValue->set_uint_value(*(uint32_t *)(tuple+1));
-                sip->set_allocated_value(sipValue);
+                sip->set_value(tuple+1, 4);
+                sip->set_value_type(UINT32);
 
                 auto sport = kevt->add_user_attributes();
                 sport->set_key("sport");
-                auto sportValue = new AnyValue();
-                sportValue->set_uint_value(*(uint16_t *)(tuple+5));
-                sport->set_allocated_value(sportValue);
+                sport->set_value(tuple+5, 2);
+                sport->set_value_type(UINT16);
 
                 auto dip = kevt->add_user_attributes();
                 dip->set_key("dip");
-                auto dipValue = new AnyValue();
-                dipValue->set_uint_value(*(uint32_t *)(tuple+7));
-                dip->set_allocated_value(dipValue);
+                dip->set_value(tuple+7, 4);
+                dip->set_value_type(UINT32);
 
                 auto dport = kevt->add_user_attributes();
                 dport->set_key("dport");
-                auto dportValue = new AnyValue();
-                dportValue->set_uint_value(*(uint16_t *)(tuple+11));
-                dport->set_allocated_value(dportValue);
+                dport->set_value(tuple+11, 2);
+                dport->set_value_type(UINT16);
             }
         }
     }
