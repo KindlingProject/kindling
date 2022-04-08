@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const Type = "aggregateprocessor"
+
 type AggregateProcessor struct {
 	cfg          *Config
 	telemetry    *component.TelemetryTools

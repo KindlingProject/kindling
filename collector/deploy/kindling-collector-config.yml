@@ -79,6 +79,21 @@ processors:
     # When using otlp-grpc / stdout exporter , this option supports to
     # send trace data in the format of ResourceSpan
     need_trace_as_span: false
+  aggregateprocessor:
+    # Aggregation duration window size. The unit is second.
+    ticker_interval: 5
+    aggregate_kind_map:
+      request_count: sum,
+      request_total_time: sum,
+      request_io: sum,
+      response_io: sum,
+      kindling_tcp_rtt_microseconds: last,
+      kindling_tcp_retransmit_total: sum,
+      kindling_tcp_packet_loss_total: sum,
+    sampling_rate:
+      normal_data: 0
+      slow_data: 100
+      error_data: 100
 
 exporters:
   otelexporter:
