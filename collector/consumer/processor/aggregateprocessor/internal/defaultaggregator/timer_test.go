@@ -1,4 +1,4 @@
-package aggregateprocessor
+package defaultaggregator
 
 import (
 	"testing"

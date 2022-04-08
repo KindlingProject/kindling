@@ -1,6 +1,10 @@
-package aggregateprocessor
+package defaultaggregator
 
-import "github.com/Kindling-project/kindling/collector/model"
+import (
+	"github.com/Kindling-project/kindling/collector/model"
+	"sync"
+	"sync/atomic"
+)
 
 type aggregatorKind int
 
@@ -11,7 +15,27 @@ const (
 	lastKind
 )
 
+func toAggKindMap(input map[string]string) map[string]aggregatorKind {
+	ret := make(map[string]aggregatorKind, len(input))
+	for k, v := range input {
+		var kind aggregatorKind
+		switch v {
+		case "sum":
+			kind = sumKind
+		case "max":
+			kind = maxKind
+		case "avg":
+			kind = avgKind
+		case "last":
+			kind = lastKind
+		}
+		ret[k] = kind
+	}
+	return ret
+}
+
 type aggValuesMap interface {
+	// calculate should be thread-safe to use
 	calculate(name string, value int64) int64
 	get(name string) int64
 	getAll() []*model.Gauge
@@ -31,12 +55,19 @@ func newAggValuesMap(kindMap map[string]aggregatorKind) aggValuesMap {
 
 // calculate returns the result value
 func (m *defaultValuesMap) calculate(name string, value int64) int64 {
-	v := m.values[name]
+	v, ok := m.values[name]
+	if !ok {
+		return -1
+	}
 	return v.calculate(value)
 }
 
 func (m *defaultValuesMap) get(name string) int64 {
-	return m.values[name].get()
+	v, ok := m.values[name]
+	if !ok {
+		return -1
+	}
+	return v.get()
 }
 
 func (m *defaultValuesMap) getAll() []*model.Gauge {
@@ -75,15 +106,20 @@ type aggregatedValues interface {
 
 type maxValue struct {
 	value int64
+	mut   sync.RWMutex
 }
 
 func (v *maxValue) calculate(value int64) int64 {
+	v.mut.Lock()
+	defer v.mut.Unlock()
 	if v.value < value {
 		v.value = value
 	}
 	return v.value
 }
 func (v *maxValue) get() int64 {
+	v.mut.RLock()
+	defer v.mut.RUnlock()
 	return v.value
 }
 
@@ -92,27 +128,31 @@ type sumValue struct {
 }
 
 func (v *sumValue) calculate(value int64) int64 {
-	v.value += value
-	return v.value
+	return atomic.AddInt64(&v.value, value)
 }
 func (v *sumValue) get() int64 {
-	return v.value
+	return atomic.LoadInt64(&v.value)
 }
 
 type avgValue struct {
 	value int64
 	count int64
+	mut   sync.RWMutex
 }
 
+// calculate returns the total count of data.
+// Note it will not return the current average value which could be got by calling get()
 func (v *avgValue) calculate(value int64) int64 {
-	sum := v.count * v.value
+	v.mut.Lock()
+	defer v.mut.Unlock()
+	v.value += value
 	v.count++
-	avg := (sum + value) / v.count
-	v.value = avg
-	return v.value
+	return v.count
 }
 func (v *avgValue) get() int64 {
-	return v.value
+	v.mut.RLock()
+	defer v.mut.RUnlock()
+	return v.value / v.count
 }
 
 type lastValue struct {
@@ -120,9 +160,8 @@ type lastValue struct {
 }
 
 func (v *lastValue) calculate(value int64) int64 {
-	v.value = value
-	return v.value
+	return atomic.SwapInt64(&v.value, value)
 }
 func (v *lastValue) get() int64 {
-	return v.value
+	return atomic.LoadInt64(&v.value)
 }
