@@ -7,16 +7,19 @@ var metricNameDictionary = map[string]map[bool]string{
 	constvalues.RequestIo:        {true: EntityRequestIoMetric, false: TopologyRequestIoMetric},
 	constvalues.ResponseIo:       {true: EntityResponseIoMetric, false: TopologyResponseIoMetric},
 	constvalues.RequestTotalTime: {true: EntityRequestLatencyMetric, false: TopologyRequestLatencyMetric},
+	constvalues.RequestCount:     {true: EntityRequestCountMetric, false: TopologyRequestCountMetric},
 }
 
 const (
 	TopologyRequestIoMetric      = "request_bytes_total"
 	TopologyResponseIoMetric     = "response_bytes_total"
 	TopologyRequestLatencyMetric = "duration_nanoseconds"
+	TopologyRequestCountMetric   = "_total"
 
 	EntityRequestIoMetric      = "receive_bytes_total"
 	EntityResponseIoMetric     = "send_bytes_total"
 	EntityRequestLatencyMetric = "duration_nanoseconds"
+	EntityRequestCountMetric   = "_total"
 )
 
 const (

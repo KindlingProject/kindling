@@ -9,6 +9,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.uber.org/zap"
 	"math/rand"
 	"time"
@@ -85,7 +86,7 @@ func (p *AggregateProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 func (p *AggregateProcessor) aggregate(gaugeGroup *model.GaugeGroup) {
 	// Add a request_count metric
 	gaugeGroup.Values = append(gaugeGroup.Values, &model.Gauge{
-		Name:  "request_count",
+		Name:  constvalues.RequestCount,
 		Value: 1,
 	})
 	p.aggregator.Aggregate(gaugeGroup, p.labelFilter)
