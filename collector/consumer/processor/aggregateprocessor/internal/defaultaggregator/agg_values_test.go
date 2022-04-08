@@ -1,6 +1,7 @@
 package defaultaggregator
 
 import (
+	"github.com/Kindling-project/kindling/collector/model"
 	"sync"
 	"testing"
 )
@@ -78,7 +79,8 @@ func Test_aggValues_last(t *testing.T) {
 func Test_defaultValuesMap_sum(t *testing.T) {
 	kindMap := make(map[string]aggregatorKind)
 	kindMap["sum_value"] = sumKind
-	m := newAggValuesMap(kindMap)
+	gauges := []*model.Gauge{{Name: "sum_value"}}
+	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
 		m.calculate("sum_value", 1)
 	}
@@ -91,7 +93,8 @@ func Test_defaultValuesMap_sum(t *testing.T) {
 func Test_defaultValuesMap_avg(t *testing.T) {
 	kindMap := make(map[string]aggregatorKind)
 	kindMap["avg_value"] = avgKind
-	m := newAggValuesMap(kindMap)
+	gauges := []*model.Gauge{{Name: "avg_value"}}
+	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
 		m.calculate("avg_value", 1)
 	}
@@ -104,7 +107,8 @@ func Test_defaultValuesMap_avg(t *testing.T) {
 func Test_defaultValuesMap_max(t *testing.T) {
 	kindMap := make(map[string]aggregatorKind)
 	kindMap["max_value"] = maxKind
-	m := newAggValuesMap(kindMap)
+	gauges := []*model.Gauge{{Name: "max_value"}}
+	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
 		m.calculate("max_value", int64(i))
 	}
@@ -115,11 +119,12 @@ func Test_defaultValuesMap_max(t *testing.T) {
 	}
 
 	kindMap["reserve_max_value"] = maxKind
-	m = newAggValuesMap(kindMap)
+	gauges = []*model.Gauge{{Name: "reserve_max_value"}}
+	m = newAggValuesMap(gauges, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate("max_value", int64(i))
+		m.calculate("reserve_max_value", int64(i))
 	}
-	got = m.get("max_value")
+	got = m.get("reserve_max_value")
 	if got != 10000 {
 		t.Errorf("max result is %v, expected %v", got, 10000)
 	}
@@ -128,7 +133,8 @@ func Test_defaultValuesMap_max(t *testing.T) {
 func Test_defaultValuesMap_lastValue(t *testing.T) {
 	kindMap := make(map[string]aggregatorKind)
 	kindMap["last_value"] = lastKind
-	m := newAggValuesMap(kindMap)
+	gauges := []*model.Gauge{{Name: "last_value"}}
+	m := newAggValuesMap(gauges, kindMap)
 	for i := 10000; i > 0; i-- {
 		m.calculate("last_value", 1)
 	}

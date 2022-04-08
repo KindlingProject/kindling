@@ -45,10 +45,14 @@ type defaultValuesMap struct {
 	values map[string]aggregatedValues
 }
 
-func newAggValuesMap(kindMap map[string]aggregatorKind) aggValuesMap {
-	ret := &defaultValuesMap{values: make(map[string]aggregatedValues, len(kindMap))}
-	for k, v := range kindMap {
-		ret.values[k] = newAggValue(v)
+func newAggValuesMap(gauges []*model.Gauge, kindMap map[string]aggregatorKind) aggValuesMap {
+	ret := &defaultValuesMap{values: make(map[string]aggregatedValues, len(gauges))}
+	for _, gauge := range gauges {
+		kind, found := kindMap[gauge.Name]
+		if !found {
+			continue
+		}
+		ret.values[gauge.Name] = newAggValue(kind)
 	}
 	return ret
 }

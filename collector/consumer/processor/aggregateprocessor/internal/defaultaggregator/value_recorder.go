@@ -40,7 +40,7 @@ func (r *valueRecorder) Record(key *labelsKey, gaugeValues []*model.Gauge) {
 		// double check to avoid double writing
 		aggValues, ok = r.labelValues[*key]
 		if !ok {
-			aggValues = newAggValuesMap(r.aggKindMap)
+			aggValues = newAggValuesMap(gaugeValues, r.aggKindMap)
 			r.labelValues[*key] = aggValues
 		}
 		r.mutex.Unlock()
