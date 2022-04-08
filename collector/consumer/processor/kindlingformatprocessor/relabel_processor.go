@@ -6,8 +6,8 @@ import (
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.uber.org/multierr"
-	"math/rand"
 )
 
 const ProcessorName = "kindlingformatprocessor"
@@ -21,13 +21,6 @@ type RelabelProcessor struct {
 
 func NewRelabelProcessor(cfg interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
 	processorCfg := cfg.(*Config)
-	if processorCfg.SamplingRate == nil {
-		processorCfg.SamplingRate = &SampleConfig{
-			NormalData: 0,
-			SlowData:   100,
-			ErrorData:  100,
-		}
-	}
 	return &RelabelProcessor{
 		cfg:          processorCfg,
 		nextConsumer: nextConsumer,
@@ -36,46 +29,41 @@ func NewRelabelProcessor(cfg interface{}, telemetry *component.TelemetryTools, n
 }
 
 func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
-	common := newGauges(gaugeGroup)
+	switch gaugeGroup.Name {
+	case constnames.SingleNetRequestGaugeGroup:
+		return r.consumeSingleGroup(gaugeGroup)
+	case constnames.AggregatedNetRequestGaugeGroup:
+		return r.consumeAggregatedGroup(gaugeGroup)
+	default:
+		return nil
+	}
+}
 
+func (r *RelabelProcessor) consumeSingleGroup(gaugeGroup *model.GaugeGroup) error {
 	var traceErr error = nil
 	var spanErr error = nil
 
-	if r.cfg.NeedTraceAsMetric && common.isSlowOrError() {
+	// There could be normal data enter this method with sampling it.
+	// But only abnormal data would be stored as metric considering
+	// its high cardinality.
+	if r.cfg.NeedTraceAsMetric && isSlowOrError(gaugeGroup) {
 		// Trace as Metric
 		trace := newGauges(gaugeGroup)
 		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo,
 			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo))
 	}
 	if r.cfg.NeedTraceAsResourceSpan {
-		var isSample = false
-		randSeed := rand.Intn(100)
-		if common.isSlowOrError() {
-			if (randSeed < r.cfg.SamplingRate.SlowData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) {
-				isSample = true
-			}
-			if (randSeed < r.cfg.SamplingRate.ErrorData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsError) {
-				isSample = true
-			}
-		} else {
-			if randSeed < r.cfg.SamplingRate.NormalData {
-				isSample = true
-			}
-		}
-		if isSample {
-			// Trace As Span
-			span := newGauges(gaugeGroup)
-			spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
-				TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
-		}
+		// Trace As Span
+		span := newGauges(gaugeGroup)
+		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
+			TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
 	}
 
-	// The data when the field is Error is true and the error Type is 2, do not generate metric
-	errorType := gaugeGroup.Labels.GetIntValue(constlabels.ErrorType)
-	if errorType == constlabels.ConnectFail || errorType == constlabels.NoResponse {
-		return traceErr
-	}
+	return multierr.Combine(traceErr, spanErr)
+}
 
+func (r *RelabelProcessor) consumeAggregatedGroup(gaugeGroup *model.GaugeGroup) error {
+	common := newGauges(gaugeGroup)
 	if gaugeGroup.Labels.GetBoolValue(constlabels.IsServer) {
 		// Do not emit detail protocol metric at this version
 		//protocol := newGauges(gaugeGroup)
@@ -95,10 +83,14 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, true)
 			}
 		}
-		return multierr.Combine(traceErr, spanErr, metricErr, metricErr2)
+		return multierr.Combine(metricErr, metricErr2)
 	} else {
 		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo,
 			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo))
-		return multierr.Combine(traceErr, metricErr)
+		return metricErr
 	}
+}
+
+func isSlowOrError(g *model.GaugeGroup) bool {
+	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError)
 }

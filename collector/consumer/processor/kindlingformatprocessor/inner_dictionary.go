@@ -35,10 +35,6 @@ func newGauges(g *model.GaugeGroup) *gauges {
 	}
 }
 
-func (g *gauges) isSlowOrError() bool {
-	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError)
-}
-
 func (g gauges) getResult() *model.GaugeGroup {
 	return &model.GaugeGroup{
 		Name:      g.Name,

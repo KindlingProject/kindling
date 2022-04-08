@@ -8,7 +8,9 @@ import (
 	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor/internal/defaultaggregator"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.uber.org/zap"
+	"math/rand"
 	"time"
 )
 
@@ -59,21 +61,23 @@ func (p *AggregateProcessor) runTicker() {
 }
 
 func (p *AggregateProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
-	var abnormalDataErr error
-	// The abnormal recordersMap will be treated as trace in later processing.
-	// Must trace be merged into metrics in this place? Yes, because we have to generate histogram metrics,
-	// trace recordersMap should not be recorded again, otherwise the percentiles will be much higher.
-	if isAbnormal(gaugeGroup) {
-		abnormalDataErr = p.nextConsumer.Consume(gaugeGroup)
+	switch gaugeGroup.Name {
+	case constnames.NetRequestGaugeGroupName:
+		var abnormalDataErr error
+		// The abnormal recordersMap will be treated as trace in later processing.
+		// Must trace be merged into metrics in this place? Yes, because we have to generate histogram metrics,
+		// trace recordersMap should not be recorded again, otherwise the percentiles will be much higher.
+		if p.isSampled(gaugeGroup) {
+			gaugeGroup.Name = constnames.SingleNetRequestGaugeGroup
+			abnormalDataErr = p.nextConsumer.Consume(gaugeGroup)
+		}
+		gaugeGroup.Name = constnames.AggregatedNetRequestGaugeGroup
+		p.aggregate(gaugeGroup)
+		return abnormalDataErr
+	default:
+		p.aggregate(gaugeGroup)
+		return nil
 	}
-	p.aggregate(gaugeGroup)
-
-	return abnormalDataErr
-}
-
-// shouldAggregate returns true if the gaugeGroup is slow or has errors.
-func isAbnormal(g *model.GaugeGroup) bool {
-	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError)
 }
 
 func (p *AggregateProcessor) aggregate(gaugeGroup *model.GaugeGroup) {
@@ -83,4 +87,27 @@ func (p *AggregateProcessor) aggregate(gaugeGroup *model.GaugeGroup) {
 		Value: 1,
 	})
 	p.aggregator.Aggregate(gaugeGroup, p.labelFilter)
+}
+
+func (p *AggregateProcessor) isSampled(gaugeGroup *model.GaugeGroup) bool {
+	randSeed := rand.Intn(100)
+	if isAbnormal(gaugeGroup) {
+		if (randSeed < p.cfg.SamplingRate.SlowData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) {
+			return true
+		}
+		if (randSeed < p.cfg.SamplingRate.ErrorData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsError) {
+			return true
+		}
+	} else {
+		if randSeed < p.cfg.SamplingRate.NormalData {
+			return true
+		}
+	}
+	return false
+}
+
+// shouldAggregate returns true if the gaugeGroup is slow or has errors.
+func isAbnormal(g *model.GaugeGroup) bool {
+	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError) ||
+		g.Labels.GetIntValue(constlabels.ErrorType) > constlabels.NoError
 }
