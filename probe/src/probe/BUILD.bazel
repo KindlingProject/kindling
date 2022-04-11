@@ -81,9 +81,9 @@ container_push(
     format = "Docker",
     image = ":kindling_probe_image",
     # ATTENTION!! Modify this if you want to change docker registry.
-    registry = "registry.us-west-1.aliyuncs.com",
-    repository = "arms-docker-repo/arms-bpf-agent",
-    tag = "qianlu-test",
+    registry = "docker.io",
+    repository = "kindlingproject/kindling-probe",
+    tag = "latest",
 )
 
 container_push(
