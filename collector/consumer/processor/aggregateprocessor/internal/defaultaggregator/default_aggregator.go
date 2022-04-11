@@ -16,10 +16,10 @@ type DefaultAggregator struct {
 	// mut is only used to make sure the access to the recordersMap is thread-safe.
 	// valueRecorder is responsible for its own thread-safe access.
 	mut        sync.RWMutex
-	aggKindMap map[string]aggregatorKind
+	aggKindMap map[string][]aggregatorKind
 }
 
-func NewDefaultAggregator(aggKindMap map[string]string) *DefaultAggregator {
+func NewDefaultAggregator(aggKindMap map[string][]string) *DefaultAggregator {
 	ret := &DefaultAggregator{
 		recordersMap: make(map[string]*valueRecorder),
 		aggKindMap:   toAggKindMap(aggKindMap),

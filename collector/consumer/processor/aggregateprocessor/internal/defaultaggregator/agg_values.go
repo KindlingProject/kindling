@@ -15,21 +15,23 @@ const (
 	lastKind
 )
 
-func toAggKindMap(input map[string]string) map[string]aggregatorKind {
-	ret := make(map[string]aggregatorKind, len(input))
+func toAggKindMap(input map[string][]string) map[string][]aggregatorKind {
+	ret := make(map[string][]aggregatorKind, len(input))
 	for k, v := range input {
-		var kind aggregatorKind
-		switch v {
-		case "sum":
-			kind = sumKind
-		case "max":
-			kind = maxKind
-		case "avg":
-			kind = avgKind
-		case "last":
-			kind = lastKind
+		kindSlice := make([]aggregatorKind, len(v))
+		for i, kind := range v {
+			switch kind {
+			case "sum":
+				kindSlice[i] = sumKind
+			case "max":
+				kindSlice[i] = maxKind
+			case "avg":
+				kindSlice[i] = avgKind
+			case "last":
+				kindSlice[i] = lastKind
+			}
 		}
-		ret[k] = kind
+		ret[k] = kindSlice
 	}
 	return ret
 }
@@ -45,14 +47,16 @@ type defaultValuesMap struct {
 	values map[string]aggregatedValues
 }
 
-func newAggValuesMap(gauges []*model.Gauge, kindMap map[string]aggregatorKind) aggValuesMap {
-	ret := &defaultValuesMap{values: make(map[string]aggregatedValues, len(gauges))}
+func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]aggregatorKind) aggValuesMap {
+	ret := &defaultValuesMap{values: make(map[string]aggregatedValues)}
 	for _, gauge := range gauges {
-		kind, found := kindMap[gauge.Name]
+		kindSlice, found := kindMap[gauge.Name]
 		if !found {
 			continue
 		}
-		ret.values[gauge.Name] = newAggValue(kind)
+		for _, kind := range kindSlice {
+			ret.values[gauge.Name] = newAggValue(kind)
+		}
 	}
 	return ret
 }

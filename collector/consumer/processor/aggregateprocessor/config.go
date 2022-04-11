@@ -7,8 +7,8 @@ type Config struct {
 	// The unit is second.
 	TickerInterval int `mapstructure:"ticker_interval"`
 
-	AggregateKindMap map[string]string `mapstructure:"aggregate_kind_map"`
-	SamplingRate     *SampleConfig     `mapstructure:"sampling_rate"`
+	AggregateKindMap map[string][]string `mapstructure:"aggregate_kind_map"`
+	SamplingRate     *SampleConfig       `mapstructure:"sampling_rate"`
 }
 
 type SampleConfig struct {
@@ -21,15 +21,15 @@ func NewDefaultConfig() *Config {
 	ret := &Config{
 		FilterLabels:   make([]string, 0),
 		TickerInterval: 5,
-		AggregateKindMap: map[string]string{
-			"request_count":      "sum",
-			"request_total_time": "sum",
-			"request_io":         "sum",
-			"response_io":        "sum",
+		AggregateKindMap: map[string][]string{
+			"request_count":      {"sum"},
+			"request_total_time": {"sum", "avg"},
+			"request_io":         {"sum"},
+			"response_io":        {"sum"},
 			// tcp
-			"kindling_tcp_rtt_microseconds":  "last",
-			"kindling_tcp_retransmit_total":  "sum",
-			"kindling_tcp_packet_loss_total": "sum",
+			"kindling_tcp_rtt_microseconds":  {"last"},
+			"kindling_tcp_retransmit_total":  {"sum"},
+			"kindling_tcp_packet_loss_total": {"sum"},
 		},
 		SamplingRate: &SampleConfig{
 			NormalData: 0,

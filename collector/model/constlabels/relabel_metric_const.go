@@ -6,20 +6,24 @@ import "github.com/Kindling-project/kindling/collector/model/constvalues"
 var metricNameDictionary = map[string]map[bool]string{
 	constvalues.RequestIo:        {true: EntityRequestIoMetric, false: TopologyRequestIoMetric},
 	constvalues.ResponseIo:       {true: EntityResponseIoMetric, false: TopologyResponseIoMetric},
-	constvalues.RequestTotalTime: {true: EntityRequestLatencyMetric, false: TopologyRequestLatencyMetric},
+	constvalues.RequestTotalTime: {true: EntityRequestLatencyTotalMetric, false: TopologyRequestLatencyTotalMetric},
 	constvalues.RequestCount:     {true: EntityRequestCountMetric, false: TopologyRequestCountMetric},
 }
 
 const (
-	TopologyRequestIoMetric      = "request_bytes_total"
-	TopologyResponseIoMetric     = "response_bytes_total"
-	TopologyRequestLatencyMetric = "duration_nanoseconds"
-	TopologyRequestCountMetric   = "total"
+	TopologyRequestIoMetric  = "request_bytes_total"
+	TopologyResponseIoMetric = "response_bytes_total"
+	// TopologyRequestLatencyMetric is a histogram
+	TopologyRequestLatencyMetric      = "duration_nanoseconds"
+	TopologyRequestLatencyTotalMetric = "duration_nanoseconds_total"
+	TopologyRequestCountMetric        = "total"
 
-	EntityRequestIoMetric      = "receive_bytes_total"
-	EntityResponseIoMetric     = "send_bytes_total"
-	EntityRequestLatencyMetric = "duration_nanoseconds"
-	EntityRequestCountMetric   = "total"
+	EntityRequestIoMetric  = "receive_bytes_total"
+	EntityResponseIoMetric = "send_bytes_total"
+	// EntityRequestLatencyMetric is a histogram
+	EntityRequestLatencyMetric      = "duration_nanoseconds"
+	EntityRequestLatencyTotalMetric = "duration_nanoseconds_total"
+	EntityRequestCountMetric        = "total"
 )
 
 const (

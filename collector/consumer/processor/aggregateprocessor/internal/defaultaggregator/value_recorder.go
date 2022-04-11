@@ -14,10 +14,10 @@ type valueRecorder struct {
 	// mutex is only used to make sure the access to the labelValues is thread-safe.
 	// aggValuesMap is responsible for its own thread-safe access.
 	mutex      sync.RWMutex
-	aggKindMap map[string]aggregatorKind
+	aggKindMap map[string][]aggregatorKind
 }
 
-func newValueRecorder(recorderName string, firstDataTimestamp uint64, aggKindMap map[string]aggregatorKind) *valueRecorder {
+func newValueRecorder(recorderName string, firstDataTimestamp uint64, aggKindMap map[string][]aggregatorKind) *valueRecorder {
 	return &valueRecorder{
 		name:        recorderName,
 		t:           newTimer(firstDataTimestamp),

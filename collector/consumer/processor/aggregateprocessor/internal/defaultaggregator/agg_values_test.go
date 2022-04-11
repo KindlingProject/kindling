@@ -2,6 +2,7 @@ package defaultaggregator
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
+	"reflect"
 	"sync"
 	"testing"
 )
@@ -141,5 +142,34 @@ func Test_defaultValuesMap_lastValue(t *testing.T) {
 	got := m.get("last_value")
 	if got != 1 {
 		t.Errorf("lastValue result is %v, expected %v", got, 1)
+	}
+}
+
+func Test_toAggKindMap(t *testing.T) {
+	type args struct {
+		input map[string][]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string][]aggregatorKind
+	}{
+		{
+			name: "one kind",
+			args: args{input: map[string][]string{"metric1": {"sum"}}},
+			want: map[string][]aggregatorKind{"metric1": {sumKind}},
+		},
+		{
+			name: "multiple kinds",
+			args: args{input: map[string][]string{"metric1": {"sum", "avg", "last", "max"}}},
+			want: map[string][]aggregatorKind{"metric1": {sumKind, avgKind, lastKind, maxKind}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := toAggKindMap(tt.args.input); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toAggKindMap() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
