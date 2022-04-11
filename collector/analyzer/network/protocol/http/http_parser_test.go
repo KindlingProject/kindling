@@ -21,17 +21,17 @@ func Test_urlMerge(t *testing.T) {
 		{
 			name: "more than two segments",
 			args: args{url: "/test/123/456/test?a=1"},
-			want: "/test/*",
+			want: "/test/123/456/test",
 		},
 		{
 			name: "two segments",
 			args: args{url: "/test/123"},
-			want: "/test/*",
+			want: "/test/123",
 		},
 		{
 			name: "two segments, but more than two /",
 			args: args{url: "/test/123/"},
-			want: "/test/*",
+			want: "/test/123/",
 		},
 		{
 			name: "one segment",
@@ -68,10 +68,10 @@ func TestHttpParser_getContentKey(t *testing.T) {
 		want string
 	}{
 		{name: "normal", args: args{url: "/test/arg?a=12314"}, want: "/test/arg"},
-		{name: "normal", args: args{url: "/test/arg/sar?a=12314"}, want: "/test/arg"},
+		{name: "normal", args: args{url: "/test/arg/sar?a=12314"}, want: "/test/arg/sar"},
 		{name: "normal", args: args{url: "/test"}, want: "/test"},
 		{name: "zero", args: args{url: ""}, want: ""},
-		{name: "zero", args: args{url: "/test/arg/adf/fadf/adf"}, want: "/test/arg"},
+		{name: "zero", args: args{url: "/test/arg/adf/fadf/adf"}, want: "/test/arg/adf/fadf/adf"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

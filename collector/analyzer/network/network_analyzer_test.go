@@ -373,7 +373,7 @@ type UserAttributes struct {
 
 func Int64ToBytes(value int64) []byte {
 	var buf = make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, uint64(value))
+	binary.LittleEndian.PutUint64(buf, uint64(value))
 	return buf
 }
 
