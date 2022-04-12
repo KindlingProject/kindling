@@ -15,6 +15,21 @@ const (
 	lastKind
 )
 
+func (k aggregatorKind) name() string {
+	switch k {
+	case sumKind:
+		return "sum"
+	case maxKind:
+		return "max"
+	case avgKind:
+		return "avg"
+	case lastKind:
+		return "last"
+	default:
+		return ""
+	}
+}
+
 func toAggKindMap(input map[string][]string) map[string][]aggregatorKind {
 	ret := make(map[string][]aggregatorKind, len(input))
 	for k, v := range input {
@@ -38,81 +53,91 @@ func toAggKindMap(input map[string][]string) map[string][]aggregatorKind {
 
 type aggValuesMap interface {
 	// calculate should be thread-safe to use
-	calculate(name string, value int64) int64
-	get(name string) int64
+	calculate(name string, value int64)
+	get(name string) []*model.Gauge
 	getAll() []*model.Gauge
 }
 
 type defaultValuesMap struct {
-	values map[string]aggregatedValues
+	values map[string][]aggregatedValues
 }
 
 func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]aggregatorKind) aggValuesMap {
-	ret := &defaultValuesMap{values: make(map[string]aggregatedValues)}
+	ret := &defaultValuesMap{values: make(map[string][]aggregatedValues)}
 	for _, gauge := range gauges {
 		kindSlice, found := kindMap[gauge.Name]
 		if !found {
 			continue
 		}
-		for _, kind := range kindSlice {
-			ret.values[gauge.Name] = newAggValue(kind)
+
+		aggValuesSlice := make([]aggregatedValues, len(kindSlice))
+		for i, kind := range kindSlice {
+			aggValuesSlice[i] = newAggValue(gauge.Name+"_"+kind.name(), kind)
 		}
+		ret.values[gauge.Name] = aggValuesSlice
 	}
 	return ret
 }
 
 // calculate returns the result value
-func (m *defaultValuesMap) calculate(name string, value int64) int64 {
-	v, ok := m.values[name]
+func (m *defaultValuesMap) calculate(name string, value int64) {
+	vSlice, ok := m.values[name]
 	if !ok {
-		return -1
+		return
 	}
-	return v.calculate(value)
+	for _, v := range vSlice {
+		v.calculate(value)
+	}
 }
 
-func (m *defaultValuesMap) get(name string) int64 {
-	v, ok := m.values[name]
+func (m *defaultValuesMap) get(name string) []*model.Gauge {
+	vSlice, ok := m.values[name]
 	if !ok {
-		return -1
+		return nil
 	}
-	return v.get()
-}
-
-func (m *defaultValuesMap) getAll() []*model.Gauge {
-	ret := make([]*model.Gauge, len(m.values))
-	index := 0
-	for k, v := range m.values {
-		gauge := &model.Gauge{
-			Name:  k,
+	ret := make([]*model.Gauge, len(vSlice))
+	for i, v := range vSlice {
+		ret[i] = &model.Gauge{
+			Name:  v.getName(),
 			Value: v.get(),
 		}
-		ret[index] = gauge
-		index++
 	}
 	return ret
 }
 
-func newAggValue(kind aggregatorKind) aggregatedValues {
+func (m *defaultValuesMap) getAll() []*model.Gauge {
+	ret := make([]*model.Gauge, 0)
+	for k := range m.values {
+		ret = append(ret, m.get(k)...)
+	}
+	return ret
+}
+
+func newAggValue(name string, kind aggregatorKind) aggregatedValues {
 	switch kind {
 	case sumKind:
-		return &sumValue{}
+		return &sumValue{name: name}
 	case maxKind:
-		return &maxValue{}
+		return &maxValue{name: name}
 	case avgKind:
-		return &avgValue{}
+		return &avgValue{name: name}
 	case lastKind:
-		return &lastValue{}
+		return &lastValue{name: name}
 	default:
-		return &lastValue{}
+		return &lastValue{name: name}
 	}
 }
 
 type aggregatedValues interface {
 	calculate(value int64) int64
+	// get returns the value
 	get() int64
+	// getName returns the value's name
+	getName() string
 }
 
 type maxValue struct {
+	name  string
 	value int64
 	mut   sync.RWMutex
 }
@@ -130,8 +155,12 @@ func (v *maxValue) get() int64 {
 	defer v.mut.RUnlock()
 	return v.value
 }
+func (v *maxValue) getName() string {
+	return v.name
+}
 
 type sumValue struct {
+	name  string
 	value int64
 }
 
@@ -141,8 +170,12 @@ func (v *sumValue) calculate(value int64) int64 {
 func (v *sumValue) get() int64 {
 	return atomic.LoadInt64(&v.value)
 }
+func (v *sumValue) getName() string {
+	return v.name
+}
 
 type avgValue struct {
+	name  string
 	value int64
 	count int64
 	mut   sync.RWMutex
@@ -162,8 +195,12 @@ func (v *avgValue) get() int64 {
 	defer v.mut.RUnlock()
 	return v.value / v.count
 }
+func (v *avgValue) getName() string {
+	return v.name
+}
 
 type lastValue struct {
+	name  string
 	value int64
 }
 
@@ -172,4 +209,7 @@ func (v *lastValue) calculate(value int64) int64 {
 }
 func (v *lastValue) get() int64 {
 	return atomic.LoadInt64(&v.value)
+}
+func (v *lastValue) getName() string {
+	return v.name
 }

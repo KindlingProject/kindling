@@ -4,10 +4,11 @@ import "github.com/Kindling-project/kindling/collector/model/constvalues"
 
 // key1: originName key2: isServer
 var metricNameDictionary = map[string]map[bool]string{
-	constvalues.RequestIo:        {true: EntityRequestIoMetric, false: TopologyRequestIoMetric},
-	constvalues.ResponseIo:       {true: EntityResponseIoMetric, false: TopologyResponseIoMetric},
-	constvalues.RequestTotalTime: {true: EntityRequestLatencyTotalMetric, false: TopologyRequestLatencyTotalMetric},
-	constvalues.RequestCount:     {true: EntityRequestCountMetric, false: TopologyRequestCountMetric},
+	constvalues.RequestIo + "_sum":        {true: EntityRequestIoMetric, false: TopologyRequestIoMetric},
+	constvalues.ResponseIo + "_sum":       {true: EntityResponseIoMetric, false: TopologyResponseIoMetric},
+	constvalues.RequestTotalTime + "_sum": {true: EntityRequestLatencyTotalMetric, false: TopologyRequestLatencyTotalMetric},
+	constvalues.RequestCount + "_sum":     {true: EntityRequestCountMetric, false: TopologyRequestCountMetric},
+	constvalues.RequestTotalTime + "_avg": {true: EntityRequestLatencyMetric, false: TopologyRequestLatencyMetric},
 }
 
 const (
