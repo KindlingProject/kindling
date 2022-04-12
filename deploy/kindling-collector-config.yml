@@ -83,13 +83,22 @@ processors:
     # Aggregation duration window size. The unit is second.
     ticker_interval: 5
     aggregate_kind_map:
-      request_count: sum
-      request_total_time: sum
-      request_io: sum
-      response_io: sum
-      kindling_tcp_rtt_microseconds: last
-      kindling_tcp_retransmit_total: sum
-      kindling_tcp_packet_loss_total: sum
+      request_count:
+        - kind: sum
+      request_total_time:
+        - kind: sum
+        - kind: avg
+          output_name: request_total_time_avg
+      request_io:
+        - kind: sum
+      response_io:
+        - kind: sum
+      kindling_tcp_rtt_microseconds:
+        - kind: last
+      kindling_tcp_retransmit_total:
+        - kind: sum
+      kindling_tcp_packet_loss_total:
+        - kind: sum
     sampling_rate:
       normal_data: 0
       slow_data: 100

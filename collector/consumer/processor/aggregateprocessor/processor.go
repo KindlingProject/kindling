@@ -34,13 +34,31 @@ func New(config interface{}, telemetry *component.TelemetryTools, nextConsumer c
 		telemetry:    telemetry,
 		nextConsumer: nextConsumer,
 
-		aggregator:  defaultaggregator.NewDefaultAggregator(cfg.AggregateKindMap),
+		aggregator:  defaultaggregator.NewDefaultAggregator(toAggregatedConfig(cfg.AggregateKindMap)),
 		labelFilter: internal.NewLabelFilter(cfg.FilterLabels...),
 		stopCh:      make(chan struct{}),
 		ticker:      time.NewTicker(time.Duration(cfg.TickerInterval) * time.Second),
 	}
 	go p.runTicker()
 	return p
+}
+
+func toAggregatedConfig(m map[string][]AggregatedKindConfig) *defaultaggregator.AggregatedConfig {
+	ret := &defaultaggregator.AggregatedConfig{KindMap: make(map[string][]defaultaggregator.KindConfig)}
+	for k, v := range m {
+		kindConfig := make([]defaultaggregator.KindConfig, len(v))
+		for i, kind := range v {
+			if kind.OutputName == "" {
+				kind.OutputName = k
+			}
+			kindConfig[i] = defaultaggregator.KindConfig{
+				OutputName: kind.OutputName,
+				Kind:       defaultaggregator.GetAggregatorKind(kind.Kind),
+			}
+		}
+		ret.KindMap[k] = kindConfig
+	}
+	return ret
 }
 
 // TODO: Graceful shutdown

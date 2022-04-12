@@ -7,8 +7,13 @@ type Config struct {
 	// The unit is second.
 	TickerInterval int `mapstructure:"ticker_interval"`
 
-	AggregateKindMap map[string][]string `mapstructure:"aggregate_kind_map"`
-	SamplingRate     *SampleConfig       `mapstructure:"sampling_rate"`
+	AggregateKindMap map[string][]AggregatedKindConfig `mapstructure:"aggregate_kind_map"`
+	SamplingRate     *SampleConfig                     `mapstructure:"sampling_rate"`
+}
+
+type AggregatedKindConfig struct {
+	OutputName string `mapstructure:"output_name"`
+	Kind       string `mapstructure:"kind"`
 }
 
 type SampleConfig struct {
@@ -21,15 +26,15 @@ func NewDefaultConfig() *Config {
 	ret := &Config{
 		FilterLabels:   make([]string, 0),
 		TickerInterval: 5,
-		AggregateKindMap: map[string][]string{
-			"request_count":      {"sum"},
-			"request_total_time": {"sum", "avg"},
-			"request_io":         {"sum"},
-			"response_io":        {"sum"},
+		AggregateKindMap: map[string][]AggregatedKindConfig{
+			"request_count":      {{Kind: "sum"}},
+			"request_total_time": {{Kind: "sum"}, {Kind: "avg", OutputName: "request_total_time_avg"}},
+			"request_io":         {{Kind: "sum"}},
+			"response_io":        {{Kind: "sum"}},
 			// tcp
-			"kindling_tcp_rtt_microseconds":  {"last"},
-			"kindling_tcp_retransmit_total":  {"sum"},
-			"kindling_tcp_packet_loss_total": {"sum"},
+			"kindling_tcp_rtt_microseconds":  {{Kind: "last"}},
+			"kindling_tcp_retransmit_total":  {{Kind: "sum"}},
+			"kindling_tcp_packet_loss_total": {{Kind: "sum"}},
 		},
 		SamplingRate: &SampleConfig{
 			NormalData: 0,

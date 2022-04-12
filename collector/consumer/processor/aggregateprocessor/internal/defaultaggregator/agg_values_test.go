@@ -2,7 +2,6 @@ package defaultaggregator
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
-	"reflect"
 	"sync"
 	"testing"
 )
@@ -78,8 +77,8 @@ func Test_aggValues_last(t *testing.T) {
 }
 
 func Test_defaultValuesMap_sum(t *testing.T) {
-	kindMap := make(map[string][]aggregatorKind)
-	kindMap["sum_value"] = []aggregatorKind{sumKind}
+	kindMap := make(map[string][]KindConfig)
+	kindMap["sum_value"] = []KindConfig{{OutputName: "sum_value_sum", Kind: SumKind}}
 	gauges := []*model.Gauge{{Name: "sum_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
@@ -92,8 +91,8 @@ func Test_defaultValuesMap_sum(t *testing.T) {
 }
 
 func Test_defaultValuesMap_avg(t *testing.T) {
-	kindMap := make(map[string][]aggregatorKind)
-	kindMap["avg_value"] = []aggregatorKind{avgKind}
+	kindMap := make(map[string][]KindConfig)
+	kindMap["avg_value"] = []KindConfig{{OutputName: "avg_value_avg", Kind: AvgKind}}
 	gauges := []*model.Gauge{{Name: "avg_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
@@ -106,8 +105,8 @@ func Test_defaultValuesMap_avg(t *testing.T) {
 }
 
 func Test_defaultValuesMap_max(t *testing.T) {
-	kindMap := make(map[string][]aggregatorKind)
-	kindMap["max_value"] = []aggregatorKind{maxKind}
+	kindMap := make(map[string][]KindConfig)
+	kindMap["max_value"] = []KindConfig{{OutputName: "max_value_max", Kind: MaxKind}}
 	gauges := []*model.Gauge{{Name: "max_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
@@ -119,7 +118,7 @@ func Test_defaultValuesMap_max(t *testing.T) {
 		t.Errorf("max result is %v, expected %v", got, expected)
 	}
 
-	kindMap["reserve_max_value"] = []aggregatorKind{maxKind}
+	kindMap["reserve_max_value"] = []KindConfig{{OutputName: "reserve_max_value_max", Kind: MaxKind}}
 	gauges = []*model.Gauge{{Name: "reserve_max_value"}}
 	m = newAggValuesMap(gauges, kindMap)
 	for i := 10000; i > 0; i-- {
@@ -132,8 +131,8 @@ func Test_defaultValuesMap_max(t *testing.T) {
 }
 
 func Test_defaultValuesMap_lastValue(t *testing.T) {
-	kindMap := make(map[string][]aggregatorKind)
-	kindMap["last_value"] = []aggregatorKind{lastKind}
+	kindMap := make(map[string][]KindConfig)
+	kindMap["last_value"] = []KindConfig{{OutputName: "last_value_last", Kind: LastKind}}
 	gauges := []*model.Gauge{{Name: "last_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 10000; i > 0; i-- {
@@ -142,34 +141,5 @@ func Test_defaultValuesMap_lastValue(t *testing.T) {
 	got := m.get("last_value")
 	if got[0].Name != "last_value_last" || got[0].Value != 1 {
 		t.Errorf("lastValue result is %v, expected %v", got, 1)
-	}
-}
-
-func Test_toAggKindMap(t *testing.T) {
-	type args struct {
-		input map[string][]string
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[string][]aggregatorKind
-	}{
-		{
-			name: "one kind",
-			args: args{input: map[string][]string{"metric1": {"sum"}}},
-			want: map[string][]aggregatorKind{"metric1": {sumKind}},
-		},
-		{
-			name: "multiple kinds",
-			args: args{input: map[string][]string{"metric1": {"sum", "avg", "last", "max"}}},
-			want: map[string][]aggregatorKind{"metric1": {sumKind, avgKind, lastKind, maxKind}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := toAggKindMap(tt.args.input); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toAggKindMap() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }

@@ -15,14 +15,14 @@ type DefaultAggregator struct {
 	recordersMap map[string]*valueRecorder
 	// mut is only used to make sure the access to the recordersMap is thread-safe.
 	// valueRecorder is responsible for its own thread-safe access.
-	mut        sync.RWMutex
-	aggKindMap map[string][]aggregatorKind
+	mut    sync.RWMutex
+	config *AggregatedConfig
 }
 
-func NewDefaultAggregator(aggKindMap map[string][]string) *DefaultAggregator {
+func NewDefaultAggregator(config *AggregatedConfig) *DefaultAggregator {
 	ret := &DefaultAggregator{
 		recordersMap: make(map[string]*valueRecorder),
-		aggKindMap:   toAggKindMap(aggKindMap),
+		config:       config,
 	}
 	return ret
 }
@@ -39,7 +39,7 @@ func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, f *internal.LabelFilt
 		// double check to avoid double writing
 		recorder, ok = s.recordersMap[name]
 		if !ok {
-			recorder = newValueRecorder(name, g.Timestamp, s.aggKindMap)
+			recorder = newValueRecorder(name, g.Timestamp, s.config.KindMap)
 			s.recordersMap[name] = recorder
 		}
 		s.mut.Unlock()

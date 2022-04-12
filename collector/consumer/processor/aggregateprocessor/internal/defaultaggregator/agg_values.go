@@ -6,50 +6,55 @@ import (
 	"sync/atomic"
 )
 
-type aggregatorKind int
+type AggregatorKind int
 
 const (
-	sumKind aggregatorKind = iota
-	maxKind
-	avgKind
-	lastKind
+	SumKind AggregatorKind = iota
+	MaxKind
+	AvgKind
+	LastKind
 )
 
-func (k aggregatorKind) name() string {
+func (k AggregatorKind) name() string {
 	switch k {
-	case sumKind:
+	case SumKind:
 		return "sum"
-	case maxKind:
+	case MaxKind:
 		return "max"
-	case avgKind:
+	case AvgKind:
 		return "avg"
-	case lastKind:
+	case LastKind:
 		return "last"
 	default:
 		return ""
 	}
 }
 
-func toAggKindMap(input map[string][]string) map[string][]aggregatorKind {
-	ret := make(map[string][]aggregatorKind, len(input))
-	for k, v := range input {
-		kindSlice := make([]aggregatorKind, len(v))
-		for i, kind := range v {
-			switch kind {
-			case "sum":
-				kindSlice[i] = sumKind
-			case "max":
-				kindSlice[i] = maxKind
-			case "avg":
-				kindSlice[i] = avgKind
-			case "last":
-				kindSlice[i] = lastKind
-			}
-		}
-		ret[k] = kindSlice
+func GetAggregatorKind(kind string) AggregatorKind {
+	switch kind {
+	case "sum":
+		return SumKind
+	case "max":
+		return MaxKind
+	case "avg":
+		return AvgKind
+	case "last":
+		return LastKind
+	default:
+		return SumKind
 	}
-	return ret
 }
+
+type (
+	AggregatedConfig struct {
+		KindMap map[string][]KindConfig
+	}
+
+	KindConfig struct {
+		OutputName string
+		Kind       AggregatorKind
+	}
+)
 
 type aggValuesMap interface {
 	// calculate should be thread-safe to use
@@ -62,7 +67,7 @@ type defaultValuesMap struct {
 	values map[string][]aggregatedValues
 }
 
-func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]aggregatorKind) aggValuesMap {
+func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]KindConfig) aggValuesMap {
 	ret := &defaultValuesMap{values: make(map[string][]aggregatedValues)}
 	for _, gauge := range gauges {
 		kindSlice, found := kindMap[gauge.Name]
@@ -72,7 +77,7 @@ func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]aggregatorKind)
 
 		aggValuesSlice := make([]aggregatedValues, len(kindSlice))
 		for i, kind := range kindSlice {
-			aggValuesSlice[i] = newAggValue(gauge.Name+"_"+kind.name(), kind)
+			aggValuesSlice[i] = newAggValue(kind.OutputName, kind.Kind)
 		}
 		ret.values[gauge.Name] = aggValuesSlice
 	}
@@ -113,15 +118,15 @@ func (m *defaultValuesMap) getAll() []*model.Gauge {
 	return ret
 }
 
-func newAggValue(name string, kind aggregatorKind) aggregatedValues {
+func newAggValue(name string, kind AggregatorKind) aggregatedValues {
 	switch kind {
-	case sumKind:
+	case SumKind:
 		return &sumValue{name: name}
-	case maxKind:
+	case MaxKind:
 		return &maxValue{name: name}
-	case avgKind:
+	case AvgKind:
 		return &avgValue{name: name}
-	case lastKind:
+	case LastKind:
 		return &lastValue{name: name}
 	default:
 		return &lastValue{name: name}
