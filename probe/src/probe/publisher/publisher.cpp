@@ -55,7 +55,8 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
         sysdigConverter->convert(evt);
         // if send list was sent
         if (sysdigConverter->judge_batch_size() && !m_ready[kindlingEventList]) {
-            m_kindlingEventLists[sysdigConverter] = sysdigConverter->swap_list(kindlingEventList);
+            kindlingEventList = sysdigConverter->swap_list(kindlingEventList);
+            m_kindlingEventLists[sysdigConverter] = kindlingEventList;
             m_ready[kindlingEventList] = true;
         }
     }
