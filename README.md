@@ -16,7 +16,7 @@ Kindling is an eBPF-based cloud-native monitor tool, which aims to help users un
 
 From a high-level view, the agent runs as DeamonSet in Kuberntes. It collects all the SYSCALL and some other tracepoints. We use different exporters for different distributions. For the lightweight version, we just build a Prometheus exporter to export the data which can be stored into Prometheus and displayed in Grafana Plugin. For the standard version, which is designed for heavy usage, Kafka is adopted for buffering the events, and data is stored into ElasticSearch with much more detailed information which can be displayed. Currently, the light version has been open-sourced. 
 
-![](https://cdn.nlark.com/yuque/0/2021/png/749988/1636076970508-2aa15679-2ab7-4f82-bd58-2ce3832b4550.png)
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2307576/1649841732151-7cf95801-940e-4e09-86c5-3cac147554fc.png?x-oss-process=image/format,png)
 
 ## Linux kernel version support
 
@@ -78,7 +78,7 @@ Contributions are welcome, you can contribute in many ways: report issues,help u
 if  you have questions or ideas, feel free to reach out to us in the following ways:
 
 - Check out our [discussions](https://github.com/Kindling-project/kindling/discussions)
-- Join us on our [Slack team](https://kindling-world.slack.com/join/shared_invite/zt-12bdv5kbn-HPajCjB0_CmuvXw~4t_lAw#/shared-invite/email)
+- Join us on our [Slack team](https://join.slack.com/t/kindling-world/shared_invite/zt-1770uhspf-qxBHT47c1iMGO0w23hSR2A)
 - Join us from WeChat Group (chinese)
 
 ![img](https://cdn.nlark.com/yuque/0/2022/png/2307576/1643176150105-21390a1c-15e7-4ee4-9f6d-07b1238342d8.png)
