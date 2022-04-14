@@ -27,10 +27,10 @@ func NewDefaultConfig() *Config {
 		FilterLabels:   make([]string, 0),
 		TickerInterval: 5,
 		AggregateKindMap: map[string][]AggregatedKindConfig{
-			"request_count":      {{Kind: "sum"}},
-			"request_total_time": {{Kind: "sum"}, {Kind: "avg", OutputName: "request_total_time_avg"}},
-			"request_io":         {{Kind: "sum"}},
-			"response_io":        {{Kind: "sum"}},
+			"request_total_time": {{Kind: "sum"}, {Kind: "avg", OutputName: "request_total_time_avg"},
+				{Kind: "count", OutputName: "request_count"}},
+			"request_io":  {{Kind: "sum"}},
+			"response_io": {{Kind: "sum"}},
 			// tcp
 			"kindling_tcp_rtt_microseconds":  {{Kind: "last"}},
 			"kindling_tcp_retransmit_total":  {{Kind: "sum"}},

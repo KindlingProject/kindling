@@ -76,6 +76,19 @@ func Test_aggValues_last(t *testing.T) {
 	})
 }
 
+func Test_aggValues_count(t *testing.T) {
+	workerNum := 5
+	loopNum := 10000
+	var expectedNum = int64(workerNum * loopNum)
+	aggValues := &countValue{}
+	assertTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
+		for j := loopNum; j > 0; j-- {
+			aggValues.calculate(int64(j))
+		}
+		wg.Done()
+	})
+}
+
 func Test_defaultValuesMap_sum(t *testing.T) {
 	kindMap := make(map[string][]KindConfig)
 	kindMap["sum_value"] = []KindConfig{{OutputName: "sum_value_sum", Kind: SumKind}}
@@ -141,5 +154,19 @@ func Test_defaultValuesMap_lastValue(t *testing.T) {
 	got := m.get("last_value")
 	if got[0].Name != "last_value_last" || got[0].Value != 1 {
 		t.Errorf("lastValue result is %v, expected %v", got, 1)
+	}
+}
+
+func Test_defaultValuesMap_countValue(t *testing.T) {
+	kindMap := make(map[string][]KindConfig)
+	kindMap["count_value"] = []KindConfig{{OutputName: "count_value_count", Kind: CountKind}}
+	gauges := []*model.Gauge{{Name: "count_value"}}
+	m := newAggValuesMap(gauges, kindMap)
+	for i := 10000; i > 0; i-- {
+		m.calculate("count_value", int64(i))
+	}
+	got := m.get("count_value")
+	if got == nil || got[0].Name != "count_value_count" || got[0].Value != 10000 {
+		t.Errorf("lastValue result is %v, expected %v", got, 10000)
 	}
 }

@@ -13,6 +13,7 @@ const (
 	MaxKind
 	AvgKind
 	LastKind
+	CountKind
 )
 
 func (k AggregatorKind) name() string {
@@ -25,6 +26,8 @@ func (k AggregatorKind) name() string {
 		return "avg"
 	case LastKind:
 		return "last"
+	case CountKind:
+		return "count"
 	default:
 		return ""
 	}
@@ -40,6 +43,8 @@ func GetAggregatorKind(kind string) AggregatorKind {
 		return AvgKind
 	case "last":
 		return LastKind
+	case "count":
+		return CountKind
 	default:
 		return SumKind
 	}
@@ -128,6 +133,8 @@ func newAggValue(name string, kind AggregatorKind) aggregatedValues {
 		return &avgValue{name: name}
 	case LastKind:
 		return &lastValue{name: name}
+	case CountKind:
+		return &countValue{name: name}
 	default:
 		return &lastValue{name: name}
 	}
@@ -216,5 +223,21 @@ func (v *lastValue) get() int64 {
 	return atomic.LoadInt64(&v.value)
 }
 func (v *lastValue) getName() string {
+	return v.name
+}
+
+type countValue struct {
+	name  string
+	value int64
+}
+
+// calculate add 1 to its own value
+func (v *countValue) calculate(value int64) int64 {
+	return atomic.AddInt64(&v.value, 1)
+}
+func (v *countValue) get() int64 {
+	return atomic.LoadInt64(&v.value)
+}
+func (v *countValue) getName() string {
 	return v.name
 }

@@ -533,7 +533,6 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mps.getConnectDuration()+mps.getDuration()))
 	ret.UpdateAddGauge(constvalues.RequestIo, int64(mps.getRquestSize()))
 	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mps.getResponseSize()))
-	ret.UpdateAddGauge(constvalues.RequestCount, 1)
 
 	ret.Timestamp = evt.GetStartTime()
 
@@ -582,7 +581,6 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mp.getDuration()))
 	ret.UpdateAddGauge(constvalues.RequestIo, int64(mp.getRquestSize()))
 	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mp.getResponseSize()))
-	ret.UpdateAddGauge(constvalues.RequestCount, 1)
 
 	ret.Timestamp = evt.GetStartTime()
 	return ret

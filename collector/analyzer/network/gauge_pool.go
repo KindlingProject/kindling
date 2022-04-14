@@ -17,7 +17,6 @@ func createGaugeGroup() interface{} {
 		{Name: constvalues.RequestTotalTime, Value: 0},
 		{Name: constvalues.RequestIo, Value: 0},
 		{Name: constvalues.ResponseIo, Value: 0},
-		{Name: constvalues.RequestCount, Value: 0},
 	}
 	gaugeGroup := model.NewGaugeGroup(constnames.NetRequestGaugeGroupName, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
 	return gaugeGroup
