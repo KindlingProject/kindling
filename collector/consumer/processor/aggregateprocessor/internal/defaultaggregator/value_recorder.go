@@ -102,6 +102,8 @@ type labelsKey struct {
 	dstContainerId  string
 	dstContainer    string
 
+	isSlow bool
+
 	httpStatusCode int64
 	DnsRcode       int64
 	SqlErrCode     int64
@@ -141,6 +143,7 @@ func newLabelsKey(labels *model.AttributeMap, _ *internal.LabelFilter) *labelsKe
 		dnatPort:        labels.GetIntValue(constlabels.DnatPort),
 		dstContainerId:  labels.GetStringValue(constlabels.DstContainerId),
 		dstContainer:    labels.GetStringValue(constlabels.DstContainer),
+		isSlow:          labels.GetBoolValue(constlabels.IsSlow),
 		httpStatusCode:  labels.GetIntValue(constlabels.HttpStatusCode),
 		DnsRcode:        labels.GetIntValue(constlabels.DnsRcode),
 		SqlErrCode:      labels.GetIntValue(constlabels.SqlErrCode),
@@ -180,6 +183,7 @@ func (k *labelsKey) toLabels() *model.AttributeMap {
 	labels.AddIntValue(constlabels.DnatPort, k.dnatPort)
 	labels.AddStringValue(constlabels.DstContainerId, k.dstContainerId)
 	labels.AddStringValue(constlabels.DstContainer, k.dstContainer)
+	labels.AddBoolValue(constlabels.IsSlow, k.isSlow)
 	labels.AddIntValue(constlabels.HttpStatusCode, k.httpStatusCode)
 	labels.AddIntValue(constlabels.DnsRcode, k.DnsRcode)
 	labels.AddIntValue(constlabels.SqlErrCode, k.SqlErrCode)

@@ -7,6 +7,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.uber.org/multierr"
 )
 
@@ -33,7 +34,16 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 	case constnames.SingleNetRequestGaugeGroup:
 		return r.consumeSingleGroup(gaugeGroup)
 	case constnames.AggregatedNetRequestGaugeGroup:
-		return r.consumeAggregatedGroup(gaugeGroup)
+		var requestCountErr error
+		var err error
+		requestCount, ok := gaugeGroup.GetGauge(constvalues.RequestCount)
+		if ok {
+			requestCountGaugeGroup := model.NewGaugeGroup(gaugeGroup.Name, gaugeGroup.Labels, gaugeGroup.Timestamp, requestCount)
+			requestCountErr = r.consumeAggregatedGroup(requestCountGaugeGroup, true)
+			gaugeGroup.UpdateAddGauge(constvalues.RequestCount, 0)
+		}
+		err = r.consumeAggregatedGroup(gaugeGroup, false)
+		return multierr.Combine(requestCountErr, err)
 	default:
 		return nil
 	}
@@ -62,13 +72,17 @@ func (r *RelabelProcessor) consumeSingleGroup(gaugeGroup *model.GaugeGroup) erro
 	return multierr.Combine(traceErr, spanErr)
 }
 
-func (r *RelabelProcessor) consumeAggregatedGroup(gaugeGroup *model.GaugeGroup) error {
+func (r *RelabelProcessor) consumeAggregatedGroup(gaugeGroup *model.GaugeGroup, addIsSlowLabel bool) error {
 	common := newGauges(gaugeGroup)
 	if gaugeGroup.Labels.GetBoolValue(constlabels.IsServer) {
 		// Do not emit detail protocol metric at this version
 		//protocol := newGauges(gaugeGroup)
 		//protocolErr := r.nextConsumer.Consume(protocol.Process(r.cfg, ProtocolDetailMetricName, ServiceInstanceInfo, ServiceK8sInfo, ProtocolDetailInfo))
-		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo))
+		relabelFuns1 := []Relabel{MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo}
+		if addIsSlowLabel {
+			relabelFuns1 = append(relabelFuns1, AddIsSlowLabel)
+		}
+		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, relabelFuns1...))
 		var metricErr2 error
 		if r.cfg.StoreExternalSrcIP {
 			srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
@@ -77,16 +91,24 @@ func (r *RelabelProcessor) consumeAggregatedGroup(gaugeGroup *model.GaugeGroup) 
 				externalGaugeGroup := newGauges(gaugeGroup)
 				// Here we have to modify the field "IsServer" to generate the metric.
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, false)
-				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, MetricName, TopologyInstanceInfo,
-					TopologyK8sInfo, DstContainerInfo, TopologyProtocolInfo))
+				relabelFuns2 := []Relabel{MetricName, TopologyInstanceInfo,
+					TopologyK8sInfo, DstContainerInfo, TopologyProtocolInfo}
+				if addIsSlowLabel {
+					relabelFuns2 = append(relabelFuns2, AddIsSlowLabel)
+				}
+				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, relabelFuns2...))
 				// In case of using the original data later, we reset the field "IsServer".
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, true)
 			}
 		}
 		return multierr.Combine(metricErr, metricErr2)
 	} else {
-		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo,
-			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo))
+		relabelFuns3 := []Relabel{MetricName, TopologyInstanceInfo, TopologyK8sInfo,
+			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo}
+		if addIsSlowLabel {
+			relabelFuns3 = append(relabelFuns3, AddIsSlowLabel)
+		}
+		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, relabelFuns3...))
 		return metricErr
 	}
 }

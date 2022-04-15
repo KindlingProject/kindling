@@ -213,6 +213,10 @@ func ProtocolDetailInfo(cfg *Config, g *gauges) {
 	fillKafkaMetricProtocolLabel(g)
 }
 
+func AddIsSlowLabel(cfg *Config, g *gauges) {
+	g.targetLabels.AddBoolValue(constlabels.IsSlow, g.Labels.GetBoolValue(constlabels.IsSlow))
+}
+
 func TraceStatusInfo(cfg *Config, g *gauges) {
 	var requestSend, waitingTtfb, contentDownload, requestTotalTime int64
 	for i := 0; i < len(g.Values); i++ {
