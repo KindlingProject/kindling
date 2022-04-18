@@ -900,7 +900,7 @@
           "value": "$__all"
         },
         "datasource": "Prometheus",
-        "definition": "label_values(kindling_topology_request_duration_nanoseconds_count, src_workload_name)",
+        "definition": "label_values(kindling_topology_request_total, src_workload_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Source",
@@ -908,7 +908,7 @@
         "name": "source",
         "options": [],
         "query": {
-          "query": "label_values(kindling_topology_request_duration_nanoseconds_count, src_workload_name)",
+          "query": "label_values(kindling_topology_request_total, src_workload_name)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -927,7 +927,7 @@
           "value": "$__all"
         },
         "datasource": "Prometheus",
-        "definition": "label_values(kindling_topology_request_duration_nanoseconds_count, dst_workload_name)",
+        "definition": "label_values(kindling_topology_request_total, dst_workload_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Destination",
@@ -935,7 +935,7 @@
         "name": "destination",
         "options": [],
         "query": {
-          "query": "label_values(kindling_topology_request_duration_nanoseconds_count, dst_workload_name)",
+          "query": "label_values(kindling_topology_request_total, dst_workload_name)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,

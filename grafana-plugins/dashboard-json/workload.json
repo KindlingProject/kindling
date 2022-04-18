@@ -83,7 +83,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\", protocol=\"$protocol\"}[$__range])) by(namespace, workload_name)",
+          "expr": "sum(increase(kindling_entity_request_total{namespace=\"$namespace\",workload_name=\"$workload\", protocol=\"$protocol\"}[$__range])) by(namespace, workload_name)",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "count",
@@ -164,7 +164,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__range])) / sum by(namespace, workload_name) \n (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__range]))",
+          "expr": "sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_total{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__range])) / sum by(namespace, workload_name) \n (increase(kindling_entity_request_total{namespace=\"$namespace\", workload_name=\"$workload\", protocol=\"$protocol\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "value",
@@ -245,7 +245,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\",response_content=~\"4..|5..|1|2|3\"}[$__range])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100",
+          "expr": "sum (increase(kindling_entity_request_total{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\",response_content=~\"4..|5..|1|2|3\"}[$__range])) / sum (increase(kindling_entity_request_total{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "Err rate",
@@ -329,7 +329,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) by(request_content))",
+          "expr": "topk(10, sum(increase(kindling_entity_request_total{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) by(request_content))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -416,7 +416,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) / sum by(request_content)  (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))) ",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_total{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) / sum by(request_content)  (increase(kindling_entity_request_total{namespace=\"$namespace\", workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))) ",
           "format": "time_series",
           "interval": "",
           "legendFormat": "{{request_content}}",
@@ -497,7 +497,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\", response_content=~\"4..|5..|1|2|3\"}[$__range])) / sum by(request_content) (increase(kindling_entity_request_duration_nanoseconds_count{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100)",
+          "expr": "topk(10, sum by(request_content) (increase(kindling_entity_request_total{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\", response_content=~\"4..|5..|1|2|3\"}[$__range])) / sum by(request_content) (increase(kindling_entity_request_total{namespace=\"$namespace\",workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100)",
           "interval": "",
           "legendFormat": "{{ request_content }}",
           "refId": "A"
@@ -543,6 +543,9 @@
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {
             "align": "auto",
             "displayMode": "auto"
@@ -554,10 +557,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 400
               }
             ]
           }
@@ -578,18 +577,6 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "P99 Latency"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ns"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
               "options": "ReqXFer"
             },
             "properties": [
@@ -599,38 +586,24 @@
                   {
                     "options": {
                       "1": {
+                        "color": "dark-green",
+                        "index": 0,
                         "text": "Normal"
                       },
                       "2": {
+                        "color": "dark-orange",
+                        "index": 1,
                         "text": "Warning"
                       },
                       "3": {
+                        "color": "dark-red",
+                        "index": 2,
                         "text": "Abnormal"
                       }
                     },
                     "type": "value"
                   }
                 ]
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 2
-                    },
-                    {
-                      "color": "red",
-                      "value": 3
-                    }
-                  ]
-                }
               },
               {
                 "id": "custom.displayMode",
@@ -650,38 +623,24 @@
                   {
                     "options": {
                       "1": {
+                        "color": "dark-green",
+                        "index": 0,
                         "text": "Normal"
                       },
                       "2": {
+                        "color": "dark-orange",
+                        "index": 1,
                         "text": "Warning"
                       },
                       "3": {
+                        "color": "dark-red",
+                        "index": 2,
                         "text": "Abnormal"
                       }
                     },
                     "type": "value"
                   }
                 ]
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 2
-                    },
-                    {
-                      "color": "red",
-                      "value": 3
-                    }
-                  ]
-                }
               },
               {
                 "id": "custom.displayMode",
@@ -701,38 +660,24 @@
                   {
                     "options": {
                       "1": {
+                        "color": "dark-green",
+                        "index": 0,
                         "text": "Normal"
                       },
                       "2": {
+                        "color": "dark-orange",
+                        "index": 1,
                         "text": "Warning"
                       },
                       "3": {
+                        "color": "dark-red",
+                        "index": 2,
                         "text": "Abnormal"
                       }
                     },
                     "type": "value"
                   }
                 ]
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 2
-                    },
-                    {
-                      "color": "red",
-                      "value": 3
-                    }
-                  ]
-                }
               },
               {
                 "id": "custom.displayMode",
@@ -752,7 +697,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "rgb(227, 227, 227)",
+                      "color": "green",
                       "value": null
                     },
                     {
@@ -777,8 +722,6 @@
         "y": 15
       },
       "id": 14,
-      "interval": "30",
-      "maxDataPoints": 1,
       "options": {
         "footer": {
           "fields": "",
@@ -809,20 +752,9 @@
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": "Prometheus",
-          "exemplar": false,
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace=\"$namespace\", dst_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", dst_namespace=\"$namespace\", dst_workload_name=\"$workload\", protocol=\"$protocol\"}",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
         }
       ],
-      "title": "Request details",
+      "title": "Request Detail",
       "transformations": [
         {
           "id": "organize",
@@ -831,12 +763,10 @@
               "__name__": true,
               "dst_container": true,
               "dst_container_id": true,
-              "dst_namespace": false,
               "dst_node": true,
               "dst_port": true,
               "dst_service": true,
               "dst_workload_kind": true,
-              "dst_workload_name": false,
               "instance": true,
               "is_server": true,
               "job": true,
@@ -844,63 +774,63 @@
               "request_duration_status": true,
               "service_instance_id": true,
               "service_name": true,
-              "src_namespace": false,
-              "src_node": true
-            },
-            "indexByName": {},
-            "renameByName": {}
-          }
-        },
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "dst_container": true,
-              "dst_container_id": true,
-              "exported_job": true,
-              "src_container": true,
-              "src_container_id": true,
               "src_node": true,
               "src_service": true,
-              "src_workload_kind": true,
-              "status_code": true
+              "src_workload_kind": true
             },
             "indexByName": {
               "Time": 1,
-              "Value": 5,
-              "dst_ip": 11,
-              "dst_namespace": 9,
-              "dst_pod": 12,
-              "dst_workload_name": 10,
-              "request_content": 6,
+              "Value": 6,
+              "__name__": 11,
+              "dst_container": 12,
+              "dst_container_id": 13,
+              "dst_ip": 17,
+              "dst_namespace": 14,
+              "dst_node": 18,
+              "dst_pod": 16,
+              "dst_port": 19,
+              "dst_service": 20,
+              "dst_workload_kind": 21,
+              "dst_workload_name": 15,
+              "instance": 22,
+              "is_server": 23,
+              "job": 24,
+              "protocol": 25,
+              "request_content": 5,
+              "request_duration_status": 26,
               "request_processing_status": 3,
               "request_reqxfer_status": 2,
               "response_content": 0,
               "response_rspxfer_status": 4,
-              "src_ip": 8,
-              "src_namespace": 7
+              "service_instance_id": 27,
+              "service_name": 28,
+              "src_ip": 10,
+              "src_namespace": 7,
+              "src_node": 29,
+              "src_pod": 9,
+              "src_service": 30,
+              "src_workload_kind": 31,
+              "src_workload_name": 8
             },
             "renameByName": {
               "Value": "Latency",
               "Value #A": "Latency",
-              "Value #B": "P99 Latency",
               "dst_ip": "Destination IP",
               "dst_namespace": "Destination Namespace",
+              "dst_node": "",
               "dst_pod": "Destination Pod",
               "dst_workload_name": "Destination",
               "request_content": "URL",
+              "request_duration_status": "",
               "request_processing_status": "processing",
               "request_reqxfer_status": "ReqXFer",
               "response_content": "Status",
               "response_rspxfer_status": "RspXFer",
               "src_ip": "Source IP",
               "src_namespace": "Source Namespace",
+              "src_node": "",
               "src_pod": "Source Pod",
-              "src_workload_kind": "Source",
+              "src_workload_kind": "",
               "src_workload_name": "Source"
             }
           }
@@ -965,7 +895,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))",
+          "expr": "sum(increase(kindling_topology_request_total{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "count",
@@ -1046,7 +976,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(src_namespace, src_workload_name) (increase(kindling_topology_request_duration_nanoseconds_sum{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) / sum by(src_namespace, src_workload_name) \n (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))",
+          "expr": "sum by(src_namespace, src_workload_name) (increase(kindling_topology_request_duration_nanoseconds_total{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) / sum by(src_namespace, src_workload_name) \n (increase(kindling_topology_request_total{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range]))",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "latency",
@@ -1129,7 +1059,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\",status_code=~\"4..|5..|1|2|3\"}[$__range])) / sum (increase(kindling_topology_request_duration_nanoseconds_count{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100",
+          "expr": "sum (increase(kindling_topology_request_total{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\",status_code=~\"4..|5..|1|2|3\"}[$__range])) / sum (increase(kindling_topology_request_total{src_namespace=\"$namespace\",src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__range])) * 100",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
@@ -1174,6 +1104,9 @@
       "description": "",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {
             "align": "auto",
             "displayMode": "auto"
@@ -1185,10 +1118,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           }
@@ -1209,19 +1138,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "P99 Latency"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ns"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ReqXRef"
+              "options": "ReqXFer"
             },
             "properties": [
               {
@@ -1230,38 +1147,24 @@
                   {
                     "options": {
                       "1": {
+                        "color": "dark-green",
+                        "index": 0,
                         "text": "Normal"
                       },
                       "2": {
+                        "color": "dark-orange",
+                        "index": 1,
                         "text": "Warning"
                       },
                       "3": {
+                        "color": "dark-red",
+                        "index": 2,
                         "text": "Abnormal"
                       }
                     },
                     "type": "value"
                   }
                 ]
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 2
-                    },
-                    {
-                      "color": "red",
-                      "value": 3
-                    }
-                  ]
-                }
               },
               {
                 "id": "custom.displayMode",
@@ -1281,38 +1184,24 @@
                   {
                     "options": {
                       "1": {
+                        "color": "dark-green",
+                        "index": 0,
                         "text": "Normal"
                       },
                       "2": {
+                        "color": "dark-orange",
+                        "index": 1,
                         "text": "Warning"
                       },
                       "3": {
+                        "color": "dark-red",
+                        "index": 2,
                         "text": "Abnormal"
                       }
                     },
                     "type": "value"
                   }
                 ]
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 2
-                    },
-                    {
-                      "color": "red",
-                      "value": 3
-                    }
-                  ]
-                }
               },
               {
                 "id": "custom.displayMode",
@@ -1323,7 +1212,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "RspXRef"
+              "options": "RspXFer"
             },
             "properties": [
               {
@@ -1332,38 +1221,24 @@
                   {
                     "options": {
                       "1": {
+                        "color": "dark-green",
+                        "index": 0,
                         "text": "Normal"
                       },
                       "2": {
+                        "color": "dark-orange",
+                        "index": 1,
                         "text": "Warning"
                       },
                       "3": {
+                        "color": "dark-red",
+                        "index": 2,
                         "text": "Abnormal"
                       }
                     },
                     "type": "value"
                   }
                 ]
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 2
-                    },
-                    {
-                      "color": "red",
-                      "value": 3
-                    }
-                  ]
-                }
               },
               {
                 "id": "custom.displayMode",
@@ -1383,7 +1258,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "rgb(202, 207, 202)",
+                      "color": "green",
                       "value": null
                     },
                     {
@@ -1430,28 +1305,21 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": "Prometheus",
-          "exemplar": false,
-          "expr": "histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{src_namespace=\"$namespace\", src_workload_name=\"$workload\",protocol=\"$protocol\"}[$__interval])) and on (status, src_ip, src_pod, dst_ip, dst_pod, request_content) kindling_trace_request_duration_nanoseconds{is_server=\"true\", src_namespace=\"$namespace\", src_workload_name=\"$workload\", protocol=\"$protocol\"}",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
         }
       ],
-      "title": "Request details",
+      "title": "Request Detail",
       "transformations": [
         {
           "id": "organize",
           "options": {
             "excludeByName": {
               "__name__": true,
-              "dst_namespace": false,
+              "dst_container": true,
+              "dst_container_id": true,
+              "dst_node": true,
               "dst_port": true,
+              "dst_service": true,
+              "dst_workload_kind": true,
               "instance": true,
               "is_server": true,
               "job": true,
@@ -1461,63 +1329,63 @@
               "service_name": true,
               "src_container": true,
               "src_container_id": true,
-              "src_namespace": false,
               "src_node": true,
               "src_service": true,
-              "src_workload_kind": true,
-              "src_workload_name": false
-            },
-            "indexByName": {},
-            "renameByName": {}
-          }
-        },
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "dst_node": true,
-              "dst_service": true,
-              "dst_workload_kind": true,
-              "src_container": true,
-              "src_container_id": true,
-              "status_code": true
+              "src_workload_kind": true
             },
             "indexByName": {
               "Time": 1,
-              "Value": 5,
-              "dst_ip": 12,
-              "dst_namespace": 11,
-              "request_content": 6,
+              "Value": 6,
+              "__name__": 11,
+              "dst_container": 12,
+              "dst_container_id": 13,
+              "dst_ip": 17,
+              "dst_namespace": 14,
+              "dst_node": 18,
+              "dst_pod": 16,
+              "dst_port": 19,
+              "dst_service": 20,
+              "dst_workload_kind": 21,
+              "dst_workload_name": 15,
+              "instance": 22,
+              "is_server": 23,
+              "job": 24,
+              "protocol": 25,
+              "request_content": 5,
+              "request_duration_status": 26,
               "request_processing_status": 3,
               "request_reqxfer_status": 2,
               "response_content": 0,
               "response_rspxfer_status": 4,
+              "service_instance_id": 27,
+              "service_name": 28,
               "src_ip": 10,
               "src_namespace": 7,
+              "src_node": 29,
               "src_pod": 9,
+              "src_service": 30,
+              "src_workload_kind": 31,
               "src_workload_name": 8
             },
             "renameByName": {
               "Value": "Latency",
               "Value #A": "Latency",
-              "Value #B": "P99 Latency",
               "dst_ip": "Destination IP",
               "dst_namespace": "Destination Namespace",
+              "dst_node": "",
               "dst_pod": "Destination Pod",
-              "dst_service": "",
               "dst_workload_name": "Destination",
               "request_content": "URL",
+              "request_duration_status": "",
               "request_processing_status": "processing",
-              "request_reqxfer_status": "ReqXRef",
+              "request_reqxfer_status": "ReqXFer",
               "response_content": "Status",
-              "response_rspxfer_status": "RspXRef",
+              "response_rspxfer_status": "RspXFer",
               "src_ip": "Source IP",
               "src_namespace": "Source Namespace",
+              "src_node": "",
               "src_pod": "Source Pod",
+              "src_workload_kind": "",
               "src_workload_name": "Source"
             }
           }
@@ -1538,7 +1406,7 @@
           "value": "kube-system"
         },
         "datasource": "Prometheus",
-        "definition": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
+        "definition": "label_values(kindling_entity_request_total, namespace)",
         "hide": 0,
         "includeAll": false,
         "label": "Namespace",
@@ -1546,7 +1414,7 @@
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "label_values(kindling_entity_request_duration_nanoseconds_count, namespace)",
+          "query": "label_values(kindling_entity_request_total, namespace)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -1565,7 +1433,7 @@
           "value": "coredns"
         },
         "datasource": "Prometheus",
-        "definition": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"} , workload_name)",
+        "definition": "label_values(kindling_entity_request_total{namespace =\"$namespace\"} , workload_name)",
         "hide": 0,
         "includeAll": false,
         "label": "Workload",
@@ -1573,7 +1441,7 @@
         "name": "workload",
         "options": [],
         "query": {
-          "query": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\"} , workload_name)",
+          "query": "label_values(kindling_entity_request_total{namespace =\"$namespace\"} , workload_name)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -1592,7 +1460,7 @@
           "value": "http"
         },
         "datasource": "Prometheus",
-        "definition": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\",workload_name=\"$workload\",protocol!=\"NOSUPPORT\"}, protocol)",
+        "definition": "label_values(kindling_entity_request_total{namespace =\"$namespace\",workload_name=\"$workload\",protocol!=\"NOSUPPORT\"}, protocol)",
         "hide": 0,
         "includeAll": false,
         "label": "Protocol",
@@ -1600,7 +1468,7 @@
         "name": "protocol",
         "options": [],
         "query": {
-          "query": "label_values(kindling_entity_request_duration_nanoseconds_count{namespace =\"$namespace\",workload_name=\"$workload\",protocol!=\"NOSUPPORT\"}, protocol)",
+          "query": "label_values(kindling_entity_request_total{namespace =\"$namespace\",workload_name=\"$workload\",protocol!=\"NOSUPPORT\"}, protocol)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
