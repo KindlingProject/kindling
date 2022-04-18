@@ -21,10 +21,11 @@ type AggregateProcessor struct {
 	telemetry    *component.TelemetryTools
 	nextConsumer consumer.Consumer
 
-	aggregator  internal.Aggregator
-	labelFilter *internal.LabelFilter
-	stopCh      chan struct{}
-	ticker      *time.Ticker
+	aggregator               internal.Aggregator
+	netRequestLabelSelectors *internal.LabelSelectors
+	tcpLabelSelectors        *internal.LabelSelectors
+	stopCh                   chan struct{}
+	ticker                   *time.Ticker
 }
 
 func New(config interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
@@ -34,10 +35,11 @@ func New(config interface{}, telemetry *component.TelemetryTools, nextConsumer c
 		telemetry:    telemetry,
 		nextConsumer: nextConsumer,
 
-		aggregator:  defaultaggregator.NewDefaultAggregator(toAggregatedConfig(cfg.AggregateKindMap)),
-		labelFilter: internal.NewLabelFilter(cfg.FilterLabels...),
-		stopCh:      make(chan struct{}),
-		ticker:      time.NewTicker(time.Duration(cfg.TickerInterval) * time.Second),
+		aggregator:               defaultaggregator.NewDefaultAggregator(toAggregatedConfig(cfg.AggregateKindMap)),
+		netRequestLabelSelectors: newNetRequestLabelSelectors(),
+		tcpLabelSelectors:        newTcpLabelSelectors(),
+		stopCh:                   make(chan struct{}),
+		ticker:                   time.NewTicker(time.Duration(cfg.TickerInterval) * time.Second),
 	}
 	go p.runTicker()
 	return p
@@ -92,16 +94,82 @@ func (p *AggregateProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 			abnormalDataErr = p.nextConsumer.Consume(gaugeGroup)
 		}
 		gaugeGroup.Name = constnames.AggregatedNetRequestGaugeGroup
-		p.aggregate(gaugeGroup)
+		p.aggregator.Aggregate(gaugeGroup, p.netRequestLabelSelectors)
 		return abnormalDataErr
+	case constnames.TcpGaugeGroupName:
+		p.aggregator.Aggregate(gaugeGroup, p.tcpLabelSelectors)
+		return nil
 	default:
-		p.aggregate(gaugeGroup)
+		p.aggregator.Aggregate(gaugeGroup, p.netRequestLabelSelectors)
 		return nil
 	}
 }
 
-func (p *AggregateProcessor) aggregate(gaugeGroup *model.GaugeGroup) {
-	p.aggregator.Aggregate(gaugeGroup, p.labelFilter)
+func newNetRequestLabelSelectors() *internal.LabelSelectors {
+	return internal.NewLabelSelectors(
+		internal.LabelSelector{Name: constlabels.Pid, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.Protocol, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.IsServer, VType: internal.BooleanType},
+		internal.LabelSelector{Name: constlabels.ContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNamespace, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcContainer, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DnatIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DnatPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DstContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstContainer, VType: internal.StringType},
+
+		internal.LabelSelector{Name: constlabels.IsSlow, VType: internal.BooleanType},
+		internal.LabelSelector{Name: constlabels.HttpStatusCode, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DnsRcode, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.SqlErrCode, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.ContentKey, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DnsDomain, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.KafkaTopic, VType: internal.StringType},
+	)
+}
+
+func newTcpLabelSelectors() *internal.LabelSelectors {
+	return internal.NewLabelSelectors(
+		internal.LabelSelector{Name: constlabels.SrcNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNamespace, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.SrcContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcContainer, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DnatIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DnatPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DstContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstContainer, VType: internal.StringType},
+	)
 }
 
 func (p *AggregateProcessor) isSampled(gaugeGroup *model.GaugeGroup) bool {

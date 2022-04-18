@@ -1,9 +1,6 @@
 package aggregateprocessor
 
 type Config struct {
-	// TODO: Expose filters to configuration
-	// Unable to work now.
-	FilterLabels []string `mapstructure:"filter_labels"`
 	// The unit is second.
 	TickerInterval int `mapstructure:"ticker_interval"`
 
@@ -24,7 +21,6 @@ type SampleConfig struct {
 
 func NewDefaultConfig() *Config {
 	ret := &Config{
-		FilterLabels:   make([]string, 0),
 		TickerInterval: 5,
 		AggregateKindMap: map[string][]AggregatedKindConfig{
 			"request_total_time": {{Kind: "sum"}, {Kind: "avg", OutputName: "request_total_time_avg"},

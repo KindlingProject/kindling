@@ -27,7 +27,7 @@ func NewDefaultAggregator(config *AggregatedConfig) *DefaultAggregator {
 	return ret
 }
 
-func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, f *internal.LabelFilter) {
+func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, selectors *internal.LabelSelectors) {
 	name := g.Name
 	s.mut.RLock()
 	recorder, ok := s.recordersMap[name]
@@ -44,7 +44,7 @@ func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, f *internal.LabelFilt
 		}
 		s.mut.Unlock()
 	}
-	key := newLabelsKey(g.Labels, f)
+	key := selectors.GetLabelKeys(g.Labels)
 	recorder.Record(key, g.Values)
 
 	// First copy the model.GaugeGroup, then output the result directly.
