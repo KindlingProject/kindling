@@ -43,16 +43,28 @@ func (s *LabelSelectors) GetLabelKeys(labels *model.AttributeMap) *LabelKeys {
 	return keys
 }
 
+const maxLabelKeySize = 34
+
 type LabelKeys struct {
 	// LabelKeys will be used as key of map, so it is must be an array instead of a slice.
 	// Now 34 is enough for all cases. If there is more than 34 labels, must increase this value.
-	keys [34]LabelKey
+	keys [maxLabelKeySize]LabelKey
 }
 
 type LabelKey struct {
 	Name  string
 	Value string
 	VType vType
+}
+
+func NewLabelKeys(keys ...LabelKey) *LabelKeys {
+	ret := &LabelKeys{}
+	length := len(keys)
+	// only the first maxLabelKeySize number of keys are valid
+	for i := 0; i < maxLabelKeySize && i < length; i++ {
+		ret.keys[i] = keys[i]
+	}
+	return ret
 }
 
 func (k *LabelKeys) GetLabels() *model.AttributeMap {

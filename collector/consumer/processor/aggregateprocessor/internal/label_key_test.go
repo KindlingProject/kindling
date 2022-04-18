@@ -26,7 +26,7 @@ func TestLabelSelectors_GetLabelKeys(t *testing.T) {
 				{Name: "intKey", VType: IntType},
 			}},
 			args: args{labels: createAttributeMap()},
-			want: wantLabelKeys(),
+			want: createLabelKeys(),
 		},
 	}
 	for _, tt := range tests {
@@ -51,7 +51,7 @@ func TestLabelKeys_GetLabels(t *testing.T) {
 		want   *model.AttributeMap
 	}{
 		{
-			fields: fields{wantLabelKeys().keys},
+			fields: fields{createLabelKeys().keys},
 			want:   createAttributeMap(),
 		},
 	}
@@ -75,22 +75,35 @@ func createAttributeMap() *model.AttributeMap {
 	return ret
 }
 
-func wantLabelKeys() *LabelKeys {
-	ret := &LabelKeys{}
-	ret.keys[0] = LabelKey{
-		Name:  "stringKey",
-		Value: "stringValue",
-		VType: StringType,
-	}
-	ret.keys[1] = LabelKey{
-		Name:  "booleanKey",
-		Value: "true",
-		VType: BooleanType,
-	}
-	ret.keys[2] = LabelKey{
-		Name:  "intKey",
-		Value: "100",
-		VType: IntType,
-	}
+func createLabelKeys() *LabelKeys {
+	ret := NewLabelKeys([]LabelKey{
+		{
+			Name:  "stringKey",
+			Value: "stringValue",
+			VType: StringType,
+		},
+		{
+			Name:  "booleanKey",
+			Value: "true",
+			VType: BooleanType,
+		},
+		{
+			Name:  "intKey",
+			Value: "100",
+			VType: IntType,
+		},
+	}...)
 	return ret
+}
+
+func TestLabelKeysMap(t *testing.T) {
+	store := make(map[LabelKeys]int)
+	labelKeys := createLabelKeys()
+	store[*labelKeys] = 10
+
+	labelKeys2 := createLabelKeys()
+	value := store[*labelKeys2]
+	if value != 10 {
+		t.Errorf("Expected 10, but got %v", value)
+	}
 }

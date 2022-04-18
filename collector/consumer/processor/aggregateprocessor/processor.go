@@ -105,6 +105,7 @@ func (p *AggregateProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 	}
 }
 
+// TODO: make it configurable instead of hard-coded
 func newNetRequestLabelSelectors() *internal.LabelSelectors {
 	return internal.NewLabelSelectors(
 		internal.LabelSelector{Name: constlabels.Pid, VType: internal.IntType},
