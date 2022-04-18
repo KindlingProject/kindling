@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"strings"
 )
 
@@ -82,7 +83,7 @@ func (g *GaugeGroup) String() string {
 }
 
 func (g *GaugeGroup) Reset() {
-	g.Name = ""
+	g.Name = constlabels.NetWorkAnalyzeGaugeGroup
 	for _, v := range g.Values {
 		v.Value = 0
 	}

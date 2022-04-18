@@ -14,6 +14,8 @@ import (
 var traceAsMetricHelp = "Describe a single request which is abnormal. " +
 	"For status labels, number '1', '2' and '3' stands for Green, Yellow and Red respectively."
 
+var adapterRWMutex sync.RWMutex
+
 type instrumentFactory struct {
 	// TODO: Initialize instruments when initializing factory
 	instruments              sync.Map
@@ -22,6 +24,7 @@ type instrumentFactory struct {
 	gaugeChan                *gaugeChannel
 	customLabels             []attribute.KeyValue
 	logger                   *zap.Logger
+	adapters                 map[string]*Adapter
 }
 
 func newInstrumentFactory(meter metric.Meter, logger *zap.Logger, customLabels []attribute.KeyValue) *instrumentFactory {
@@ -78,6 +81,51 @@ func (i *instrumentFactory) recordGaugeAsync(metricName string, singleGauge mode
 	}, WithDescription(metricName))
 }
 
+func (i *instrumentFactory) recordTraceAsMetric(metricName string, singleGauge model.GaugeGroup) {
+	i.gaugeChan.put(&singleGauge, i.logger)
+	if i.isGaugeAsyncInitialized(metricName) {
+		return
+	}
+
+	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
+		adapterRWMutex.Lock()
+		adapter, ok := i.adapters[metricName]
+		adapterRWMutex.Unlock()
+		if ok {
+			channel := i.gaugeChan.getChannel(metricName)
+			for {
+				select {
+				case gaugeGroup := <-channel:
+					attrs, _ := adapter.adapter(gaugeGroup)
+					result.Observe(gaugeGroup.Values[0].Value, attrs...)
+				default:
+					return
+				}
+			}
+		} else {
+			newAdapter, _ := newAdapterBuilder(topologyMetricDicList,
+				[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
+				withExtraLabels(entityProtocol, updateProtocolKey).
+				withValueToLabels(traceStatus, getTraceStatusLabels).
+				withConstLabels(i.customLabels).
+				build()
+			adapterRWMutex.Lock()
+			i.adapters[metricName] = newAdapter
+			adapterRWMutex.Unlock()
+			channel := i.gaugeChan.getChannel(metricName)
+			for {
+				select {
+				case gaugeGroup := <-channel:
+					attrs, _ := newAdapter.adapter(gaugeGroup)
+					result.Observe(gaugeGroup.Values[0].Value, attrs...)
+				default:
+					return
+				}
+			}
+		}
+	}, WithDescription(metricName))
+}
+
 func WithDescription(metricName string) metric.InstrumentOption {
 	var option metric.InstrumentOption
 	switch metricName {
@@ -117,4 +165,7 @@ type histogramInstrument struct {
 
 func (h *histogramInstrument) Measurement(value int64) metric.Measurement {
 	return h.instrument.Measurement(value)
+}
+
+type AsyncGaugeGroup struct {
 }

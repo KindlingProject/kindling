@@ -6,6 +6,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"github.com/spf13/viper"
@@ -81,16 +82,22 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		StdoutCfg:    &StdoutConfig{CollectPeriod: 30 * time.Second},
 		CustomLabels: nil,
 		MetricAggregationMap: map[string]MetricAggregationKind{
-			"kindling_entity_request_duration_nanoseconds":   2,
-			"kindling_entity_request_send_bytes_total":       1,
-			"kindling_entity_request_receive_bytes_total":    1,
-			"kindling_topology_request_duration_nanoseconds": 2,
-			"kindling_topology_request_request_bytes_total":  1,
-			"kindling_topology_request_response_bytes_total": 1,
-			"kindling_trace_request_duration_nanoseconds":    0,
-			"kindling_tcp_rtt_milliseconds":                  0,
-			"kindling_tcp_retransmit_total":                  1,
-			"kindling_tcp_packet_loss_total":                 1,
+			"kindling_entity_request_duration_nanoseconds":         2,
+			"kindling_entity_request_send_bytes_total":             1,
+			"kindling_entity_request_receive_bytes_total":          1,
+			"kindling_topology_request_duration_nanoseconds_total": 2,
+			"kindling_topology_request_request_bytes_total":        1,
+			"kindling_topology_request_response_bytes_total":       1,
+			"kindling_trace_request_duration_nanoseconds":          0,
+			"kindling_tcp_rtt_milliseconds":                        0,
+			"kindling_tcp_retransmit_total":                        1,
+			"kindling_tcp_packet_loss_total":                       1,
+		},
+		AdapterConfig: &AdapterConfig{
+			NeedTraceAsResourceSpan: true,
+			NeedTraceAsMetric:       true,
+			NeedPodDetail:           true,
+			StoreExternalSrcIP:      true,
 		},
 	}
 
@@ -114,7 +121,9 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 	)
 
 	otelexporter := &OtelExporter{
+		cfg:                  cfg,
 		metricController:     cont,
+		adapterManager:       createBaseAdapterManager(nil),
 		traceProvider:        nil,
 		defaultTracer:        nil,
 		customLabels:         nil,
@@ -136,7 +145,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 
 	for i := 0; i < dimension; i++ {
 		gaugesGroup := &model.GaugeGroup{
-			Name: "testGauge",
+			Name: constnames.AggregatedNetRequestGaugeGroup,
 			Values: []*model.Gauge{
 				{
 					constlabels.ToKindlingMetricName(constvalues.RequestTotalTime, false),

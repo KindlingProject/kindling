@@ -7,6 +7,8 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -62,6 +64,7 @@ type OtelOutputExporters struct {
 }
 
 type OtelExporter struct {
+	cfg                  *Config
 	metricController     *controller.Controller
 	traceProvider        *sdktrace.TracerProvider
 	defaultTracer        trace.Tracer
@@ -69,6 +72,7 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
+	adapterManager       *BaseAdapterManager
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
@@ -134,6 +138,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		}
 
 		otelexporter = &OtelExporter{
+			cfg:                  cfg,
 			metricController:     c,
 			traceProvider:        nil,
 			defaultTracer:        nil,
@@ -141,6 +146,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			adapterManager:       createBaseAdapterManager(customLabels),
 		}
 		go func() {
 			err := StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
@@ -191,6 +197,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		tracer := tracerProvider.Tracer(TracerName)
 
 		otelexporter = &OtelExporter{
+			cfg:                  cfg,
 			metricController:     cont,
 			traceProvider:        tracerProvider,
 			defaultTracer:        tracer,
@@ -198,6 +205,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			adapterManager:       createBaseAdapterManager(customLabels),
 		}
 
 		if err = cont.Start(context.Background()); err != nil {
@@ -220,6 +228,23 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 			zap.String("gaugeGroup", gaugeGroup.String()),
 		)
 	}
+	if gaugeGroup.Name == constnames.AggregatedNetRequestGaugeGroup {
+		e.PushNetMetric(gaugeGroup)
+	} else if gaugeGroup.Name == constnames.SingleNetRequestGaugeGroup {
+		if e.defaultTracer != nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
+			attrs, _ := e.adapterManager.traceToSpanAdapter.adapter(gaugeGroup)
+			_, span := e.defaultTracer.Start(
+				context.Background(),
+				constvalues.SpanInfo,
+				apitrace.WithAttributes(attrs...),
+			)
+			span.End()
+		} else if e.defaultTracer != nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
+			return errors.New("send span failed: this exporter can not support Span Data")
+		}
+	}
+
+	// For Other metric
 	if gaugeGroup.Name == constvalues.SpanInfo {
 		if e.defaultTracer == nil {
 			return errors.New("send span failed: this exporter can not support Span Data")
@@ -230,8 +255,59 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 	}
 }
 
+func (e *OtelExporter) PushNetMetric(gaugeGroup *model.GaugeGroup) {
+	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
+	if e.cfg.AdapterConfig.StoreExternalSrcIP {
+		srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
+		if srcNamespace == constlabels.ExternalClusterNamespace && isServer {
+			attrs, _ := e.adapterManager.detailTopologyAdapter.adapter(gaugeGroup)
+			e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup, false)...)
+		}
+	}
+	var metricAdapter *Adapter
+	if e.cfg.AdapterConfig.NeedPodDetail {
+		if isServer {
+			metricAdapter = e.adapterManager.detailEntityAdapter
+		} else {
+			metricAdapter = e.adapterManager.detailTopologyAdapter
+		}
+	} else {
+		if isServer {
+			metricAdapter = e.adapterManager.aggEntityAdapter
+		} else {
+			metricAdapter = e.adapterManager.aggTopologyAdapter
+		}
+	}
+
+	attrs, err := metricAdapter.adapter(gaugeGroup)
+	if err != nil {
+		e.telemetry.Logger.Error("Adapter failed,Err is", zap.Error(err))
+	} else {
+		e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup, isServer)...)
+	}
+
+	// TODO TraceAsMetric if we need
+	if e.cfg.AdapterConfig.NeedTraceAsMetric {
+		for _, value := range gaugeGroup.Values {
+			name := value.Name
+			metricKind, ok := e.findInstrumentKind(name)
+			if !ok {
+				e.telemetry.Logger.Warn("Skip a Metric: No metric aggregation set for metric", zap.String("metricName", name))
+				continue
+			}
+			if metricKind == MAGaugeKind {
+				e.instrumentFactory.recordTraceAsMetric(name, model.GaugeGroup{
+					Values:    []*model.Gauge{value},
+					Labels:    gaugeGroup.Labels,
+					Timestamp: gaugeGroup.Timestamp,
+				})
+			}
+		}
+	}
+}
+
 func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
-	storeGaugeGroupKeys(gaugeGroup)
+	//storeGaugeGroupKeys(gaugeGroup)
 	values := gaugeGroup.Values
 	measurements := make([]metric.Measurement, 0, len(values))
 	for _, value := range values {
@@ -352,3 +428,20 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 	}
 	return
 }(exponentialInt64Boundaries)
+
+func (e *OtelExporter) GetMetricMeasurement(gaugeGroup *model.GaugeGroup, isServer bool) []metric.Measurement {
+	gauges := gaugeGroup.Values
+	measurements := make([]metric.Measurement, 0, len(gauges))
+	for i := 0; i < len(gauges); i++ {
+		name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
+		if name == "" {
+			continue
+		}
+		if gauges[i].Value < 0 {
+			e.telemetry.Logger.Warn("Exporter received an negative value!", zap.String("gauge", gaugeGroup.String()))
+			continue
+		}
+		measurements = append(measurements, e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value))
+	}
+	return measurements
+}
