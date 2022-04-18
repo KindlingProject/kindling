@@ -57,6 +57,17 @@ func (g *GaugeGroup) UpdateAddGauge(name string, value int64) {
 	}
 }
 
+func (g *GaugeGroup) RemoveGauge(name string) {
+	newValues := make([]*Gauge, 0)
+	for _, value := range g.Values {
+		if value.Name == name {
+			continue
+		}
+		newValues = append(newValues, value)
+	}
+	g.Values = newValues
+}
+
 func (g *GaugeGroup) String() string {
 	var str strings.Builder
 	str.WriteString(fmt.Sprintf("GagugeGroup:\n"))

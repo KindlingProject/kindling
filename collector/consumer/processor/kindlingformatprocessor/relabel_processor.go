@@ -40,7 +40,7 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		if ok {
 			requestCountGaugeGroup := model.NewGaugeGroup(gaugeGroup.Name, gaugeGroup.Labels, gaugeGroup.Timestamp, requestCount)
 			requestCountErr = r.consumeAggregatedGroup(requestCountGaugeGroup, true)
-			gaugeGroup.UpdateAddGauge(constvalues.RequestCount, 0)
+			gaugeGroup.RemoveGauge(constvalues.RequestCount)
 		}
 		err = r.consumeAggregatedGroup(gaugeGroup, false)
 		return multierr.Combine(requestCountErr, err)
