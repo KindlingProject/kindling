@@ -95,7 +95,7 @@ func Test_defaultValuesMap_sum(t *testing.T) {
 	gauges := []*model.Gauge{{Name: "sum_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
-		m.calculate("sum_value", 1)
+		m.calculate("sum_value", 1, 0)
 	}
 	got := m.get("sum_value")
 	if got[0].Name != "sum_value_sum" || got[0].Value != 10000 {
@@ -109,7 +109,7 @@ func Test_defaultValuesMap_avg(t *testing.T) {
 	gauges := []*model.Gauge{{Name: "avg_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
-		m.calculate("avg_value", 1)
+		m.calculate("avg_value", 1, 0)
 	}
 	got := m.get("avg_value")
 	if got[0].Name != "avg_value_avg" || got[0].Value != 1 {
@@ -123,7 +123,7 @@ func Test_defaultValuesMap_max(t *testing.T) {
 	gauges := []*model.Gauge{{Name: "max_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 0; i < 10000; i++ {
-		m.calculate("max_value", int64(i))
+		m.calculate("max_value", int64(i), 0)
 	}
 	got := m.get("max_value")
 	var expected int64 = 9999
@@ -135,7 +135,7 @@ func Test_defaultValuesMap_max(t *testing.T) {
 	gauges = []*model.Gauge{{Name: "reserve_max_value"}}
 	m = newAggValuesMap(gauges, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate("reserve_max_value", int64(i))
+		m.calculate("reserve_max_value", int64(i), 0)
 	}
 	got = m.get("reserve_max_value")
 	if got[0].Name != "reserve_max_value_max" || got[0].Value != 10000 {
@@ -149,7 +149,7 @@ func Test_defaultValuesMap_lastValue(t *testing.T) {
 	gauges := []*model.Gauge{{Name: "last_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate("last_value", 1)
+		m.calculate("last_value", 1, 0)
 	}
 	got := m.get("last_value")
 	if got[0].Name != "last_value_last" || got[0].Value != 1 {
@@ -163,7 +163,7 @@ func Test_defaultValuesMap_countValue(t *testing.T) {
 	gauges := []*model.Gauge{{Name: "count_value"}}
 	m := newAggValuesMap(gauges, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate("count_value", int64(i))
+		m.calculate("count_value", int64(i), 0)
 	}
 	got := m.get("count_value")
 	if got == nil || got[0].Name != "count_value_count" || got[0].Value != 10000 {

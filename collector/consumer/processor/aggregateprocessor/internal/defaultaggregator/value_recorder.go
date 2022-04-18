@@ -8,7 +8,6 @@ import (
 
 type valueRecorder struct {
 	name        string
-	t           timer
 	labelValues map[internal.LabelKeys]aggValuesMap
 	// mutex is only used to make sure the access to the labelValues is thread-safe.
 	// aggValuesMap is responsible for its own thread-safe access.
@@ -16,10 +15,9 @@ type valueRecorder struct {
 	aggKindMap map[string][]KindConfig
 }
 
-func newValueRecorder(recorderName string, firstDataTimestamp uint64, aggKindMap map[string][]KindConfig) *valueRecorder {
+func newValueRecorder(recorderName string, aggKindMap map[string][]KindConfig) *valueRecorder {
 	return &valueRecorder{
 		name:        recorderName,
-		t:           newTimer(firstDataTimestamp),
 		labelValues: make(map[internal.LabelKeys]aggValuesMap),
 		mutex:       sync.RWMutex{},
 		aggKindMap:  aggKindMap,
@@ -27,7 +25,7 @@ func newValueRecorder(recorderName string, firstDataTimestamp uint64, aggKindMap
 }
 
 // Record is thread-safe, and return the result value
-func (r *valueRecorder) Record(key *internal.LabelKeys, gaugeValues []*model.Gauge) {
+func (r *valueRecorder) Record(key *internal.LabelKeys, gaugeValues []*model.Gauge, timestamp uint64) {
 	if key == nil {
 		return
 	}
@@ -45,7 +43,7 @@ func (r *valueRecorder) Record(key *internal.LabelKeys, gaugeValues []*model.Gau
 		r.mutex.Unlock()
 	}
 	for _, gauge := range gaugeValues {
-		aggValues.calculate(gauge.Name, gauge.Value)
+		aggValues.calculate(gauge.Name, gauge.Value, timestamp)
 	}
 }
 
@@ -57,7 +55,7 @@ func (r *valueRecorder) dump() []*model.GaugeGroup {
 	ret := make([]*model.GaugeGroup, len(r.labelValues))
 	index := 0
 	for k, v := range r.labelValues {
-		gaugeGroup := model.NewGaugeGroup(r.name, k.GetLabels(), r.t.outputTimestamp(), v.getAll()...)
+		gaugeGroup := model.NewGaugeGroup(r.name, k.GetLabels(), v.getTimestamp(), v.getAll()...)
 		ret[index] = gaugeGroup
 		index++
 	}

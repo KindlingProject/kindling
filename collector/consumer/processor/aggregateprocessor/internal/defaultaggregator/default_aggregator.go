@@ -39,13 +39,13 @@ func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, selectors *internal.L
 		// double check to avoid double writing
 		recorder, ok = s.recordersMap[name]
 		if !ok {
-			recorder = newValueRecorder(name, g.Timestamp, s.config.KindMap)
+			recorder = newValueRecorder(name, s.config.KindMap)
 			s.recordersMap[name] = recorder
 		}
 		s.mut.Unlock()
 	}
 	key := selectors.GetLabelKeys(g.Labels)
-	recorder.Record(key, g.Values)
+	recorder.Record(key, g.Values, g.Timestamp)
 
 	// First copy the model.GaugeGroup, then output the result directly.
 	// Or first use intermediate struct, then generate the model.GaugeGroup.

@@ -63,13 +63,15 @@ type (
 
 type aggValuesMap interface {
 	// calculate should be thread-safe to use
-	calculate(name string, value int64)
+	calculate(name string, value int64, timestamp uint64)
 	get(name string) []*model.Gauge
 	getAll() []*model.Gauge
+	getTimestamp() uint64
 }
 
 type defaultValuesMap struct {
-	values map[string][]aggregatedValues
+	values    map[string][]aggregatedValues
+	timestamp uint64
 }
 
 func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]KindConfig) aggValuesMap {
@@ -90,7 +92,7 @@ func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]KindConfig) agg
 }
 
 // calculate returns the result value
-func (m *defaultValuesMap) calculate(name string, value int64) {
+func (m *defaultValuesMap) calculate(name string, value int64, timestamp uint64) {
 	vSlice, ok := m.values[name]
 	if !ok {
 		return
@@ -98,6 +100,7 @@ func (m *defaultValuesMap) calculate(name string, value int64) {
 	for _, v := range vSlice {
 		v.calculate(value)
 	}
+	atomic.StoreUint64(&m.timestamp, timestamp)
 }
 
 func (m *defaultValuesMap) get(name string) []*model.Gauge {
@@ -121,6 +124,10 @@ func (m *defaultValuesMap) getAll() []*model.Gauge {
 		ret = append(ret, m.get(k)...)
 	}
 	return ret
+}
+
+func (m *defaultValuesMap) getTimestamp() uint64 {
+	return atomic.LoadUint64(&m.timestamp)
 }
 
 func newAggValue(name string, kind AggregatorKind) aggregatedValues {
@@ -232,7 +239,7 @@ type countValue struct {
 }
 
 // calculate add 1 to its own value
-func (v *countValue) calculate(value int64) int64 {
+func (v *countValue) calculate(_ int64) int64 {
 	return atomic.AddInt64(&v.value, 1)
 }
 func (v *countValue) get() int64 {

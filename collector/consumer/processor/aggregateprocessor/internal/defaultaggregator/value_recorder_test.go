@@ -17,7 +17,7 @@ func TestRecord(t *testing.T) {
 		"last": {{Kind: LastKind, OutputName: "last"}},
 	}}
 
-	recorder := newValueRecorder("testRecorder", 0, aggKindMap.KindMap)
+	recorder := newValueRecorder("testRecorder", aggKindMap.KindMap)
 	keys := internal.NewLabelKeys([]internal.LabelKey{
 		{
 			Name:  "stringKey",
@@ -41,7 +41,7 @@ func TestRecord(t *testing.T) {
 			{"duration", 100},
 			{"last", int64(i)},
 		}
-		recorder.Record(keys, gaugeValues)
+		recorder.Record(keys, gaugeValues, 0)
 	}
 	retGaugeGroup := recorder.dump()
 	sumValue, _ := retGaugeGroup[0].GetGauge("duration_sum")
