@@ -1,228 +1,414 @@
 package otelexporter
 
 import (
-	"context"
-	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
-	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"testing"
-	"time"
 )
 
-func TestAdapter_adapter(t *testing.T) {
+var baseAdapter = createBaseAdapterManager([]attribute.KeyValue{
+	{"const-labels1", attribute.StringValue("const-values1")},
+})
 
-	cfg := &Config{
-		ExportKind:   PrometheusKindExporter,
-		PromCfg:      &PrometheusConfig{Port: ":8080"},
-		OtlpGrpcCfg:  nil,
-		StdoutCfg:    nil,
-		CustomLabels: nil,
-		MetricAggregationMap: map[string]MetricAggregationKind{
-			"kindling_entity_request_duration_nanoseconds":   2,
-			"kindling_entity_request_send_bytes_total":       1,
-			"kindling_entity_request_receive_bytes_total":    1,
-			"kindling_topology_request_duration_nanoseconds": 2,
-			"kindling_topology_request_request_bytes_total":  1,
-			"kindling_topology_request_response_bytes_total": 1,
-			"kindling_trace_request_duration_nanoseconds":    0,
-			"kindling_tcp_rtt_milliseconds":                  0,
-			"kindling_tcp_retransmit_total":                  1,
-			"kindling_tcp_packet_loss_total":                 1,
+func TestAdapter_transform(t *testing.T) {
+	type fields struct {
+		labelsMap       map[extraLabelsKey]realAttributes
+		updateKeys      []updateKey
+		valueLabelsFunc valueToLabels
+		adjustFunctions []adjustFunctions
+	}
+	type args struct {
+		group *model.GaugeGroup
+	}
+	tests := []struct {
+		name    string
+		adapter *Adapter
+		args    args
+		want    *model.AttributeMap
+		wantErr bool
+	}{
+		{
+			name:    "kindling_agg_net_topology",
+			adapter: baseAdapter.aggTopologyAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+						constlabels.SrcIp:   model.NewStringValue("src-ip"),
+						constlabels.SrcPort: model.NewIntValue(33333),
+						constlabels.DstIp:   model.NewStringValue("dst-ip"),
+						constlabels.DstPort: model.NewIntValue(8080),
+
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.HttpUrl:        model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+
+						// k8sInfo
+						constlabels.DstPod:          model.NewStringValue("dst-pod"),
+						constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+						constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+						constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+						constlabels.SrcPod:          model.NewStringValue("src-pod"),
+						constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+						constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+						constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+						constlabels.SrcService:      model.NewStringValue("src-service"),
+						constlabels.DstService:      model.NewStringValue("dst-service"),
+						constlabels.SrcNode:         model.NewStringValue("src-node"),
+						constlabels.DstNode:         model.NewStringValue("dst-node"),
+
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// instanceInfo is moved from agg
+				// protocolInfo
+				constlabels.Protocol:   model.NewStringValue("http"),
+				constlabels.StatusCode: model.NewStringValue("200"),
+
+				// k8sInfo
+				constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+				constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+				constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+				constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+				constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+				constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+				constlabels.SrcService:      model.NewStringValue("src-service"),
+				constlabels.DstService:      model.NewStringValue("dst-service"),
+
+				// remove but exist
+				constlabels.DstNode: model.NewStringValue(""),
+				constlabels.DstPod:  model.NewStringValue(""),
+
+				"const-labels1": model.NewStringValue("const-values1"),
+			}),
+		},
+		{
+			name:    "kindling_detail_net_topology",
+			adapter: baseAdapter.detailTopologyAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+						constlabels.SrcIp:   model.NewStringValue("src-ip"),
+						constlabels.SrcPort: model.NewIntValue(33333),
+						constlabels.DstIp:   model.NewStringValue("dst-ip"),
+						constlabels.DstPort: model.NewIntValue(8080),
+
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.HttpUrl:        model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+
+						// k8sInfo
+						constlabels.DstPod:          model.NewStringValue("dst-pod"),
+						constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+						constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+						constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+						constlabels.SrcPod:          model.NewStringValue("src-pod"),
+						constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+						constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+						constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+						constlabels.SrcService:      model.NewStringValue("src-service"),
+						constlabels.DstService:      model.NewStringValue("dst-service"),
+						constlabels.SrcNode:         model.NewStringValue("src-node"),
+						constlabels.DstNode:         model.NewStringValue("dst-node"),
+						constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+						constlabels.DnatPort:        model.NewIntValue(80),
+
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// instanceInfo is moved from agg
+				constlabels.SrcIp:   model.NewStringValue("src-ip"),
+				constlabels.DstIp:   model.NewStringValue("dnat-ip"),
+				constlabels.DstPort: model.NewIntValue(80),
+				// protocolInfo
+				constlabels.Protocol:   model.NewStringValue("http"),
+				constlabels.StatusCode: model.NewStringValue("200"),
+
+				// k8sInfo
+				constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+				constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+				constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+				constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+				constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+				constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+				constlabels.SrcService:      model.NewStringValue("src-service"),
+				constlabels.DstService:      model.NewStringValue("dst-service"),
+				constlabels.SrcNode:         model.NewStringValue("src-node"),
+				constlabels.DstNode:         model.NewStringValue("dst-node"),
+				constlabels.SrcPod:          model.NewStringValue("src-pod"),
+				constlabels.DstPod:          model.NewStringValue("dst-pod"),
+
+				"const-labels1": model.NewStringValue("const-values1"),
+			}),
+		},
+		{
+			name:    "kindling_detail_net_entity",
+			adapter: baseAdapter.detailEntityAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+						constlabels.SrcIp:   model.NewStringValue("src-ip"),
+						constlabels.SrcPort: model.NewIntValue(33333),
+						constlabels.DstIp:   model.NewStringValue("dst-ip"),
+						constlabels.DstPort: model.NewIntValue(8080),
+
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.ContentKey:     model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+
+						// k8sInfo
+						constlabels.DstPod:          model.NewStringValue("dst-pod"),
+						constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+						constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+						constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+						constlabels.SrcPod:          model.NewStringValue("src-pod"),
+						constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+						constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+						constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+						constlabels.SrcService:      model.NewStringValue("src-service"),
+						constlabels.DstService:      model.NewStringValue("dst-service"),
+						constlabels.SrcNode:         model.NewStringValue("src-node"),
+						constlabels.DstNode:         model.NewStringValue("dst-node"),
+						constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+						constlabels.DnatPort:        model.NewIntValue(80),
+
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// instanceInfo is moved from agg
+				constlabels.Ip:   model.NewStringValue("dst-ip"),
+				constlabels.Port: model.NewIntValue(8080),
+				// protocolInfo
+				constlabels.Protocol:        model.NewStringValue("http"),
+				constlabels.RequestContent:  model.NewStringValue("/test"),
+				constlabels.ResponseContent: model.NewStringValue("200"),
+
+				// k8sInfo
+				constlabels.WorkloadName: model.NewStringValue("dst-workloadName"),
+				constlabels.Namespace:    model.NewStringValue("dst-Namespace"),
+				constlabels.WorkloadKind: model.NewStringValue("dst-workloadKind"),
+				constlabels.Service:      model.NewStringValue("dst-service"),
+				constlabels.Node:         model.NewStringValue("dst-node"),
+				constlabels.Pod:          model.NewStringValue("dst-pod"),
+
+				"const-labels1": model.NewStringValue("const-values1"),
+			}),
+		},
+		{
+			name:    "kindling_agg_net_entity",
+			adapter: baseAdapter.aggEntityAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+						constlabels.SrcIp:   model.NewStringValue("src-ip"),
+						constlabels.SrcPort: model.NewIntValue(33333),
+						constlabels.DstIp:   model.NewStringValue("dst-ip"),
+						constlabels.DstPort: model.NewIntValue(8080),
+
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.ContentKey:     model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+
+						// k8sInfo
+						constlabels.DstPod:          model.NewStringValue("dst-pod"),
+						constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+						constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+						constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+						constlabels.SrcPod:          model.NewStringValue("src-pod"),
+						constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+						constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+						constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+						constlabels.SrcService:      model.NewStringValue("src-service"),
+						constlabels.DstService:      model.NewStringValue("dst-service"),
+						constlabels.SrcNode:         model.NewStringValue("src-node"),
+						constlabels.DstNode:         model.NewStringValue("dst-node"),
+						constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+						constlabels.DnatPort:        model.NewIntValue(80),
+
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// protocolInfo
+				constlabels.Protocol:        model.NewStringValue("http"),
+				constlabels.RequestContent:  model.NewStringValue("/test"),
+				constlabels.ResponseContent: model.NewStringValue("200"),
+
+				// k8sInfo
+				constlabels.WorkloadName: model.NewStringValue("dst-workloadName"),
+				constlabels.Namespace:    model.NewStringValue("dst-Namespace"),
+				constlabels.WorkloadKind: model.NewStringValue("dst-workloadKind"),
+				constlabels.Service:      model.NewStringValue("dst-service"),
+
+				"const-labels1": model.NewStringValue("const-values1"),
+			}),
 		},
 	}
-
-	constLabels := []attribute.KeyValue{
-		attribute.String("constLabels1", "constValues1"),
-		attribute.Int("constLabels2", 2),
-	}
-	baseAdapterManager := createBaseAdapterManager(constLabels)
-	detailTopologyAttrs, _ := baseAdapterManager.detailTopologyAdapter.adapter(makeOriginGaugeGroup(300000))
-	//for i := 0; i < len(detailTopologyAttrs); i++ {
-	//	fmt.Printf("%+v\n", detailTopologyAttrs[i])
-	//}
-	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
-		Filename:   "test.log",
-		MaxSize:    500,
-		MaxAge:     10,
-		MaxBackups: 1,
-		LocalTime:  true,
-		Compress:   false,
-	})
-
-	config := prometheus.Config{}
-	// Create a meter
-
-	c := controller.New(
-		otelprocessor.NewFactory(
-			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(exponentialInt64NanosecondsBoundaries),
-			),
-			aggregation.CumulativeTemporalitySelector(),
-		),
-	)
-	exp, _ := prometheus.New(config, c)
-
-	otelexporter := &OtelExporter{
-		cfg:                  cfg,
-		metricController:     c,
-		traceProvider:        nil,
-		defaultTracer:        nil,
-		customLabels:         constLabels,
-		instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), logger, constLabels),
-		metricAggregationMap: cfg.MetricAggregationMap,
-		telemetry:            component.NewDefaultTelemetryTools(),
-		adapterManager:       createBaseAdapterManager(constLabels),
-	}
-
-	go func() {
-		err := StartServer(exp, otelexporter.telemetry.Logger, cfg.PromCfg.Port)
-		if err != nil {
-			otelexporter.telemetry.Logger.Warn("error starting otelexporter prometheus server: ", zap.Error(err))
-		}
-	}()
-
-	for {
-		otelexporter.instrumentFactory.meter.RecordBatch(context.Background(), detailTopologyAttrs, otelexporter.GetMetricMeasurement(makeOriginGaugeGroup(300000), false)...)
-		time.Sleep(1 * time.Second)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tt.adapter
+			got, err := m.transform(tt.args.group)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("transform() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for key, value := range got.GetValues() {
+				if valueW, ok := tt.want.GetValues()[key]; ok {
+					if value.ToString() != valueW.ToString() {
+						t.Errorf("transform() get = %v, want %v", value.ToString(), valueW.ToString())
+					}
+				} else {
+					if value.ToString() != "" {
+						t.Errorf("transform() get = '%v =  %v', don't want this label", key, value.ToString())
+					}
+				}
+			}
+			for key, value := range tt.want.GetValues() {
+				if _, ok := got.GetValues()[key]; !ok {
+					t.Errorf("transform() expected key '%v' ,value '%v',but not exist", key, value.ToString())
+				}
+			}
+		})
 	}
 }
 
-func TestNegativeValue_adapter(t *testing.T) {
-	cfg := &Config{
-		ExportKind:   StdoutKindExporter,
-		PromCfg:      nil,
-		OtlpGrpcCfg:  nil,
-		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
-		CustomLabels: nil,
-		MetricAggregationMap: map[string]MetricAggregationKind{
-			"kindling_entity_request_duration_nanoseconds":   2,
-			"kindling_entity_request_send_bytes_total":       1,
-			"kindling_entity_request_receive_bytes_total":    1,
-			"kindling_topology_request_duration_nanoseconds": 2,
-			"kindling_topology_request_request_bytes_total":  1,
-			"kindling_topology_request_response_bytes_total": 1,
-			"kindling_trace_request_duration_nanoseconds":    0,
-			"kindling_tcp_rtt_milliseconds":                  0,
-			"kindling_tcp_retransmit_total":                  1,
-			"kindling_tcp_packet_loss_total":                 1,
+func TestAdapter_adapt(t *testing.T) {
+	type fields struct {
+		labelsMap       map[extraLabelsKey]realAttributes
+		updateKeys      []updateKey
+		valueLabelsFunc valueToLabels
+		adjustFunctions []adjustFunctions
+	}
+	type args struct {
+		group *model.GaugeGroup
+	}
+	tests := []struct {
+		name    string
+		adapter *Adapter
+		args    args
+		want    []attribute.KeyValue
+		wantErr bool
+	}{
+		{
+			name:    "kindling_agg_net_topology",
+			adapter: baseAdapter.aggTopologyAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+						constlabels.SrcIp:   model.NewStringValue("src-ip"),
+						constlabels.SrcPort: model.NewIntValue(33333),
+						constlabels.DstIp:   model.NewStringValue("dst-ip"),
+						constlabels.DstPort: model.NewIntValue(8080),
+
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.HttpUrl:        model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+
+						// k8sInfo
+						constlabels.DstPod:          model.NewStringValue("dst-pod"),
+						constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+						constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+						constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+						constlabels.SrcPod:          model.NewStringValue("src-pod"),
+						constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+						constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+						constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+						constlabels.SrcService:      model.NewStringValue("src-service"),
+						constlabels.DstService:      model.NewStringValue("dst-service"),
+						constlabels.SrcNode:         model.NewStringValue("src-node"),
+						constlabels.DstNode:         model.NewStringValue("dst-node"),
+
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: []attribute.KeyValue{
+				// protocolInfo
+				{constlabels.Protocol, attribute.StringValue("http")},
+				{constlabels.StatusCode, attribute.StringValue("200")},
+
+				// k8sInfo
+				{constlabels.DstWorkloadName, attribute.StringValue("dst-workloadName")},
+				{constlabels.DstNamespace, attribute.StringValue("dst-Namespace")},
+				{constlabels.DstWorkloadKind, attribute.StringValue("dst-workloadKind")},
+				{constlabels.SrcWorkloadName, attribute.StringValue("src-workloadName")},
+				{constlabels.SrcNamespace, attribute.StringValue("src-Namespace")},
+				{constlabels.SrcWorkloadKind, attribute.StringValue("src-workloadKind")},
+				{constlabels.SrcService, attribute.StringValue("src-service")},
+				{constlabels.DstService, attribute.StringValue("dst-service")},
+
+				// remove but exist
+				{constlabels.DstNode, attribute.StringValue("")},
+				{constlabels.DstPod, attribute.StringValue("")},
+
+				{"const-labels1", attribute.StringValue("const-values1")},
+			},
 		},
 	}
-
-	constLabels := []attribute.KeyValue{
-		attribute.String("constLabels1", "constValues1"),
-		attribute.Int("constLabels2", 2),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tt.adapter
+			got, err := m.adapt(tt.args.group)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("adapt() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for _, keyValueG := range got {
+				for _, keyValueW := range tt.want {
+					if keyValueG.Key == keyValueW.Key && keyValueG.Value != keyValueW.Value {
+						t.Errorf("transform() get = %v, want %v", keyValueG.Value.AsString(), keyValueW.Value.AsString())
+					}
+				}
+			}
+		})
 	}
-	baseAdapterManager := createBaseAdapterManager(constLabels)
-	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
-		Filename:   "test.log",
-		MaxSize:    500,
-		MaxAge:     10,
-		MaxBackups: 1,
-		LocalTime:  true,
-		Compress:   false,
-	})
-	exporter, _ := newExporters(context.Background(), cfg, logger)
-
-	cont := controller.New(
-		otelprocessor.NewFactory(simple.NewWithHistogramDistribution(
-			histogram.WithExplicitBoundaries(exponentialInt64NanosecondsBoundaries),
-		), exporter.metricExporter),
-		controller.WithExporter(exporter.metricExporter),
-		controller.WithCollectPeriod(cfg.StdoutCfg.CollectPeriod),
-		controller.WithResource(nil),
-	)
-
-	otelexporter := &OtelExporter{
-		metricController:     cont,
-		traceProvider:        nil,
-		defaultTracer:        nil,
-		customLabels:         nil,
-		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, nil),
-		metricAggregationMap: cfg.MetricAggregationMap,
-		telemetry:            component.NewDefaultTelemetryTools(),
-	}
-
-	if err := cont.Start(context.Background()); err != nil {
-		logger.Panic("failed to start controller:", zap.Error(err))
-	}
-
-	gauges := makeOriginGaugeGroup(-30)
-
-	attrs, _ := baseAdapterManager.detailTopologyAdapter.adapter(gauges)
-	otelexporter.instrumentFactory.meter.RecordBatch(context.Background(), attrs, otelexporter.GetMetricMeasurement(gauges, false)...)
-
-}
-
-func makeOriginGaugeGroup(latency int64) *model.GaugeGroup {
-	labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-		constlabels.DstNode:             model.NewStringValue("Dst-node"),
-		constlabels.DstNamespace:        model.NewStringValue("Dst-namespace"),
-		constlabels.DstWorkloadKind:     model.NewStringValue("Dst-deployment"),
-		constlabels.DstWorkloadName:     model.NewStringValue("Dst-deploy"),
-		constlabels.DstPod:              model.NewStringValue("Dst-pod"),
-		constlabels.DstContainer:        model.NewStringValue("Dst-container"),
-		constlabels.DstContainerId:      model.NewStringValue("Dst-containerid"),
-		constlabels.DstIp:               model.NewStringValue("10.0.0.1"),
-		constlabels.DstPort:             model.NewIntValue(80),
-		constlabels.SrcNode:             model.NewStringValue("Src-node"),
-		constlabels.SrcNamespace:        model.NewStringValue("Src-namespace"),
-		constlabels.SrcWorkloadKind:     model.NewStringValue("Src-deployment"),
-		constlabels.SrcWorkloadName:     model.NewStringValue("Src-deploy"),
-		constlabels.SrcPod:              model.NewStringValue("Src-pod"),
-		constlabels.SrcContainer:        model.NewStringValue("Src-container"),
-		constlabels.SrcContainerId:      model.NewStringValue("Src-containerid"),
-		constlabels.SrcIp:               model.NewStringValue("10.0.0.2"),
-		constlabels.SrcPort:             model.NewIntValue(36002),
-		constlabels.ContentKey:          model.NewStringValue("/test"),
-		constlabels.ResponseContent:     model.NewIntValue(201),
-		constlabels.IsSlow:              model.NewBoolValue(true),
-		constlabels.HttpUrl:             model.NewStringValue("/test"),
-		constlabels.HttpRequestPayload:  model.NewStringValue("GET /test HTTP/1.1"),
-		constlabels.HttpApmTraceId:      model.NewStringValue("asd1231"),
-		constlabels.HttpMethod:          model.NewStringValue("GET"),
-		constlabels.HttpResponsePayload: model.NewStringValue("200 HTTP/1.1 adads"),
-		constlabels.HttpStatusCode:      model.NewIntValue(200),
-		constlabels.Protocol:            model.NewStringValue(constvalues.ProtocolHttp),
-	})
-
-	latencyGauge := &model.Gauge{
-		Name:  constvalues.RequestTotalTime,
-		Value: latency,
-	}
-
-	requestTimeGauge := &model.Gauge{
-		Name:  constvalues.RequestSentTime,
-		Value: 300,
-	}
-	waitTtfbTime := &model.Gauge{
-		Name:  constvalues.WaitingTtfbTime,
-		Value: 400,
-	}
-	contentDownload := &model.Gauge{
-		Name:  constvalues.ContentDownloadTime,
-		Value: 500,
-	}
-	connectTime := &model.Gauge{
-		Name:  constvalues.ConnectTime,
-		Value: 600,
-	}
-	reqio := &model.Gauge{
-		Name:  constvalues.RequestIo,
-		Value: 700,
-	}
-
-	gaugeGroup := model.NewGaugeGroup("", labels, 0, latencyGauge, requestTimeGauge, waitTtfbTime, contentDownload, connectTime, reqio)
-	return gaugeGroup
 }

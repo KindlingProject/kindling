@@ -230,9 +230,10 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 	}
 	if gaugeGroup.Name == constnames.AggregatedNetRequestGaugeGroup {
 		e.PushNetMetric(gaugeGroup)
+		return nil
 	} else if gaugeGroup.Name == constnames.SingleNetRequestGaugeGroup {
 		if e.defaultTracer != nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
-			attrs, _ := e.adapterManager.traceToSpanAdapter.adapter(gaugeGroup)
+			attrs, _ := e.adapterManager.traceToSpanAdapter.adapt(gaugeGroup)
 			_, span := e.defaultTracer.Start(
 				context.Background(),
 				constvalues.SpanInfo,
@@ -242,6 +243,23 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		} else if e.defaultTracer != nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
 			return errors.New("send span failed: this exporter can not support Span Data")
 		}
+
+		if e.cfg.AdapterConfig.NeedTraceAsMetric {
+			attrsMap, _ := e.adapterManager.traceToMetricAdapter.transform(gaugeGroup)
+			var requestTotalTime *model.Gauge
+			for i := 0; i < len(gaugeGroup.Values); i++ {
+				if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
+					requestTotalTime = gaugeGroup.Values[i]
+					break
+				}
+			}
+			e.instrumentFactory.recordLastValue(constlabels.ToKindlingTraceAsMetricName(), &model.GaugeGroup{
+				Values:    []*model.Gauge{requestTotalTime},
+				Labels:    attrsMap,
+				Timestamp: gaugeGroup.Timestamp,
+			})
+		}
+		return nil
 	}
 
 	// For Other metric
@@ -260,11 +278,10 @@ func (e *OtelExporter) PushNetMetric(gaugeGroup *model.GaugeGroup) {
 	if e.cfg.AdapterConfig.StoreExternalSrcIP {
 		srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
 		if srcNamespace == constlabels.ExternalClusterNamespace && isServer {
-			attrs, _ := e.adapterManager.detailTopologyAdapter.adapter(gaugeGroup)
-			e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup, false)...)
+			e.RecordNetMetric(e.adapterManager.detailTopologyAdapter, gaugeGroup, false)
 		}
 	}
-	var metricAdapter *Adapter
+	var metricAdapter [2]*Adapter
 	if e.cfg.AdapterConfig.NeedPodDetail {
 		if isServer {
 			metricAdapter = e.adapterManager.detailEntityAdapter
@@ -279,31 +296,7 @@ func (e *OtelExporter) PushNetMetric(gaugeGroup *model.GaugeGroup) {
 		}
 	}
 
-	attrs, err := metricAdapter.adapter(gaugeGroup)
-	if err != nil {
-		e.telemetry.Logger.Error("Adapter failed,Err is", zap.Error(err))
-	} else {
-		e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurement(gaugeGroup, isServer)...)
-	}
-
-	// TODO TraceAsMetric if we need
-	if e.cfg.AdapterConfig.NeedTraceAsMetric {
-		for _, value := range gaugeGroup.Values {
-			name := value.Name
-			metricKind, ok := e.findInstrumentKind(name)
-			if !ok {
-				e.telemetry.Logger.Warn("Skip a Metric: No metric aggregation set for metric", zap.String("metricName", name))
-				continue
-			}
-			if metricKind == MAGaugeKind {
-				e.instrumentFactory.recordTraceAsMetric(name, model.GaugeGroup{
-					Values:    []*model.Gauge{value},
-					Labels:    gaugeGroup.Labels,
-					Timestamp: gaugeGroup.Timestamp,
-				})
-			}
-		}
-	}
+	e.RecordNetMetric(metricAdapter, gaugeGroup, isServer)
 }
 
 func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
@@ -319,11 +312,7 @@ func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
 			continue
 		}
 		if metricKind == MAGaugeKind {
-			e.instrumentFactory.recordGaugeAsync(name, model.GaugeGroup{
-				Values:    []*model.Gauge{value},
-				Labels:    gaugeGroup.Labels,
-				Timestamp: gaugeGroup.Timestamp,
-			})
+			e.instrumentFactory.recordLastValue(name, gaugeGroup)
 		} else {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(name, metricKind).Measurement(num))
 		}
@@ -429,12 +418,24 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 	return
 }(exponentialInt64Boundaries)
 
-func (e *OtelExporter) GetMetricMeasurement(gaugeGroup *model.GaugeGroup, isServer bool) []metric.Measurement {
+func (e *OtelExporter) RecordNetMetric(adapter [2]*Adapter, group *model.GaugeGroup, isServer bool) {
+	requestCount, err := e.GetMetricMeasurementOnlyRequestCount(group, isServer)
+	if err == nil {
+		attrsWithIsSlow, _ := adapter[1].adapt(group)
+		e.instrumentFactory.meter.RecordBatch(context.Background(), attrsWithIsSlow, requestCount)
+	} else {
+		e.telemetry.Logger.Error("Can not record Metric", zap.Error(err))
+	}
+	attrs, _ := adapter[0].adapt(group)
+	e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurementExceptRequestCount(group, false)...)
+}
+
+func (e *OtelExporter) GetMetricMeasurementExceptRequestCount(gaugeGroup *model.GaugeGroup, isServer bool) []metric.Measurement {
 	gauges := gaugeGroup.Values
 	measurements := make([]metric.Measurement, 0, len(gauges))
 	for i := 0; i < len(gauges); i++ {
 		name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
-		if name == "" {
+		if name == "" || gauges[i].Name == constvalues.RequestCount {
 			continue
 		}
 		if gauges[i].Value < 0 {
@@ -444,4 +445,15 @@ func (e *OtelExporter) GetMetricMeasurement(gaugeGroup *model.GaugeGroup, isServ
 		measurements = append(measurements, e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value))
 	}
 	return measurements
+}
+
+func (e *OtelExporter) GetMetricMeasurementOnlyRequestCount(gaugeGroup *model.GaugeGroup, isServer bool) (metric.Measurement, error) {
+	gauges := gaugeGroup.Values
+	for i := 0; i < len(gauges); i++ {
+		if gauges[i].Name == constvalues.RequestCount && gauges[i].Value > 0 {
+			name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
+			return e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value), nil
+		}
+	}
+	return metric.Measurement{}, errors.New("no requestCount or requestCount is a negative value")
 }

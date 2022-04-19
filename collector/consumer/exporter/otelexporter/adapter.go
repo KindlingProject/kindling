@@ -18,7 +18,7 @@ type Adapter struct {
 	valueLabelsFunc valueToLabels
 
 	// to fix some special labels
-	adjustLabels []adjustLabels
+	adjustFunctions []adjustFunctions
 }
 
 type metricAdapterBuilder struct {
@@ -32,14 +32,17 @@ type metricAdapterBuilder struct {
 	valueLabelsKey  []dictionary
 	valueLabelsFunc valueToLabels
 
-	constLabels []attribute.KeyValue
-
-	adjustLabels []adjustLabels
+	constLabels     []attribute.KeyValue
+	adjustFunctions []adjustFunctions
 }
 
 type realAttributes struct {
 	// paramMap A list contain baseLabels,commonLabels,extraLabelsParamList,valueLabels,constLabels
 	paramMap []attribute.KeyValue
+
+	// labelsMap as same as front,just for another output
+	AttrsMap *model.AttributeMap
+
 	// metricsDicList A list contain dict of baseLabels,commonLabels,extraLabelsParamList,
 	metricsDicList []dictionary
 	// sortCache
@@ -75,7 +78,13 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 
 type valueToLabels func(gaugeGroup *model.GaugeGroup) []attribute.Value
 type updateKey func(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey
+type adjustAttrMaps func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap
 type adjustLabels func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue
+
+type adjustFunctions struct {
+	adjustAttrMaps adjustAttrMaps
+	adjustLabels   adjustLabels
+}
 
 func (key *extraLabelsKey) simpleMergeKey(labelsKey *extraLabelsKey) *extraLabelsKey {
 	if key == nil {
@@ -118,7 +127,7 @@ func newAdapterBuilder(
 	return &metricAdapterBuilder{
 		baseAndCommonLabelsDict: baseDict,
 		extraLabelsKey:          make([]extraLabelsKey, 0),
-		adjustLabels:            make([]adjustLabels, 0),
+		adjustFunctions:         make([]adjustFunctions, 0),
 	}
 }
 
@@ -169,8 +178,8 @@ func (m *metricAdapterBuilder) withConstLabels(constLabels []attribute.KeyValue)
 	return m
 }
 
-func (m *metricAdapterBuilder) withAdjust(adjustFunc adjustLabels) *metricAdapterBuilder {
-	m.adjustLabels = append(m.adjustLabels, adjustFunc)
+func (m *metricAdapterBuilder) withAdjust(adjustFunc adjustFunctions) *metricAdapterBuilder {
+	m.adjustFunctions = append(m.adjustFunctions, adjustFunc)
 	return m
 }
 
@@ -219,6 +228,7 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 		sort.Strings(tmpKeysList)
 		sortCache := make(map[int]int, len(tmpParamList))
 		realParamList := make([]attribute.KeyValue, len(tmpParamList))
+
 		for s := 0; s < len(tmpKeysList); s++ {
 			for j := 0; j < len(tmpParamList); j++ {
 				if tmpKeysList[s] == string(tmpParamList[j].Key) {
@@ -229,8 +239,21 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 			}
 		}
 
+		attrs := make(map[string]model.AttributeValue, len(realParamList))
+		attrsMap := model.NewAttributeMapWithValues(attrs)
+		for _, label := range m.constLabels {
+			switch label.Value.Type() {
+			case attribute.STRING:
+				attrsMap.AddStringValue(string(label.Key), label.Value.AsString())
+			case attribute.INT64:
+				attrsMap.AddIntValue(string(label.Key), label.Value.AsInt64())
+			case attribute.BOOL:
+				attrsMap.AddBoolValue(string(label.Key), label.Value.AsBool())
+			}
+		}
 		labelsMap[m.extraLabelsKey[i]] = realAttributes{
 			paramMap:       realParamList,
+			AttrsMap:       attrsMap,
 			metricsDicList: tmpDict,
 			sortCache:      sortCache,
 		}
@@ -240,11 +263,54 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 		labelsMap:       labelsMap,
 		updateKeys:      m.updateKeys,
 		valueLabelsFunc: m.valueLabelsFunc,
-		adjustLabels:    m.adjustLabels,
+		adjustFunctions: m.adjustFunctions,
 	}, nil
 }
 
-func (m *Adapter) adapter(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
+func (m *Adapter) transform(group *model.GaugeGroup) (*model.AttributeMap, error) {
+	labels := group.Labels
+	tmpExtraKey := &extraLabelsKey{protocol: empty}
+	for i := 0; i < len(m.updateKeys); i++ {
+		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
+	}
+	attrs := m.labelsMap[*tmpExtraKey]
+
+	for i := 0; i < len(attrs.metricsDicList); i++ {
+		switch attrs.metricsDicList[i].valueType {
+		case String:
+			attrs.AttrsMap.AddStringValue(attrs.metricsDicList[i].newKey, labels.GetStringValue(attrs.metricsDicList[i].originKey))
+		case Int64:
+			attrs.AttrsMap.AddIntValue(attrs.metricsDicList[i].newKey, labels.GetIntValue(attrs.metricsDicList[i].originKey))
+		case Bool:
+			attrs.AttrsMap.AddBoolValue(attrs.metricsDicList[i].newKey, labels.GetBoolValue(attrs.metricsDicList[i].originKey))
+		case FromInt64ToString:
+			attrs.AttrsMap.AddStringValue(attrs.metricsDicList[i].newKey, strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+		case StrEmpty:
+			attrs.AttrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constlabels.STR_EMPTY)
+		}
+	}
+
+	if m.valueLabelsFunc != nil {
+		valueLabels := m.valueLabelsFunc(group)
+		for i := 0; i < len(valueLabels); i++ {
+			switch valueLabels[i].Type() {
+			case attribute.STRING:
+				attrs.AttrsMap.AddStringValue(string(attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Key), valueLabels[i].AsString())
+			case attribute.INT64:
+				attrs.AttrsMap.AddIntValue(string(attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Key), valueLabels[i].AsInt64())
+			case attribute.BOOL:
+				attrs.AttrsMap.AddBoolValue(string(attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Key), valueLabels[i].AsBool())
+			}
+		}
+	}
+
+	for i := 0; i < len(m.adjustFunctions); i++ {
+		attrs.AttrsMap = m.adjustFunctions[i].adjustAttrMaps(labels, attrs.AttrsMap)
+	}
+	return attrs.AttrsMap, nil
+}
+
+func (m *Adapter) adapt(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
@@ -274,8 +340,8 @@ func (m *Adapter) adapter(group *model.GaugeGroup) ([]attribute.KeyValue, error)
 		}
 	}
 
-	for i := 0; i < len(m.adjustLabels); i++ {
-		attrs.paramMap = m.adjustLabels[i](labels, attrs.paramMap)
+	for i := 0; i < len(m.adjustFunctions); i++ {
+		attrs.paramMap = m.adjustFunctions[i].adjustLabels(labels, attrs.paramMap)
 	}
 	return attrs.paramMap, nil
 }

@@ -42,6 +42,10 @@ type dictionary struct {
 	valueType
 }
 
+var isSlowDicList = []dictionary{
+	{constlabels.IsSlow, constlabels.IsSlow, Bool},
+}
+
 var topologyInstanceMetricDicList = []dictionary{
 	{constlabels.SrcIp, constlabels.SrcIp, String},
 	{constlabels.DstIp, constlabels.DstIp, String},
@@ -109,34 +113,62 @@ var topologyMetricDicList = []dictionary{
 	{constlabels.Protocol, constlabels.Protocol, String},
 }
 
-func RemoveDstPodInfoForNonExternalAggTopology(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue {
-	if constlabels.IsNamespaceNotFound(labels.GetStringValue(constlabels.DstNamespace)) {
-		return attrs
-	} else {
-		for i := 0; i < len(attrs); i++ {
-			if attrs[i].Key == constlabels.DstNode || attrs[i].Key == constlabels.DstPod {
-				attrs[i].Value = attribute.StringValue(constlabels.STR_EMPTY)
+func RemoveDstPodInfoForNonExternal() adjustFunctions {
+	return adjustFunctions{
+		adjustAttrMaps: func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap {
+			if constlabels.IsNamespaceNotFound(labels.GetStringValue(constlabels.DstNamespace)) {
+				return attributeMap
+			} else {
+				attributeMap.AddStringValue(constlabels.DstNode, constlabels.STR_EMPTY)
+				attributeMap.AddStringValue(constlabels.DstPod, constlabels.STR_EMPTY)
+				return attributeMap
 			}
-		}
+		},
+		adjustLabels: func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue {
+			if constlabels.IsNamespaceNotFound(labels.GetStringValue(constlabels.DstNamespace)) {
+				return attrs
+			} else {
+				for i := 0; i < len(attrs); i++ {
+					if attrs[i].Key == constlabels.DstNode || attrs[i].Key == constlabels.DstPod {
+						attrs[i].Value = attribute.StringValue(constlabels.STR_EMPTY)
+					}
+				}
+			}
+			return attrs
+		},
 	}
-	return attrs
 }
 
-func ReplaceDstIpOrDstPortByDNatIpAndDNatPortForDetailTopology(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue {
-	dNatIp := labels.GetStringValue(constlabels.DnatIp)
-	dNatPort := labels.GetIntValue(constlabels.DnatPort)
-	if dNatIp == "" && dNatPort < 1 {
-		return attrs
-	} else {
-		for i := 0; i < len(attrs); i++ {
-			if attrs[i].Key == constlabels.DstIp && dNatIp != "" {
-				attrs[i].Value = attribute.StringValue(dNatIp)
-			} else if attrs[i].Key == constlabels.DstPort && dNatPort > 0 {
-				attrs[i].Value = attribute.Int64Value(dNatPort)
+func ReplaceDstIpOrDstPortByDNat() adjustFunctions {
+	return adjustFunctions{
+		adjustAttrMaps: func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap {
+			dNatIp := labels.GetStringValue(constlabels.DnatIp)
+			dNatPort := labels.GetIntValue(constlabels.DnatPort)
+			if dNatIp == "" || dNatPort < 1 {
+				return attributeMap
+			} else {
+				attributeMap.AddStringValue(constlabels.DstIp, dNatIp)
+				attributeMap.AddIntValue(constlabels.DstPort, dNatPort)
+				return attributeMap
 			}
-		}
+		},
+		adjustLabels: func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue {
+			dNatIp := labels.GetStringValue(constlabels.DnatIp)
+			dNatPort := labels.GetIntValue(constlabels.DnatPort)
+			if dNatIp == "" || dNatPort < 1 {
+				return attrs
+			} else {
+				for i := 0; i < len(attrs); i++ {
+					if attrs[i].Key == constlabels.DstIp && dNatIp != "" {
+						attrs[i].Value = attribute.StringValue(dNatIp)
+					} else if attrs[i].Key == constlabels.DstPort && dNatPort > 0 {
+						attrs[i].Value = attribute.Int64Value(dNatPort)
+					}
+				}
+			}
+			return attrs
+		},
 	}
-	return attrs
 }
 
 var entityProtocol = []extraLabelsParam{
@@ -146,19 +178,19 @@ var entityProtocol = []extraLabelsParam{
 	}, extraLabelsKey{HTTP}},
 	{[]dictionary{
 		{constlabels.RequestContent, constlabels.KafkaTopic, String},
-		{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
+		{constlabels.ResponseContent, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{KAFKA}},
 	{[]dictionary{
 		{constlabels.RequestContent, constlabels.ContentKey, String},
-		{constlabels.RequestContent, constlabels.SqlErrCode, FromInt64ToString},
+		{constlabels.ResponseContent, constlabels.SqlErrCode, FromInt64ToString},
 	}, extraLabelsKey{MYSQL}},
 	{[]dictionary{
 		{constlabels.RequestContent, constlabels.ContentKey, String},
-		{constlabels.RequestContent, constlabels.HttpStatusCode, FromInt64ToString},
+		{constlabels.ResponseContent, constlabels.HttpStatusCode, FromInt64ToString},
 	}, extraLabelsKey{GRPC}},
 	{[]dictionary{
 		{constlabels.RequestContent, constlabels.DnsDomain, String},
-		{constlabels.RequestContent, constlabels.DnsRcode, FromInt64ToString},
+		{constlabels.ResponseContent, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{
 		[]dictionary{}, extraLabelsKey{UNSUPPORT},

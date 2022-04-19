@@ -106,10 +106,10 @@ func (a *Application) buildPipeline() error {
 	otelExporter := otelExporterFactory.NewFunc(otelExporterFactory.Config, a.telemetry.Telemetry)
 	// Initialize all processors
 	// 1. Kindling Metric Format Processor
-	formatProcessorFactory := a.componentsFactory.Processors[kindlingformatprocessor.ProcessorName]
-	formatProcessor := formatProcessorFactory.NewFunc(formatProcessorFactory.Config, a.telemetry.Telemetry, otelExporter)
+	//formatProcessorFactory := a.componentsFactory.Processors[kindlingformatprocessor.ProcessorName]
+	//formatProcessor := formatProcessorFactory.NewFunc(formatProcessorFactory.Config, a.telemetry.Telemetry, otelExporter)
 	aggregateProcessorFactory := a.componentsFactory.Processors[aggregateprocessor.Type]
-	aggregateProcessor := aggregateProcessorFactory.NewFunc(aggregateProcessorFactory.Config, a.telemetry.Telemetry, formatProcessor)
+	aggregateProcessor := aggregateProcessorFactory.NewFunc(aggregateProcessorFactory.Config, a.telemetry.Telemetry, otelExporter)
 	// 2. Kubernetes metadata processor
 	k8sProcessorFactory := a.componentsFactory.Processors[k8sprocessor.K8sMetadata]
 	k8sMetadataProcessor := k8sProcessorFactory.NewFunc(k8sProcessorFactory.Config, a.telemetry.Telemetry, aggregateProcessor)

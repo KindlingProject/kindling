@@ -148,15 +148,19 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 			Name: constnames.AggregatedNetRequestGaugeGroup,
 			Values: []*model.Gauge{
 				{
-					constlabels.ToKindlingMetricName(constvalues.RequestTotalTime, false),
+					constvalues.ResponseIo,
 					1234567891,
 				},
 				{
-					constlabels.ToKindlingMetricName(constvalues.ResponseIo, false),
+					constvalues.RequestTotalTime,
 					3300,
 				},
 				{
-					constlabels.ToKindlingMetricName(constvalues.RequestIo, false),
+					constvalues.RequestIo,
+					4500,
+				},
+				{
+					constvalues.RequestCount,
 					4500,
 				},
 			},

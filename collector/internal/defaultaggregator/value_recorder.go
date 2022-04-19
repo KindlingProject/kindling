@@ -1,7 +1,7 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor/internal"
+	"github.com/Kindling-project/kindling/collector/internal"
 	"github.com/Kindling-project/kindling/collector/model"
 	"sync"
 )
