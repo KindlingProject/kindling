@@ -26,7 +26,7 @@ Service metrics are generated from the server-side events, which are used to sho
 | protocol | http | The application layer protocol the requests use |
 | request_content | /test/api | The request content of the requests |
 | response_content | 200 | The response content of the requests |
-| is_slow | false | (Only applicable to `kindling_entity_request_total`)Whether the requests are considered as slow |
+| is_slow | false | (Only applicable to `kindling_entity_request_total`)<br>Whether the requests are considered as slow |
 
 **The labels "request_content" and "response_content" hold different values when "protocol" is different.**
 
@@ -92,7 +92,7 @@ Topology metrics are typically generated from the client-side events, which are 
 | dst_service | business2-svc | One of the services that target the destination pod |
 | dst_pod | business2-0 | The name of the destination pod |
 | dst_container | business-container | The name of the source container |
-| dst_container_id | 2b3c4d5e6f7e | (Only applicable to the timeseries generated from the server-side)The shorten container id which contains 12 characters |
+| dst_container_id | 2b3c4d5e6f7e | (Only applicable to the timeseries generated from the server-side)<br>The shorten container id which contains 12 characters |
 | dst_ip | 10.1.11.24 | The IP address of the destination |
 | dst_port | 80 | The listening port of the destination container  |
 | protocol | http | The application layer protocol the requests use |
@@ -120,7 +120,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | src_service | business1-svc | One of the services that target the source pod |
 | src_pod | business1-0 | The name of the source pod |
 | src_container | business-container | The name of the source container |
-| src_container_id | 1a2b3c4d5e6f | (Only applicable when is_server is false)The shorten container id which contains 12 characters |
+| src_container_id | 1a2b3c4d5e6f | (Only applicable when is_server is false)<br>The shorten container id which contains 12 characters |
 | src_ip | 10.1.11.23 | The IP address of the source |
 | dst_node | slave-node2 | Which node the destination pod is on |
 | dst_namespace | default | Namespace of the destination pod |
@@ -129,29 +129,17 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | dst_service | business2-svc | One of the services that target the destination pod |
 | dst_pod | business2-0 | The name of the destination pod |
 | dst_container | business-container | The name of the destination container |
-| dst_container_id | 2b3c4d5e6f7e | (Only applicable when is_server is true)The shorten container id which contains 12 characters |
+| dst_container_id | 2b3c4d5e6f7e | (Only applicable when is_server is true)<br>The shorten container id which contains 12 characters |
 | dst_ip | 10.1.11.24 | The IP address of the destination |
 | dst_port | 80 | The listening port of the destination container |
 | protocol | http | The application layer protocol the requests use |
 | is_server | true | True if the data is from the server-side, false otherwise |
 | request_content | /test/api | Different values when protocol is different. Refer to service metric |
 | response_content | 200 | Different values when protocol is different. Refer to service metric |
-| request_duration_status | 1 | The total duration spent for sending request and receiving response.
-1(green): latency <= 800ms
-2(yellow): 800<latency<1500
-3(red): latency >= 1500 |
-| request_reqxfer_status | 2 |  ReqXfe indicates the duration for transferring request payload. 
-1(green): latency <= 200ms
-2(yellow): 200<latency<1000
-3(red): latency >= 1000 |
-| request_processing_status | 3 | Processing indicates the duration until receiving the first byte. 
-1(green): latency <= 200ms
-2(yellow): 200<latency<1000
-3(red): latency >= 1000 |
-| response_rspxfer_status | 1 | RspXfer indicates the duration for transferring response bopayloaddy.
-1(green): latency <= 200ms
-2(yellow): 200<latency<1000
-3(red): latency >= 1000 |
+| request_duration_status | 1 | The total duration spent for sending request and receiving response.<br>1(green): latency <= 800ms<br>2(yellow): 800<latency<1500<br>3(red): latency >= 1500 |
+| request_reqxfer_status | 2 |  ReqXfe indicates the duration for transferring request payload. <br>1(green): latency <= 200ms<br>2(yellow): 200<latency<1000<br>3(red): latency >= 1000 |
+| request_processing_status | 3 | Processing indicates the duration until receiving the first byte. <br>1(green): latency <= 200ms<br>2(yellow): 200<latency<1000<br>3(red): latency >= 1000 |
+| response_rspxfer_status | 1 | RspXfer indicates the duration for transferring response bopayloaddy.<br>1(green): latency <= 200ms<br>2(yellow): 200<latency<1000<br>3(red): latency >= 1000 |
 
 ## TCP (Layer 4) Metrics
 
