@@ -49,6 +49,11 @@ func TestKafkaProtocol(t *testing.T) {
 		"kafka/consumer-trace-fetch-multi-topics.yml")
 }
 
+func TestDubboProtocol(t *testing.T) {
+	testProtocol(t, "dubbo/server-event.yml",
+		"dubbo/server-trace-short.yml")
+}
+
 type NopProcessor struct {
 }
 
