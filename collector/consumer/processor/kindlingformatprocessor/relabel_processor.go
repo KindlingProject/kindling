@@ -6,8 +6,9 @@ import (
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.uber.org/multierr"
-	"math/rand"
 )
 
 const ProcessorName = "kindlingformatprocessor"
@@ -21,13 +22,6 @@ type RelabelProcessor struct {
 
 func NewRelabelProcessor(cfg interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
 	processorCfg := cfg.(*Config)
-	if processorCfg.SamplingRate == nil {
-		processorCfg.SamplingRate = &SampleConfig{
-			NormalData: 0,
-			SlowData:   100,
-			ErrorData:  100,
-		}
-	}
 	return &RelabelProcessor{
 		cfg:          processorCfg,
 		nextConsumer: nextConsumer,
@@ -36,51 +30,59 @@ func NewRelabelProcessor(cfg interface{}, telemetry *component.TelemetryTools, n
 }
 
 func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
-	common := newGauges(gaugeGroup)
+	switch gaugeGroup.Name {
+	case constnames.SingleNetRequestGaugeGroup:
+		return r.consumeSingleGroup(gaugeGroup)
+	case constnames.AggregatedNetRequestGaugeGroup:
+		var requestCountErr error
+		var err error
+		requestCount, ok := gaugeGroup.GetGauge(constvalues.RequestCount)
+		if ok {
+			requestCountGaugeGroup := model.NewGaugeGroup(gaugeGroup.Name, gaugeGroup.Labels, gaugeGroup.Timestamp, requestCount)
+			requestCountErr = r.consumeAggregatedGroup(requestCountGaugeGroup, true)
+			gaugeGroup.RemoveGauge(constvalues.RequestCount)
+		}
+		err = r.consumeAggregatedGroup(gaugeGroup, false)
+		return multierr.Combine(requestCountErr, err)
+	default:
+		return nil
+	}
+}
 
+func (r *RelabelProcessor) consumeSingleGroup(gaugeGroup *model.GaugeGroup) error {
 	var traceErr error = nil
 	var spanErr error = nil
 
-	if r.cfg.NeedTraceAsMetric && common.isSlowOrError() {
+	// There could be normal data enter this method with sampling it.
+	// But only abnormal data would be stored as metric considering
+	// its high cardinality.
+	if r.cfg.NeedTraceAsMetric && isSlowOrError(gaugeGroup) {
 		// Trace as Metric
 		trace := newGauges(gaugeGroup)
 		traceErr = r.nextConsumer.Consume(trace.Process(r.cfg, TraceName, TopologyTraceInstanceInfo,
 			TopologyTraceK8sInfo, SrcContainerInfo, DstContainerInfo, ServiceProtocolInfo, TraceStatusInfo))
 	}
 	if r.cfg.NeedTraceAsResourceSpan {
-		var isSample = false
-		randSeed := rand.Intn(100)
-		if common.isSlowOrError() {
-			if (randSeed < r.cfg.SamplingRate.SlowData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow) {
-				isSample = true
-			}
-			if (randSeed < r.cfg.SamplingRate.ErrorData) && gaugeGroup.Labels.GetBoolValue(constlabels.IsError) {
-				isSample = true
-			}
-		} else {
-			if randSeed < r.cfg.SamplingRate.NormalData {
-				isSample = true
-			}
-		}
-		if isSample {
-			// Trace As Span
-			span := newGauges(gaugeGroup)
-			spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
-				TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
-		}
+		// Trace As Span
+		span := newGauges(gaugeGroup)
+		spanErr = r.nextConsumer.Consume(span.Process(r.cfg, SpanName, traceSpanInstanceInfo,
+			TopologyTraceK8sInfo, traceSpanContainerInfo, SpanProtocolInfo, traceSpanValuesToLabel))
 	}
 
-	// The data when the field is Error is true and the error Type is 2, do not generate metric
-	errorType := gaugeGroup.Labels.GetIntValue(constlabels.ErrorType)
-	if errorType == constlabels.ConnectFail || errorType == constlabels.NoResponse {
-		return traceErr
-	}
+	return multierr.Combine(traceErr, spanErr)
+}
 
+func (r *RelabelProcessor) consumeAggregatedGroup(gaugeGroup *model.GaugeGroup, addIsSlowLabel bool) error {
+	common := newGauges(gaugeGroup)
 	if gaugeGroup.Labels.GetBoolValue(constlabels.IsServer) {
 		// Do not emit detail protocol metric at this version
 		//protocol := newGauges(gaugeGroup)
 		//protocolErr := r.nextConsumer.Consume(protocol.Process(r.cfg, ProtocolDetailMetricName, ServiceInstanceInfo, ServiceK8sInfo, ProtocolDetailInfo))
-		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo))
+		relabelFuns1 := []Relabel{MetricName, ServiceInstanceInfo, ServiceK8sInfo, ServiceProtocolInfo}
+		if addIsSlowLabel {
+			relabelFuns1 = append(relabelFuns1, AddIsSlowLabel)
+		}
+		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, relabelFuns1...))
 		var metricErr2 error
 		if r.cfg.StoreExternalSrcIP {
 			srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
@@ -89,16 +91,28 @@ func (r *RelabelProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 				externalGaugeGroup := newGauges(gaugeGroup)
 				// Here we have to modify the field "IsServer" to generate the metric.
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, false)
-				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, MetricName, TopologyInstanceInfo,
-					TopologyK8sInfo, DstContainerInfo, TopologyProtocolInfo))
+				relabelFuns2 := []Relabel{MetricName, TopologyInstanceInfo,
+					TopologyK8sInfo, DstContainerInfo, TopologyProtocolInfo}
+				if addIsSlowLabel {
+					relabelFuns2 = append(relabelFuns2, AddIsSlowLabel)
+				}
+				metricErr2 = r.nextConsumer.Consume(externalGaugeGroup.Process(r.cfg, relabelFuns2...))
 				// In case of using the original data later, we reset the field "IsServer".
 				externalGaugeGroup.Labels.AddBoolValue(constlabels.IsServer, true)
 			}
 		}
-		return multierr.Combine(traceErr, spanErr, metricErr, metricErr2)
+		return multierr.Combine(metricErr, metricErr2)
 	} else {
-		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, MetricName, TopologyInstanceInfo, TopologyK8sInfo,
-			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo))
-		return multierr.Combine(traceErr, metricErr)
+		relabelFuns3 := []Relabel{MetricName, TopologyInstanceInfo, TopologyK8sInfo,
+			SrcContainerInfo, DstContainerInfo, TopologyProtocolInfo}
+		if addIsSlowLabel {
+			relabelFuns3 = append(relabelFuns3, AddIsSlowLabel)
+		}
+		metricErr := r.nextConsumer.Consume(common.Process(r.cfg, relabelFuns3...))
+		return metricErr
 	}
+}
+
+func isSlowOrError(g *model.GaugeGroup) bool {
+	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError)
 }

@@ -35,10 +35,6 @@ func newGauges(g *model.GaugeGroup) *gauges {
 	}
 }
 
-func (g *gauges) isSlowOrError() bool {
-	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError)
-}
-
 func (g gauges) getResult() *model.GaugeGroup {
 	return &model.GaugeGroup{
 		Name:      g.Name,
@@ -215,6 +211,10 @@ func TopologyProtocolInfo(cfg *Config, g *gauges) {
 
 func ProtocolDetailInfo(cfg *Config, g *gauges) {
 	fillKafkaMetricProtocolLabel(g)
+}
+
+func AddIsSlowLabel(cfg *Config, g *gauges) {
+	g.targetLabels.AddBoolValue(constlabels.IsSlow, g.Labels.GetBoolValue(constlabels.IsSlow))
 }
 
 func TraceStatusInfo(cfg *Config, g *gauges) {
