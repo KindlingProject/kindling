@@ -1,4 +1,4 @@
-package constlabels
+package constnames
 
 import "github.com/Kindling-project/kindling/collector/model/constvalues"
 
@@ -25,6 +25,8 @@ const (
 	EntityRequestLatencyAverageMetric = "average_duration_nanoseconds"
 	EntityRequestLatencyTotalMetric   = "duration_nanoseconds_total"
 	EntityRequestCountMetric          = "total"
+
+	TraceAsMetric = NPMPrefixKindling + "_trace_request_duration_nanoseconds"
 )
 
 const (
@@ -33,10 +35,6 @@ const (
 	EntityPrefix   = "entity"
 	TopologyPrefix = "topology"
 )
-
-func ToKindlingTraceAsMetricName() string {
-	return NPMPrefixKindling + "_trace_request_" + "duration_nanoseconds"
-}
 
 func ToKindlingMetricName(origName string, isServer bool) string {
 	if names, ok := metricNameDictionary[origName]; !ok {

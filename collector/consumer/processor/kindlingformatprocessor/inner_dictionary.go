@@ -3,6 +3,7 @@ package kindlingformatprocessor
 import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 )
 
@@ -55,7 +56,7 @@ func (g gauges) Process(cfg *Config, relabels ...Relabel) *model.GaugeGroup {
 
 func MetricName(cfg *Config, g *gauges) {
 	for _, gauge := range g.Values {
-		if name := constlabels.ToKindlingMetricName(gauge.Name, g.Labels.GetBoolValue(constlabels.IsServer)); name != "" {
+		if name := constnames.ToKindlingMetricName(gauge.Name, g.Labels.GetBoolValue(constlabels.IsServer)); name != "" {
 			g.targetValues = append(g.targetValues, &model.Gauge{
 				Name:  name,
 				Value: gauge.Value,
@@ -75,7 +76,7 @@ func TraceName(cfg *Config, g *gauges) {
 	}
 
 	g.targetValues = append(g.targetValues, &model.Gauge{
-		Name:  constlabels.ToKindlingTraceAsMetricName(),
+		Name:  constnames.TraceAsMetric,
 		Value: requestDuration,
 	})
 }
@@ -87,7 +88,7 @@ func SpanName(cfg *Config, g *gauges) {
 func ProtocolDetailMetricName(cfg *Config, g *gauges) {
 	for _, gauge := range g.Values {
 		g.targetValues = append(g.targetValues, &model.Gauge{
-			Name:  constlabels.ToKindlingDetailMetricName(gauge.Name, g.Labels.GetStringValue(constlabels.Protocol)),
+			Name:  constnames.ToKindlingDetailMetricName(gauge.Name, g.Labels.GetStringValue(constlabels.Protocol)),
 			Value: gauge.Value,
 		})
 	}

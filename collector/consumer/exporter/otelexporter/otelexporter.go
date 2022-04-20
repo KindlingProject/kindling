@@ -250,13 +250,13 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 			for i := 0; i < len(gaugeGroup.Values); i++ {
 				if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
 					requestTotalTime = &model.Gauge{
-						Name:  constlabels.ToKindlingTraceAsMetricName(),
+						Name:  constnames.TraceAsMetric,
 						Value: gaugeGroup.Values[i].Value,
 					}
 					break
 				}
 			}
-			e.instrumentFactory.recordLastValue(constlabels.ToKindlingTraceAsMetricName(), &model.GaugeGroup{
+			e.instrumentFactory.recordLastValue(constnames.TraceAsMetric, &model.GaugeGroup{
 				Values:    []*model.Gauge{requestTotalTime},
 				Labels:    attrsMap,
 				Timestamp: gaugeGroup.Timestamp,
@@ -428,7 +428,7 @@ func (e *OtelExporter) RecordNetMetric(adapter [2]*Adapter, group *model.GaugeGr
 	requestCount, err := e.GetMetricMeasurementOnlyRequestCount(group, isServer)
 	if err == nil {
 		attrsWithIsSlow, _ := adapter[1].adapt(group)
-		e.instrumentFactory.meter.RecordBatch(context.Background(), attrsWithIsSlow, requestCount)
+		e.instrumentFactory.meter.RecordBatch(context.Background(), attrsWithIsSlow, *requestCount)
 	} else {
 		e.telemetry.Logger.Error("Can not record Metric", zap.Error(err))
 	}
@@ -440,7 +440,7 @@ func (e *OtelExporter) GetMetricMeasurementExceptRequestCount(gaugeGroup *model.
 	gauges := gaugeGroup.Values
 	measurements := make([]metric.Measurement, 0, len(gauges))
 	for i := 0; i < len(gauges); i++ {
-		name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
+		name := constnames.ToKindlingMetricName(gauges[i].Name, isServer)
 		if name == "" || gauges[i].Name == constvalues.RequestCount {
 			continue
 		}
@@ -453,13 +453,16 @@ func (e *OtelExporter) GetMetricMeasurementExceptRequestCount(gaugeGroup *model.
 	return measurements
 }
 
-func (e *OtelExporter) GetMetricMeasurementOnlyRequestCount(gaugeGroup *model.GaugeGroup, isServer bool) (metric.Measurement, error) {
+func (e *OtelExporter) GetMetricMeasurementOnlyRequestCount(gaugeGroup *model.GaugeGroup, isServer bool) (*metric.Measurement, error) {
 	gauges := gaugeGroup.Values
 	for i := 0; i < len(gauges); i++ {
 		if gauges[i].Name == constvalues.RequestCount && gauges[i].Value >= 0 {
-			name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
-			return e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value), nil
+			name := constnames.ToKindlingMetricName(gauges[i].Name, isServer)
+			measurement := e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value)
+			return &measurement, nil
+		} else if gauges[i].Name == constvalues.RequestCount && gauges[i].Value < 0 {
+			return nil, errors.New("requestCount is a negative value")
 		}
 	}
-	return metric.Measurement{}, errors.New("no requestCount or requestCount is a negative value")
+	return nil, errors.New("no requestCount in this metric")
 }

@@ -112,7 +112,7 @@ func getAggConfig(metricName string) *defaultaggregator.AggregatedConfig {
 
 func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSelectors {
 	switch metricName {
-	case constlabels.ToKindlingTraceAsMetricName():
+	case constnames.TraceAsMetric:
 		return i.traceAsMetricSelector
 	case constnames.TcpRttMetricName:
 		return i.TcpRttMillsSelector
@@ -213,7 +213,7 @@ func (i *instrumentFactory) recordGaugeAsync(metricName string, singleGauge mode
 func WithDescription(metricName string) metric.InstrumentOption {
 	var option metric.InstrumentOption
 	switch metricName {
-	case constlabels.ToKindlingTraceAsMetricName():
+	case constnames.TraceAsMetric:
 		option = metric.WithDescription(traceAsMetricHelp)
 	default:
 		option = metric.WithDescription("")
