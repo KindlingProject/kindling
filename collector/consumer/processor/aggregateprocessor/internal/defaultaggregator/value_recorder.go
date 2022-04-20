@@ -50,8 +50,8 @@ func (r *valueRecorder) Record(key *internal.LabelKeys, gaugeValues []*model.Gau
 // dump a set of metric from counter cache.
 // The return value holds the reference to the metric, not the copied one.
 func (r *valueRecorder) dump() []*model.GaugeGroup {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	ret := make([]*model.GaugeGroup, len(r.labelValues))
 	index := 0
 	for k, v := range r.labelValues {
