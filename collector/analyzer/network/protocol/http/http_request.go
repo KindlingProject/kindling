@@ -30,8 +30,16 @@ func parseHttpRequest() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		offset, method := message.ReadUntilBlankWithLength(message.Offset, 8)
 
-		if !httpMethodsList[string(method)] || message.Data[offset-1] != ' ' {
-			return false, true
+		if !httpMethodsList[string(method)] || message.Data[offset-1] != ' ' || message.Data[offset] != '/' {
+			if message.Data[offset-1] != ' ' || message.Data[offset] != '/' {
+				return false, true
+			}
+			// FIX ET /xxx Data with split payload.
+			if replaceMethod, ok := splitMethodsList[string(method)]; ok {
+				method = replaceMethod
+			} else {
+				return false, true
+			}
 		}
 
 		_, url := message.ReadUntilBlank(offset)
@@ -76,4 +84,8 @@ var httpMethodsList = map[string]bool{
 	"TRACE":   true,
 	"OPTIONS": true,
 	"CONNECT": true,
+}
+
+var splitMethodsList = map[string][]byte{
+	"ET": {'G', 'E', 'T'},
 }
