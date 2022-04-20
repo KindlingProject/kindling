@@ -312,7 +312,10 @@ func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
 			continue
 		}
 		if metricKind == MAGaugeKind {
-			e.instrumentFactory.recordLastValue(name, gaugeGroup)
+			e.instrumentFactory.recordLastValue(name, &model.GaugeGroup{
+				Values:    []*model.Gauge{value},
+				Labels:    gaugeGroup.Labels,
+				Timestamp: gaugeGroup.Timestamp})
 		} else {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(name, metricKind).Measurement(num))
 		}
