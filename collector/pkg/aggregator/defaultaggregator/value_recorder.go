@@ -1,14 +1,14 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/internal"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"sync"
 )
 
 type valueRecorder struct {
 	name        string
-	labelValues map[internal.LabelKeys]aggValuesMap
+	labelValues map[aggregator.LabelKeys]aggValuesMap
 	// mutex is only used to make sure the access to the labelValues is thread-safe.
 	// aggValuesMap is responsible for its own thread-safe access.
 	mutex      sync.RWMutex
@@ -18,14 +18,14 @@ type valueRecorder struct {
 func newValueRecorder(recorderName string, aggKindMap map[string][]KindConfig) *valueRecorder {
 	return &valueRecorder{
 		name:        recorderName,
-		labelValues: make(map[internal.LabelKeys]aggValuesMap),
+		labelValues: make(map[aggregator.LabelKeys]aggValuesMap),
 		mutex:       sync.RWMutex{},
 		aggKindMap:  aggKindMap,
 	}
 }
 
 // Record is thread-safe, and return the result value
-func (r *valueRecorder) Record(key *internal.LabelKeys, gaugeValues []*model.Gauge, timestamp uint64) {
+func (r *valueRecorder) Record(key *aggregator.LabelKeys, gaugeValues []*model.Gauge, timestamp uint64) {
 	if key == nil {
 		return
 	}
@@ -64,6 +64,6 @@ func (r *valueRecorder) dump() []*model.GaugeGroup {
 
 func (r *valueRecorder) reset() {
 	r.mutex.Lock()
-	r.labelValues = make(map[internal.LabelKeys]aggValuesMap)
+	r.labelValues = make(map[aggregator.LabelKeys]aggValuesMap)
 	r.mutex.Unlock()
 }

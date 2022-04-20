@@ -1,8 +1,8 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/internal"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"testing"
 )
 
@@ -18,21 +18,21 @@ func TestRecord(t *testing.T) {
 	}}
 
 	recorder := newValueRecorder("testRecorder", aggKindMap.KindMap)
-	keys := internal.NewLabelKeys([]internal.LabelKey{
+	keys := aggregator.NewLabelKeys([]aggregator.LabelKey{
 		{
 			Name:  "stringKey",
 			Value: "stringValue",
-			VType: internal.StringType,
+			VType: aggregator.StringType,
 		},
 		{
 			Name:  "booleanKey",
 			Value: "true",
-			VType: internal.BooleanType,
+			VType: aggregator.BooleanType,
 		},
 		{
 			Name:  "intKey",
 			Value: "100",
-			VType: internal.IntType,
+			VType: aggregator.IntType,
 		},
 	}...)
 

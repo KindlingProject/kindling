@@ -2,11 +2,12 @@ package otelexporter
 
 import (
 	"context"
-	"github.com/Kindling-project/kindling/collector/internal"
-	"github.com/Kindling-project/kindling/collector/internal/defaultaggregator"
+	"fmt"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
-	"github.com/Kindling-project/kindling/collector/model/constvalues"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
+	defaultaggregator "github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"sync"
@@ -28,9 +29,11 @@ type instrumentFactory struct {
 	customLabels             []attribute.KeyValue
 	logger                   *zap.Logger
 
-	aggregators            sync.Map
-	adapterManager         *BaseAdapterManager
-	traceAsMetricAggConfig *defaultaggregator.AggregatedConfig
+	aggregators    sync.Map
+	adapterManager *BaseAdapterManager
+
+	traceAsMetricSelector *aggregator.LabelSelectors
+	TcpRttMillsSelector   *aggregator.LabelSelectors
 }
 
 func newInstrumentFactory(meter metric.Meter, logger *zap.Logger, customLabels []attribute.KeyValue) *instrumentFactory {
@@ -42,12 +45,9 @@ func newInstrumentFactory(meter metric.Meter, logger *zap.Logger, customLabels [
 		customLabels:             customLabels,
 		logger:                   logger,
 		adapterManager:           createBaseAdapterManager(customLabels),
-		traceAsMetricAggConfig: &defaultaggregator.AggregatedConfig{
-			KindMap: map[string][]defaultaggregator.KindConfig{
-				constvalues.RequestTotalTime: []defaultaggregator.KindConfig{
-					{Kind: defaultaggregator.LastKind, OutputName: constlabels.ToKindlingTraceAsMetricName()},
-				},
-			}},
+
+		traceAsMetricSelector: newTraceAsMetricSelectors(),
+		TcpRttMillsSelector:   newTcpRttMicroSecondsSelectors(),
 	}
 }
 func (i *instrumentFactory) getInstrument(metricName string, kind MetricAggregationKind) instrument {
@@ -78,20 +78,24 @@ func (i *instrumentFactory) createNewInstrument(metricName string, kind MetricAg
 func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *model.GaugeGroup) {
 	if item, ok := i.aggregators.Load(metricName); ok {
 		aggregator := item.(*defaultaggregator.DefaultAggregator)
-		aggregator.Aggregate(singleGauge, getSelector(metricName))
+		aggregator.Aggregate(singleGauge, i.getSelector(metricName))
 		return
 	}
 
 	newAggregator := defaultaggregator.NewDefaultAggregator(getAggConfig(metricName))
 	i.aggregators.Store(metricName, newAggregator)
-	newAggregator.Aggregate(singleGauge, getSelector(metricName))
+	newAggregator.Aggregate(singleGauge, i.getSelector(metricName))
 	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
 		var dumps []*model.GaugeGroup
 		if item, ok := i.aggregators.Load(metricName); ok {
 			aggregator := item.(*defaultaggregator.DefaultAggregator)
 			dumps = aggregator.Dump()
 			for s := 0; s < len(dumps); s++ {
-				result.Observe(dumps[s].Values[0].Value, GetLabels(dumps[s].Labels, i.customLabels)...)
+				if len(dumps[s].Values) > 0 {
+					result.Observe(dumps[s].Values[0].Value, GetLabels(dumps[s].Labels, i.customLabels)...)
+				} else {
+					fmt.Println("Warning")
+				}
 			}
 		}
 	})
@@ -106,77 +110,84 @@ func getAggConfig(metricName string) *defaultaggregator.AggregatedConfig {
 		}}
 }
 
-func getSelector(metricName string) *internal.LabelSelectors {
+func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSelectors {
 	switch metricName {
 	case constlabels.ToKindlingTraceAsMetricName():
-		return internal.NewLabelSelectors(
-			internal.LabelSelector{Name: constlabels.Pid, VType: internal.IntType},
-			internal.LabelSelector{Name: constlabels.Protocol, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.IsServer, VType: internal.BooleanType},
-			internal.LabelSelector{Name: constlabels.ContainerId, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcNode, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcNodeIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcNamespace, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcPod, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcWorkloadName, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcService, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcContainerId, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcContainer, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstNode, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstNodeIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstNamespace, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstPod, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstWorkloadName, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstWorkloadKind, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstService, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstPort, VType: internal.IntType},
-			internal.LabelSelector{Name: constlabels.DnatIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DnatPort, VType: internal.IntType},
-			internal.LabelSelector{Name: constlabels.DstContainerId, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstContainer, VType: internal.StringType},
-
-			internal.LabelSelector{Name: constlabels.RequestReqxferStatus, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.RequestProcessingStatus, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.ResponseRspxferStatus, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.RequestDurationStatus, VType: internal.StringType},
-
-			internal.LabelSelector{Name: constlabels.RequestContent, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.ResponseContent, VType: internal.StringType},
-		)
-	case "kindling_tcp_rtt_microseconds":
-		return internal.NewLabelSelectors(
-			internal.LabelSelector{Name: constlabels.SrcNode, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcNodeIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcNamespace, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcPod, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcWorkloadName, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcService, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcPort, VType: internal.IntType},
-			internal.LabelSelector{Name: constlabels.SrcContainerId, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.SrcContainer, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstNode, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstNodeIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstNamespace, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstPod, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstWorkloadName, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstWorkloadKind, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstService, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstPort, VType: internal.IntType},
-			internal.LabelSelector{Name: constlabels.DnatIp, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DnatPort, VType: internal.IntType},
-			internal.LabelSelector{Name: constlabels.DstContainerId, VType: internal.StringType},
-			internal.LabelSelector{Name: constlabels.DstContainer, VType: internal.StringType},
-		)
-
+		return i.traceAsMetricSelector
+	case constnames.TcpRttMetricName:
+		return i.TcpRttMillsSelector
+	default:
+		return nil
 	}
+}
 
-	return nil
+func newTraceAsMetricSelectors() *aggregator.LabelSelectors {
+	return aggregator.NewLabelSelectors(
+		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.Protocol, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.IsServer, VType: aggregator.BooleanType},
+		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcNodeIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcNamespace, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcPod, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcWorkloadName, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcService, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcContainer, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNode, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNodeIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNamespace, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstPod, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstWorkloadName, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstWorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstService, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.DnatIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DnatPort, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
+
+		aggregator.LabelSelector{Name: constlabels.RequestReqxferStatus, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.RequestProcessingStatus, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.ResponseRspxferStatus, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.RequestDurationStatus, VType: aggregator.StringType},
+
+		aggregator.LabelSelector{Name: constlabels.RequestContent, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.ResponseContent, VType: aggregator.StringType},
+	)
+}
+
+func newTcpRttMicroSecondsSelectors() *aggregator.LabelSelectors {
+	return aggregator.NewLabelSelectors(
+		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcNodeIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcNamespace, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcPod, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcWorkloadName, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcService, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcPort, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.SrcContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcContainer, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNode, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNodeIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNamespace, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstPod, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstWorkloadName, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstWorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstService, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.DnatIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DnatPort, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
+	)
 }
 
 func (i *instrumentFactory) recordGaugeAsync(metricName string, singleGauge model.GaugeGroup) {

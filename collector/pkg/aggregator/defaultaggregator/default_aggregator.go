@@ -1,8 +1,8 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/internal"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"sync"
 )
 
@@ -27,7 +27,7 @@ func NewDefaultAggregator(config *AggregatedConfig) *DefaultAggregator {
 	return ret
 }
 
-func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, selectors *internal.LabelSelectors) {
+func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, selectors *aggregator.LabelSelectors) {
 	name := g.Name
 	s.mut.RLock()
 	recorder, ok := s.recordersMap[name]

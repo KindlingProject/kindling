@@ -31,7 +31,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 			"kindling_topology_request_request_bytes_total":        1,
 			"kindling_topology_request_response_bytes_total":       1,
 			"kindling_trace_request_duration_nanoseconds":          0,
-			"kindling_tcp_rtt_milliseconds":                        0,
+			"kindling_tcp_rtt_microseconds":                        0,
 			"kindling_tcp_retransmit_total":                        1,
 			"kindling_tcp_packet_loss_total":                       1,
 		},
@@ -112,7 +112,7 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 			}),
 		123,
 		[]*model.Gauge{
-			{"kindling_tcp_rtt_milliseconds", rttLatency},
+			{constnames.TcpRttMetricName, rttLatency},
 		}...)
 }
 
