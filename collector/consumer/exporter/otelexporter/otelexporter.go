@@ -249,8 +249,10 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 			var requestTotalTime *model.Gauge
 			for i := 0; i < len(gaugeGroup.Values); i++ {
 				if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
-					requestTotalTime = gaugeGroup.Values[i]
-					requestTotalTime.Name = constlabels.ToKindlingTraceAsMetricName()
+					requestTotalTime = &model.Gauge{
+						Name:  constlabels.ToKindlingTraceAsMetricName(),
+						Value: gaugeGroup.Values[i].Value,
+					}
 					break
 				}
 			}
@@ -454,7 +456,7 @@ func (e *OtelExporter) GetMetricMeasurementExceptRequestCount(gaugeGroup *model.
 func (e *OtelExporter) GetMetricMeasurementOnlyRequestCount(gaugeGroup *model.GaugeGroup, isServer bool) (metric.Measurement, error) {
 	gauges := gaugeGroup.Values
 	for i := 0; i < len(gauges); i++ {
-		if gauges[i].Name == constvalues.RequestCount && gauges[i].Value > 0 {
+		if gauges[i].Name == constvalues.RequestCount && gauges[i].Value >= 0 {
 			name := constlabels.ToKindlingMetricName(gauges[i].Name, isServer)
 			return e.instrumentFactory.getInstrument(name, e.metricAggregationMap[name]).Measurement(gauges[i].Value), nil
 		}
