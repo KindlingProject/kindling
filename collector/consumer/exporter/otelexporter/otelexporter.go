@@ -250,6 +250,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 			for i := 0; i < len(gaugeGroup.Values); i++ {
 				if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
 					requestTotalTime = gaugeGroup.Values[i]
+					requestTotalTime.Name = constlabels.ToKindlingTraceAsMetricName()
 					break
 				}
 			}

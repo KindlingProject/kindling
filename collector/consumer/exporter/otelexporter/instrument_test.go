@@ -6,7 +6,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
-	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
@@ -152,6 +151,6 @@ func makeNetGroup(requestLatency int64) *model.GaugeGroup {
 			}),
 		123,
 		[]*model.Gauge{
-			{constvalues.RequestTotalTime, requestLatency},
+			{constlabels.ToKindlingTraceAsMetricName(), requestLatency},
 		}...)
 }

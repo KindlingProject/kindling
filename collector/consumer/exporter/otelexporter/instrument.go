@@ -74,6 +74,7 @@ func (i *instrumentFactory) createNewInstrument(metricName string, kind MetricAg
 	}
 }
 
+// only support TraceAsMetric and TcpRttMills now
 func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *model.GaugeGroup) {
 	if item, ok := i.aggregators.Load(metricName); ok {
 		aggregator := item.(*defaultaggregator.DefaultAggregator)
@@ -81,7 +82,7 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *mode
 		return
 	}
 
-	newAggregator := defaultaggregator.NewDefaultAggregator(i.traceAsMetricAggConfig)
+	newAggregator := defaultaggregator.NewDefaultAggregator(getAggConfig(metricName))
 	i.aggregators.Store(metricName, newAggregator)
 	newAggregator.Aggregate(singleGauge, getSelector(metricName))
 	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
@@ -94,6 +95,15 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *mode
 			}
 		}
 	})
+}
+
+func getAggConfig(metricName string) *defaultaggregator.AggregatedConfig {
+	return &defaultaggregator.AggregatedConfig{
+		KindMap: map[string][]defaultaggregator.KindConfig{
+			metricName: {
+				{Kind: defaultaggregator.LastKind, OutputName: metricName},
+			},
+		}}
 }
 
 func getSelector(metricName string) *internal.LabelSelectors {
