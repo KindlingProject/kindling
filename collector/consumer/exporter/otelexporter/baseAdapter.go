@@ -69,7 +69,7 @@ func createBaseAdapterManager(constLabels []attribute.KeyValue) *BaseAdapterMana
 		[][]dictionary{topologyInstanceMetricDicList, SpanDicList}).
 		withExtraLabels(spanProtocol, updateProtocolKey).
 		withValueToLabels(traceSpanStatus, getTraceSpanStatusLabels).
-		withAdjust(ReplaceDstIpOrDstPortByDNat()).
+		//withAdjust(ReplaceDstIpOrDstPortByDNat()).
 		withConstLabels(constLabels).
 		build()
 
@@ -77,7 +77,7 @@ func createBaseAdapterManager(constLabels []attribute.KeyValue) *BaseAdapterMana
 		[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
 		withExtraLabels(entityProtocol, updateProtocolKey).
 		withValueToLabels(traceStatus, getTraceStatusLabels).
-		withAdjust(ReplaceDstIpOrDstPortByDNat()).
+		//withAdjust(ReplaceDstIpOrDstPortByDNat()).
 		withConstLabels(constLabels).
 		build()
 

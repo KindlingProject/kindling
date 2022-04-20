@@ -3,8 +3,6 @@ package application
 import (
 	"flag"
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor"
-
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/loganalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
@@ -13,8 +11,8 @@ import (
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/logexporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter"
+	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor"
 	"github.com/Kindling-project/kindling/collector/consumer/processor/k8sprocessor"
-	"github.com/Kindling-project/kindling/collector/consumer/processor/kindlingformatprocessor"
 	"github.com/Kindling-project/kindling/collector/receiver"
 	"github.com/Kindling-project/kindling/collector/receiver/udsreceiver"
 	"github.com/spf13/viper"
@@ -76,7 +74,7 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterReceiver(udsreceiver.Uds, udsreceiver.NewUdsReceiver, &udsreceiver.Config{})
 	a.componentsFactory.RegisterAnalyzer(network.Network.String(), network.NewNetworkAnalyzer, &network.Config{})
 	a.componentsFactory.RegisterProcessor(k8sprocessor.K8sMetadata, k8sprocessor.NewKubernetesProcessor, &k8sprocessor.DefaultConfig)
-	a.componentsFactory.RegisterProcessor(kindlingformatprocessor.ProcessorName, kindlingformatprocessor.NewRelabelProcessor, &kindlingformatprocessor.Config{})
+	//a.componentsFactory.RegisterProcessor(kindlingformatprocessor.ProcessorName, kindlingformatprocessor.NewRelabelProcessor, &kindlingformatprocessor.Config{})
 	a.componentsFactory.RegisterExporter(otelexporter.Otel, otelexporter.NewExporter, &otelexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(tcpmetricanalyzer.TcpMetric.String(), tcpmetricanalyzer.NewTcpMetricAnalyzer, &tcpmetricanalyzer.Config{})
 	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
