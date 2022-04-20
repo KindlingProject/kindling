@@ -2,7 +2,6 @@ package otelexporter
 
 import (
 	"context"
-	"fmt"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -93,8 +92,6 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *mode
 			for s := 0; s < len(dumps); s++ {
 				if len(dumps[s].Values) > 0 {
 					result.Observe(dumps[s].Values[0].Value, GetLabels(dumps[s].Labels, i.customLabels)...)
-				} else {
-					fmt.Println("Warning")
 				}
 			}
 		}
