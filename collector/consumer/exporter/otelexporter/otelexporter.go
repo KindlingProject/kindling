@@ -433,7 +433,7 @@ func (e *OtelExporter) RecordNetMetric(adapter [2]*Adapter, group *model.GaugeGr
 		e.telemetry.Logger.Error("Can not record Metric", zap.Error(err))
 	}
 	attrs, _ := adapter[0].adapt(group)
-	e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurementExceptRequestCount(group, false)...)
+	e.instrumentFactory.meter.RecordBatch(context.Background(), attrs, e.GetMetricMeasurementExceptRequestCount(group, isServer)...)
 }
 
 func (e *OtelExporter) GetMetricMeasurementExceptRequestCount(gaugeGroup *model.GaugeGroup, isServer bool) []metric.Measurement {
