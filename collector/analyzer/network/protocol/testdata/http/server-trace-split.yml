@@ -1,7 +1,7 @@
 trace:
   # 0--100--------------101 
   #     READ              WRITE
-  key: normal
+  key: split
   requests:
     -
       name: "read"
