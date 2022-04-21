@@ -136,6 +136,7 @@ func newNetRequestLabelSelectors() *internal.LabelSelectors {
 		internal.LabelSelector{Name: constlabels.DstContainerId, VType: internal.StringType},
 		internal.LabelSelector{Name: constlabels.DstContainer, VType: internal.StringType},
 
+		internal.LabelSelector{Name: constlabels.IsError, VType: internal.BooleanType},
 		internal.LabelSelector{Name: constlabels.IsSlow, VType: internal.BooleanType},
 		internal.LabelSelector{Name: constlabels.HttpStatusCode, VType: internal.IntType},
 		internal.LabelSelector{Name: constlabels.DnsRcode, VType: internal.IntType},
