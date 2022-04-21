@@ -2,9 +2,13 @@ package otelexporter
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	defaultaggregator "github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.opentelemetry.io/otel/attribute"
@@ -19,6 +23,10 @@ var traceAsMetricHelp = "Describe a single request which is abnormal. " +
 
 var adapterRWMutex sync.RWMutex
 
+const (
+	PreAggMetric = "preAggMetric"
+)
+
 type instrumentFactory struct {
 	// TODO: Initialize instruments when initializing factory
 	instruments              sync.Map
@@ -29,7 +37,7 @@ type instrumentFactory struct {
 	logger                   *zap.Logger
 
 	aggregators    sync.Map
-	adapterManager *BaseAdapterManager
+	adapterManager *defaultadapter.NetAdapterManager
 
 	traceAsMetricSelector *aggregator.LabelSelectors
 	TcpRttMillsSelector   *aggregator.LabelSelectors
@@ -37,13 +45,10 @@ type instrumentFactory struct {
 
 func newInstrumentFactory(meter metric.Meter, logger *zap.Logger, customLabels []attribute.KeyValue) *instrumentFactory {
 	return &instrumentFactory{
-		instruments:              sync.Map{},
-		gaugeAsyncInstrumentInit: sync.Map{},
-		meter:                    meter,
-		gaugeChan:                newGaugeChannel(2000),
-		customLabels:             customLabels,
-		logger:                   logger,
-		adapterManager:           createBaseAdapterManager(customLabels),
+		instruments:  sync.Map{},
+		meter:        meter,
+		customLabels: customLabels,
+		logger:       logger,
 
 		traceAsMetricSelector: newTraceAsMetricSelectors(),
 		TcpRttMillsSelector:   newTcpRttMicroSecondsSelectors(),
@@ -74,16 +79,24 @@ func (i *instrumentFactory) createNewInstrument(metricName string, kind MetricAg
 }
 
 // only support TraceAsMetric and TcpRttMills now
-func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *model.GaugeGroup) {
+func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *model.GaugeGroup) error {
 	if item, ok := i.aggregators.Load(metricName); ok {
 		aggregator := item.(*defaultaggregator.DefaultAggregator)
-		aggregator.Aggregate(singleGauge, i.getSelector(metricName))
-		return
+		if selector := i.getSelector(metricName); selector != nil {
+			aggregator.Aggregate(singleGauge, selector)
+			return nil
+		} else {
+			return errors.New(fmt.Sprintf("no matched Selector has been be defined for %s", metricName))
+		}
 	}
 
 	newAggregator := defaultaggregator.NewDefaultAggregator(getAggConfig(metricName))
 	i.aggregators.Store(metricName, newAggregator)
-	newAggregator.Aggregate(singleGauge, i.getSelector(metricName))
+	if selector := i.getSelector(metricName); selector != nil {
+		newAggregator.Aggregate(singleGauge, selector)
+	} else {
+		return errors.New(fmt.Sprintf("no matched Selector has been be defined for %s", metricName))
+	}
 	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
 		var dumps []*model.GaugeGroup
 		if item, ok := i.aggregators.Load(metricName); ok {
@@ -96,6 +109,7 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *mode
 			}
 		}
 	})
+	return nil
 }
 
 func getAggConfig(metricName string) *defaultaggregator.AggregatedConfig {
@@ -111,7 +125,7 @@ func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSele
 	switch metricName {
 	case constnames.TraceAsMetric:
 		return i.traceAsMetricSelector
-	case constnames.TcpRttMetricName:
+	case constvalues.TcpRttMetricName:
 		return i.TcpRttMillsSelector
 	default:
 		return nil

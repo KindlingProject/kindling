@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -123,13 +124,21 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 	otelexporter := &OtelExporter{
 		cfg:                  cfg,
 		metricController:     cont,
-		adapterManager:       createBaseAdapterManager(nil),
 		traceProvider:        nil,
 		defaultTracer:        nil,
 		customLabels:         nil,
 		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, nil),
 		metricAggregationMap: cfg.MetricAggregationMap,
 		telemetry:            component.NewDefaultTelemetryTools(),
+		adapters: []defaultadapter.Adapter{
+			defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
+				StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
+				StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
+				StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
+				StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
+			}),
+			defaultadapter.NewTcpAdapter(nil),
+		},
 	}
 
 	if err := cont.Start(context.Background()); err != nil {

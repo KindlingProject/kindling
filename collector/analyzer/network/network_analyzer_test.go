@@ -206,7 +206,7 @@ func (trace *Trace) Validate(t *testing.T, results []*model.GaugeGroup) {
 		expect := trace.Expects[i]
 		checkUint64Equal(t, "Timestamp", expect.Timestamp, result.Timestamp)
 
-		// Validate Gauge Values
+		// Validate Gauges Values
 		checkSize(t, "Values Size", len(expect.Values), len(result.Values))
 		for _, value := range result.Values {
 			expectValue, ok := expect.Values[value.Name]
@@ -217,7 +217,7 @@ func (trace *Trace) Validate(t *testing.T, results []*model.GaugeGroup) {
 			}
 		}
 
-		// Validate Gauge Attributes
+		// Validate Gauges Attributes
 		checkSize(t, "Labels Size", len(expect.Labels), result.Labels.Size())
 		for labelKey, labelValue := range expect.Labels {
 			if reflect.TypeOf(labelValue).Name() == "int" {

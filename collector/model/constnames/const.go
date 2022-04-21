@@ -26,8 +26,4 @@ const (
 
 	TcpGaugeGroupName  = "tcp_metric_gauge_group"
 	NodeGaugeGroupName = "node_metric_gauge_group"
-
-	TcpRttMetricName        = "kindling_tcp_rtt_microseconds"
-	TcpRetransmitMetricName = "kindling_tcp_retransmit_total"
-	TcpDropMetricName       = "kindling_tcp_packet_loss_total"
 )

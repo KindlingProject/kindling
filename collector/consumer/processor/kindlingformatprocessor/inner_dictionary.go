@@ -56,7 +56,7 @@ func (g gauges) Process(cfg *Config, relabels ...Relabel) *model.GaugeGroup {
 
 func MetricName(cfg *Config, g *gauges) {
 	for _, gauge := range g.Values {
-		if name := constnames.ToKindlingMetricName(gauge.Name, g.Labels.GetBoolValue(constlabels.IsServer)); name != "" {
+		if name := constnames.ToKindlingNetMetricName(gauge.Name, g.Labels.GetBoolValue(constlabels.IsServer)); name != "" {
 			g.targetValues = append(g.targetValues, &model.Gauge{
 				Name:  name,
 				Value: gauge.Value,

@@ -1,4 +1,4 @@
-package otelexporter
+package defaultadapter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-var baseAdapter = createBaseAdapterManager([]attribute.KeyValue{
+var baseAdapter = createNetAdapterManager([]attribute.KeyValue{
 	{"const-labels1", attribute.StringValue("const-values1")},
 })
 
@@ -25,7 +25,7 @@ func TestAdapter_transform(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		adapter *Adapter
+		adapter *adapterCache
 		args    args
 		want    *model.AttributeMap
 		wantErr bool
@@ -325,7 +325,7 @@ func TestAdapter_adapt(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		adapter *Adapter
+		adapter *adapterCache
 		args    args
 		want    []attribute.KeyValue
 		wantErr bool

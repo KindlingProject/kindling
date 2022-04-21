@@ -1,4 +1,4 @@
-package otelexporter
+package defaultadapter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-type Adapter struct {
+type adapterCache struct {
 	// labelsMap key: protocolType value: a list of realAttributes
 	labelsMap  map[extraLabelsKey]realAttributes
 	updateKeys []updateKey
@@ -115,12 +115,14 @@ func newAdapterBuilder(
 		baseLabels[j].Key = attribute.Key(baseDict[j].newKey)
 	}
 	// commonLabels
-	for j := 0; j < len(commonLabels); j++ {
-		for k := 0; k < len(commonLabels[j]); k++ {
-			baseLabels = append(baseLabels, attribute.KeyValue{
-				Key: attribute.Key(commonLabels[j][k].newKey),
-			})
-			baseDict = append(baseDict, commonLabels[j][k])
+	if commonLabels != nil {
+		for j := 0; j < len(commonLabels); j++ {
+			for k := 0; k < len(commonLabels[j]); k++ {
+				baseLabels = append(baseLabels, attribute.KeyValue{
+					Key: attribute.Key(commonLabels[j][k].newKey),
+				})
+				baseDict = append(baseDict, commonLabels[j][k])
+			}
 		}
 	}
 
@@ -183,7 +185,7 @@ func (m *metricAdapterBuilder) withAdjust(adjustFunc adjustFunctions) *metricAda
 	return m
 }
 
-func (m *metricAdapterBuilder) build() (*Adapter, error) {
+func (m *metricAdapterBuilder) build() (*adapterCache, error) {
 	labelsMap := make(map[extraLabelsKey]realAttributes, len(m.extraLabelsKey))
 	baseAndCommonParams := make([]attribute.KeyValue, len(m.baseAndCommonLabelsDict))
 
@@ -259,7 +261,7 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 		}
 	}
 
-	return &Adapter{
+	return &adapterCache{
 		labelsMap:       labelsMap,
 		updateKeys:      m.updateKeys,
 		valueLabelsFunc: m.valueLabelsFunc,
@@ -267,7 +269,7 @@ func (m *metricAdapterBuilder) build() (*Adapter, error) {
 	}, nil
 }
 
-func (m *Adapter) transform(group *model.GaugeGroup) (*model.AttributeMap, error) {
+func (m *adapterCache) transform(group *model.GaugeGroup) (*model.AttributeMap, error) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
@@ -310,7 +312,7 @@ func (m *Adapter) transform(group *model.GaugeGroup) (*model.AttributeMap, error
 	return attrs.AttrsMap, nil
 }
 
-func (m *Adapter) adapt(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
+func (m *adapterCache) adapt(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {

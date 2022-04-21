@@ -3,9 +3,11 @@ package otelexporter
 import (
 	"context"
 	"github.com/Kindling-project/kindling/collector/component"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
@@ -76,11 +78,15 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 
 	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
-		group := makeNetGroup(int64(i))
-		attrs, _ := createBaseAdapterManager(nil).traceToMetricAdapter.transform(group)
-		ins.recordLastValue(constlabels.ToKindlingTraceAsMetricName(), model.NewGaugeGroup(constnames.AggregatedNetRequestGaugeGroup, attrs, group.Timestamp, group.Values...))
+		group := makeTraceAsMetric(int64(i))
+		attrs, _ := defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
+			StoreTraceAsMetric: true,
+			StoreTraceAsSpan:   false,
+			StorePodDetail:     true,
+			StoreExternalSrcIP: true,
+		}).Transform(group)
+		ins.recordLastValue(constnames.TraceAsMetric, model.NewGaugeGroup(PreAggMetric, attrs, group.Timestamp, group.Values...))
 	}
-
 }
 
 func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
@@ -112,7 +118,7 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 			}),
 		123,
 		[]*model.Gauge{
-			{constnames.TcpRttMetricName, rttLatency},
+			{constvalues.TcpRttMetricName, rttLatency},
 		}...)
 }
 
@@ -151,6 +157,45 @@ func makeNetGroup(requestLatency int64) *model.GaugeGroup {
 			}),
 		123,
 		[]*model.Gauge{
-			{constlabels.ToKindlingTraceAsMetricName(), requestLatency},
+			{constvalues.RequestTotalTime, requestLatency},
+		}...)
+}
+
+func makeTraceAsMetric(requestLatency int64) *model.GaugeGroup {
+	return model.NewGaugeGroup(
+		constnames.AggregatedNetRequestGaugeGroup,
+		model.NewAttributeMapWithValues(
+			map[string]model.AttributeValue{
+				// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+				constlabels.SrcIp:   model.NewStringValue("src-ip"),
+				constlabels.SrcPort: model.NewIntValue(33333),
+				constlabels.DstIp:   model.NewStringValue("dst-ip"),
+				constlabels.DstPort: model.NewIntValue(8080),
+
+				// protocolInfo
+				constlabels.Protocol:       model.NewStringValue("http"),
+				constlabels.HttpUrl:        model.NewStringValue("/test"),
+				constlabels.HttpStatusCode: model.NewIntValue(200),
+
+				// k8sInfo
+				constlabels.DstPod:          model.NewStringValue("dst-pod"),
+				constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+				constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+				constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+				constlabels.SrcPod:          model.NewStringValue("src-pod"),
+				constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+				constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+				constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+				constlabels.SrcService:      model.NewStringValue("src-service"),
+				constlabels.DstService:      model.NewStringValue("dst-service"),
+				constlabels.SrcNode:         model.NewStringValue("src-node"),
+				constlabels.DstNode:         model.NewStringValue("dst-node"),
+
+				// isSlow
+				constlabels.IsSlow: model.NewBoolValue(false),
+			}),
+		123,
+		[]*model.Gauge{
+			{constnames.TraceAsMetric, requestLatency},
 		}...)
 }

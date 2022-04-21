@@ -15,6 +15,12 @@ const (
 )
 
 const (
+	TcpRttMetricName        = "kindling_tcp_rtt_microseconds"
+	TcpRetransmitMetricName = "kindling_tcp_retransmit_total"
+	TcpDropMetricName       = "kindling_tcp_packet_loss_total"
+)
+
+const (
 	ProtocolHttp  = "http"
 	ProtocolHttp2 = "http2"
 	ProtocolGrpc  = "grpc"

@@ -36,7 +36,7 @@ const (
 	TopologyPrefix = "topology"
 )
 
-func ToKindlingMetricName(origName string, isServer bool) string {
+func ToKindlingNetMetricName(origName string, isServer bool) string {
 	if names, ok := metricNameDictionary[origName]; !ok {
 		return ""
 	} else {

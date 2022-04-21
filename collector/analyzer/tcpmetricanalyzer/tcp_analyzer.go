@@ -2,6 +2,7 @@ package tcpmetricanalyzer
 
 import (
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
@@ -100,7 +101,7 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Gaug
 		return nil, nil
 	}
 	gauge := &model.Gauge{
-		Name:  constnames.TcpRttMetricName,
+		Name:  constvalues.TcpRttMetricName,
 		Value: int64(rtt),
 	}
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
@@ -112,7 +113,7 @@ func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*mod
 		return nil, err
 	}
 	gauge := &model.Gauge{
-		Name:  constnames.TcpRetransmitMetricName,
+		Name:  constvalues.TcpRetransmitMetricName,
 		Value: 1,
 	}
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
@@ -124,7 +125,7 @@ func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.Gau
 		return nil, err
 	}
 	gauge := &model.Gauge{
-		Name:  constnames.TcpDropMetricName,
+		Name:  constvalues.TcpDropMetricName,
 		Value: 1,
 	}
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
