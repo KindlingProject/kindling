@@ -7,9 +7,9 @@ Service metrics are generated from the server-side events, which are used to sho
 | kindling_entity_request_duration_nanoseconds_total | Counter | Total duration of requests |
 | kindling_entity_request_send_bytes_total | Counter | Total size of payload sent |
 | kindling_entity_request_receive_bytes_total | Counter | Total size of payload received |
-| kindling_entity_request_average_duration_nanoseconds_count  | Counter(Histogram) | Count of average duration of requests |
-| kindling_entity_request_average_duration_nanoseconds_sum | Counter(Histogram) | Sum of average duration of requests |
-| kindling_entity_request_average_duration_nanoseconds_bucket | Counter(Histogram) | Histogram buckets of average duration of requests |
+| kindling_entity_request_average_duration_nanoseconds_count  | Histogram | Count of average duration of requests |
+| kindling_entity_request_average_duration_nanoseconds_sum | Histogram | Sum of average duration of requests |
+| kindling_entity_request_average_duration_nanoseconds_bucket | Histogram | Histogram buckets of average duration of requests |
 
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
