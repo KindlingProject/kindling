@@ -104,7 +104,7 @@
           "refId": "J"
         },
         {
-          "expr": "avg_over_time(kindling_tcp_rtt_microseconds[$__range])",
+          "expr": "avg_over_time(kindling_tcp_srtt_microseconds[$__range])",
           "instant": true,
           "interval": "",
           "legendFormat": "",
