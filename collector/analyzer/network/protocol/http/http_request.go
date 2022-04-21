@@ -30,7 +30,7 @@ func parseHttpRequest() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		offset, method := message.ReadUntilBlankWithLength(message.Offset, 8)
 
-		if !httpMethodsList[string(method)] || message.Data[offset-1] != ' ' || message.Data[offset] != '/' {
+		if !httpMethodsList[string(method)] {
 			if message.Data[offset-1] != ' ' || message.Data[offset] != '/' {
 				return false, true
 			}
