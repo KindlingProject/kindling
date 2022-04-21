@@ -34,14 +34,11 @@ class FilterList {
                 value: namespace
             });
 
-            let workloads = _.uniq(_.map(data, item => {
-                if (item['src_namespace'] === namespace) {
-                    return item['src_workload_name']
-                }
-                if (item['dst_namespace'] === namespace) {
-                    return item['dst_workload_name']
-                }
-            }));
+            let workloadlist = _.filter(data, item => item.src_namespace === namespace || item.dst_namespace === namespace);
+            let srcWorkloads = _.map(_.filter(workloadlist, item => item.src_namespace === namespace), 'src_workload_name');
+            let dstWorkloads = _.map(_.filter(workloadlist, item => item.dst_namespace === namespace), 'dst_workload_name');
+
+            let workloads = _.uniq(_.concat(srcWorkloads, dstWorkloads));
             this.workloadListByNamespace[namespace] = [];
             _.forEach(workloads, workload => {
                 if (workload) {

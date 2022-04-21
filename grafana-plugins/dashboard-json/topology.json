@@ -83,14 +83,6 @@
           "refId": "E"
         },
         {
-          "expr": "sum by(namespace, workload_name, pod) (kindling_entity_request_duration_nanoseconds_count{namespace=~\"$namespace\",workload_name=~\"$workload\", response_content=~\"400|404|500|503\"}) / sum by(namespace, workload_name, pod) (kindling_entity_request_duration_nanoseconds_count{namespace=~\"$namespace\",workload_name=~\"$workload\"}) * 100",
-          "hide": true,
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "F"
-        },
-        {
           "expr": "sum(increase(kindling_entity_request_send_bytes_total[$__range])) by(namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
@@ -139,7 +131,7 @@
     "list": []
   },
   "time": {
-    "from": "now-2d",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
