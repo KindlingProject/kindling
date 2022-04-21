@@ -83,7 +83,7 @@ func (g *GaugeGroup) String() string {
 }
 
 func (g *GaugeGroup) Reset() {
-	g.Name = constlabels.NetWorkAnalyzeGaugeGroup
+	g.Name = ""
 	for _, v := range g.Values {
 		v.Value = 0
 	}
