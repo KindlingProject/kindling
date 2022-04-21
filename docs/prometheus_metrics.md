@@ -70,9 +70,9 @@ Topology metrics are typically generated from the client-side events, which are 
 | kindling_topology_request_duration_nanoseconds_total | Counter |  Total duration of requests |
 | kindling_topology_request_request_bytes_total | Counter | Total size of payload sent |
 | kindling_topology_request_response_bytes_total | Counter | Total size of payload received |
-| kindling_topology_request_average_duration_nanoseconds_count | Counter(Histogram) | Count of average duration of requests |​
-| kindling_topology_request_average_duration_nanoseconds_sum | Counter(Histogram) | Sum of average duration of requests  |
-| kindling_topology_request_average_duration_nanoseconds_bucket | Counter(Histogram) | Histogram buckets of average duration of requests |
+| kindling_topology_request_average_duration_nanoseconds_count | Histogram | Count of average duration of requests |​
+| kindling_topology_request_average_duration_nanoseconds_sum | Histogram | Sum of average duration of requests  |
+| kindling_topology_request_average_duration_nanoseconds_bucket | Histogram | Histogram buckets of average duration of requests |
 
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
@@ -130,8 +130,10 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | dst_pod | business2-0 | The name of the destination pod |
 | dst_container | business-container | The name of the destination container |
 | dst_container_id | 2b3c4d5e6f7e | (Only applicable when is_server is true)<br>The shorten container id which contains 12 characters |
-| dst_ip | 10.1.11.24 | The IP address of the destination |
+| dst_ip | 10.1.11.24 | The IP address of the destination. This is the original IP before DNAT |
 | dst_port | 80 | The listening port of the destination container |
+| dnat_ip | 192.168.12.3 | The IP address of the destination after DNAT if applicable |
+| dnat_port | 80 | The listening port of the destination container after DNAT if applicable |
 | protocol | http | The application layer protocol the requests use |
 | is_server | true | True if the data is from the server-side, false otherwise |
 | request_content | /test/api | Different values when protocol is different. Refer to service metric |
@@ -175,12 +177,12 @@ Here are some examples of how to use these metrics in Prometheus, which can help
 
 | **Describe** | **PromQL** |
 | --- | --- |
-| Request counts | sum(increase(kindling_entity_request_duration_nanoseconds_count{namespace="$namespace",workload_name="$workload"}[$__interval])) by(namespace, workload_name) |
-| DNS request counts | sum(increase(kindling_topology_request_duration_nanoseconds_count{src_namespace="$namespace",src_workload_name="$workload", protocol="dns"}[$__interval])) by (src_workload_name) |
-| Latency | sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_sum{namespace="$namespace", workload_name="$workload"}[$__interval])) / sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_count{namespace="$namespace", workload_name="$workload"}[$__interval])) |
-| Erroneous calls rate | sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace="$namespace",workload_name="$workload",protocol="http",response_content=~"4..|5.."}[$__interval])) / sum (increase(kindling_entity_request_duration_nanoseconds_count{namespace="$namespace",workload_name="$workload",protocol="http"}[$__interval])) * 100 |
-| Request latency quantile | histogram_quantile(0.99, rate(kindling_topology_request_duration_nanoseconds_bucket{dst_namespace="$namespace", dst_workload_name="$workload",protocol="http"}[$__interval])) and on (src_ip, src_pod, dst_ip, dst_pod)  kindling_trace_request_duration_nanoseconds{is_server="true", dst_namespace="$namespace", dst_workload_name="$workload", protocol="http"} |
-| Retransmit times | sum(increase(kindling_tcp_retransmit_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[$__interval])) |
-| Packets lost count | sum(increase(kindling_tcp_packet_loss_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[$__interval])) |
-| Network sent bytes | sum(increase(kindling_topology_request_request_bytes_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[$__interval])) |
-| Network received bytes | sum(increase(kindling_topology_request_response_bytes_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[$__interval])) |
+| Request counts | `sum(increase(kindling_entity_request_total{namespace="$namespace",workload_name="$workload"}[5m])) by(namespace, workload_name)` |
+| DNS request counts | `sum(increase(kindling_topology_request_total{src_namespace="$namespace",src_workload_name="$workload", protocol="dns"}[5m])) by (src_workload_name)` |
+| Latency | `sum by(namespace, workload_name) (increase(kindling_entity_request_duration_nanoseconds_total{namespace="$namespace", workload_name="$workload"}[5m])) / sum by(namespace, workload_name) (increase(kindling_entity_request_total{namespace="$namespace", workload_name="$workload"}[5m]))` |
+| Error ratio of HTTP requests | `sum (increase(kindling_entity_request_total{namespace="$namespace",workload_name="$workload",protocol="http",response_content=~"4..\|5.."}[5m])) / sum (increase(kindling_entity_request_total{namespace="$namespace",workload_name="$workload",protocol="http"}[5m])) * 100` |
+| Request latency quantile | `histogram_quantile(0.99, rate(kindling_topology_request_average_duration_nanoseconds_bucket{dst_namespace="$namespace", dst_workload_name="$workload",protocol="http"}[5m]))` |
+| Retransmit times | `sum(increase(kindling_tcp_retransmit_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[5m]))` |
+| Packets lost count | `sum(increase(kindling_tcp_packet_loss_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[5m]))` |
+| Network sent bytes | `sum(increase(kindling_topology_request_request_bytes_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[5m]))` |
+| Network received bytes | `sum(increase(kindling_topology_request_response_bytes_total{src_workload_name=~"$source", dst_workload_name=~"$destination"}[5m]))` |
