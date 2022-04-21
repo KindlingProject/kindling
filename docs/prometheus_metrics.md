@@ -62,7 +62,7 @@ Service metrics are generated from the server-side events, which are used to sho
 
 ## Topology Metrics
 
-Topology metrics are typically generated from the client-side events, which are used to show the service dependencies map, so the metrics are called `topology`. Some timeseries may be generated from the server-side events, which contain a non-empty label `dst_container_id`. These metrics are useful when there is no agent installed on the client-side. 
+Topology metrics are typically generated from the client-side events, which are used to show the service dependencies map, so the metrics are called `topology`. Some timeseries may be generated from the server-side events, which contain a non-empty label `dst_container_id`. These timeseries are generated only when the source IP is not the Pod's IP inside the Kubernetes cluster, which are useful when there is no agent installed on the client-side. 
 
 | **Metric Name** | **Type** | **Description** |
 | --- | --- | --- |
@@ -145,7 +145,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 
 | **Metric Name** | **Type** | **Description** |
 | --- | --- | --- |
-| kindling_tcp_rtt_microseconds | Gauge | Smoothed round trip time of the tcp socket |
+| kindling_tcp_srtt_microseconds | Gauge | Smoothed round trip time of the tcp socket |
 | kindling_tcp_packet_loss_total | Counter | Total number of dropped packets |
 | kindling_tcp_retransmit_total | Counter | Total times of retransmitting happens (not packets count) |
 
