@@ -28,7 +28,7 @@ func NewDefaultConfig() *Config {
 			"request_io":  {{Kind: "sum"}},
 			"response_io": {{Kind: "sum"}},
 			// tcp
-			"kindling_tcp_rtt_microseconds":  {{Kind: "last"}},
+			"kindling_tcp_srtt_microseconds": {{Kind: "last"}},
 			"kindling_tcp_retransmit_total":  {{Kind: "sum"}},
 			"kindling_tcp_packet_loss_total": {{Kind: "sum"}},
 		},

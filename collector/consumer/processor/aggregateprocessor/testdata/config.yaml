@@ -11,7 +11,7 @@ aggregate_kind_map:
     - kind: sum
   response_io:
     - kind: sum
-  kindling_tcp_rtt_microseconds:
+  kindling_tcp_srtt_microseconds:
     - kind: last
   kindling_tcp_retransmit_total:
     - kind: sum

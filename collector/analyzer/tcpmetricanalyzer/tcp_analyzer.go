@@ -18,7 +18,7 @@ import (
 const (
 	TcpMetric analyzer.Type = "tcpmetricanalyzer"
 
-	TcpRttMetricName        = "kindling_tcp_rtt_microseconds"
+	TcpRttMetricName        = "kindling_tcp_srtt_microseconds"
 	TcpRetransmitMetricName = "kindling_tcp_retransmit_total"
 	TcpDropMetricName       = "kindling_tcp_packet_loss_total"
 )
