@@ -23,9 +23,20 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		)
 	}
 
+	var hasResult = false
 	for i := 0; i < len(e.adapters); i++ {
 		results, _ := e.adapters[i].Adapt(gaugeGroup)
-		e.Export(results, e.adapters[i])
+		if results != nil && len(results) > 0 {
+			e.Export(results, e.adapters[i])
+			hasResult = true
+		}
+	}
+	if hasResult == false {
+		if ce := e.telemetry.Logger.Check(zap.DebugLevel, "No adapter can deal with this gaugeGroup"); ce != nil {
+			ce.Write(
+				zap.String("gaugeGroup", gaugeGroup.String()),
+			)
+		}
 	}
 	return nil
 }
