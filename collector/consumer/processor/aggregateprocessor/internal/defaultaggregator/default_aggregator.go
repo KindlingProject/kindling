@@ -29,8 +29,8 @@ func NewDefaultAggregator(config *AggregatedConfig) *DefaultAggregator {
 
 func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, selectors *internal.LabelSelectors) {
 	name := g.Name
-	s.mut.Lock()
-	defer s.mut.Unlock()
+	s.mut.RLock()
+	defer s.mut.RUnlock()
 	recorder, ok := s.recordersMap.Load(name)
 	// Won't enter this branch too many times, as the recordersMap
 	// will become stable after running a period of time.
