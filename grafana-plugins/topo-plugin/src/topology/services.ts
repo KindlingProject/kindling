@@ -80,32 +80,6 @@ export interface EdgeDataProps {
     edgePackageLostData: any[]
 }
 
-// Create a topology layout based on the Layout field in the configuration
-export const buildLayout = (type: string, direction: string) => {
-    const layout: any = {
-        type: 'dagre',
-        rankdir: direction,
-        align: 'DL',
-        ranksep: 60
-    }
-    if (type === 'dagre') {
-        return layout;
-    }
-    if (type === 'force') {
-        return {
-            type: 'fruchterman',
-            center: [0, 0],
-            gravity: 2,
-            gpuEnabled: true
-            // type: 'gForce', // 布局名称
-            // center: [0, 0],
-            // preventOverlap: true, // 布局参数，是否允许重叠
-            // nodeSize: 40, // 布局参数，节点大小，用于判断节点是否重叠
-            // linkDistance: 150, // 布局参数，边长  
-        };
-    }
-    return layout;
-}
 
 /**
  * Grafana data format conversion to facilitate subsequent debugging
@@ -123,14 +97,16 @@ export const transformData = (data: any[]) => {
     return result;
 }
 
-// text overFlow handle
-export const nodeTextHandle = (text: string, num = 20) => {
-    if (text.length > num) {
-        return text.substring(0, num) + '...';
-    } else {
-        return text;
-    }
-};
+/**
+ * Gets an array of node types in the current topology for legend drawing on the right
+ * 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
+ */
+export const getNodeTypes = (nodes: any[]) => {
+    let nodeByType = _.groupBy(nodes, 'nodeType');
+    let types: string[] = _.keys(nodeByType);
+    return types;
+}
+
 
 const edgeFilter = (item: any, edge: EdgeProps) => {
     if (edge.dnsEdge) {
@@ -144,43 +120,45 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
     let nodes: NodeProps[] = [], edges: EdgeProps[] = [];
     _.forEach(topoData, tdata => {
         let target: string;
-        if (tdata.protocol === 'dns') {
-            target = tdata.dst_ip;
-            if (_.findIndex(nodes, {id: tdata.dst_ip}) === -1) {
+        if (tdata.src_namespace && tdata.dst_namespace) {
+            if (tdata.protocol === 'dns') {
+                target = tdata.dst_ip;
+                if (_.findIndex(nodes, {id: tdata.dst_ip}) === -1) {
+                    nodes.push({
+                        id: tdata.dst_ip,
+                        name: tdata.dst_ip,
+                        nodeType: 'dns',
+                        showNamespace: false
+                    });
+                }
+            } else {
+                target = tdata.dst_namespace;
+                if (_.findIndex(nodes, {id: tdata.dst_namespace}) === -1) {
+                    nodes.push({
+                        id: tdata.dst_namespace,
+                        name: tdata.dst_namespace,
+                        nodeType: externalTypes.indexOf(tdata.dst_namespace) > -1 ? 'external' : 'namespace',
+                        showNamespace: false
+                    });
+                }
+            }
+            if (_.findIndex(nodes, {id: tdata.src_namespace}) === -1) {
                 nodes.push({
-                    id: tdata.dst_ip,
-                    name: tdata.dst_ip,
-                    nodeType: 'dns',
+                    id: tdata.src_namespace,
+                    name: tdata.src_namespace,
+                    nodeType: externalTypes.indexOf(tdata.src_namespace) > -1 ? 'external' : 'namespace',
                     showNamespace: false
                 });
             }
-        } else {
-            target = tdata.dst_namespace;
-            if (_.findIndex(nodes, {id: tdata.dst_namespace}) === -1) {
-                nodes.push({
-                    id: tdata.dst_namespace,
-                    name: tdata.dst_namespace,
-                    nodeType: externalTypes.indexOf(tdata.dst_namespace) > -1 ? 'external' : 'namespace',
-                    showNamespace: false
+            if (_.findIndex(edges, {source: tdata.src_namespace, target: target}) === -1) {
+                let opposite: boolean = _.findIndex(edges, {source: target, target: tdata.src_namespace}) > -1 ? true : false;
+                edges.push({
+                    source: tdata.src_namespace,
+                    target: target,
+                    opposite,
+                    dnsEdge: tdata.protocol === 'dns'
                 });
             }
-        }
-        if (_.findIndex(nodes, {id: tdata.src_namespace}) === -1) {
-            nodes.push({
-                id: tdata.src_namespace,
-                name: tdata.src_namespace,
-                nodeType: externalTypes.indexOf(tdata.src_namespace) > -1 ? 'external' : 'namespace',
-                showNamespace: false
-            });
-        }
-        if (_.findIndex(edges, {source: tdata.src_namespace, target: target}) === -1) {
-            let opposite: boolean = _.findIndex(edges, {source: target, target: tdata.src_namespace}) > -1 ? true : false;
-            edges.push({
-                source: tdata.src_namespace,
-                target: target,
-                opposite,
-                dnsEdge: tdata.protocol === 'dns'
-            });
         }
     });
     nodes.forEach((node: NodeProps) => {
