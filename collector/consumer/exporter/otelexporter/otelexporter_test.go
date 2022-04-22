@@ -38,39 +38,116 @@ func InitOtelExporter(t *testing.T) exporter.Exporter {
 	return NewExporter(config, component.NewDefaultTelemetryTools())
 }
 
-func TestConsumeGaugeGroup(t *testing.T) {
+func TestConsumeAggNetGaugeGroup(t *testing.T) {
 	latencyArray := []int64{1e6, 10e6, 20e6, 50e6, 100e6, 500e6}
 	exp := InitOtelExporter(t)
 	for {
 		for _, latency := range latencyArray {
-			_ = exp.Consume(makeGaugeGroup(latency))
+			_ = exp.Consume(makePreAggNetGaugeGroup(int(latency)))
 			time.Sleep(1 * time.Second)
 		}
 		time.Sleep(30 * time.Second)
 	}
 }
 
-func makeGaugeGroup(latency int64) *model.GaugeGroup {
-	labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-		constlabels.Node:            model.NewStringValue("test-node"),
-		constlabels.Namespace:       model.NewStringValue("test-namespace"),
-		constlabels.WorkloadKind:    model.NewStringValue("deployment"),
-		constlabels.WorkloadName:    model.NewStringValue("test-deploy"),
-		constlabels.Pod:             model.NewStringValue("test-pod"),
-		constlabels.Container:       model.NewStringValue("test-container"),
-		constlabels.Ip:              model.NewStringValue("10.0.0.1"),
-		constlabels.Port:            model.NewIntValue(80),
-		constlabels.RequestContent:  model.NewStringValue("/test"),
-		constlabels.ResponseContent: model.NewIntValue(201),
-	})
-
-	latencyGauge := &model.Gauge{
-		Name:  "kindling_entity_request_duration_nanoseconds",
-		Value: latency,
+func makeSingleGaugeGroup(i int) *model.GaugeGroup {
+	gaugesGroup := &model.GaugeGroup{
+		Name: constnames.SingleNetRequestGaugeGroup,
+		Values: []*model.Gauge{
+			{
+				constvalues.ResponseIo,
+				1234567891,
+			},
+			{
+				constvalues.RequestTotalTime,
+				int64(i),
+			},
+			{
+				constvalues.RequestIo,
+				4500,
+			},
+			{
+				constvalues.RequestCount,
+				4500,
+			},
+		},
+		Labels:    model.NewAttributeMap(),
+		Timestamp: 19900909090,
 	}
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadName, "test-SrcWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadKind, "test-SrcWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcService, "test-SrcService"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcIp, "test-SrcIp"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNode, "test-DstNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNamespace, "test-DstNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstPod, "test-DstPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadName, "test-DstWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadKind, "test-DstWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstService, "test-DstService"+strconv.Itoa(i))
 
-	gaugeGroup := model.NewGaugeGroup("", labels, 0, latencyGauge)
-	return gaugeGroup
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainer, "test-SrcContainer"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainerId, "test-SrcContainerId"+strconv.Itoa(i))
+
+	gaugesGroup.Labels.AddStringValue(constlabels.Protocol, "http")
+	gaugesGroup.Labels.AddStringValue(constlabels.StatusCode, "200")
+
+	// Topology data preferentially use D Nat Ip and D Nat Port
+	gaugesGroup.Labels.AddStringValue(constlabels.DstIp, "test-DnatIp")
+	gaugesGroup.Labels.AddIntValue(constlabels.DstPort, 8081)
+	return gaugesGroup
+}
+
+func makePreAggNetGaugeGroup(i int) *model.GaugeGroup {
+	gaugesGroup := &model.GaugeGroup{
+		Name: constnames.AggregatedNetRequestGaugeGroup,
+		Values: []*model.Gauge{
+			{
+				constvalues.ResponseIo,
+				1234567891,
+			},
+			{
+				constvalues.RequestTotalTime,
+				int64(i),
+			},
+			{
+				constvalues.RequestIo,
+				4500,
+			},
+			{
+				constvalues.RequestCount,
+				4500,
+			},
+		},
+		Labels:    model.NewAttributeMap(),
+		Timestamp: 19900909090,
+	}
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadName, "test-SrcWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadKind, "test-SrcWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcService, "test-SrcService"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcIp, "test-SrcIp"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNode, "test-DstNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNamespace, "test-DstNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstPod, "test-DstPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadName, "test-DstWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadKind, "test-DstWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstService, "test-DstService"+strconv.Itoa(i))
+
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainer, "test-SrcContainer"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainerId, "test-SrcContainerId"+strconv.Itoa(i))
+
+	gaugesGroup.Labels.AddStringValue(constlabels.Protocol, "http")
+	gaugesGroup.Labels.AddStringValue(constlabels.StatusCode, "200")
+
+	// Topology data preferentially use D Nat Ip and D Nat Port
+	gaugesGroup.Labels.AddStringValue(constlabels.DstIp, "test-DnatIp")
+	gaugesGroup.Labels.AddIntValue(constlabels.DstPort, 8081)
+	return gaugesGroup
 }
 
 func BenchmarkOtelExporter_Consume(b *testing.B) {
