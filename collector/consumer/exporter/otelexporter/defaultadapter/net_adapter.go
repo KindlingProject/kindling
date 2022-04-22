@@ -21,15 +21,13 @@ type NetAdapterConfig struct {
 }
 
 func (n *NetGaugeGroupAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	if gaugeGroup.Name != constnames.AggregatedNetRequestGaugeGroup && gaugeGroup.Name != constnames.SingleNetRequestGaugeGroup {
-		// skip non net gaugeGroup
-		return nil, nil
-	}
-
-	if gaugeGroup.Name == constnames.AggregatedNetRequestGaugeGroup {
+	switch gaugeGroup.Name {
+	case constnames.AggregatedNetRequestGaugeGroup:
 		return n.dealWithPreAggGaugeGroups(gaugeGroup)
-	} else {
+	case constnames.SingleNetRequestGaugeGroup:
 		return n.dealWithSingleGaugeGroup(gaugeGroup)
+	default:
+		return nil, nil
 	}
 }
 
