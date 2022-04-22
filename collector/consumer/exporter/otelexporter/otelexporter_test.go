@@ -130,7 +130,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, nil),
 		metricAggregationMap: cfg.MetricAggregationMap,
 		telemetry:            component.NewDefaultTelemetryTools(),
-		adapters: []defaultadapter.Adapter{
+		adapters: []Adapter{
 			defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
 				StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
 				StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,

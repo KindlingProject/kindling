@@ -1,4 +1,4 @@
-package defaultadapter
+package otelexporter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"

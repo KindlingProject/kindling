@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -21,23 +20,18 @@ import (
 var traceAsMetricHelp = "Describe a single request which is abnormal. " +
 	"For status labels, number '1', '2' and '3' stands for Green, Yellow and Red respectively."
 
-var adapterRWMutex sync.RWMutex
-
 const (
 	PreAggMetric = "preAggMetric"
 )
 
 type instrumentFactory struct {
 	// TODO: Initialize instruments when initializing factory
-	instruments              sync.Map
-	gaugeAsyncInstrumentInit sync.Map
-	meter                    metric.Meter
-	gaugeChan                *gaugeChannel
-	customLabels             []attribute.KeyValue
-	logger                   *zap.Logger
+	instruments  sync.Map
+	meter        metric.Meter
+	customLabels []attribute.KeyValue
+	logger       *zap.Logger
 
-	aggregators    sync.Map
-	adapterManager *defaultadapter.NetAdapterManager
+	aggregators sync.Map
 
 	traceAsMetricSelector *aggregator.LabelSelectors
 	TcpRttMillsSelector   *aggregator.LabelSelectors
@@ -108,7 +102,7 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *mode
 				}
 			}
 		}
-	})
+	}, WithDescription(metricName))
 	return nil
 }
 
@@ -119,6 +113,17 @@ func getAggConfig(metricName string) *defaultaggregator.AggregatedConfig {
 				{Kind: defaultaggregator.LastKind, OutputName: metricName},
 			},
 		}}
+}
+
+func WithDescription(metricName string) metric.InstrumentOption {
+	var option metric.InstrumentOption
+	switch metricName {
+	case constnames.TraceAsMetric:
+		option = metric.WithDescription(traceAsMetricHelp)
+	default:
+		option = metric.WithDescription("")
+	}
+	return option
 }
 
 func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSelectors {
@@ -199,47 +204,6 @@ func newTcpRttMicroSecondsSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
 	)
-}
-
-func (i *instrumentFactory) recordGaugeAsync(metricName string, singleGauge model.GaugeGroup) {
-	i.gaugeChan.put(&singleGauge, i.logger)
-	if i.isGaugeAsyncInitialized(metricName) {
-		return
-	}
-
-	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
-		channel := i.gaugeChan.getChannel(metricName)
-		for {
-			select {
-			case gaugeGroup := <-channel:
-				labels := gaugeGroup.Labels
-				result.Observe(gaugeGroup.Values[0].Value, GetLabels(labels, i.customLabels)...)
-			default:
-				return
-			}
-		}
-	}, WithDescription(metricName))
-}
-
-func WithDescription(metricName string) metric.InstrumentOption {
-	var option metric.InstrumentOption
-	switch metricName {
-	case constnames.TraceAsMetric:
-		option = metric.WithDescription(traceAsMetricHelp)
-	default:
-		option = metric.WithDescription("")
-	}
-	return option
-}
-
-func (i *instrumentFactory) isGaugeAsyncInitialized(metricName string) bool {
-	_, ok := i.gaugeAsyncInstrumentInit.Load(metricName)
-	if ok {
-		return true
-	} else {
-		i.gaugeAsyncInstrumentInit.Store(metricName, true)
-		return false
-	}
 }
 
 type instrument interface {

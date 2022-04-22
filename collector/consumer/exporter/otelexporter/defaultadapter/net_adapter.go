@@ -1,6 +1,7 @@
 package defaultadapter
 
 import (
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -20,7 +21,7 @@ type NetAdapterConfig struct {
 	StoreExternalSrcIP bool
 }
 
-func (n *NetGaugeGroupAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
+func (n *NetGaugeGroupAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*otelexporter.AdaptedResult, error) {
 	if gaugeGroup.Name != constnames.AggregatedNetRequestGaugeGroup && gaugeGroup.Name != constnames.SingleNetRequestGaugeGroup {
 		// skip non net gaugeGroup
 		return nil, nil
@@ -38,7 +39,7 @@ func (n *NetGaugeGroupAdapter) Transform(gaugeGroup *model.GaugeGroup) (*model.A
 	return n.traceToMetricAdapter.transform(gaugeGroup)
 }
 
-func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
+func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeGroup) ([]*otelexporter.AdaptedResult, error) {
 	var requestTotalTimeIndex = -1
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
@@ -50,29 +51,29 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 		// No requestTotalTimeGauge
 		return nil, nil
 	}
-	results := make([]*AdaptedResult, 0, 2)
-	if n.StoreTraceAsSpan {
+	results := make([]*otelexporter.AdaptedResult, 0, 2)
+	if n.StoreTraceAsSpan && isSlowOrError(gaugeGroup) {
 		if attrs, err := n.traceToSpanAdapter.adapt(gaugeGroup); err != nil {
 			return nil, err
 		} else {
-			results = append(results, &AdaptedResult{
-				ResultType: Trace,
+			results = append(results, &otelexporter.AdaptedResult{
+				ResultType: otelexporter.Trace,
 				Attrs:      attrs,
 				Gauges:     []*model.Gauge{gaugeGroup.Values[requestTotalTimeIndex]},
-				RenameRule: KeepOrigin,
+				RenameRule: otelexporter.KeepOrigin,
 				OriginData: gaugeGroup,
 			})
 		}
 	}
 	if n.StoreTraceAsMetric {
-		results = append(results, &AdaptedResult{
-			ResultType: Metric,
+		results = append(results, &otelexporter.AdaptedResult{
+			ResultType: otelexporter.Metric,
 			Attrs:      nil,
 			Gauges: []*model.Gauge{{
 				Name:  constnames.TraceAsMetric,
 				Value: gaugeGroup.Values[requestTotalTimeIndex].Value,
 			}},
-			RenameRule: KeepOrigin,
+			RenameRule: otelexporter.KeepOrigin,
 			OriginData: gaugeGroup,
 		})
 	}
@@ -80,8 +81,8 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 	return results, nil
 }
 
-func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	results := make([]*AdaptedResult, 0, 4)
+func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.GaugeGroup) ([]*otelexporter.AdaptedResult, error) {
+	results := make([]*otelexporter.AdaptedResult, 0, 4)
 	var requestTotalIndex = -1
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		if gaugeGroup.Values[i].Name == constvalues.RequestCount {
@@ -123,37 +124,37 @@ func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.Gauge
 	return results, nil
 }
 
-func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGroup, adapter [2]*adapterCache, requestTotalIndex int) (tmpResults []*AdaptedResult, err error) {
+func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGroup, adapter [2]*adapterCache, requestTotalIndex int) (tmpResults []*otelexporter.AdaptedResult, err error) {
 	values := gaugeGroup.Values
 	// TODO deal with error
 	attrsCommon, _ := adapter[0].adapt(gaugeGroup)
 	if requestTotalIndex == -1 {
-		tmpResults = make([]*AdaptedResult, 0, 1)
+		tmpResults = make([]*otelexporter.AdaptedResult, 0, 1)
 		// for request count
-		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType: Metric,
+		tmpResults = append(tmpResults, &otelexporter.AdaptedResult{
+			ResultType: otelexporter.Metric,
 			Attrs:      attrsCommon,
 			Gauges:     gaugeGroup.Values,
-			RenameRule: TopologyMetrics,
+			RenameRule: otelexporter.TopologyMetrics,
 			OriginData: gaugeGroup,
 		})
 	} else {
-		tmpResults = make([]*AdaptedResult, 0, 2)
+		tmpResults = make([]*otelexporter.AdaptedResult, 0, 2)
 		// for request count
-		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType: Metric,
+		tmpResults = append(tmpResults, &otelexporter.AdaptedResult{
+			ResultType: otelexporter.Metric,
 			Attrs:      attrsCommon,
 			Gauges:     append(values[:requestTotalIndex], values[requestTotalIndex+1:]...),
-			RenameRule: TopologyMetrics,
+			RenameRule: otelexporter.TopologyMetrics,
 			OriginData: gaugeGroup,
 		})
 		// TODO deal with error
 		attrsWithSlow, _ := adapter[1].adapt(gaugeGroup)
-		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType: Metric,
+		tmpResults = append(tmpResults, &otelexporter.AdaptedResult{
+			ResultType: otelexporter.Metric,
 			Attrs:      attrsWithSlow,
 			Gauges:     []*model.Gauge{values[requestTotalIndex]},
-			RenameRule: TopologyMetrics,
+			RenameRule: otelexporter.TopologyMetrics,
 			OriginData: gaugeGroup,
 		})
 	}
@@ -257,4 +258,8 @@ func NewNetAdapter(
 		NetAdapterManager: createNetAdapterManager(customLabels),
 		NetAdapterConfig:  config,
 	}
+}
+
+func isSlowOrError(g *model.GaugeGroup) bool {
+	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError)
 }

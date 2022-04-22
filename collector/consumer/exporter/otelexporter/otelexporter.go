@@ -69,7 +69,7 @@ type OtelExporter struct {
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
 
-	adapters []defaultadapter.Adapter
+	adapters []Adapter
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
@@ -143,7 +143,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
-			adapters: []defaultadapter.Adapter{
+			adapters: []Adapter{
 				defaultadapter.NewNetAdapter(customLabels, &defaultadapter.NetAdapterConfig{
 					StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
 					StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
@@ -210,7 +210,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
-			adapters: []defaultadapter.Adapter{
+			adapters: []Adapter{
 				defaultadapter.NewNetAdapter(customLabels, &defaultadapter.NetAdapterConfig{
 					StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
 					StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
