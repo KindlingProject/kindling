@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -75,28 +74,15 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult, adapte
 	for s := 0; s < len(result.Gauges); s++ {
 		gauge := result.Gauges[s]
 		var metricName string
-		switch result.RenameRule {
-		case defaultadapter.ServerMetrics:
-			metricName = constnames.ToKindlingNetMetricName(gauge.Name, true)
-		case defaultadapter.TopologyMetrics:
-			metricName = constnames.ToKindlingNetMetricName(gauge.Name, false)
-		default:
-			metricName = gauge.Name
-		}
 		if metricKind, ok := e.findInstrumentKind(metricName); ok && metricKind == MAGaugeKind {
-			preAggGaugeGroupLabels, err := adapter.Transform(result.OriginData)
+			err := e.instrumentFactory.recordLastValue(metricName, &model.GaugeGroup{
+				Name:      PreAggMetric,
+				Values:    []*model.Gauge{{metricName, gauge.Value}},
+				Labels:    result.Labels,
+				Timestamp: result.Timestamp,
+			})
 			if err != nil {
-				e.telemetry.Logger.Error("Transform failed", zap.Error(err))
-			} else {
-				err2 := e.instrumentFactory.recordLastValue(metricName, &model.GaugeGroup{
-					Name:      PreAggMetric,
-					Values:    []*model.Gauge{{metricName, gauge.Value}},
-					Labels:    preAggGaugeGroupLabels,
-					Timestamp: result.OriginData.Timestamp,
-				})
-				if err2 != nil {
-					e.telemetry.Logger.Error("Failed to record Gauge", zap.Error(err2))
-				}
+				e.telemetry.Logger.Error("Failed to record Gauge", zap.Error(err))
 			}
 		} else if ok {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, metricKind).Measurement(gauge.Value))

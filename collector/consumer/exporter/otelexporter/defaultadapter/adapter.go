@@ -6,19 +6,24 @@ import (
 )
 
 type Adapter interface {
+	// Adapt  We use adapt to deal with any GaugeGroup received by exporter, this method should contain functions below
+	//
 	Adapt(group *model.GaugeGroup) ([]*AdaptedResult, error)
-
-	// Transform Only Aggregator Value should use the Transform
-	Transform(group *model.GaugeGroup) (*model.AttributeMap, error)
 }
 
 type AdaptedResult struct {
 	ResultType ResultType
-	// Maybe null if Gauges is nil or only has gauges which need to be preAgg (like LastValue)
-	Attrs      []attribute.KeyValue
-	Gauges     []*model.Gauge
-	RenameRule RenameRule
-	OriginData *model.GaugeGroup
+
+	// Attrs Maybe null if Gauges is nil or only has gauges which need to be preAgg (like LastValue)
+	Attrs []attribute.KeyValue
+	// Labels Maybe null if Gauges is nil or only has gauges which don't need to be preAgg (like counter or histogram)
+	Labels *model.AttributeMap
+
+	// Metrics to export
+	Gauges []*model.Gauge
+
+	// Timestamp
+	Timestamp uint64
 }
 
 type ResultType string

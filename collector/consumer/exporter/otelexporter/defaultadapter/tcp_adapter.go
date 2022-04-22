@@ -17,19 +17,15 @@ func (t *TcpAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, erro
 	results := make([]*AdaptedResult, 0, 1)
 
 	attrs, _ := t.tcpAdapterCache.adapt(gaugeGroup)
+	labels, _ := t.tcpAdapterCache.transform(gaugeGroup)
 	results = append(results, &AdaptedResult{
 		ResultType: Metric,
 		Attrs:      attrs,
 		Gauges:     gaugeGroup.Values,
-		RenameRule: KeepOrigin,
-		OriginData: gaugeGroup,
+		Labels:     labels,
+		Timestamp:  gaugeGroup.Timestamp,
 	})
 	return results, nil
-}
-
-func (t *TcpAdapter) Transform(gaugeGroup *model.GaugeGroup) (*model.AttributeMap, error) {
-	// Only the SRTTMicroseconds
-	return t.tcpAdapterCache.transform(gaugeGroup)
 }
 
 func NewTcpAdapter(
