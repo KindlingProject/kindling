@@ -26,7 +26,10 @@ const (
 	EntityRequestLatencyTotalMetric   = "duration_nanoseconds_total"
 	EntityRequestCountMetric          = "total"
 
-	TraceAsMetric = NPMPrefixKindling + "_trace_request_duration_nanoseconds"
+	TraceAsMetric           = NPMPrefixKindling + "_trace_request_duration_nanoseconds"
+	TcpRttMetricName        = "kindling_tcp_srtt_microseconds"
+	TcpRetransmitMetricName = "kindling_tcp_retransmit_total"
+	TcpDropMetricName       = "kindling_tcp_packet_loss_total"
 )
 
 const (
