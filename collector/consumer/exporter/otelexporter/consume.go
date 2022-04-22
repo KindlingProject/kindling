@@ -83,9 +83,7 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult, adapte
 		default:
 			metricName = gauge.Name
 		}
-		if metricKind, ok := e.findInstrumentKind(metricName); ok && metricKind != MAGaugeKind {
-			measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, metricKind).Measurement(gauge.Value))
-		} else if ok && metricKind == MAGaugeKind {
+		if metricKind, ok := e.findInstrumentKind(metricName); ok && metricKind == MAGaugeKind {
 			preAggGaugeGroupLabels, err := adapter.Transform(result.OriginData)
 			if err != nil {
 				e.telemetry.Logger.Error("Transform failed", zap.Error(err))
