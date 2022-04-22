@@ -98,8 +98,10 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult, adapte
 					e.telemetry.Logger.Error("Failed to record Gauge", zap.Error(err2))
 				}
 			}
-		} else {
+		} else if ok {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, metricKind).Measurement(gauge.Value))
+		} else {
+			measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, MACounterKind).Measurement(gauge.Value))
 		}
 	}
 	if len(measurements) > 0 {
