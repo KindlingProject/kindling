@@ -37,15 +37,8 @@ func (n *NetGaugeGroupAdapter) Transform(gaugeGroup *model.GaugeGroup) (*model.A
 }
 
 func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	var requestTotalTimeIndex = -1
-	for i := 0; i < len(gaugeGroup.Values); i++ {
-		if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
-			requestTotalTimeIndex = i
-			break
-		}
-	}
-	if requestTotalTimeIndex == -1 {
-		// No requestTotalTimeGauge
+	requestTotalTime, ok := gaugeGroup.GetGauge(constvalues.RequestTotalTime)
+	if !ok {
 		return nil, nil
 	}
 	results := make([]*AdaptedResult, 0, 2)
@@ -56,7 +49,7 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 			results = append(results, &AdaptedResult{
 				ResultType: Trace,
 				Attrs:      attrs,
-				Gauges:     []*model.Gauge{gaugeGroup.Values[requestTotalTimeIndex]},
+				Gauges:     []*model.Gauge{requestTotalTime},
 				RenameRule: KeepOrigin,
 				OriginData: gaugeGroup,
 			})
@@ -68,7 +61,7 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 			Attrs:      nil,
 			Gauges: []*model.Gauge{{
 				Name:  constnames.TraceAsMetric,
-				Value: gaugeGroup.Values[requestTotalTimeIndex].Value,
+				Value: requestTotalTime.Value,
 			}},
 			RenameRule: KeepOrigin,
 			OriginData: gaugeGroup,
