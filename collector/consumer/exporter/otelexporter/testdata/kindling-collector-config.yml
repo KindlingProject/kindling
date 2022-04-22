@@ -1,5 +1,12 @@
 exporters:
   otelexporter:
+    adapter_config:
+      need_trace_as_metric: true
+      need_pod_detail: true
+      store_external_src_ip: true
+      # When using otlp-grpc / stdout exporter , this option supports to
+      # send trace data in the format of ResourceSpan
+      need_trace_as_span: false
     metric_aggregation_map:
       kindling_entity_request_duration_nanoseconds: 2
       kindling_entity_request_send_bytes_total: 1
@@ -11,7 +18,7 @@ exporters:
       kindling_tcp_rtt_milliseconds: 0
       kindling_tcp_retransmit_total: 1
       kindling_tcp_packet_loss_total: 1
-    export_kind: prometheus
+    export_kind: stdout
     custom_labels:
       job: test-hcmine
     prometheus:

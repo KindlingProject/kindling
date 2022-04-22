@@ -118,7 +118,7 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 			}),
 		123,
 		[]*model.Gauge{
-			{constvalues.TcpRttMetricName, rttLatency},
+			{constnames.TcpRttMetricName, rttLatency},
 		}...)
 }
 

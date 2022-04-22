@@ -2,6 +2,7 @@ package otelexporter
 
 import (
 	"context"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
@@ -41,13 +42,13 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 	return nil
 }
 
-func (e *OtelExporter) Export(results []*AdaptedResult, adapter Adapter) {
+func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult, adapter defaultadapter.Adapter) {
 	for i := 0; i < len(results); i++ {
 		result := results[i]
 		switch result.ResultType {
-		case Metric:
+		case defaultadapter.Metric:
 			e.exportMetric(result, adapter)
-		case Trace:
+		case defaultadapter.Trace:
 			e.exportTrace(result)
 		default:
 			e.telemetry.Logger.Error("Unexpected ResultType", zap.String("type", string(result.ResultType)))
@@ -55,7 +56,7 @@ func (e *OtelExporter) Export(results []*AdaptedResult, adapter Adapter) {
 	}
 }
 
-func (e *OtelExporter) exportTrace(result *AdaptedResult) {
+func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
 	if e.defaultTracer != nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
 		_, span := e.defaultTracer.Start(
 			context.Background(),
@@ -68,16 +69,16 @@ func (e *OtelExporter) exportTrace(result *AdaptedResult) {
 	}
 }
 
-func (e *OtelExporter) exportMetric(result *AdaptedResult, adapter Adapter) {
+func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult, adapter defaultadapter.Adapter) {
 	// Get Measurement
 	measurements := make([]metric.Measurement, 0, len(result.Gauges))
 	for s := 0; s < len(result.Gauges); s++ {
 		gauge := result.Gauges[s]
 		var metricName string
 		switch result.RenameRule {
-		case ServerMetrics:
+		case defaultadapter.ServerMetrics:
 			metricName = constnames.ToKindlingNetMetricName(gauge.Name, true)
-		case TopologyMetrics:
+		case defaultadapter.TopologyMetrics:
 			metricName = constnames.ToKindlingNetMetricName(gauge.Name, false)
 		default:
 			metricName = gauge.Name

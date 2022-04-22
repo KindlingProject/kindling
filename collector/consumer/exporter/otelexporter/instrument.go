@@ -7,7 +7,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
-	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	defaultaggregator "github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.opentelemetry.io/otel/attribute"
@@ -130,7 +129,7 @@ func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSele
 	switch metricName {
 	case constnames.TraceAsMetric:
 		return i.traceAsMetricSelector
-	case constvalues.TcpRttMetricName:
+	case constnames.TcpRttMetricName:
 		return i.TcpRttMillsSelector
 	default:
 		return nil
