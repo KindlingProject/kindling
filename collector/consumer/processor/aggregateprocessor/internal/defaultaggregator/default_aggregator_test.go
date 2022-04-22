@@ -28,7 +28,7 @@ func TestConcurrentAggregator(t *testing.T) {
 	wg.Add(1)
 	stopCh := make(chan bool)
 
-	var runLoop = 2000
+	var runLoop = 100000
 	var duration int64 = 100
 	go func() {
 		for i := 0; i < runLoop; i++ {
@@ -37,7 +37,7 @@ func TestConcurrentAggregator(t *testing.T) {
 			}
 			gaugeGroup := model.NewGaugeGroup("testGauge", labels, 0, gaugeValues...)
 			aggregator.Aggregate(gaugeGroup, labelSelectors)
-			time.Sleep(time.Millisecond)
+			time.Sleep(time.Microsecond)
 		}
 		stopCh <- true
 		wg.Done()
@@ -47,13 +47,12 @@ func TestConcurrentAggregator(t *testing.T) {
 	var durationSum int64
 	var requestCount int64
 	go func() {
-		ticker := time.NewTicker(200 * time.Millisecond)
+		ticker := time.NewTicker(500 * time.Microsecond)
 		for {
 			select {
 			case <-ticker.C:
 				ret := aggregator.Dump()
 				for _, g := range ret {
-					t.Log(g)
 					for _, v := range g.Values {
 						if v.Name == "duration_sum" {
 							durationSum += v.Value
@@ -61,9 +60,18 @@ func TestConcurrentAggregator(t *testing.T) {
 							requestCount += v.Value
 						}
 					}
-
 				}
 			case <-stopCh:
+				ret := aggregator.Dump()
+				for _, g := range ret {
+					for _, v := range g.Values {
+						if v.Name == "duration_sum" {
+							durationSum += v.Value
+						} else if v.Name == "request_count" {
+							requestCount += v.Value
+						}
+					}
+				}
 				wg.Done()
 				return
 			}
@@ -73,6 +81,7 @@ func TestConcurrentAggregator(t *testing.T) {
 	expectedDurationSum := int64(runLoop) * duration
 	expectedRequestCount := int64(runLoop)
 	if durationSum != expectedDurationSum || requestCount != expectedRequestCount {
-		t.Errorf("request_count = %v, duration_sum := %v", requestCount, durationSum)
+		t.Errorf("request_count: exptected %v, got %v", expectedRequestCount, requestCount)
+		t.Errorf("duration_sum: expected %v, got %v", expectedDurationSum, durationSum)
 	}
 }
