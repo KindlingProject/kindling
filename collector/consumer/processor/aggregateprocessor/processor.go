@@ -4,11 +4,11 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
+	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor/internal"
+	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor/internal/defaultaggregator"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
-	aggregator "github.com/Kindling-project/kindling/collector/pkg/aggregator"
-	defaultaggregator "github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.uber.org/zap"
 	"math/rand"
 	"time"
@@ -21,9 +21,9 @@ type AggregateProcessor struct {
 	telemetry    *component.TelemetryTools
 	nextConsumer consumer.Consumer
 
-	aggregator               aggregator.Aggregator
-	netRequestLabelSelectors *aggregator.LabelSelectors
-	tcpLabelSelectors        *aggregator.LabelSelectors
+	aggregator               internal.Aggregator
+	netRequestLabelSelectors *internal.LabelSelectors
+	tcpLabelSelectors        *internal.LabelSelectors
 	stopCh                   chan struct{}
 	ticker                   *time.Ticker
 }
@@ -106,72 +106,73 @@ func (p *AggregateProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 }
 
 // TODO: make it configurable instead of hard-coded
-func newNetRequestLabelSelectors() *aggregator.LabelSelectors {
-	return aggregator.NewLabelSelectors(
-		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.Protocol, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.IsServer, VType: aggregator.BooleanType},
-		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcNodeIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcNamespace, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcPod, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcWorkloadName, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcService, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcContainerId, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcContainer, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstNode, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstNodeIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstNamespace, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstPod, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstWorkloadName, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstWorkloadKind, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstService, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.DnatIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DnatPort, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
+func newNetRequestLabelSelectors() *internal.LabelSelectors {
+	return internal.NewLabelSelectors(
+		internal.LabelSelector{Name: constlabels.Pid, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.Protocol, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.IsServer, VType: internal.BooleanType},
+		internal.LabelSelector{Name: constlabels.ContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNamespace, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcContainer, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNamespace, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DnatIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DnatPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DstContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstContainer, VType: internal.StringType},
 
-		aggregator.LabelSelector{Name: constlabels.IsSlow, VType: aggregator.BooleanType},
-		aggregator.LabelSelector{Name: constlabels.HttpStatusCode, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.DnsRcode, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.SqlErrCode, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.ContentKey, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DnsDomain, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.KafkaTopic, VType: aggregator.StringType},
+		internal.LabelSelector{Name: constlabels.IsError, VType: internal.BooleanType},
+		internal.LabelSelector{Name: constlabels.IsSlow, VType: internal.BooleanType},
+		internal.LabelSelector{Name: constlabels.HttpStatusCode, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DnsRcode, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.SqlErrCode, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.ContentKey, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DnsDomain, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.KafkaTopic, VType: internal.StringType},
 	)
 }
 
-func newTcpLabelSelectors() *aggregator.LabelSelectors {
-	return aggregator.NewLabelSelectors(
-		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcNodeIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcNamespace, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcPod, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcWorkloadName, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcService, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcPort, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.SrcContainerId, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.SrcContainer, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstNode, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstNodeIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstNamespace, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstPod, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstWorkloadName, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstWorkloadKind, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstService, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.DnatIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DnatPort, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
+func newTcpLabelSelectors() *internal.LabelSelectors {
+	return internal.NewLabelSelectors(
+		internal.LabelSelector{Name: constlabels.SrcNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcNamespace, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.SrcContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.SrcContainer, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNode, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNodeIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstNamespace, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPod, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadName, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstWorkloadKind, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstService, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DnatIp, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DnatPort, VType: internal.IntType},
+		internal.LabelSelector{Name: constlabels.DstContainerId, VType: internal.StringType},
+		internal.LabelSelector{Name: constlabels.DstContainer, VType: internal.StringType},
 	)
 }
 

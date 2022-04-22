@@ -79,7 +79,7 @@ exporters:
       kindling_topology_request_request_bytes_total: 1
       kindling_topology_request_response_bytes_total: 1
       kindling_trace_request_duration_nanoseconds: 0
-      kindling_tcp_rtt_microseconds: 0
+      kindling_tcp_srtt_microseconds: 0
       kindling_tcp_retransmit_total: 1
       kindling_tcp_packet_loss_total: 1
       kindling_node_transmit_bytes_total: 1

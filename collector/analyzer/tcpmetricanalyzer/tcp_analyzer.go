@@ -2,7 +2,6 @@ package tcpmetricanalyzer
 
 import (
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/model/constvalues"
 
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
@@ -18,6 +17,10 @@ import (
 
 const (
 	TcpMetric analyzer.Type = "tcpmetricanalyzer"
+
+	TcpRttMetricName        = "kindling_tcp_srtt_microseconds"
+	TcpRetransmitMetricName = "kindling_tcp_retransmit_total"
+	TcpDropMetricName       = "kindling_tcp_packet_loss_total"
 )
 
 var consumableEvents = map[string]bool{
@@ -101,7 +104,7 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Gaug
 		return nil, nil
 	}
 	gauge := &model.Gauge{
-		Name:  constvalues.TcpRttMetricName,
+		Name:  TcpRttMetricName,
 		Value: int64(rtt),
 	}
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
@@ -113,7 +116,7 @@ func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*mod
 		return nil, err
 	}
 	gauge := &model.Gauge{
-		Name:  constvalues.TcpRetransmitMetricName,
+		Name:  TcpRetransmitMetricName,
 		Value: 1,
 	}
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
@@ -125,7 +128,7 @@ func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.Gau
 		return nil, err
 	}
 	gauge := &model.Gauge{
-		Name:  constvalues.TcpDropMetricName,
+		Name:  TcpDropMetricName,
 		Value: 1,
 	}
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil

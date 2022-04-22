@@ -93,7 +93,7 @@ processors:
         - kind: sum
       response_io:
         - kind: sum
-      kindling_tcp_rtt_microseconds:
+      kindling_tcp_srtt_microseconds:
         - kind: last
       kindling_tcp_retransmit_total:
         - kind: sum
@@ -115,15 +115,17 @@ exporters:
       need_trace_as_span: false
     metric_aggregation_map:
       kindling_entity_request_total: 1
-      kindling_entity_request_duration_nanoseconds: 1
+      kindling_entity_request_duration_nanoseconds_total: 1
+      kindling_entity_request_average_duration_nanoseconds: 2
       kindling_entity_request_send_bytes_total: 1
       kindling_entity_request_receive_bytes_total: 1
       kindling_topology_request_total: 1
-      kindling_topology_request_duration_nanoseconds: 1
+      kindling_topology_request_duration_nanoseconds_total: 1
+      kindling_topology_request_average_duration_nanoseconds: 2
       kindling_topology_request_request_bytes_total: 1
       kindling_topology_request_response_bytes_total: 1
       kindling_trace_request_duration_nanoseconds: 0
-      kindling_tcp_rtt_microseconds: 0
+      kindling_tcp_srtt_microseconds: 0
       kindling_tcp_retransmit_total: 1
       kindling_tcp_packet_loss_total: 1
     # Export data in the following ways: ["prometheus", "otlp", "stdout"]
