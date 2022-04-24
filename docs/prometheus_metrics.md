@@ -28,7 +28,14 @@ Service metrics are generated from the server-side events, which are used to sho
 | response_content | 200 | The response content of the requests |
 | is_slow | false | (Only applicable to `kindling_entity_request_total`)<br>Whether the requests are considered as slow |
 
-**The labels "request_content" and "response_content" hold different values when "protocol" is different.**
+**Note 1**: We define two custom terms for the label `namespace`, which are `NOT_FOUND_INTERNAL` and `NOT_FOUND_EXTERNAL`. The meanings are described as follows. These terms also apply to other metrics in this doc, and we won't explain them again.
+
+These two values are composed of two parts.
+1. NOT_FOUND: `NOT_FOUND` means the IP is neither a Pod's one nor a Service's one in the Kubernetes cluster. The IP could belong to a host or an external service.
+
+2. INTERNAL and EXTERNAL: `INTERNAL` means the IP belongs to a Node in the cluster or a host on which the kindling agent is running. `EXTERNAL` is set for other cases if the IP is `NOT_FOUND`.
+
+**Note 2**: The labels "request_content" and "response_content" hold different values when "protocol" is different.
 
 - When protocol is http:
   
