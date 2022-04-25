@@ -9,6 +9,10 @@ import (
 	"strconv"
 )
 
+// adapterCache This struct is an optional component in any adapter.
+// Since otlp-sdk is only support to received attribute.values as input labels
+// In order to get better performance in some frequent transformations (mainly memory allocation)
+// you can refer to this struct to assist in transformation
 type adapterCache struct {
 	// labelsMap key: protocolType value: a list of realAttributes
 	labelsMap  map[extraLabelsKey]realAttributes

@@ -46,7 +46,7 @@ func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult, adapter d
 		result := results[i]
 		switch result.ResultType {
 		case defaultadapter.Metric:
-			e.exportMetric(result, adapter)
+			e.exportMetric(result)
 		case defaultadapter.Trace:
 			e.exportTrace(result)
 		default:
@@ -63,12 +63,12 @@ func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
 			apitrace.WithAttributes(result.Attrs...),
 		)
 		span.End()
-	} else if e.defaultTracer != nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
+	} else if e.defaultTracer == nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
 		e.telemetry.Logger.Error("send span failed: this exporter can not support Span Data", zap.String("exporter", e.cfg.ExportKind))
 	}
 }
 
-func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult, adapter defaultadapter.Adapter) {
+func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 	// Get Measurement
 	measurements := make([]metric.Measurement, 0, len(result.Gauges))
 	for s := 0; s < len(result.Gauges); s++ {
@@ -87,7 +87,8 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult, adapte
 		} else if ok {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, metricKind).Measurement(gauge.Value))
 		} else {
-			measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, MACounterKind).Measurement(gauge.Value))
+			//measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, MACounterKind).Measurement(gauge.Value))
+			e.telemetry.Logger.Warn("This metric don't have any metricKind,please update this in kindlingCfg!", zap.String("GaugeGroup", gauge.Name))
 		}
 	}
 	if len(measurements) > 0 {
