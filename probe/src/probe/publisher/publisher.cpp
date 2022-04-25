@@ -40,9 +40,6 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
     }
     // convert sysdig event to kindling event
     if (m_selector->select(evt->get_type(), ((sysdig_converter *) sysdigConverter)->get_kindling_category(evt))) {
-        if (sysdigConverter->judge_max_size()) {
-            return;
-        }
         auto it = m_kindlingEventLists.find(sysdigConverter);
         KindlingEventList* kindlingEventList;
         if (it == m_kindlingEventLists.end()) {
@@ -52,6 +49,19 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
         } else {
             kindlingEventList = it->second;
         }
+
+        if (sysdigConverter->judge_max_size()) {
+            // check if the send list has sent
+            if (!m_ready[kindlingEventList]) {
+                kindlingEventList = sysdigConverter->swap_list(kindlingEventList);
+                m_kindlingEventLists[sysdigConverter] = kindlingEventList;
+                m_ready[kindlingEventList] = true;
+            } else {
+                // drop event
+                return;
+            }
+        }
+
         sysdigConverter->convert(evt);
         // if send list was sent
         if (sysdigConverter->judge_batch_size() && !m_ready[kindlingEventList]) {
