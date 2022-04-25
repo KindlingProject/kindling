@@ -3,14 +3,16 @@ import * as G6 from '@antv/g6';
 import _ from 'lodash';
 import './topology/node';
 import './topology/edge';
-import { formatTime, formatCount, formatKMBT, formatPercent, nodeTooltip } from './topology/tooltip';
+import { nodeTooltip } from './topology/tooltip';
 import TopoLegend from './topology/legend';
 import { metricList, layoutOptions, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, 
-  buildLayout, transformData, nsRelationHandle, workloadRelationHandle } from './topology/services'; 
+  transformData, getNodeTypes, nsRelationHandle, workloadRelationHandle } from './topology/services'; 
+import { buildLayout, serviceLineUpdate, updateLinesAndNodes } from './topology/topology'
+import FilterList, { SelectOption } from './topology/filter';
 import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
-import { stylesFactory, Select, RadioButtonGroup, Icon, Tooltip, Spinner } from '@grafana/ui';
+import { stylesFactory, Select, RadioButtonGroup, Icon, Tooltip, Spinner, InlineField } from '@grafana/ui';
 
 interface VolumeProps {
   maxSentVolume: number; 
@@ -20,18 +22,23 @@ interface VolumeProps {
 }
 
 let SGraph: any;
+let filterOpts: any;
 let topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps;
 interface Props extends PanelProps<SimpleOptions> {}
 export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, replaceVariables }) => {
   let graphRef: any = useRef();
   // const theme = useTheme();
-  const namespace = replaceVariables('$namespace');
-  const workload = replaceVariables('$workload');
+  // const namespace = replaceVariables('$namespace');
+  // const workload = replaceVariables('$workload');
   const styles = getStyles();
+  const [namespace, setNamespace] = useState<string>('all'); 
+  const [namespaceList, setNamespaceList] = useState<SelectOption[]>([]); 
+  const [workload, setWorkload] = useState<string>('all'); 
+  const [workloadList, setWorkloadList] = useState<SelectOption[]>([]); 
   const [graphData, setGraphData] = useState<any>({}); 
   const [layout, setLayout] = useState<string>('dagre'); 
   const [loading, setLoading] = useState<boolean>(true); 
-  const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace.split(',').length === 1);
+  const [showCheckbox, setShowCheckbox] = useState<boolean>(namespace === 'all');
   const [showService, setShowService] = useState<boolean>(false);
   const [showView, setShowView] = useState<boolean>(false);
   const [firstChangeDir, setFirstChangeDir] = useState<boolean>(false);
@@ -42,161 +49,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const [nodeTypesList, setNodeTypesList] = useState<any[]>([]);
 
   // console.log(options, namespace, workload, width, height);
-  // console.log(data);
 
-  // 当勾选View Service Call时，显示service的调用边，两个节点之间存在多条调用关系，使用弧线绘制对应的调用关系
-  const serviceLineUpdate = (dir = direction) => {
-    let activeList: any[] = [];
-    const edges = SGraph.getEdges();
-    const offest = 5;
-    edges.forEach((edge: any) => {
-      let edgeModel = edge.getModel();
-      let active = activeList.findIndex((item: any) => (item.source === edgeModel.source && item.target === edgeModel.target) || (item.source === edgeModel.target && item.target === edgeModel.source));
-      if (active === -1) {
-        activeList.push({
-          source: edgeModel.source,
-          target: edgeModel.target
-        });
-        let lines = edges.filter((itemEdge: any) => {
-          let item = itemEdge.getModel();
-          return (item.source === edgeModel.source && item.target === edgeModel.target) || (item.source === edgeModel.target && item.target === edgeModel.source)
-        });
-        if (lines.length > 1) {
-          let oddNum = 0, evenNum = 0;
-          lines.forEach((item: any, idx: number) => {
-            let line: any = item.getContainer();
-            // line.type = 'service-edge2';
-            let curveOffset = 0;
-            // if (idx % 2 === 0) {
-            //   curveOffset = arc * (1 + (1 * evenNum));
-            //   evenNum ++;
-            // } else {
-            //   curveOffset = -arc * (1 + (1 * oddNum));
-            //   oddNum ++;
-            // }
-            // console.log(item, curveOffset)
-            // line.curveOffset = curveOffset;
-            // SGraph.updateItem(item, line);
-            if (idx % 2 === 0) {
-              curveOffset = -offest * (1 + (1 * evenNum));
-              evenNum ++;
-            } else {
-              curveOffset = offest * (1 + (1 * oddNum));
-              oddNum ++;
-            }
-            if (dir === 'TB') {
-              line.translate(curveOffset, 0);
-            } else {
-              line.translate(0, curveOffset);
-            }
-          });
-        }
-      }
-    });
-  }
-  /**
-   * update edge style based on the current metric
-   * 根据当前指标选择更新边的样式
-   */
-  const updateLinesAndNodes = (metric = lineMetric, serviceLine = showService) => {
-    const nodes = SGraph.getNodes();
-    const edges = SGraph.getEdges();
-    if (metric === 'latency' || metric === 'rtt' || metric === 'errorRate') {
-      edges.forEach((edge: any, idx: number) => {
-        let edgeModel = edge.getModel();
-        let color: string;
-        
-        if (metric === 'latency') {
-          color = edgeModel.latency > options.abnormalLatency ? '#ff4c4c' : (edgeModel.latency > options.normalLatency ? '#f3ff69' : '#C2C8D5');
-          edgeModel.label = formatTime(edgeModel.latency);
-        } else if (metric === 'rtt') {
-          color = edgeModel.rtt > options.abnormalRtt ? '#ff4c4c' : (edgeModel.rtt > options.normalRtt ? '#f3ff69' : '#C2C8D5');
-          edgeModel.label = formatTime(edgeModel.rtt);
-        } else {
-          color = edgeModel.errorRate > 0 ? '#ff4c4c' : '#C2C8D5';
-          edgeModel.label = formatPercent(edgeModel.errorRate);
-        }
-        edgeModel.opposite && (edgeModel.labelCfg.refY = -10);
-        edgeModel.style.stroke = color;
-        if (serviceLine) {
-          edgeModel.rectColor = color;
-        }
-        edgeModel.style.lineWidth = 1;
-        SGraph.updateItem(edge, edgeModel);
-      });
-      nodes.forEach((node: any) => {
-        let nodeModel = node.getModel();
-        if (metric === 'latency') {
-          nodeModel.status = nodeModel.latency > options.abnormalLatency ? 'red' : (nodeModel.latency > options.normalLatency ? 'yellow' : 'green');
-        } else if (metric === 'rtt') {
-          nodeModel.status = 'green';
-        } else {
-          nodeModel.status = nodeModel.errorRate > 0 ? 'red' : 'green';
-        }
-        SGraph.updateItem(node, nodeModel);
-      });
-    } else if (metric === 'sentVolume' || metric === 'receiveVolume'){
-      if (metric === 'sentVolume') {
-        let volumeStep = volumes.maxSentVolume / 5;
-        if (edges.length === 1) {
-          let edge = edges[0];
-          let edgeModel = edge.getModel();
-          edgeModel.style.lineWidth = 1;
-          edgeModel.style.stroke = '#C2C8D5';
-          edgeModel.label = formatKMBT(edgeModel.sentVolume);
-          SGraph.updateItem(edge, edgeModel);
-        } else {
-          edges.forEach((edge: any, idx: number) => {
-            let edgeModel = edge.getModel();
-            let step = Math.floor(edgeModel.sentVolume / volumeStep);
-            edgeModel.style.lineWidth = step === 0 ? 1 : 1.5 * step;
-            edgeModel.style.stroke = '#C2C8D5';
-            edgeModel.label = formatKMBT(edgeModel.sentVolume);
-            edgeModel.opposite && (edgeModel.labelCfg.refY = -10);
-            SGraph.updateItem(edge, edgeModel);
-          });
-        }
-      } else {
-        let volumeStep = volumes.maxReceiveVolume / 5;
-        if (edges.length === 1) {
-          let edge = edges[0];
-          let edgeModel = edge.getModel();
-          edgeModel.style.lineWidth = 1;
-          edgeModel.style.stroke = '#C2C8D5';
-          edgeModel.label = formatKMBT(edgeModel.receiveVolume);
-          SGraph.updateItem(edge, edgeModel);
-        } else {
-          edges.forEach((edge: any, idx: number) => {
-            let edgeModel = edge.getModel();
-            let step = Math.floor(edgeModel.receiveVolume / volumeStep);
-            edgeModel.style.lineWidth = step === 0 ? 1 : 1.5 * step;
-            edgeModel.style.stroke = '#C2C8D5';
-            edgeModel.label = formatKMBT(edgeModel.receiveVolume);
-            edgeModel.opposite && (edgeModel.labelCfg.refY = -10);
-            SGraph.updateItem(edge, edgeModel);
-          });
-        }
-      }
-      nodes.forEach((node: any) => {
-        let nodeModel = node.getModel();
-        nodeModel.status = 'green';
-        SGraph.updateItem(node, nodeModel);
-      });
-    } else {
-      edges.forEach((edge: any) => {
-        let edgeModel = edge.getModel();
-        edgeModel.style.stroke = '#C2C8D5';
-        edgeModel.style.lineWidth = 1;
-        edgeModel.label = formatCount(edgeModel[metric]);
-        SGraph.updateItem(edge, edgeModel);
-      });
-      nodes.forEach((node: any) => {
-        let nodeModel = node.getModel();
-        nodeModel.status = 'green';
-        SGraph.updateItem(node, nodeModel);
-      });
-    }
-  }
   // draw topology
   const draw = (gdata: any, serviceLine = showService) => {
     const inner: any = document.getElementById('kindling_topo');
@@ -254,19 +107,10 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     graph.render();
 
     SGraph = graph;
-    serviceLineUpdate();
-    updateLinesAndNodes(lineMetric, serviceLine);
+    serviceLineUpdate(SGraph, direction);
+    updateLinesAndNodes(SGraph, options, volumes, lineMetric, serviceLine);
   };
  
-  /**
-   * Gets an array of node types in the current topology for legend drawing on the right
-   * 获取当前拓扑图下节点的类型数组，用于右侧的legend绘制
-   */
-  const getNodeTypes = (nodes: any[]) => {
-    let nodeByType = _.groupBy(nodes, 'nodeType');
-    let types: string[] = _.keys(nodeByType);
-    return types;
-  }
   /**
    * When you go back to the topology drawing data, update the type array of the corresponding node and the value of Max and min of the flow on the side
    * 重新回去拓扑绘制数据时，更新对应的节点的类型数组和边上流量max、min的数值
@@ -282,9 +126,31 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     }
     setVolumes(volumeData);
   }
+  const buildtopoData = () => {
+    let nodes: any[] = [], edges: any[] = [];
+    if (namespace === 'all') {
+      let result: any = nsRelationHandle(topoData, nodeData, edgeData);
+      nodes = [].concat(result.nodes);
+      edges = [].concat(result.edges);
+    } else {
+      let showPod = workload !== 'all';
+      setView(showPod ? 'pod_view' : 'workload_view');
+      let result: any = workloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, topoData, nodeData, edgeData, showPod, showService);
+      nodes = [].concat(result.nodes);
+      edges = [].concat(result.edges);
+    }
+    
+    let gdata = {
+      nodes: nodes,
+      edges: edges
+    }
+    console.log(gdata);
+    setGraphData(gdata);
+    draw(gdata);
+    handleResult(gdata);
+  }
   // Initial data processing: Generates topology data
   const initData = () => {
-    let nodes: any[] = [], edges: any[] = [];
     topoData = transformData(_.filter(data.series, (item: any) => item.refId === 'A'));
     let edgeTimeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'I'));
     let edgeSendVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'B'));
@@ -314,26 +180,12 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     };
     console.log('edgeData', edgeData);
     console.log('nodeData', nodeData);
-    if (namespace.indexOf(',') > -1) {
-      let result: any = nsRelationHandle(topoData, nodeData, edgeData);
-      nodes = [].concat(result.nodes);
-      edges = [].concat(result.edges);
-    } else {
-      let showPod = workload.split(',').length === 1;
-      setView(showPod ? 'pod_view' : 'workload_view');
-      let result: any = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, showPod, showService);
-      nodes = [].concat(result.nodes);
-      edges = [].concat(result.edges);
-    }
-    
-    let gdata = {
-      nodes: nodes,
-      edges: edges
-    }
-    console.log(gdata);
-    setGraphData(gdata);
-    draw(gdata);
-    handleResult(gdata);
+
+    filterOpts = new FilterList(topoData);
+    setNamespaceList(filterOpts.namespaceList);
+    setWorkloadList(filterOpts.workloadList);
+
+    buildtopoData();
   }
 
   useEffect(() => {
@@ -344,16 +196,16 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   }, [layout]);
   useEffect(() => {
     if (SGraph) {
-      updateLinesAndNodes();
+      updateLinesAndNodes(SGraph, options, volumes, lineMetric, showService);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [volumes]);
 
   useEffect(() => {
-    setLoading(true);
-    if (namespace.split(',').length === 1) {
+    buildtopoData();
+    if (namespace !== 'all') {
       setShowCheckbox(true);
-      if (workload.split(',').length === 1) {
+      if (workload !== 'all') {
         setShowView(true);
       } else {
         setShowView(false);
@@ -362,19 +214,30 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       setShowCheckbox(false);
       setShowView(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [namespace, workload]);
+
   useEffect(() => {
     if (data.state === 'Done') {
       setLoading(false);
       initData();
     }
 	// eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, namespace]);
+  }, [data]);
 
+  const namespaceChange = (opt: any) => {
+    setNamespace(opt.value);
+    filterOpts.changeNamespace(opt.value);
+    setWorkloadList(filterOpts.workloadList);
+    setWorkload('all');
+  }
+  const workloadChange = (opt: any) => {
+    setWorkload(opt.value);
+  }
   // When the segment indicator is switched, the corresponding segment style is updated
   const lineMetricChange = (opt: any) => {
     setLineMetric(opt.value);
-    updateLinesAndNodes(opt.value);
+    updateLinesAndNodes(SGraph, options, volumes, opt.value, showService);
   }
   const changeLayout = (opt: any) => {
     if (opt.value === layout) {
@@ -390,7 +253,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     });
     SGraph.fitView(10);
     if (!firstChangeDir) {
-      serviceLineUpdate(value);
+      serviceLineUpdate(SGraph, value);
       setFirstChangeDir(true);
     }
   }
@@ -398,7 +261,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const changeShowService = () => {
     let show = !showService ? true : false;
     setShowService(show);
-    let { nodes, edges } = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, view === 'pod_view', show);
+    let { nodes, edges } = workloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, topoData, nodeData, edgeData, view === 'pod_view', show);
     let gdata = {
       nodes: nodes,
       edges: edges
@@ -410,7 +273,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   // toggle View Mode。Switch between the workload view and pod view
   const changeView = (value: any) => {
     setView(value);
-    let { nodes, edges } = workloadRelationHandle(workload, namespace, topoData, nodeData, edgeData, value === 'pod_view', showService);
+    let { nodes, edges } = workloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, topoData, nodeData, edgeData, value === 'pod_view', showService);
     let gdata = {
       nodes: nodes,
       edges: edges
@@ -431,8 +294,20 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       )}
     >
       <div className={styles.topLineMetric}>
+        <div className={styles.filterWarp}>
+          <div>
+            <InlineField label="Namespace">
+             <Select value={namespace} options={namespaceList} onChange={namespaceChange}/>
+            </InlineField>
+          </div>
+          <div>
+            <InlineField label="Workload">
+             <Select value={workload} options={workloadList} onChange={workloadChange}/>
+            </InlineField>
+          </div>
+        </div>
         <div className={styles.metricSelect}>
-          <span style={{ width: '180px' }}>Call Line Metric</span>
+          <span style={{ width: '170px' }}>Call Line Metric</span>
           <Select value={lineMetric} options={metricList} onChange={lineMetricChange}/>
         </div>
       </div>
@@ -500,6 +375,11 @@ const getStyles = stylesFactory(() => {
       z-index: 10;
       display: flex;
       flex-direction: column;
+    `,
+    filterWarp: css`
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
     `,
     metricSelect: css`
       display: flex;

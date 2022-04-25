@@ -144,8 +144,8 @@ exporters:
 
 observability:
   logger:
-    console_level: debug # debug,info,warn,error,none
-    file_level: debug
+    console_level: info # debug,info,warn,error,none
+    file_level: info
     file_rotation:
       filename: agent.log
       maxsize: 512 #MB

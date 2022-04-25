@@ -14,7 +14,7 @@ Service metrics are generated from the server-side events, which are used to sho
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
 | node | worker-1 | Node name represented in Kubernetes cluster |
-| namespace | default | Namespace of the Pod |
+| namespace | default | Namespace of the pod |
 | workload_kind | daemonset | K8sResourceType |
 | workload_name | api-ds | K8sResourceName |
 | service | api | One of the services that target this pod |
@@ -28,7 +28,9 @@ Service metrics are generated from the server-side events, which are used to sho
 | response_content | 200 | The response content of the requests |
 | is_slow | false | (Only applicable to `kindling_entity_request_total`)<br>Whether the requests are considered as slow |
 
-**The labels "request_content" and "response_content" hold different values when "protocol" is different.**
+**Note 1**: The label `namespace` holds a value `NOT_FOUND_INTERNAL` when the `container_id` and the IP can't be found in the current Kubernetes cluster, in which case the entity isn't maintained by the current Kubernetes.
+
+**Note 2**: The labels `request_content` and `response_content` hold different values when `protocol` is different.
 
 - When protocol is http:
   
@@ -62,7 +64,7 @@ Service metrics are generated from the server-side events, which are used to sho
 
 ## Topology Metrics
 
-Topology metrics are typically generated from the client-side events, which are used to show the service dependencies map, so the metrics are called `topology`. Some timeseries may be generated from the server-side events, which contain a non-empty label `dst_container_id`. These timeseries are generated only when the source IP is not the Pod's IP inside the Kubernetes cluster, which are useful when there is no agent installed on the client-side. 
+Topology metrics are typically generated from the client-side events, which are used to show the service dependencies map, so the metrics are called "topology". Some timeseries may be generated from the server-side events, which contain a non-empty label `dst_container_id`. These timeseries are generated only when the source IP is not the pod's IP inside the Kubernetes cluster, which are useful when there is no agent installed on the client-side. 
 
 | **Metric Name** | **Type** | **Description** |
 | --- | --- | --- |
@@ -98,14 +100,20 @@ Topology metrics are typically generated from the client-side events, which are 
 | protocol | http | The application layer protocol the requests use |
 | status_code | 200 | Different values for different protocols  |
 
-**The field "status_code" holds different values when "protocol" is different.**
+**Note 1**: We define two custom terms for the label `src_namespace` and `dst_namespace`, which are `NOT_FOUND_INTERNAL` and `NOT_FOUND_EXTERNAL`. The meanings are described as follows. These terms also apply to other metrics in this doc.
+
+These two terms are composed of two parts.
+1. **NOT_FOUND**: `NOT_FOUND` means the IP is neither a pod's one nor a service's one in the current Kubernetes cluster. The IP could belong to a host or an external service. 
+2. **INTERNAL or EXTERNAL**: There are two cases in which `INTERNAL` will be set. The first case is when the IP belongs to a node that resides in the current Kubernetes cluster. The second case is when the `source` or `destination` is running on the same host with the kindling agent, which is generally applicable for non-Kubernetes clusters. `EXTERNAL` is set for other cases if the IP is `NOT_FOUND`. Note another Kubernetes cluster is also considered "external".
+
+**Note 2**: The field "status_code" holds different values when "protocol" is different.
 
 - HTTP: 'Status Code' of HTTP response. 
 - DNS: rcode of DNS response.
 - others: empty temporarily
 
 ## Trace As Metric
-We made some rules for considering whether a request is abnormal. For the abnormal request, the detail request information is considered as useful for debugging or profiling. We name this kind of data `trace`. It is not a good practice to store such data in Prometheus as some labels are high-cardinality, so we picked up some labels from the original ones to generate a new kind of metric, which is called `Trace As Metric`. The following table shows what labels this metric contains.  
+We made some rules for considering whether a request is abnormal. For the abnormal request, the detail request information is considered as useful for debugging or profiling. We name this kind of data "trace". It is not a good practice to store such data in Prometheus as some labels are high-cardinality, so we picked up some labels from the original ones to generate a new kind of metric, which is called "Trace As Metric". The following table shows what labels this metric contains.  
 
 | **Metric Name** | **Type** | **Description** |
 | --- | --- | --- |
@@ -160,7 +168,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | src_service | business1-svc | One of the services that target the source pod |
 | src_pod | business1-0 | The name of the source pod |
 | src_container | business-container | The name of the source container |
-| src_ip | 10.1.11.23 | Pod's IP by default. If the source is not a pod in kubernetes, this is the IP address of an external entity |
+| src_ip | 10.1.11.23 | Pod's IP by default. If the source is not a pod in Kubernetes, this is the IP address of an external entity |
 | src_port | 80 | The listening port of the source container, if applicable  |
 | dst_node | slave-node2 | Which node the destination pod is on |
 | dst_namespace | default | Namespace of the destination pod |
@@ -169,7 +177,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | dst_service | business2-svc | One of the services that target the destination pod |
 | dst_pod | business2-0 | The name of the destination pod  |
 | dst_container | business-container | The name of the destination container |
-| dst_ip | 10.1.11.24 | Pod's IP by default. If the destination is not a pod in kubernetes, this is the IP address of an external entity |
+| dst_ip | 10.1.11.24 | Pod's IP by default. If the destination is not a pod in Kubernetes, this is the IP address of an external entity |
 | dst_port | 80 | The listening port of the destination container, if applicable |
 
 ## PromQL Example
