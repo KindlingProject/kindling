@@ -50,7 +50,7 @@ container_push(
     name = "push_image",
     format = "Docker",
     image = ":stirling_standalone_image",
-    registry = "registry.us-west-1.aliyuncs.com",
-    repository = "arms-docker-repo/arms-bpf-agent",
+    registry = "docker.io",
+    repository = "kindlingproject/kindling-probe",
     tag = "stirling-standalone",
 )
