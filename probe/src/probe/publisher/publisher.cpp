@@ -53,9 +53,7 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
         if (sysdigConverter->judge_max_size()) {
             // check if the send list has sent
             if (!m_ready[kindlingEventList]) {
-                kindlingEventList = sysdigConverter->swap_list(kindlingEventList);
-                m_kindlingEventLists[sysdigConverter] = kindlingEventList;
-                m_ready[kindlingEventList] = true;
+                swap_list(sysdigConverter, kindlingEventList);
             } else {
                 // drop event
                 return;
@@ -65,9 +63,7 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
         sysdigConverter->convert(evt);
         // if send list was sent
         if (sysdigConverter->judge_batch_size() && !m_ready[kindlingEventList]) {
-            kindlingEventList = sysdigConverter->swap_list(kindlingEventList);
-            m_kindlingEventLists[sysdigConverter] = kindlingEventList;
-            m_ready[kindlingEventList] = true;
+            swap_list(sysdigConverter, kindlingEventList);
         }
     }
 }
@@ -168,6 +164,11 @@ void publisher::subscribe(string sub_event, string &reason) {
     m_bind_address->insert((char *) address.data(), socket);
 }
 
+void publisher::swap_list(converter *cvt, KindlingEventList* kindlingEventList) {
+    kindlingEventList = cvt->swap_list(kindlingEventList);
+    m_kindlingEventLists[cvt] = kindlingEventList;
+    m_ready[kindlingEventList] = true;
+}
 
 selector::selector(sinsp *inspector) {
     m_labels = new map<ppm_event_type, vector<Category>* >;
