@@ -68,6 +68,7 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
+	simpleAdapter        *defaultadapter.SimpleAdapter
 
 	adapters []defaultadapter.Adapter
 }
@@ -152,6 +153,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 				}),
 				defaultadapter.NewTcpAdapter(customLabels),
 			},
+			simpleAdapter: defaultadapter.NewDefaultAdapter(customLabels),
 		}
 		go func() {
 			err := StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
@@ -219,6 +221,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 				}),
 				defaultadapter.NewTcpAdapter(customLabels),
 			},
+			simpleAdapter: defaultadapter.NewDefaultAdapter(customLabels),
 		}
 
 		if err = cont.Start(context.Background()); err != nil {
