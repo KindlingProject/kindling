@@ -24,15 +24,15 @@ func TestAdapter_transform(t *testing.T) {
 		group *model.GaugeGroup
 	}
 	tests := []struct {
-		name    string
-		adapter *adapterCache
-		args    args
-		want    *model.AttributeMap
-		wantErr bool
+		name           string
+		labelConverter *LabelConverter
+		args           args
+		want           *model.AttributeMap
+		wantErr        bool
 	}{
 		{
-			name:    "kindling_agg_net_topology",
-			adapter: baseAdapter.aggTopologyAdapter[0],
+			name:           "kindling_agg_net_topology",
+			labelConverter: baseAdapter.aggTopologyAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
 				model.NewAttributeMapWithValues(
@@ -95,8 +95,8 @@ func TestAdapter_transform(t *testing.T) {
 			}),
 		},
 		{
-			name:    "kindling_detail_net_topology",
-			adapter: baseAdapter.detailTopologyAdapter[0],
+			name:           "kindling_detail_net_topology",
+			labelConverter: baseAdapter.detailTopologyAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
 				model.NewAttributeMapWithValues(
@@ -164,8 +164,8 @@ func TestAdapter_transform(t *testing.T) {
 			}),
 		},
 		{
-			name:    "kindling_detail_net_entity",
-			adapter: baseAdapter.detailEntityAdapter[0],
+			name:           "kindling_detail_net_entity",
+			labelConverter: baseAdapter.detailEntityAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
 				model.NewAttributeMapWithValues(
@@ -227,8 +227,8 @@ func TestAdapter_transform(t *testing.T) {
 			}),
 		},
 		{
-			name:    "kindling_agg_net_entity",
-			adapter: baseAdapter.aggEntityAdapter[0],
+			name:           "kindling_agg_net_entity",
+			labelConverter: baseAdapter.aggEntityAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
 				model.NewAttributeMapWithValues(
@@ -287,7 +287,7 @@ func TestAdapter_transform(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := tt.adapter
+			m := tt.labelConverter
 			got, err := m.transform(tt.args.group)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("transform() error = %v, wantErr %v", err, tt.wantErr)
@@ -325,7 +325,7 @@ func TestAdapter_adapt(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		adapter *adapterCache
+		adapter *LabelConverter
 		args    args
 		want    []attribute.KeyValue
 		wantErr bool
@@ -397,9 +397,9 @@ func TestAdapter_adapt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.adapter
-			got, err := m.adapt(tt.args.group)
+			got, err := m.convert(tt.args.group)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("adapt() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("convert() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			for _, keyValueG := range got {

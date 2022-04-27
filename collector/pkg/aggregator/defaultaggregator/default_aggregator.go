@@ -55,3 +55,22 @@ func (s *DefaultAggregator) Dump() []*model.GaugeGroup {
 	})
 	return ret
 }
+
+func (s *DefaultAggregator) DumpSingle(gaugeGroupName string) []*model.GaugeGroup {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+	if v, ok := s.recordersMap.Load(gaugeGroupName); ok {
+		vr := v.(*valueRecorder)
+		result := vr.dump()
+		vr.reset()
+		return result
+	}
+	return nil
+}
+
+func (s *DefaultAggregator) CheckExist(gaugeGroupName string) bool {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+	_, result := s.recordersMap.Load(gaugeGroupName)
+	return result
+}

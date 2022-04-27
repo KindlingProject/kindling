@@ -312,7 +312,7 @@ func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.Value {
 		attribute.StringValue(getSubStageStatus(requestSend)),
 		attribute.StringValue(getSubStageStatus(waitingTtfb)),
 		attribute.StringValue(getSubStageStatus(contentDownload)),
-		attribute.StringValue(getSubStageStatus(requestTotalTime)),
+		attribute.StringValue(getRequestStatus(requestTotalTime)),
 		attribute.BoolValue(gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)),
 	}
 }

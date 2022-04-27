@@ -9,11 +9,11 @@ import (
 	"strconv"
 )
 
-// adapterCache This struct is an optional component in any adapter.
+// LabelConverter This struct is an optional component in any labelConverter.
 // Since otlp-sdk is only support to received attribute.values as input labels
 // In order to get better performance in some frequent transformations (mainly memory allocation)
 // you can refer to this struct to assist in transformation
-type adapterCache struct {
+type LabelConverter struct {
 	// labelsMap key: protocolType value: a list of realAttributes
 	labelsMap  map[extraLabelsKey]realAttributes
 	updateKeys []updateKey
@@ -189,7 +189,7 @@ func (m *metricAdapterBuilder) withAdjust(adjustFunc adjustFunctions) *metricAda
 	return m
 }
 
-func (m *metricAdapterBuilder) build() (*adapterCache, error) {
+func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 	labelsMap := make(map[extraLabelsKey]realAttributes, len(m.extraLabelsKey))
 	baseAndCommonParams := make([]attribute.KeyValue, len(m.baseAndCommonLabelsDict))
 
@@ -265,7 +265,7 @@ func (m *metricAdapterBuilder) build() (*adapterCache, error) {
 		}
 	}
 
-	return &adapterCache{
+	return &LabelConverter{
 		labelsMap:       labelsMap,
 		updateKeys:      m.updateKeys,
 		valueLabelsFunc: m.valueLabelsFunc,
@@ -273,7 +273,7 @@ func (m *metricAdapterBuilder) build() (*adapterCache, error) {
 	}, nil
 }
 
-func (m *adapterCache) transform(group *model.GaugeGroup) (*model.AttributeMap, error) {
+func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap, error) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
@@ -316,7 +316,7 @@ func (m *adapterCache) transform(group *model.GaugeGroup) (*model.AttributeMap, 
 	return attrs.AttrsMap, nil
 }
 
-func (m *adapterCache) adapt(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
+func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {

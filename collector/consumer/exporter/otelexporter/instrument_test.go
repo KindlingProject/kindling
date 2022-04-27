@@ -3,7 +3,6 @@ package otelexporter
 import (
 	"context"
 	"github.com/Kindling-project/kindling/collector/component"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -33,7 +32,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 			"kindling_topology_request_request_bytes_total":        1,
 			"kindling_topology_request_response_bytes_total":       1,
 			"kindling_trace_request_duration_nanoseconds":          0,
-			"kindling_tcp_rtt_microseconds":                        0,
+			"kindling_tcp_srtt_microseconds":                       0,
 			"kindling_tcp_retransmit_total":                        1,
 			"kindling_tcp_packet_loss_total":                       1,
 		},
@@ -68,24 +67,13 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 
 	ins := newInstrumentFactory(cont.Meter("test"), component.NewDefaultTelemetryTools().Logger, nil)
 
-	go func() {
-		for i := 0; i < 10000; i++ {
-			time.Sleep(1 * time.Second)
-			group := makeTcpGroup(int64(i))
-			ins.recordLastValue("kindling_tcp_rtt_microseconds", group)
-		}
-	}()
-
 	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
-		group := makeTraceAsMetric(int64(i))
-		attrs, _ := defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
-			StoreTraceAsMetric: true,
-			StoreTraceAsSpan:   false,
-			StorePodDetail:     true,
-			StoreExternalSrcIP: true,
-		}).Transform(group)
-		ins.recordLastValue(constnames.TraceAsMetric, model.NewGaugeGroup(PreAggMetric, attrs, group.Timestamp, group.Values...))
+		group := makeTcpGroup(int64(i))
+		err := ins.recordLastValue(constnames.TcpRttMetricName, group)
+		if err != nil {
+			t.Errorf("record last value failed %e", err)
+		}
 	}
 }
 
@@ -94,12 +82,10 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 		constnames.TcpGaugeGroupName,
 		model.NewAttributeMapWithValues(
 			map[string]model.AttributeValue{
-				// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
-				constlabels.SrcIp:   model.NewStringValue("src-ip"),
-				constlabels.SrcPort: model.NewIntValue(33333),
-				constlabels.DstIp:   model.NewStringValue("dst-ip"),
-				constlabels.DstPort: model.NewIntValue(8080),
-				// k8sInfo
+				constlabels.SrcIp:           model.NewStringValue("src-ip"),
+				constlabels.SrcPort:         model.NewIntValue(33333),
+				constlabels.DstIp:           model.NewStringValue("dst-ip"),
+				constlabels.DstPort:         model.NewIntValue(8080),
 				constlabels.DstPod:          model.NewStringValue("dst-pod"),
 				constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
 				constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
@@ -112,9 +98,6 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 				constlabels.DstService:      model.NewStringValue("dst-service"),
 				constlabels.SrcNode:         model.NewStringValue("src-node"),
 				constlabels.DstNode:         model.NewStringValue("dst-node"),
-
-				// isSlow
-				constlabels.IsSlow: model.NewBoolValue(false),
 			}),
 		123,
 		[]*model.Gauge{

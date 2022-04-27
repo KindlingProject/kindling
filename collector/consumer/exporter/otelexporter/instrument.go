@@ -30,7 +30,7 @@ type instrumentFactory struct {
 	customLabels []attribute.KeyValue
 	logger       *zap.Logger
 
-	aggregators sync.Map
+	aggregator *defaultaggregator.DefaultAggregator
 
 	traceAsMetricSelector *aggregator.LabelSelectors
 	TcpRttMillsSelector   *aggregator.LabelSelectors
@@ -42,6 +42,16 @@ func newInstrumentFactory(meter metric.Meter, logger *zap.Logger, customLabels [
 		meter:        meter,
 		customLabels: customLabels,
 		logger:       logger,
+		aggregator: defaultaggregator.NewDefaultAggregator(&defaultaggregator.AggregatedConfig{
+			KindMap: map[string][]defaultaggregator.KindConfig{
+				constnames.TcpRttMetricName: {
+					{Kind: defaultaggregator.LastKind, OutputName: constnames.TcpRttMetricName},
+				},
+				constnames.TraceAsMetric: {
+					{Kind: defaultaggregator.LastKind, OutputName: constnames.TraceAsMetric},
+				},
+			},
+		}),
 
 		traceAsMetricSelector: newTraceAsMetricSelectors(),
 		TcpRttMillsSelector:   newTcpRttMicroSecondsSelectors(),
@@ -72,46 +82,48 @@ func (i *instrumentFactory) createNewInstrument(metricName string, kind MetricAg
 }
 
 // only support TraceAsMetric and TcpRttMills now
+// only one gauge is in singleGauge Now
 func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *model.GaugeGroup) error {
-	if item, ok := i.aggregators.Load(metricName); ok {
-		aggregator := item.(*defaultaggregator.DefaultAggregator)
-		if selector := i.getSelector(metricName); selector != nil {
-			aggregator.Aggregate(singleGauge, selector)
-			return nil
-		} else {
-			return errors.New(fmt.Sprintf("no matched Selector has been be defined for %s", metricName))
-		}
-	}
-
-	newAggregator := defaultaggregator.NewDefaultAggregator(getAggConfig(metricName))
-	i.aggregators.Store(metricName, newAggregator)
-	if selector := i.getSelector(metricName); selector != nil {
-		newAggregator.Aggregate(singleGauge, selector)
-	} else {
-		return errors.New(fmt.Sprintf("no matched Selector has been be defined for %s", metricName))
-	}
-	metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
-		var dumps []*model.GaugeGroup
-		if item, ok := i.aggregators.Load(metricName); ok {
-			aggregator := item.(*defaultaggregator.DefaultAggregator)
-			dumps = aggregator.Dump()
+	if !i.aggregator.CheckExist(singleGauge.Name) {
+		metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
+			dumps := i.aggregator.DumpSingle(singleGauge.Name)
+			if dumps == nil {
+				return
+			}
 			for s := 0; s < len(dumps); s++ {
 				if len(dumps[s].Values) > 0 {
 					result.Observe(dumps[s].Values[0].Value, GetLabels(dumps[s].Labels, i.customLabels)...)
 				}
 			}
-		}
-	}, WithDescription(metricName))
-	return nil
-}
+		}, WithDescription(metricName))
+	}
 
-func getAggConfig(metricName string) *defaultaggregator.AggregatedConfig {
-	return &defaultaggregator.AggregatedConfig{
-		KindMap: map[string][]defaultaggregator.KindConfig{
-			metricName: {
-				{Kind: defaultaggregator.LastKind, OutputName: metricName},
-			},
-		}}
+	if selector := i.getSelector(metricName); selector != nil {
+		i.aggregator.Aggregate(singleGauge, selector)
+		return nil
+	} else {
+		return errors.New(fmt.Sprintf("no matched Selector has been be defined for %s", metricName))
+	}
+	//var obs map[string]metric.Int64GaugeObserver
+	//
+	//bom := metric.Must(i.meter).NewBatchObserver(func(ctx context.Context, result metric.BatchObserverResult) {
+	//	dumps := i.aggregator.DumpSingle(singleGauge.Name)
+	//	if dumps != nil {
+	//		for s := 0; s < len(dumps); s++ {
+	//			observations := make([]metric.Observation, 0, len(dumps[s].Values))
+	//			for m := 0; m < len(dumps[s].Values); m++ {
+	//				gauge := dumps[s].Values[m]
+	//				observations = append(observations, obs[gauge.Name].Observation(gauge.Value))
+	//			}
+	//			result.Observe(GetLabels(dumps[s].Labels, i.customLabels))
+	//		}
+	//	}
+	//})
+	//
+	//for s := 0; s < len(singleGauge.Values); s++ {
+	//	name := singleGauge.Values[s].Name
+	//	obs[name] = bom.NewInt64GaugeObserver(name, WithDescription(name))
+	//}
 }
 
 func WithDescription(metricName string) metric.InstrumentOption {

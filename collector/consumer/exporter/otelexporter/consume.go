@@ -73,11 +73,10 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 	measurements := make([]metric.Measurement, 0, len(result.Gauges))
 	for s := 0; s < len(result.Gauges); s++ {
 		gauge := result.Gauges[s]
-		var metricName string
-		if metricKind, ok := e.findInstrumentKind(metricName); ok && metricKind == MAGaugeKind {
-			err := e.instrumentFactory.recordLastValue(metricName, &model.GaugeGroup{
-				Name:      PreAggMetric,
-				Values:    []*model.Gauge{{metricName, gauge.Value}},
+		if metricKind, ok := e.findInstrumentKind(gauge.Name); ok && metricKind == MAGaugeKind {
+			err := e.instrumentFactory.recordLastValue(gauge.Name, &model.GaugeGroup{
+				Name:      result.AggGroupName,
+				Values:    []*model.Gauge{{gauge.Name, gauge.Value}},
 				Labels:    result.Labels,
 				Timestamp: result.Timestamp,
 			})
@@ -85,7 +84,7 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 				e.telemetry.Logger.Error("Failed to record Gauge", zap.Error(err))
 			}
 		} else if ok {
-			measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, metricKind).Measurement(gauge.Value))
+			measurements = append(measurements, e.instrumentFactory.getInstrument(gauge.Name, metricKind).Measurement(gauge.Value))
 		} else {
 			//measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, MACounterKind).Measurement(gauge.Value))
 			e.telemetry.Logger.Warn("This metric don't have any metricKind,please update this in kindlingCfg!", zap.String("GaugeGroup", gauge.Name))

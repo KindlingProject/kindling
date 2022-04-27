@@ -7,7 +7,7 @@ import (
 )
 
 type TcpAdapter struct {
-	tcpAdapterCache *adapterCache
+	tcpAdapterCache *LabelConverter
 }
 
 func (t *TcpAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
@@ -16,14 +16,15 @@ func (t *TcpAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, erro
 	}
 	results := make([]*AdaptedResult, 0, 1)
 
-	attrs, _ := t.tcpAdapterCache.adapt(gaugeGroup)
+	attrs, _ := t.tcpAdapterCache.convert(gaugeGroup)
 	labels, _ := t.tcpAdapterCache.transform(gaugeGroup)
 	results = append(results, &AdaptedResult{
-		ResultType: Metric,
-		Attrs:      attrs,
-		Gauges:     gaugeGroup.Values,
-		Labels:     labels,
-		Timestamp:  gaugeGroup.Timestamp,
+		ResultType:   Metric,
+		Attrs:        attrs,
+		Gauges:       gaugeGroup.Values,
+		Labels:       labels,
+		Timestamp:    gaugeGroup.Timestamp,
+		AggGroupName: constnames.TcpGaugeGroupName,
 	})
 	return results, nil
 }
