@@ -50,6 +50,18 @@ func TestConsumeAggNetGaugeGroup(t *testing.T) {
 	}
 }
 
+func TestConsumeSingleNetGaugeGroup(t *testing.T) {
+	latencyArray := []int64{1e6, 10e6, 20e6, 50e6, 100e6, 500e6}
+	exp := InitOtelExporter(t)
+	for {
+		for _, latency := range latencyArray {
+			_ = exp.Consume(makeSingleGaugeGroup(int(latency)))
+			time.Sleep(1 * time.Second)
+		}
+		time.Sleep(30 * time.Second)
+	}
+}
+
 func makeSingleGaugeGroup(i int) *model.GaugeGroup {
 	gaugesGroup := &model.GaugeGroup{
 		Name: constnames.SingleNetRequestGaugeGroup,
