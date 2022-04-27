@@ -50,7 +50,7 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 		}
 	}
 	if n.StoreTraceAsMetric {
-		labels, err := n.traceToSpanAdapter.transform(gaugeGroup)
+		labels, err := n.traceToMetricAdapter.transform(gaugeGroup)
 		if err != nil {
 			return results, err
 		}
