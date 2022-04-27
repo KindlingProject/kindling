@@ -56,16 +56,15 @@ func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
 }
 
 func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
-	if e.defaultTracer != nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
-		_, span := e.defaultTracer.Start(
-			context.Background(),
-			constvalues.SpanInfo,
-			apitrace.WithAttributes(result.Attrs...),
-		)
-		span.End()
-	} else if e.defaultTracer == nil && e.cfg.AdapterConfig.NeedTraceAsResourceSpan {
+	if e.defaultTracer == nil {
 		e.telemetry.Logger.Error("send span failed: this exporter can not support Span Data", zap.String("exporter", e.cfg.ExportKind))
 	}
+	_, span := e.defaultTracer.Start(
+		context.Background(),
+		constvalues.SpanInfo,
+		apitrace.WithAttributes(result.Attrs...),
+	)
+	span.End()
 }
 
 func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
