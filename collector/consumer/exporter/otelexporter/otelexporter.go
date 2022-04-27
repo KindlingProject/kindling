@@ -150,7 +150,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				defaultadapter.NewDefaultAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
+				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
 			},
 		}
 		go func() {
@@ -217,7 +217,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				defaultadapter.NewDefaultAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
+				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
 			},
 		}
 

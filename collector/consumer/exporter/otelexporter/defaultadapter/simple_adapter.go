@@ -25,7 +25,7 @@ func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, e
 	return nil, nil
 }
 
-func NewDefaultAdapter(
+func NewSimpleAdapter(
 	acceptGaugeGroupNames []string,
 	customLabels []attribute.KeyValue,
 ) *SimpleAdapter {
