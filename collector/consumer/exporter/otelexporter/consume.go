@@ -65,6 +65,9 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 	for s := 0; s < len(result.Gauges); s++ {
 		gauge := result.Gauges[s]
 		if metricKind, ok := e.findInstrumentKind(gauge.Name); ok && metricKind == MAGaugeKind {
+			if result.Labels == nil {
+				e.telemetry.Logger.Error("Unexpected Error: no labels find for MAGaugeKind", zap.String("GaugeName", gauge.Name))
+			}
 			err := e.instrumentFactory.recordLastValue(gauge.Name, &model.GaugeGroup{
 				Name:      gauge.Name,
 				Values:    []*model.Gauge{{gauge.Name, gauge.Value}},

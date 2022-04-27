@@ -226,7 +226,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 				StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 				StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 			}),
-			defaultadapter.NewTcpAdapter(nil),
+			defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, nil),
 		},
 	}
 
