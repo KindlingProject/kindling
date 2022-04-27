@@ -7,6 +7,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -67,7 +68,6 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
-	simpleAdapter        *defaultadapter.SimpleAdapter
 
 	adapters []defaultadapter.Adapter
 }
@@ -150,9 +150,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				defaultadapter.NewTcpAdapter(customLabels),
+				defaultadapter.NewDefaultAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
 			},
-			simpleAdapter: defaultadapter.NewDefaultAdapter(customLabels),
 		}
 		go func() {
 			err := StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
@@ -218,9 +217,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				defaultadapter.NewTcpAdapter(customLabels),
+				defaultadapter.NewDefaultAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
 			},
-			simpleAdapter: defaultadapter.NewDefaultAdapter(customLabels),
 		}
 
 		if err = cont.Start(context.Background()); err != nil {

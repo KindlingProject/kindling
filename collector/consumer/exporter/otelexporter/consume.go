@@ -16,6 +16,7 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		// no need consume
 		return nil
 	}
+
 	gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
 	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
 		ce.Write(
@@ -23,17 +24,8 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		)
 	}
 
-	var hasResult = false
 	for i := 0; i < len(e.adapters); i++ {
 		results, _ := e.adapters[i].Adapt(gaugeGroup)
-		if results != nil && len(results) > 0 {
-			e.Export(results)
-			hasResult = true
-		}
-	}
-	if hasResult == false {
-		// use simple adapter to deal with this gaugeGroup , export as a metric
-		results, _ := e.simpleAdapter.Adapt(gaugeGroup)
 		if results != nil && len(results) > 0 {
 			e.Export(results)
 		}
@@ -74,7 +66,7 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 		gauge := result.Gauges[s]
 		if metricKind, ok := e.findInstrumentKind(gauge.Name); ok && metricKind == MAGaugeKind {
 			err := e.instrumentFactory.recordLastValue(gauge.Name, &model.GaugeGroup{
-				Name:      result.AggGroupName,
+				Name:      gauge.Name,
 				Values:    []*model.Gauge{{gauge.Name, gauge.Value}},
 				Labels:    result.Labels,
 				Timestamp: result.Timestamp,

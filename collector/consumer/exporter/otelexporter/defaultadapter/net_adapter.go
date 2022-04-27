@@ -61,9 +61,8 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 				Name:  constnames.TraceAsMetric,
 				Value: requestTotalTime.Value,
 			}},
-			Labels:       labels,
-			Timestamp:    gaugeGroup.Timestamp,
-			AggGroupName: constnames.TraceAsMetric,
+			Labels:    labels,
+			Timestamp: gaugeGroup.Timestamp,
 		})
 	}
 

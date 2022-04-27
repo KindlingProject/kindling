@@ -19,9 +19,6 @@ type AdaptedResult struct {
 	// Labels Maybe null if Gauges is nil or only has gauges which don't need to be preAgg (like counter or histogram)
 	Labels *model.AttributeMap
 
-	// AggGroupName is a key for those gauges which need to preAgg
-	AggGroupName string
-
 	// Metrics to export
 	Gauges []*model.Gauge
 

@@ -6,36 +6,47 @@ import (
 )
 
 type SimpleAdapter struct {
-	constLabels []attribute.KeyValue
+	acceptGaugeGroupNames map[string]struct{}
+	constLabels           []attribute.KeyValue
 }
 
 func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	return []*AdaptedResult{
-		{
-			ResultType: Metric,
-			Attrs:      GetLabels(gaugeGroup.Labels, d.constLabels),
-			Gauges:     gaugeGroup.Values,
-			Timestamp:  gaugeGroup.Timestamp,
-		},
-	}, nil
+	if _, ok := d.acceptGaugeGroupNames[gaugeGroup.Name]; ok {
+		return []*AdaptedResult{
+			{
+				ResultType: Metric,
+				Labels:     gaugeGroup.Labels,
+				Attrs:      GetLabels(gaugeGroup.Labels, d.constLabels),
+				Gauges:     gaugeGroup.Values,
+				Timestamp:  gaugeGroup.Timestamp,
+			},
+		}, nil
+	}
+	return nil, nil
 }
 
 func NewDefaultAdapter(
+	acceptGaugeGroupNames []string,
 	customLabels []attribute.KeyValue,
 ) *SimpleAdapter {
-	return &SimpleAdapter{constLabels: customLabels}
+	acceptMap := make(map[string]struct{}, len(acceptGaugeGroupNames))
+	for i := 0; i < len(acceptGaugeGroupNames); i++ {
+		acceptMap[acceptGaugeGroupNames[i]] = struct{}{}
+	}
+	return &SimpleAdapter{
+		constLabels:           customLabels,
+		acceptGaugeGroupNames: acceptMap,
+	}
 }
 
 func GetLabels(attributeMap *model.AttributeMap, customLabels []attribute.KeyValue) []attribute.KeyValue {
-	kv := ToStringKeyValues(attributeMap.GetValues())
-	kv = append(kv, customLabels...)
-	return kv
+	return ToStringKeyValues(attributeMap.GetValues(), customLabels)
 }
 
-func ToStringKeyValues(values map[string]model.AttributeValue) []attribute.KeyValue {
-	stringKeyValues := make([]attribute.KeyValue, 0, len(values))
+func ToStringKeyValues(values map[string]model.AttributeValue, customLabels []attribute.KeyValue) []attribute.KeyValue {
+	stringKeyValues := make([]attribute.KeyValue, 0, len(values)+len(customLabels))
 	for k, v := range values {
 		stringKeyValues = append(stringKeyValues, attribute.String(k, v.ToString()))
 	}
-	return stringKeyValues
+	return append(stringKeyValues, customLabels...)
 }
