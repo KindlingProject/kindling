@@ -2,7 +2,6 @@ package otelexporter
 
 import (
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/model"
 	"go.uber.org/zap"
 	"os"
 
@@ -66,10 +65,4 @@ func GetCommonLabels(withUserInfo bool, logger *zap.Logger) []attribute.KeyValue
 	} else {
 		return commonLabels
 	}
-}
-
-func GetLabels(attributeMap *model.AttributeMap, customLabels []attribute.KeyValue) []attribute.KeyValue {
-	kv := ToStringKeyValues(attributeMap.GetValues())
-	kv = append(kv, customLabels...)
-	return kv
 }

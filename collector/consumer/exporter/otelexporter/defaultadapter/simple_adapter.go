@@ -14,7 +14,7 @@ func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, e
 	return []*AdaptedResult{
 		{
 			ResultType: Metric,
-			Attrs:      otelexporter.GetLabels(gaugeGroup.Labels, d.constLabels),
+			Attrs:      GetLabels(gaugeGroup.Labels, d.constLabels),
 			Gauges:     gaugeGroup.Values,
 			Timestamp:  gaugeGroup.Timestamp,
 		},
@@ -25,4 +25,10 @@ func NewDefaultAdapter(
 	customLabels []attribute.KeyValue,
 ) *SimpleAdapter {
 	return &SimpleAdapter{constLabels: customLabels}
+}
+
+func GetLabels(attributeMap *model.AttributeMap, customLabels []attribute.KeyValue) []attribute.KeyValue {
+	kv := otelexporter.ToStringKeyValues(attributeMap.GetValues())
+	kv = append(kv, customLabels...)
+	return kv
 }
