@@ -7,7 +7,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
-	"github.com/Kindling-project/kindling/collector/model"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -236,14 +235,6 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 func (e *OtelExporter) findInstrumentKind(metricName string) (MetricAggregationKind, bool) {
 	kind, find := e.metricAggregationMap[metricName]
 	return kind, find
-}
-
-func ToStringKeyValues(values map[string]model.AttributeValue) []attribute.KeyValue {
-	stringKeyValues := make([]attribute.KeyValue, 0, len(values))
-	for k, v := range values {
-		stringKeyValues = append(stringKeyValues, attribute.String(k, v.ToString()))
-	}
-	return stringKeyValues
 }
 
 // Crete new opentelemetry-go exporter.

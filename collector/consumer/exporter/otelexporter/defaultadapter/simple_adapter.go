@@ -1,7 +1,6 @@
 package defaultadapter
 
 import (
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -28,7 +27,15 @@ func NewDefaultAdapter(
 }
 
 func GetLabels(attributeMap *model.AttributeMap, customLabels []attribute.KeyValue) []attribute.KeyValue {
-	kv := otelexporter.ToStringKeyValues(attributeMap.GetValues())
+	kv := ToStringKeyValues(attributeMap.GetValues())
 	kv = append(kv, customLabels...)
 	return kv
+}
+
+func ToStringKeyValues(values map[string]model.AttributeValue) []attribute.KeyValue {
+	stringKeyValues := make([]attribute.KeyValue, 0, len(values))
+	for k, v := range values {
+		stringKeyValues = append(stringKeyValues, attribute.String(k, v.ToString()))
+	}
+	return stringKeyValues
 }
