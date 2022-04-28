@@ -7,12 +7,14 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"sort"
 	"strconv"
+	"sync"
 )
 
 // LabelConverter This struct is an optional component in any labelConverter.
 // Since otlp-sdk is only support to received attribute.values as input labels
 // In order to get better performance in some frequent transformations (mainly memory allocation)
 // you can refer to this struct to assist in transformation
+// the method `convert` and `transform` is thread-safety now
 type LabelConverter struct {
 	// labelsMap key: protocolType value: a list of realAttributes
 	labelsMap  map[extraLabelsKey]realAttributes
@@ -41,16 +43,25 @@ type metricAdapterBuilder struct {
 }
 
 type realAttributes struct {
-	// paramMap A list contain baseLabels,commonLabels,extraLabelsParamList,valueLabels,constLabels
-	paramMap []attribute.KeyValue
-
-	// labelsMap as same as front,just for another output
-	AttrsMap *model.AttributeMap
+	// attrsListPool A list contain baseLabels,commonLabels,extraLabelsParamList,valueLabels,constLabels
+	//attrsListPool []attribute.KeyValue
+	attrsListPool *attrsListPool
+	attrsMapPool  *attrsMapPool
 
 	// metricsDicList A list contain dict of baseLabels,commonLabels,extraLabelsParamList,
 	metricsDicList []dictionary
 	// sortCache
 	sortCache map[int]int
+}
+
+type attrsListPool struct {
+	templateAttrs []attribute.KeyValue
+	attrsPool     *sync.Pool
+}
+
+type attrsMapPool struct {
+	templateAttrs *model.AttributeMap
+	attrsPool     *sync.Pool
 }
 
 type extraLabelsKey struct {
@@ -80,7 +91,7 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 	return key
 }
 
-type valueToLabels func(gaugeGroup *model.GaugeGroup) []attribute.Value
+type valueToLabels func(gaugeGroup *model.GaugeGroup) []attribute.KeyValue
 type updateKey func(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey
 type adjustAttrMaps func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap
 type adjustLabels func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue
@@ -258,8 +269,8 @@ func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 			}
 		}
 		labelsMap[m.extraLabelsKey[i]] = realAttributes{
-			paramMap:       realParamList,
-			AttrsMap:       attrsMap,
+			attrsListPool:  createNewAttrsListPool(realParamList),
+			attrsMapPool:   createNewAttrsMapPool(attrsMap),
 			metricsDicList: tmpDict,
 			sortCache:      sortCache,
 		}
@@ -273,81 +284,128 @@ func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 	}, nil
 }
 
-func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap, error) {
+func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap, FreeAttrsMap, error) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
 		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
 	}
 	attrs := m.labelsMap[*tmpExtraKey]
-
+	attrsMap := attrs.attrsMapPool.Get().(*model.AttributeMap)
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
 		case String:
-			attrs.AttrsMap.AddStringValue(attrs.metricsDicList[i].newKey, labels.GetStringValue(attrs.metricsDicList[i].originKey))
+			attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, labels.GetStringValue(attrs.metricsDicList[i].originKey))
 		case Int64:
-			attrs.AttrsMap.AddIntValue(attrs.metricsDicList[i].newKey, labels.GetIntValue(attrs.metricsDicList[i].originKey))
+			attrsMap.AddIntValue(attrs.metricsDicList[i].newKey, labels.GetIntValue(attrs.metricsDicList[i].originKey))
 		case Bool:
-			attrs.AttrsMap.AddBoolValue(attrs.metricsDicList[i].newKey, labels.GetBoolValue(attrs.metricsDicList[i].originKey))
+			attrsMap.AddBoolValue(attrs.metricsDicList[i].newKey, labels.GetBoolValue(attrs.metricsDicList[i].originKey))
 		case FromInt64ToString:
-			attrs.AttrsMap.AddStringValue(attrs.metricsDicList[i].newKey, strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+			attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
 		case StrEmpty:
-			attrs.AttrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constlabels.STR_EMPTY)
+			attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constlabels.STR_EMPTY)
 		}
 	}
 
 	if m.valueLabelsFunc != nil {
 		valueLabels := m.valueLabelsFunc(group)
 		for i := 0; i < len(valueLabels); i++ {
-			switch valueLabels[i].Type() {
+			switch valueLabels[i].Value.Type() {
 			case attribute.STRING:
-				attrs.AttrsMap.AddStringValue(string(attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Key), valueLabels[i].AsString())
+				attrsMap.AddStringValue(string(valueLabels[i].Key), valueLabels[i].Value.AsString())
 			case attribute.INT64:
-				attrs.AttrsMap.AddIntValue(string(attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Key), valueLabels[i].AsInt64())
+				attrsMap.AddIntValue(string(valueLabels[i].Key), valueLabels[i].Value.AsInt64())
 			case attribute.BOOL:
-				attrs.AttrsMap.AddBoolValue(string(attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Key), valueLabels[i].AsBool())
+				attrsMap.AddBoolValue(string(valueLabels[i].Key), valueLabels[i].Value.AsBool())
 			}
 		}
 	}
 
 	for i := 0; i < len(m.adjustFunctions); i++ {
-		attrs.AttrsMap = m.adjustFunctions[i].adjustAttrMaps(labels, attrs.AttrsMap)
+		attrsMap = m.adjustFunctions[i].adjustAttrMaps(labels, attrsMap)
 	}
-	return attrs.AttrsMap, nil
+	return attrsMap, attrs.attrsMapPool.Free, nil
 }
 
-func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, error) {
+func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, FreeAttrsList, error) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
 		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
 	}
 	attrs := m.labelsMap[*tmpExtraKey]
-
+	attrsList := attrs.attrsListPool.Get().([]attribute.KeyValue)
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
 		case String:
-			attrs.paramMap[attrs.sortCache[i]].Value = attribute.StringValue(labels.GetStringValue(attrs.metricsDicList[i].originKey))
+			attrsList[attrs.sortCache[i]].Value = attribute.StringValue(labels.GetStringValue(attrs.metricsDicList[i].originKey))
 		case Int64:
-			attrs.paramMap[attrs.sortCache[i]].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
+			attrsList[attrs.sortCache[i]].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
 		case Bool:
-			attrs.paramMap[attrs.sortCache[i]].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
+			attrsList[attrs.sortCache[i]].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
 		case FromInt64ToString:
-			attrs.paramMap[attrs.sortCache[i]].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+			attrsList[attrs.sortCache[i]].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
 		case StrEmpty:
-			attrs.paramMap[attrs.sortCache[i]].Value = attribute.StringValue(constlabels.STR_EMPTY)
+			attrsList[attrs.sortCache[i]].Value = attribute.StringValue(constlabels.STR_EMPTY)
 		}
 	}
 
 	if m.valueLabelsFunc != nil {
 		valueLabels := m.valueLabelsFunc(group)
 		for i := 0; i < len(valueLabels); i++ {
-			attrs.paramMap[attrs.sortCache[i+len(attrs.metricsDicList)]].Value = valueLabels[i]
+			attrsList[attrs.sortCache[i+len(attrs.metricsDicList)]].Value = valueLabels[i].Value
 		}
 	}
 
 	for i := 0; i < len(m.adjustFunctions); i++ {
-		attrs.paramMap = m.adjustFunctions[i].adjustLabels(labels, attrs.paramMap)
+		attrsList = m.adjustFunctions[i].adjustLabels(labels, attrsList)
 	}
-	return attrs.paramMap, nil
+	return attrsList, attrs.attrsListPool.Free, nil
+}
+
+func (a *attrsListPool) createAttrsList() interface{} {
+	attrsList := make([]attribute.KeyValue, len(a.templateAttrs))
+	copy(attrsList, a.templateAttrs)
+	return attrsList
+}
+
+func createNewAttrsListPool(attributes []attribute.KeyValue) *attrsListPool {
+	a := &attrsListPool{
+		templateAttrs: attributes,
+	}
+	a.attrsPool = &sync.Pool{New: a.createAttrsList}
+	return a
+}
+
+func (a *attrsListPool) Get() interface{} {
+	return a.attrsPool.Get()
+}
+
+func (a *attrsListPool) Free(attrsList []attribute.KeyValue) {
+	a.attrsPool.Put(attrsList)
+}
+
+func createNewAttrsMapPool(attributes *model.AttributeMap) *attrsMapPool {
+	a := &attrsMapPool{
+		templateAttrs: attributes,
+	}
+	a.attrsPool = &sync.Pool{New: a.createAttrsMap}
+	return a
+}
+
+func (a *attrsMapPool) createAttrsMap() interface{} {
+	originValues := a.templateAttrs.GetValues()
+	values := make(map[string]model.AttributeValue, len(originValues))
+	for k, attr := range originValues {
+		values[k] = attr
+	}
+	return model.NewAttributeMapWithValues(values)
+}
+
+func (a *attrsMapPool) Get() interface{} {
+	return a.attrsPool.Get()
+}
+
+func (a *attrsMapPool) Free(attributeMap *model.AttributeMap) {
+	a.attrsPool.Put(attributeMap)
 }

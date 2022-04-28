@@ -38,19 +38,20 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 	}
 	results := make([]*AdaptedResult, 0, 2)
 	if n.StoreTraceAsSpan && isSlowOrError(gaugeGroup) {
-		if attrs, err := n.traceToSpanAdapter.convert(gaugeGroup); err != nil {
+		if attrs, free, err := n.traceToSpanAdapter.convert(gaugeGroup); err != nil {
 			return nil, err
 		} else {
 			results = append(results, &AdaptedResult{
-				ResultType: Trace,
-				Attrs:      attrs,
-				Gauges:     []*model.Gauge{requestTotalTime},
-				Timestamp:  gaugeGroup.Timestamp,
+				ResultType:    Trace,
+				Attrs:         attrs,
+				Gauges:        []*model.Gauge{requestTotalTime},
+				Timestamp:     gaugeGroup.Timestamp,
+				FreeAttrsList: free,
 			})
 		}
 	}
 	if n.StoreTraceAsMetric {
-		labels, err := n.traceToMetricAdapter.transform(gaugeGroup)
+		labels, free, err := n.traceToMetricAdapter.transform(gaugeGroup)
 		if err != nil {
 			return results, err
 		}
@@ -61,8 +62,9 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 				Name:  constnames.TraceAsMetric,
 				Value: requestTotalTime.Value,
 			}},
-			Labels:    labels,
-			Timestamp: gaugeGroup.Timestamp,
+			Labels:       labels,
+			Timestamp:    gaugeGroup.Timestamp,
+			FreeAttrsMap: free,
 		})
 	}
 
@@ -123,25 +125,27 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 		}
 	}
 	// TODO deal with error
-	attrsCommon, _ := adapter[0].convert(gaugeGroup)
+	attrsCommon, free, _ := adapter[0].convert(gaugeGroup)
 
 	tmpResults = make([]*AdaptedResult, 0, 2)
 	if len(gaugesExceptRequestCount) > 0 {
 		// for request count
 		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType: Metric,
-			Attrs:      attrsCommon,
-			Gauges:     gaugesExceptRequestCount,
-			Timestamp:  gaugeGroup.Timestamp,
+			ResultType:    Metric,
+			Attrs:         attrsCommon,
+			Gauges:        gaugesExceptRequestCount,
+			Timestamp:     gaugeGroup.Timestamp,
+			FreeAttrsList: free,
 		})
 	}
 	if len(requestCount) > 0 {
-		attrsWithSlow, _ := adapter[1].convert(gaugeGroup)
+		attrsWithSlow, free, _ := adapter[1].convert(gaugeGroup)
 		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType: Metric,
-			Attrs:      attrsWithSlow,
-			Gauges:     requestCount,
-			Timestamp:  gaugeGroup.Timestamp,
+			ResultType:    Metric,
+			Attrs:         attrsWithSlow,
+			Gauges:        requestCount,
+			Timestamp:     gaugeGroup.Timestamp,
+			FreeAttrsList: free,
 		})
 	}
 	return

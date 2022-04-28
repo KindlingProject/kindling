@@ -44,6 +44,7 @@ func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
 		default:
 			e.telemetry.Logger.Error("Unexpected ResultType", zap.String("type", string(result.ResultType)))
 		}
+		result.Free()
 	}
 }
 

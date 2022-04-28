@@ -259,30 +259,30 @@ var traceSpanStatus = []dictionary{
 	{constlabels.Timestamp, constlabels.STR_EMPTY, Int64},
 }
 
-func getTraceSpanStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.Value {
-	valueLabels := make([]attribute.Value, 11)
+func getTraceSpanStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
+	valueLabels := make([]attribute.KeyValue, 11)
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		switch gaugeGroup.Values[i].Name {
 		case constvalues.RequestSentTime:
-			valueLabels[0] = attribute.Int64Value(gaugeGroup.Values[i].Value)
+			valueLabels[0] = attribute.Int64(traceSpanStatus[0].newKey, gaugeGroup.Values[i].Value)
 		case constvalues.WaitingTtfbTime:
-			valueLabels[1] = attribute.Int64Value(gaugeGroup.Values[i].Value)
+			valueLabels[1] = attribute.Int64(traceSpanStatus[1].newKey, gaugeGroup.Values[i].Value)
 		case constvalues.ContentDownloadTime:
-			valueLabels[2] = attribute.Int64Value(gaugeGroup.Values[i].Value)
+			valueLabels[2] = attribute.Int64(traceSpanStatus[2].newKey, gaugeGroup.Values[i].Value)
 		case constvalues.RequestTotalTime:
-			valueLabels[3] = attribute.Int64Value(gaugeGroup.Values[i].Value)
+			valueLabels[3] = attribute.Int64(traceSpanStatus[3].newKey, gaugeGroup.Values[i].Value)
 		case constvalues.RequestIo:
-			valueLabels[4] = attribute.Int64Value(gaugeGroup.Values[i].Value)
+			valueLabels[4] = attribute.Int64(traceSpanStatus[4].newKey, gaugeGroup.Values[i].Value)
 		case constvalues.ResponseIo:
-			valueLabels[5] = attribute.Int64Value(gaugeGroup.Values[i].Value)
+			valueLabels[5] = attribute.Int64(traceSpanStatus[5].newKey, gaugeGroup.Values[i].Value)
 		}
 	}
 
-	valueLabels[6] = attribute.Int64Value(int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int)))
-	valueLabels[7] = attribute.Int64Value(int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsError), 1, 0).(int)))
-	valueLabels[8] = attribute.Int64Value(int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow), 1, 0).(int)))
-	valueLabels[9] = attribute.Int64Value(0)
-	valueLabels[10] = attribute.Int64Value(int64(gaugeGroup.Timestamp / millToNano))
+	valueLabels[6] = attribute.Int64(traceSpanStatus[6].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int)))
+	valueLabels[7] = attribute.Int64(traceSpanStatus[7].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsError), 1, 0).(int)))
+	valueLabels[8] = attribute.Int64(traceSpanStatus[8].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow), 1, 0).(int)))
+	valueLabels[9] = attribute.Int64(traceSpanStatus[9].newKey, 0)
+	valueLabels[10] = attribute.Int64(traceSpanStatus[10].newKey, int64(gaugeGroup.Timestamp/millToNano))
 	return valueLabels
 }
 
@@ -294,7 +294,7 @@ var traceStatus = []dictionary{
 	{constlabels.IsServer, constlabels.STR_EMPTY, Bool},
 }
 
-func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.Value {
+func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
 	var requestSend, waitingTtfb, contentDownload, requestTotalTime int64
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		if gaugeGroup.Values[i].Name == constvalues.RequestSentTime {
@@ -308,12 +308,12 @@ func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.Value {
 		}
 	}
 
-	return []attribute.Value{
-		attribute.StringValue(getSubStageStatus(requestSend)),
-		attribute.StringValue(getSubStageStatus(waitingTtfb)),
-		attribute.StringValue(getSubStageStatus(contentDownload)),
-		attribute.StringValue(getRequestStatus(requestTotalTime)),
-		attribute.BoolValue(gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)),
+	return []attribute.KeyValue{
+		attribute.String(traceStatus[0].newKey, getSubStageStatus(requestSend)),
+		attribute.String(traceStatus[1].newKey, getSubStageStatus(waitingTtfb)),
+		attribute.String(traceStatus[2].newKey, getSubStageStatus(contentDownload)),
+		attribute.String(traceStatus[3].newKey, getRequestStatus(requestTotalTime)),
+		attribute.Bool(traceStatus[4].newKey, gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)),
 	}
 }
 

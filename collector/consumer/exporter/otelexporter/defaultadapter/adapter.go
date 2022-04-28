@@ -24,7 +24,13 @@ type AdaptedResult struct {
 
 	// Timestamp
 	Timestamp uint64
+
+	FreeAttrsMap
+	FreeAttrsList
 }
+
+type FreeAttrsMap func(attrsMap *model.AttributeMap)
+type FreeAttrsList func(attrsList []attribute.KeyValue)
 
 type ResultType string
 
@@ -40,3 +46,12 @@ const (
 	TopologyMetrics
 	KeepOrigin
 )
+
+func (r *AdaptedResult) Free() {
+	if r.FreeAttrsMap != nil {
+		r.FreeAttrsMap(r.Labels)
+	}
+	if r.FreeAttrsList != nil {
+		r.FreeAttrsList(r.Attrs)
+	}
+}
