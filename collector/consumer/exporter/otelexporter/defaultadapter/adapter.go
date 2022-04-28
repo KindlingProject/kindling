@@ -39,14 +39,6 @@ const (
 	Trace             = "trace"
 )
 
-type RenameRule int
-
-const (
-	ServerMetrics RenameRule = iota
-	TopologyMetrics
-	KeepOrigin
-)
-
 func (r *AdaptedResult) Free() {
 	if r.FreeAttrsMap != nil {
 		r.FreeAttrsMap(r.Labels)
