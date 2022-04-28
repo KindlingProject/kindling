@@ -10,17 +10,16 @@ import (
 	"sync"
 )
 
-// LabelConverter is used to reduce the memory allocation in label's transformation
-// The method `convert` and `transform` is thread-safety now
+// LabelConverter is used for label's transformation.It can reduce the memory allocation by using the sync.Pool.
 type LabelConverter struct {
 	labelsMap map[extraLabelsKey]realAttributes
 
-	// updateKeys General extraLabelsKey for incoming model.GaugeGroup
+	// updateKeys is used to general extraLabelsKey for incoming model.GaugeGroup
 	updateKeys []updateKey
 
-	// valueLabelsFunc Get labels from Gauge.Values
+	// valueLabelsFunc is used to get labels from Gauge.Values
 	valueLabelsFunc valueToLabels
-	// adjustFunctions Modify final output
+	// adjustFunctions is used to modify final output
 	adjustFunctions []adjustFunctions
 }
 
@@ -39,12 +38,12 @@ type metricAdapterBuilder struct {
 }
 
 type realAttributes struct {
-	// attrsListPool A sorted []attribute.KeyValue
+	// attrsListPool is a pool containers sorted List  []attribute.KeyValue
 	attrsListPool *attrsListPool
 	attrsMapPool  *attrsMapPool
 
 	metricsDicList []dictionary
-	// sortCache a Map between attrsListPool and metricsDicList
+	// sortCache is a Map between the index of attrsListPool and metricsDicList
 	sortCache map[int]int
 }
 
@@ -154,11 +153,6 @@ func (m *metricAdapterBuilder) withExtraLabels(params []extraLabelsParam, update
 
 	tmpNewExtraParamsList := make([]extraLabelsParam, len(m.extraLabelsParamList)*len(params))
 	tmpNewExtraKeyList := make([]extraLabelsKey, len(m.extraLabelsKey)*len(params))
-
-	if len(tmpNewExtraParamsList) != len(tmpNewExtraKeyList) {
-		// TODO Error Info!
-		return m
-	}
 
 	for i := 0; i < len(params); i++ {
 		for s := 0; s < len(m.extraLabelsKey); s++ {
@@ -275,7 +269,8 @@ func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 	}, nil
 }
 
-func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap, FreeAttrsMap, error) {
+// transform is used to general final labels for Async Metric.It won't modify the origin model.GaugeGroup and should be free by calling the FreeAttrsMap after exported.
+func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap, FreeAttrsMap) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
@@ -315,10 +310,11 @@ func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap
 	for i := 0; i < len(m.adjustFunctions); i++ {
 		attrsMap = m.adjustFunctions[i].adjustAttrMaps(labels, attrsMap)
 	}
-	return attrsMap, attrs.attrsMapPool.Free, nil
+	return attrsMap, attrs.attrsMapPool.Free
 }
 
-func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, FreeAttrsList, error) {
+// convert is used to general final labels for Sync Metric and Trace. It won't modify the origin model.GaugeGroup and should be free by calling the FreeAttrsList after exported.
+func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, FreeAttrsList) {
 	labels := group.Labels
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
@@ -351,7 +347,7 @@ func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue,
 	for i := 0; i < len(m.adjustFunctions); i++ {
 		attrsList = m.adjustFunctions[i].adjustLabels(labels, attrsList)
 	}
-	return attrsList, attrs.attrsListPool.Free, nil
+	return attrsList, attrs.attrsListPool.Free
 }
 
 func (a *attrsListPool) createAttrsList() interface{} {

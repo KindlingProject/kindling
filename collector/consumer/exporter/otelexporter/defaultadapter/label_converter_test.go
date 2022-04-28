@@ -288,11 +288,7 @@ func TestAdapter_transform(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.labelConverter
-			got, free, err := m.transform(tt.args.group)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("transform() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got, free := m.transform(tt.args.group)
 			for key, value := range got.GetValues() {
 				if valueW, ok := tt.want.GetValues()[key]; ok {
 					if value.ToString() != valueW.ToString() {
@@ -398,11 +394,7 @@ func TestAdapter_adapt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.adapter
-			got, free, err := m.convert(tt.args.group)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convert() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got, free := m.convert(tt.args.group)
 			for _, keyValueG := range got {
 				for _, keyValueW := range tt.want {
 					if keyValueG.Key == keyValueW.Key && keyValueG.Value != keyValueW.Value {
@@ -691,11 +683,7 @@ func TestAdapter_transform_async(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				m := tt.labelConverter
-				got, free, err := m.transform(tt.args.group)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("transform() error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
+				got, free := m.transform(tt.args.group)
 				for key, value := range got.GetValues() {
 					if valueW, ok := tt.want.GetValues()[key]; ok {
 						if value.ToString() != valueW.ToString() {
@@ -720,11 +708,7 @@ func TestAdapter_transform_async(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.labelConverter
-			got, free, err := m.transform(tt.args.group)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("transform() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got, free := m.transform(tt.args.group)
 			for key, value := range got.GetValues() {
 				if valueW, ok := tt.want.GetValues()[key]; ok {
 					if value.ToString() != valueW.ToString() {

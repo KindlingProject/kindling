@@ -23,38 +23,32 @@ type NetAdapterConfig struct {
 func (n *NetGaugeGroupAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
 	switch gaugeGroup.Name {
 	case constnames.AggregatedNetRequestGaugeGroup:
-		return n.dealWithPreAggGaugeGroups(gaugeGroup)
+		return n.dealWithPreAggGaugeGroups(gaugeGroup), nil
 	case constnames.SingleNetRequestGaugeGroup:
-		return n.dealWithSingleGaugeGroup(gaugeGroup)
+		return n.dealWithSingleGaugeGroup(gaugeGroup), nil
 	default:
 		return nil, nil
 	}
 }
 
-func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
+func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeGroup) []*AdaptedResult {
 	requestTotalTime, ok := gaugeGroup.GetGauge(constvalues.RequestTotalTime)
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	results := make([]*AdaptedResult, 0, 2)
-	if n.StoreTraceAsSpan && isSlowOrError(gaugeGroup) {
-		if attrs, free, err := n.traceToSpanAdapter.convert(gaugeGroup); err != nil {
-			return nil, err
-		} else {
-			results = append(results, &AdaptedResult{
-				ResultType:    Trace,
-				AttrsList:     attrs,
-				Gauges:        []*model.Gauge{requestTotalTime},
-				Timestamp:     gaugeGroup.Timestamp,
-				FreeAttrsList: free,
-			})
-		}
+	if n.StoreTraceAsSpan {
+		attrs, free := n.traceToSpanAdapter.convert(gaugeGroup)
+		results = append(results, &AdaptedResult{
+			ResultType:    Trace,
+			AttrsList:     attrs,
+			Gauges:        []*model.Gauge{requestTotalTime},
+			Timestamp:     gaugeGroup.Timestamp,
+			FreeAttrsList: free,
+		})
 	}
 	if n.StoreTraceAsMetric {
-		labels, free, err := n.traceToMetricAdapter.transform(gaugeGroup)
-		if err != nil {
-			return results, err
-		}
+		labels, free := n.traceToMetricAdapter.transform(gaugeGroup)
 		results = append(results, &AdaptedResult{
 			ResultType: Metric,
 			AttrsList:  nil,
@@ -68,20 +62,17 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 		})
 	}
 
-	return results, nil
+	return results
 }
 
-func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
+func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.GaugeGroup) []*AdaptedResult {
 	results := make([]*AdaptedResult, 0, 4)
 	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
 	srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
 	if n.StoreExternalSrcIP && srcNamespace == constlabels.ExternalClusterNamespace && isServer {
 		externalAdapterCache := n.detailTopologyAdapter
-		if externalTopology, err := n.createNetMetricResults(gaugeGroup, externalAdapterCache); err != nil {
-			return nil, err
-		} else {
-			results = append(results, externalTopology...)
-		}
+		externalTopology := n.createNetMetricResults(gaugeGroup, externalAdapterCache)
+		results = append(results, externalTopology...)
 	}
 
 	var metricAdapterCache [2]*LabelConverter
@@ -98,15 +89,11 @@ func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.Gauge
 			metricAdapterCache = n.aggTopologyAdapter
 		}
 	}
-	if metrics, err := n.createNetMetricResults(gaugeGroup, metricAdapterCache); err != nil {
-		return nil, err
-	} else {
-		results = append(results, metrics...)
-	}
-	return results, nil
+	metrics := n.createNetMetricResults(gaugeGroup, metricAdapterCache)
+	return append(results, metrics...)
 }
 
-func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGroup, adapter [2]*LabelConverter) (tmpResults []*AdaptedResult, err error) {
+func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGroup, adapter [2]*LabelConverter) (tmpResults []*AdaptedResult) {
 	values := gaugeGroup.Values
 	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
 	gaugesExceptRequestCount := make([]*model.Gauge, 0, len(values))
@@ -124,9 +111,7 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 			})
 		}
 	}
-	// TODO deal with error
-	attrsCommon, free, _ := adapter[0].convert(gaugeGroup)
-
+	attrsCommon, free := adapter[0].convert(gaugeGroup)
 	tmpResults = make([]*AdaptedResult, 0, 2)
 	if len(gaugesExceptRequestCount) > 0 {
 		// for request count
@@ -139,7 +124,7 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 		})
 	}
 	if len(requestCount) > 0 {
-		attrsWithSlow, free, _ := adapter[1].convert(gaugeGroup)
+		attrsWithSlow, free := adapter[1].convert(gaugeGroup)
 		tmpResults = append(tmpResults, &AdaptedResult{
 			ResultType:    Metric,
 			AttrsList:     attrsWithSlow,
@@ -248,8 +233,4 @@ func NewNetAdapter(
 		NetAdapterManager: createNetAdapterManager(customLabels),
 		NetAdapterConfig:  config,
 	}
-}
-
-func isSlowOrError(g *model.GaugeGroup) bool {
-	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError)
 }

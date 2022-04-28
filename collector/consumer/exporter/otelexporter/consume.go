@@ -25,7 +25,10 @@ func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 	}
 
 	for i := 0; i < len(e.adapters); i++ {
-		results, _ := e.adapters[i].Adapt(gaugeGroup)
+		results, err := e.adapters[i].Adapt(gaugeGroup)
+		if err != nil {
+			e.telemetry.Logger.Error("Failed to adapt gaugeGroup", zap.Error(err))
+		}
 		if results != nil && len(results) > 0 {
 			e.Export(results)
 		}

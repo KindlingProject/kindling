@@ -11,18 +11,18 @@ type SimpleAdapter struct {
 }
 
 func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	if _, ok := d.acceptGaugeGroupNames[gaugeGroup.Name]; ok {
-		return []*AdaptedResult{
-			{
-				ResultType: Metric,
-				AttrsMap:   gaugeGroup.Labels,
-				AttrsList:  GetLabels(gaugeGroup.Labels, d.constLabels),
-				Gauges:     gaugeGroup.Values,
-				Timestamp:  gaugeGroup.Timestamp,
-			},
-		}, nil
+	if _, accept := d.acceptGaugeGroupNames[gaugeGroup.Name]; !accept {
+		return nil, nil
 	}
-	return nil, nil
+	return []*AdaptedResult{
+		{
+			ResultType: Metric,
+			AttrsMap:   gaugeGroup.Labels,
+			AttrsList:  GetLabels(gaugeGroup.Labels, d.constLabels),
+			Gauges:     gaugeGroup.Values,
+			Timestamp:  gaugeGroup.Timestamp,
+		},
+	}, nil
 }
 
 func NewSimpleAdapter(

@@ -13,9 +13,9 @@ type Adapter interface {
 type AdaptedResult struct {
 	ResultType ResultType
 
-	// AttrsList exports as labels for sync Metric and Trace
+	// AttrsList contains labels for sync Metric and Trace
 	AttrsList []attribute.KeyValue
-	// AttrsMap exports as labels for Async Metric
+	// AttrsMap contains labels for Async Metric
 	AttrsMap  *model.AttributeMap
 	Gauges    []*model.Gauge
 	Timestamp uint64
