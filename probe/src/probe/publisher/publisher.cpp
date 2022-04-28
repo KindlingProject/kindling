@@ -52,12 +52,11 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
 
         if (sysdigConverter->judge_max_size()) {
             // check if the send list has sent
-            if (!m_ready[kindlingEventList]) {
-                swap_list(sysdigConverter, kindlingEventList);
-            } else {
+            if (m_ready[kindlingEventList]) {
                 // drop event
                 return;
             }
+            swap_list(sysdigConverter, kindlingEventList);
         }
 
         sysdigConverter->convert(evt);
