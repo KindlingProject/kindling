@@ -16,7 +16,7 @@ const (
 	DNS
 	MYSQL
 	GRPC
-	UNSUPPORT
+	UNSUPPORTED
 )
 
 type valueType int
@@ -113,7 +113,7 @@ var topologyMetricDicList = []dictionary{
 	{constlabels.Protocol, constlabels.Protocol, String},
 }
 
-func RemoveDstPodInfoForNonExternal() adjustFunctions {
+func removeDstPodInfoForNonExternal() adjustFunctions {
 	return adjustFunctions{
 		adjustAttrMaps: func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap {
 			if constlabels.IsNamespaceNotFound(labels.GetStringValue(constlabels.DstNamespace)) {
@@ -139,7 +139,7 @@ func RemoveDstPodInfoForNonExternal() adjustFunctions {
 	}
 }
 
-func ReplaceDstIpOrDstPortByDNat() adjustFunctions {
+func replaceDstIpOrDstPortByDNat() adjustFunctions {
 	return adjustFunctions{
 		adjustAttrMaps: func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap {
 			dNatIp := labels.GetStringValue(constlabels.DnatIp)
@@ -193,7 +193,7 @@ var entityProtocol = []extraLabelsParam{
 		{constlabels.ResponseContent, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{
-		[]dictionary{}, extraLabelsKey{UNSUPPORT},
+		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
 	},
 }
 
@@ -219,7 +219,7 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanDnsRCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{
-		[]dictionary{}, extraLabelsKey{UNSUPPORT},
+		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
 	},
 }
 
@@ -241,7 +241,7 @@ var topologyProtocol = []extraLabelsParam{
 		{constlabels.StatusCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{
-		[]dictionary{}, extraLabelsKey{UNSUPPORT},
+		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
 	},
 }
 

@@ -162,14 +162,14 @@ func createNetAdapterManager(constLabels []attribute.KeyValue) *NetAdapterManage
 	aggTopologyAdapterWithIsSlow, _ := newAdapterBuilder(topologyMetricDicList,
 		[][]dictionary{isSlowDicList}).
 		withExtraLabels(topologyProtocol, updateProtocolKey).
-		withAdjust(RemoveDstPodInfoForNonExternal()).
+		withAdjust(removeDstPodInfoForNonExternal()).
 		withConstLabels(constLabels).
 		build()
 
 	detailTopologyAdapterWithIsSlow, _ := newAdapterBuilder(topologyMetricDicList,
 		[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList, isSlowDicList}).
 		withExtraLabels(topologyProtocol, updateProtocolKey).
-		withAdjust(ReplaceDstIpOrDstPortByDNat()).
+		withAdjust(replaceDstIpOrDstPortByDNat()).
 		withConstLabels(constLabels).
 		build()
 
@@ -188,14 +188,14 @@ func createNetAdapterManager(constLabels []attribute.KeyValue) *NetAdapterManage
 	aggTopologyAdapter, _ := newAdapterBuilder(topologyMetricDicList,
 		[][]dictionary{}).
 		withExtraLabels(topologyProtocol, updateProtocolKey).
-		withAdjust(RemoveDstPodInfoForNonExternal()).
+		withAdjust(removeDstPodInfoForNonExternal()).
 		withConstLabels(constLabels).
 		build()
 
 	detailTopologyAdapter, _ := newAdapterBuilder(topologyMetricDicList,
 		[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
 		withExtraLabels(topologyProtocol, updateProtocolKey).
-		withAdjust(ReplaceDstIpOrDstPortByDNat()).
+		withAdjust(replaceDstIpOrDstPortByDNat()).
 		withConstLabels(constLabels).
 		build()
 
@@ -203,7 +203,6 @@ func createNetAdapterManager(constLabels []attribute.KeyValue) *NetAdapterManage
 		[][]dictionary{topologyInstanceMetricDicList, SpanDicList}).
 		withExtraLabels(spanProtocol, updateProtocolKey).
 		withValueToLabels(traceSpanStatus, getTraceSpanStatusLabels).
-		//withAdjust(ReplaceDstIpOrDstPortByDNat()).
 		withConstLabels(constLabels).
 		build()
 
@@ -211,7 +210,6 @@ func createNetAdapterManager(constLabels []attribute.KeyValue) *NetAdapterManage
 		[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
 		withExtraLabels(entityProtocol, updateProtocolKey).
 		withValueToLabels(traceStatus, getTraceStatusLabels).
-		//withAdjust(ReplaceDstIpOrDstPortByDNat()).
 		withConstLabels(constLabels).
 		build()
 

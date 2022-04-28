@@ -44,7 +44,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 		},
 	}
 
-	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
+	loggerInstance := logger.CreateFileRotationLogger(&lumberjack.Logger{
 		Filename:   "test.log",
 		MaxSize:    500,
 		MaxAge:     10,
@@ -52,7 +52,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 		LocalTime:  true,
 		Compress:   false,
 	})
-	exporter, _ := newExporters(context.Background(), cfg, logger)
+	exporter, _ := newExporters(context.Background(), cfg, loggerInstance)
 
 	cont := controller.New(
 		otelprocessor.NewFactory(simple.NewWithHistogramDistribution(

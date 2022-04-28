@@ -11,7 +11,6 @@ import (
 const (
 	clusterIdEnv = "CLUSTER_ID"
 	userIdEnv    = "USER_ID"
-	regionIdEnv  = "REGION_ID"
 
 	CmonitorServiceNamePrefix = "cmonitor"
 )

@@ -10,16 +10,16 @@ import (
 	"sync"
 )
 
-// LabelConverter is used for label's transformation.It can reduce the memory allocation by using the sync.Pool.
+// LabelConverter works label's transformation.It can reduce the memory allocation by using the sync.Pool.
 type LabelConverter struct {
 	labelsMap map[extraLabelsKey]realAttributes
 
-	// updateKeys is used to general extraLabelsKey for incoming model.GaugeGroup
+	// updateKeys generals extraLabelsKey for incoming model.GaugeGroup
 	updateKeys []updateKey
 
-	// valueLabelsFunc is used to get labels from Gauge.Values
+	// valueLabelsFunc generals labels from Gauge.Values
 	valueLabelsFunc valueToLabels
-	// adjustFunctions is used to modify final output
+	// adjustFunctions modify the final output
 	adjustFunctions []adjustFunctions
 }
 
@@ -38,13 +38,13 @@ type metricAdapterBuilder struct {
 }
 
 type realAttributes struct {
-	// attrsListPool is a pool containers sorted List  []attribute.KeyValue
+	// attrsListPool containers sorted []attribute.KeyValue
 	attrsListPool *attrsListPool
 	attrsMapPool  *attrsMapPool
 
 	metricsDicList []dictionary
-	// sortCache is a Map between the index of attrsListPool and metricsDicList
-	sortCache map[int]int
+	// sortMap is a Map between the index of attrsListPool and metricsDicList
+	sortMap map[int]int
 }
 
 type attrsListPool struct {
@@ -79,7 +79,7 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 	case constvalues.ProtocolKafka:
 		key.protocol = KAFKA
 	default:
-		key.protocol = UNSUPPORT
+		key.protocol = UNSUPPORTED
 	}
 	return key
 }
@@ -257,7 +257,7 @@ func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 			attrsListPool:  createNewAttrsListPool(realParamList),
 			attrsMapPool:   createNewAttrsMapPool(attrsMap),
 			metricsDicList: tmpDict,
-			sortCache:      sortCache,
+			sortMap:        sortCache,
 		}
 	}
 
@@ -325,22 +325,22 @@ func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue,
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
 		case String:
-			attrsList[attrs.sortCache[i]].Value = attribute.StringValue(labels.GetStringValue(attrs.metricsDicList[i].originKey))
+			attrsList[attrs.sortMap[i]].Value = attribute.StringValue(labels.GetStringValue(attrs.metricsDicList[i].originKey))
 		case Int64:
-			attrsList[attrs.sortCache[i]].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
+			attrsList[attrs.sortMap[i]].Value = attribute.Int64Value(labels.GetIntValue(attrs.metricsDicList[i].originKey))
 		case Bool:
-			attrsList[attrs.sortCache[i]].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
+			attrsList[attrs.sortMap[i]].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
 		case FromInt64ToString:
-			attrsList[attrs.sortCache[i]].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+			attrsList[attrs.sortMap[i]].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
 		case StrEmpty:
-			attrsList[attrs.sortCache[i]].Value = attribute.StringValue(constlabels.STR_EMPTY)
+			attrsList[attrs.sortMap[i]].Value = attribute.StringValue(constlabels.STR_EMPTY)
 		}
 	}
 
 	if m.valueLabelsFunc != nil {
 		valueLabels := m.valueLabelsFunc(group)
 		for i := 0; i < len(valueLabels); i++ {
-			attrsList[attrs.sortCache[i+len(attrs.metricsDicList)]].Value = valueLabels[i].Value
+			attrsList[attrs.sortMap[i+len(attrs.metricsDicList)]].Value = valueLabels[i].Value
 		}
 	}
 
