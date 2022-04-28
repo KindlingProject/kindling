@@ -5,26 +5,22 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// Adapter is used to transform *model.GaugeGroup into Trace or Metric
 type Adapter interface {
-	// Adapt  We use convert to deal with any GaugeGroup received by exporter, this method should contain functions below
-	//
 	Adapt(group *model.GaugeGroup) ([]*AdaptedResult, error)
 }
 
 type AdaptedResult struct {
 	ResultType ResultType
 
-	// Attrs Maybe null if Gauges is nil or only has gauges which need to be preAgg (like LastValue)
-	Attrs []attribute.KeyValue
-	// Labels Maybe null if Gauges is nil or only has gauges which don't need to be preAgg (like counter or histogram)
-	Labels *model.AttributeMap
-
-	// Metrics to export
-	Gauges []*model.Gauge
-
-	// Timestamp
+	// AttrsList exports as labels for sync Metric and Trace
+	AttrsList []attribute.KeyValue
+	// AttrsMap exports as labels for Async Metric
+	AttrsMap  *model.AttributeMap
+	Gauges    []*model.Gauge
 	Timestamp uint64
 
+	// FreeAttrsMap provides an interface for those adapters which need to reuse AttrsList and AttrsMap
 	FreeAttrsMap
 	FreeAttrsList
 }
@@ -41,9 +37,9 @@ const (
 
 func (r *AdaptedResult) Free() {
 	if r.FreeAttrsMap != nil {
-		r.FreeAttrsMap(r.Labels)
+		r.FreeAttrsMap(r.AttrsMap)
 	}
 	if r.FreeAttrsList != nil {
-		r.FreeAttrsList(r.Attrs)
+		r.FreeAttrsList(r.AttrsList)
 	}
 }

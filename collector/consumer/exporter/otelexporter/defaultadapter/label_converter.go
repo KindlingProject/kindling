@@ -10,20 +10,17 @@ import (
 	"sync"
 )
 
-// LabelConverter This struct is an optional component in any labelConverter.
-// Since otlp-sdk is only support to received attribute.values as input labels
-// In order to get better performance in some frequent transformations (mainly memory allocation)
-// you can refer to this struct to assist in transformation
-// the method `convert` and `transform` is thread-safety now
+// LabelConverter is used to reduce the memory allocation in label's transformation
+// The method `convert` and `transform` is thread-safety now
 type LabelConverter struct {
-	// labelsMap key: protocolType value: a list of realAttributes
-	labelsMap  map[extraLabelsKey]realAttributes
+	labelsMap map[extraLabelsKey]realAttributes
+
+	// updateKeys General extraLabelsKey for incoming model.GaugeGroup
 	updateKeys []updateKey
 
-	// valueLabelKey dic won't contain origin Key
+	// valueLabelsFunc Get labels from Gauge.Values
 	valueLabelsFunc valueToLabels
-
-	// to fix some special labels
+	// adjustFunctions Modify final output
 	adjustFunctions []adjustFunctions
 }
 
@@ -34,7 +31,6 @@ type metricAdapterBuilder struct {
 	extraLabelsKey       []extraLabelsKey
 	updateKeys           []updateKey
 
-	// valueLabelKey dic won't contain origin Key
 	valueLabelsKey  []dictionary
 	valueLabelsFunc valueToLabels
 
@@ -43,14 +39,12 @@ type metricAdapterBuilder struct {
 }
 
 type realAttributes struct {
-	// attrsListPool A list contain baseLabels,commonLabels,extraLabelsParamList,valueLabels,constLabels
-	//attrsListPool []attribute.KeyValue
+	// attrsListPool A sorted []attribute.KeyValue
 	attrsListPool *attrsListPool
 	attrsMapPool  *attrsMapPool
 
-	// metricsDicList A list contain dict of baseLabels,commonLabels,extraLabelsParamList,
 	metricsDicList []dictionary
-	// sortCache
+	// sortCache a Map between attrsListPool and metricsDicList
 	sortCache map[int]int
 }
 
@@ -125,11 +119,9 @@ func newAdapterBuilder(
 	commonLabels [][]dictionary) *metricAdapterBuilder {
 
 	baseLabels := make([]attribute.KeyValue, len(baseDict))
-	// baseLabels
 	for j := 0; j < len(baseDict); j++ {
 		baseLabels[j].Key = attribute.Key(baseDict[j].newKey)
 	}
-	// commonLabels
 	if commonLabels != nil {
 		for j := 0; j < len(commonLabels); j++ {
 			for k := 0; k < len(commonLabels[j]); k++ {
@@ -232,12 +224,11 @@ func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 			}
 		}
 
-		// constLabels
 		if m.constLabels != nil {
 			tmpParamList = append(tmpParamList, m.constLabels...)
 		}
 
-		// manual sort
+		// manual sort since otlp-sdk will sort our paramList
 		tmpKeysList := make([]string, len(tmpParamList))
 		for s := 0; s < len(tmpParamList); s++ {
 			tmpKeysList[s] = string(tmpParamList[s].Key)

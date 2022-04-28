@@ -20,12 +20,7 @@ import (
 var traceAsMetricHelp = "Describe a single request which is abnormal. " +
 	"For status labels, number '1', '2' and '3' stands for Green, Yellow and Red respectively."
 
-const (
-	PreAggMetric = "preAggMetric"
-)
-
 type instrumentFactory struct {
-	// TODO: Initialize instruments when initializing factory
 	instruments  sync.Map
 	meter        metric.Meter
 	customLabels []attribute.KeyValue
@@ -82,8 +77,7 @@ func (i *instrumentFactory) createNewInstrument(metricName string, kind MetricAg
 	}
 }
 
-// only support TraceAsMetric and TcpRttMills now
-// only one gauge is in singleGauge Now
+// recordLastValue Only support TraceAsMetric and TcpRttMills now
 func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *model.GaugeGroup) error {
 	if !i.aggregator.CheckExist(singleGauge.Name) {
 		metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
@@ -105,26 +99,6 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *mode
 	} else {
 		return errors.New(fmt.Sprintf("no matched Selector has been be defined for %s", metricName))
 	}
-	//var obs map[string]metric.Int64GaugeObserver
-	//
-	//bom := metric.Must(i.meter).NewBatchObserver(func(ctx context.Context, result metric.BatchObserverResult) {
-	//	dumps := i.aggregator.DumpSingle(singleGauge.Name)
-	//	if dumps != nil {
-	//		for s := 0; s < len(dumps); s++ {
-	//			observations := make([]metric.Observation, 0, len(dumps[s].Values))
-	//			for m := 0; m < len(dumps[s].Values); m++ {
-	//				gauge := dumps[s].Values[m]
-	//				observations = append(observations, obs[gauge.Name].Observation(gauge.Value))
-	//			}
-	//			result.Observe(GetLabels(dumps[s].Labels, i.customLabels))
-	//		}
-	//	}
-	//})
-	//
-	//for s := 0; s < len(singleGauge.Values); s++ {
-	//	name := singleGauge.Values[s].Name
-	//	obs[name] = bom.NewInt64GaugeObserver(name, WithDescription(name))
-	//}
 }
 
 func WithDescription(metricName string) metric.InstrumentOption {

@@ -15,8 +15,8 @@ func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, e
 		return []*AdaptedResult{
 			{
 				ResultType: Metric,
-				Labels:     gaugeGroup.Labels,
-				Attrs:      GetLabels(gaugeGroup.Labels, d.constLabels),
+				AttrsMap:   gaugeGroup.Labels,
+				AttrsList:  GetLabels(gaugeGroup.Labels, d.constLabels),
 				Gauges:     gaugeGroup.Values,
 				Timestamp:  gaugeGroup.Timestamp,
 			},

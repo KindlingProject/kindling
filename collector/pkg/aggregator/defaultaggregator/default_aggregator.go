@@ -57,8 +57,8 @@ func (s *DefaultAggregator) Dump() []*model.GaugeGroup {
 }
 
 func (s *DefaultAggregator) DumpSingle(gaugeGroupName string) []*model.GaugeGroup {
-	s.mut.Lock()
-	defer s.mut.Unlock()
+	s.mut.RLock()
+	defer s.mut.RUnlock()
 	if v, ok := s.recordersMap.Load(gaugeGroupName); ok {
 		vr := v.(*valueRecorder)
 		result := vr.dump()

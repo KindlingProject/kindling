@@ -50,29 +50,28 @@ func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
 
 func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
 	if e.defaultTracer == nil {
-		e.telemetry.Logger.Error("send span failed: this exporter can not support Span Data", zap.String("exporter", e.cfg.ExportKind))
+		e.telemetry.Logger.Error("Send span failed: this exporter doesn't support Span Data", zap.String("exporter", e.cfg.ExportKind))
 	}
 	_, span := e.defaultTracer.Start(
 		context.Background(),
 		constvalues.SpanInfo,
-		apitrace.WithAttributes(result.Attrs...),
+		apitrace.WithAttributes(result.AttrsList...),
 	)
 	span.End()
 }
 
 func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
-	// Get Measurement
 	measurements := make([]metric.Measurement, 0, len(result.Gauges))
 	for s := 0; s < len(result.Gauges); s++ {
 		gauge := result.Gauges[s]
 		if metricKind, ok := e.findInstrumentKind(gauge.Name); ok && metricKind == MAGaugeKind {
-			if result.Labels == nil {
+			if result.AttrsMap == nil {
 				e.telemetry.Logger.Error("Unexpected Error: no labels find for MAGaugeKind", zap.String("GaugeName", gauge.Name))
 			}
 			err := e.instrumentFactory.recordLastValue(gauge.Name, &model.GaugeGroup{
 				Name:      gauge.Name,
 				Values:    []*model.Gauge{{gauge.Name, gauge.Value}},
-				Labels:    result.Labels,
+				Labels:    result.AttrsMap,
 				Timestamp: result.Timestamp,
 			})
 			if err != nil {
@@ -81,11 +80,10 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 		} else if ok {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(gauge.Name, metricKind).Measurement(gauge.Value))
 		} else {
-			//measurements = append(measurements, e.instrumentFactory.getInstrument(metricName, MACounterKind).Measurement(gauge.Value))
-			e.telemetry.Logger.Warn("This metric don't have any metricKind,please update this in kindlingCfg!", zap.String("GaugeGroup", gauge.Name))
+			e.telemetry.Logger.Warn("Undefined metricKind for this Gauge", zap.String("GaugeName", gauge.Name))
 		}
 	}
 	if len(measurements) > 0 {
-		e.instrumentFactory.meter.RecordBatch(context.Background(), result.Attrs, measurements...)
+		e.instrumentFactory.meter.RecordBatch(context.Background(), result.AttrsList, measurements...)
 	}
 }

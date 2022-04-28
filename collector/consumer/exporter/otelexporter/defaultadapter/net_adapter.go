@@ -43,7 +43,7 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 		} else {
 			results = append(results, &AdaptedResult{
 				ResultType:    Trace,
-				Attrs:         attrs,
+				AttrsList:     attrs,
 				Gauges:        []*model.Gauge{requestTotalTime},
 				Timestamp:     gaugeGroup.Timestamp,
 				FreeAttrsList: free,
@@ -57,12 +57,12 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 		}
 		results = append(results, &AdaptedResult{
 			ResultType: Metric,
-			Attrs:      nil,
+			AttrsList:  nil,
 			Gauges: []*model.Gauge{{
 				Name:  constnames.TraceAsMetric,
 				Value: requestTotalTime.Value,
 			}},
-			Labels:       labels,
+			AttrsMap:     labels,
 			Timestamp:    gaugeGroup.Timestamp,
 			FreeAttrsMap: free,
 		})
@@ -132,7 +132,7 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 		// for request count
 		tmpResults = append(tmpResults, &AdaptedResult{
 			ResultType:    Metric,
-			Attrs:         attrsCommon,
+			AttrsList:     attrsCommon,
 			Gauges:        gaugesExceptRequestCount,
 			Timestamp:     gaugeGroup.Timestamp,
 			FreeAttrsList: free,
@@ -142,7 +142,7 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 		attrsWithSlow, free, _ := adapter[1].convert(gaugeGroup)
 		tmpResults = append(tmpResults, &AdaptedResult{
 			ResultType:    Metric,
-			Attrs:         attrsWithSlow,
+			AttrsList:     attrsWithSlow,
 			Gauges:        requestCount,
 			Timestamp:     gaugeGroup.Timestamp,
 			FreeAttrsList: free,
