@@ -21,7 +21,7 @@ import podYPng from '../img/pod-yellow.png';
 import podRPng from '../img/pod-red.png';
 import unkonwPng from '../img/unknown.png';
 
-import { nodeTextHandle } from './services';
+import { nodeTextHandle } from './topology';
 
 const ImgW = 40, ImgH = 40;
 const nodeImgHandle = (node: any) => {

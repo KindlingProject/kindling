@@ -45,7 +45,7 @@ func TestRelabelProcessor_Consume(t *testing.T) {
 
 	err = relabel.Consume(makeGaugeGroup(15))
 	if err != nil {
-		t.Errorf("Consume Gauge failed %s \n", err)
+		t.Errorf("Consume Gauges failed %s \n", err)
 	}
 }
 

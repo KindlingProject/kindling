@@ -80,6 +80,26 @@ processors:
     # When using otlp-grpc / stdout exporter , this option supports to
     # send trace data in the format of ResourceSpan
     need_trace_as_span: false
+  aggregateprocessor:
+    # Aggregation duration window size. The unit is second.
+    ticker_interval: 5
+    aggregate_kind_map:
+      request_total_time:
+        - kind: sum
+        - kind: avg
+          output_name: request_total_time_avg
+        - kind: count
+          output_name: request_count
+      request_io:
+        - kind: sum
+      response_io:
+        - kind: sum
+      kindling_tcp_rtt_microseconds:
+        - kind: last
+      kindling_tcp_retransmit_total:
+        - kind: sum
+      kindling_tcp_packet_loss_total:
+        - kind: sum
     sampling_rate:
       normal_data: 0
       slow_data: 100
@@ -87,15 +107,26 @@ processors:
 
 exporters:
   otelexporter:
+    adapter_config:
+      need_trace_as_metric: true
+      need_pod_detail: true
+      store_external_src_ip: true
+      # When using otlp-grpc / stdout exporter , this option supports to
+      # send trace data in the format of ResourceSpan
+      need_trace_as_span: false
     metric_aggregation_map:
-      kindling_entity_request_duration_nanoseconds: 2
+      kindling_entity_request_total: 1
+      kindling_entity_request_duration_nanoseconds_total: 1
+      kindling_entity_request_average_duration_nanoseconds: 2
       kindling_entity_request_send_bytes_total: 1
       kindling_entity_request_receive_bytes_total: 1
-      kindling_topology_request_duration_nanoseconds: 2
+      kindling_topology_request_total: 1
+      kindling_topology_request_duration_nanoseconds_total: 1
+      kindling_topology_request_average_duration_nanoseconds: 2
       kindling_topology_request_request_bytes_total: 1
       kindling_topology_request_response_bytes_total: 1
       kindling_trace_request_duration_nanoseconds: 0
-      kindling_tcp_rtt_microseconds: 0
+      kindling_tcp_srtt_microseconds: 0
       kindling_tcp_retransmit_total: 1
       kindling_tcp_packet_loss_total: 1
     # Export data in the following ways: ["prometheus", "otlp", "stdout"]

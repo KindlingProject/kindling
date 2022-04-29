@@ -1,5 +1,5 @@
 import * as G6 from '@antv/g6';
-import { nodeTextHandle } from './services';
+import { nodeTextHandle } from './topology';
 
 interface Size {
     width: number;
