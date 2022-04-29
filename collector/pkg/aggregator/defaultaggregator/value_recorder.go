@@ -1,8 +1,8 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor/internal"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"sync"
 )
 
@@ -22,7 +22,7 @@ func newValueRecorder(recorderName string, aggKindMap map[string][]KindConfig) *
 }
 
 // Record is thread-safe, and return the result value
-func (r *valueRecorder) Record(key *internal.LabelKeys, gaugeValues []*model.Gauge, timestamp uint64) {
+func (r *valueRecorder) Record(key *aggregator.LabelKeys, gaugeValues []*model.Gauge, timestamp uint64) {
 	if key == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func (r *valueRecorder) Record(key *internal.LabelKeys, gaugeValues []*model.Gau
 func (r *valueRecorder) dump() []*model.GaugeGroup {
 	ret := make([]*model.GaugeGroup, 0)
 	r.labelValues.Range(func(key, value interface{}) bool {
-		k := key.(internal.LabelKeys)
+		k := key.(aggregator.LabelKeys)
 		v := value.(aggValuesMap)
 		gaugeGroup := model.NewGaugeGroup(r.name, k.GetLabels(), v.getTimestamp(), v.getAll()...)
 		ret = append(ret, gaugeGroup)

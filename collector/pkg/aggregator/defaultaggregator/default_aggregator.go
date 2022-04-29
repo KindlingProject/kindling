@@ -1,8 +1,8 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor/internal"
 	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"sync"
 )
 
@@ -27,7 +27,7 @@ func NewDefaultAggregator(config *AggregatedConfig) *DefaultAggregator {
 	return ret
 }
 
-func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, selectors *internal.LabelSelectors) {
+func (s *DefaultAggregator) Aggregate(g *model.GaugeGroup, selectors *aggregator.LabelSelectors) {
 	name := g.Name
 	s.mut.RLock()
 	defer s.mut.RUnlock()
@@ -54,4 +54,23 @@ func (s *DefaultAggregator) Dump() []*model.GaugeGroup {
 		return true
 	})
 	return ret
+}
+
+func (s *DefaultAggregator) DumpSingle(gaugeGroupName string) []*model.GaugeGroup {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+	if v, ok := s.recordersMap.Load(gaugeGroupName); ok {
+		vr := v.(*valueRecorder)
+		result := vr.dump()
+		vr.reset()
+		return result
+	}
+	return nil
+}
+
+func (s *DefaultAggregator) CheckExist(gaugeGroupName string) bool {
+	s.mut.RLock()
+	defer s.mut.RUnlock()
+	_, result := s.recordersMap.Load(gaugeGroupName)
+	return result
 }
