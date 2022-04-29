@@ -62,9 +62,8 @@ Service metrics are generated from the server-side events, which are used to sho
 
 - When protocol is dubbo:
 
-| **Label** | **Example**                                      | **
-Notes**                                                                                                                                                |
-| --- |--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Label** | **Example**                   | **Notes**                           |
+| --- |-------------------------|--------------------------|
 | request_content | io.kindling.dubbo.api.service.OrderService#order | Service Info. The format of service is `package.class#method`                                                                                            |
 | response_content | 20                                               | "error_code" of Dubbo, 20 - OK, more details at `https://dubbo.apache.org/en/blog/2018/10/05/introduction-to-the-dubbo-protocol/#dubbo-protocol-details` |
 
