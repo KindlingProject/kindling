@@ -1,6 +1,0 @@
-processors:
-  kindlingformatprocessor:
-    need_trace_as_metric: true
-    need_pod_detail: true
-    store_external_src_ip: true
-    need_trace_as_span: true

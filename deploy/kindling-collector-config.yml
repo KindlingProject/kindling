@@ -72,13 +72,6 @@ processors:
     kube_auth_type: serviceAccount
     kube_config_dir: ~/.kube/config
     grace_delete_period: 60
-  kindlingformatprocessor:
-    need_trace_as_metric: true
-    need_pod_detail: true
-    store_external_src_ip: true
-    # When using otlp-grpc / stdout exporter , this option supports to
-    # send trace data in the format of ResourceSpan
-    need_trace_as_span: false
   aggregateprocessor:
     # Aggregation duration window size. The unit is second.
     ticker_interval: 5
