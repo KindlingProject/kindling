@@ -60,6 +60,13 @@ Service metrics are generated from the server-side events, which are used to sho
 | request_content | user-msg-topic | Topic of Kafka request. |
 | response_content |  | Empty temporarily. |
 
+- When protocol is Dubbo2:
+
+| **Label** | **Example**                                      | **Notes** |
+| --- |--------------------------------------------------| --- |
+| request_content | io.kindling.dubbo.api.service.OrderService#order | Service Info.The format of service is `package.class#method` |
+| response_content | 20                                               | "error_code" of Dubbo, 20 - OK, more details at `https://dubbo.apache.org/en/blog/2018/10/05/introduction-to-the-dubbo-protocol/#dubbo-protocol-details` |
+
 - For other cases, the `request_content` and `response_content` are both empty.
 
 ## Topology Metrics
@@ -110,7 +117,8 @@ These two terms are composed of two parts.
 
 - HTTP: 'Status Code' of HTTP response. 
 - DNS: rcode of DNS response.
-- others: empty temporarily
+- DUBBO: 'Error Code' of Dubbo request.
+- others: empty temporarily.
 
 ## Trace As Metric
 We made some rules for considering whether a request is abnormal. For the abnormal request, the detail request information is considered as useful for debugging or profiling. We name this kind of data "trace". It is not a good practice to store such data in Prometheus as some labels are high-cardinality, so we picked up some labels from the original ones to generate a new kind of metric, which is called "Trace As Metric". The following table shows what labels this metric contains.  
