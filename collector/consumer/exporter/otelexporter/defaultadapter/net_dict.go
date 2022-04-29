@@ -193,7 +193,10 @@ var entityProtocol = []extraLabelsParam{
 		{constlabels.ResponseContent, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{
-		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
+		[]dictionary{
+			{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
+			{constlabels.ResponseContent, constlabels.STR_EMPTY, StrEmpty},
+		}, extraLabelsKey{UNSUPPORTED},
 	},
 }
 
@@ -240,9 +243,9 @@ var topologyProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
-	{
-		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
-	},
+	{[]dictionary{
+		{constlabels.StatusCode, constlabels.STR_EMPTY, StrEmpty},
+	}, extraLabelsKey{UNSUPPORTED}},
 }
 
 var traceSpanStatus = []dictionary{
