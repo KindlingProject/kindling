@@ -31,7 +31,7 @@ func TestAdapter_transform(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			name:           "kindling_agg_net_topology",
+			name:           "kindling_agg_net_topology_http",
 			labelConverter: baseAdapter.aggTopologyAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
@@ -95,7 +95,7 @@ func TestAdapter_transform(t *testing.T) {
 			}),
 		},
 		{
-			name:           "kindling_detail_net_topology",
+			name:           "kindling_detail_net_topology_http",
 			labelConverter: baseAdapter.detailTopologyAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
@@ -164,7 +164,7 @@ func TestAdapter_transform(t *testing.T) {
 			}),
 		},
 		{
-			name:           "kindling_detail_net_entity",
+			name:           "kindling_detail_net_entity_http",
 			labelConverter: baseAdapter.detailEntityAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
@@ -227,7 +227,7 @@ func TestAdapter_transform(t *testing.T) {
 			}),
 		},
 		{
-			name:           "kindling_agg_net_entity",
+			name:           "kindling_agg_net_entity_http",
 			labelConverter: baseAdapter.aggEntityAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
@@ -310,6 +310,144 @@ func TestAdapter_transform(t *testing.T) {
 	}
 }
 
+func TestAdapter_transform_protocol(t *testing.T) {
+	type fields struct {
+		labelsMap       map[extraLabelsKey]realAttributes
+		updateKeys      []updateKey
+		valueLabelsFunc valueToLabels
+		adjustFunctions []adjustFunctions
+	}
+	type args struct {
+		group *model.GaugeGroup
+	}
+	tests := []struct {
+		name           string
+		labelConverter *LabelConverter
+		args           args
+		want           *model.AttributeMap
+		wantErr        bool
+	}{
+		{
+			name:           "kindling_net_topology_http",
+			labelConverter: baseAdapter.detailTopologyAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.HttpUrl:        model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// protocolInfo
+				constlabels.Protocol:   model.NewStringValue("http"),
+				constlabels.StatusCode: model.NewStringValue("200"),
+			}),
+		},
+		{
+			name:           "kindling_net_entity_http",
+			labelConverter: baseAdapter.detailEntityAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.ContentKey:     model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// protocolInfo
+				constlabels.Protocol:        model.NewStringValue("http"),
+				constlabels.RequestContent:  model.NewStringValue("/test"),
+				constlabels.ResponseContent: model.NewStringValue("200"),
+			}),
+		},
+		{
+			name:           "kindling_net_entity_dubbo",
+			labelConverter: baseAdapter.aggEntityAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue(constvalues.ProtocolDubbo),
+						constlabels.ContentKey:     model.NewStringValue("io.kindling.dubbo.api.service.OrderService#order"),
+						constlabels.DubboErrorCode: model.NewIntValue(20),
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// protocolInfo
+				constlabels.Protocol:        model.NewStringValue(constvalues.ProtocolDubbo),
+				constlabels.RequestContent:  model.NewStringValue("io.kindling.dubbo.api.service.OrderService#order"),
+				constlabels.ResponseContent: model.NewStringValue("20"),
+			}),
+		},
+		{
+			name:           "kindling_net_topology_dubbo",
+			labelConverter: baseAdapter.detailTopologyAdapter[0],
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue(constvalues.ProtocolDubbo),
+						constlabels.ContentKey:     model.NewStringValue("io.kindling.dubbo.api.service.OrderService#order"),
+						constlabels.DubboErrorCode: model.NewIntValue(20),
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// protocolInfo
+				constlabels.Protocol:   model.NewStringValue(constvalues.ProtocolDubbo),
+				constlabels.StatusCode: model.NewStringValue("20"),
+			}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tt.labelConverter
+			got, free := m.transform(tt.args.group)
+			for key, value := range tt.want.GetValues() {
+				if _, ok := got.GetValues()[key]; !ok {
+					t.Errorf("transform() expected key '%v' ,value '%v',but not exist", key, value.ToString())
+				}
+			}
+			free(got)
+		})
+	}
+}
+
 func TestAdapter_adapt(t *testing.T) {
 	type fields struct {
 		labelsMap       map[extraLabelsKey]realAttributes
@@ -328,7 +466,7 @@ func TestAdapter_adapt(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "kindling_agg_net_topology",
+			name:    "kindling_agg_net_topology_http",
 			adapter: baseAdapter.aggTopologyAdapter[0],
 			args: args{group: model.NewGaugeGroup(
 				constnames.AggregatedNetRequestGaugeGroup,
