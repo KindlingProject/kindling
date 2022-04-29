@@ -60,11 +60,12 @@ Service metrics are generated from the server-side events, which are used to sho
 | request_content | user-msg-topic | Topic of Kafka request. |
 | response_content |  | Empty temporarily. |
 
-- When protocol is Dubbo2:
+- When protocol is dubbo:
 
-| **Label** | **Example**                                      | **Notes** |
-| --- |--------------------------------------------------| --- |
-| request_content | io.kindling.dubbo.api.service.OrderService#order | Service Info.The format of service is `package.class#method` |
+| **Label** | **Example**                                      | **
+Notes**                                                                                                                                                |
+| --- |--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| request_content | io.kindling.dubbo.api.service.OrderService#order | Service Info. The format of service is `package.class#method`                                                                                            |
 | response_content | 20                                               | "error_code" of Dubbo, 20 - OK, more details at `https://dubbo.apache.org/en/blog/2018/10/05/introduction-to-the-dubbo-protocol/#dubbo-protocol-details` |
 
 - For other cases, the `request_content` and `response_content` are both empty.
