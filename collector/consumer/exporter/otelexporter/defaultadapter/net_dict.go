@@ -49,12 +49,12 @@ var isSlowDicList = []dictionary{
 var topologyInstanceMetricDicList = []dictionary{
 	{constlabels.SrcIp, constlabels.SrcIp, String},
 	{constlabels.DstIp, constlabels.DstIp, String},
-	{constlabels.DstPort, constlabels.DstPort, FromInt64ToString},
+	{constlabels.DstPort, constlabels.DstPort, Int64},
 }
 
 var entityInstanceMetricDicList = []dictionary{
 	{constlabels.Ip, constlabels.DstIp, String},
-	{constlabels.Port, constlabels.DstPort, FromInt64ToString},
+	{constlabels.Port, constlabels.DstPort, Int64},
 }
 
 var entityDetailMetricDicList = []dictionary{
@@ -70,6 +70,11 @@ var entityMetricDicList = []dictionary{
 	{constlabels.WorkloadName, constlabels.DstWorkloadName, String},
 	{constlabels.Service, constlabels.DstService, String},
 	{constlabels.Protocol, constlabels.Protocol, String},
+}
+
+var dNatDicList = []dictionary{
+	{constlabels.DnatIp, constlabels.DnatIp, String},
+	{constlabels.DnatPort, constlabels.DnatPort, Int64},
 }
 
 var topologyDetailMetricDicList = []dictionary{
@@ -203,7 +208,7 @@ var entityProtocol = []extraLabelsParam{
 var spanProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.SpanHttpMethod, constlabels.HttpMethod, String},
-		{constlabels.SpanHttpEndpoint, constlabels.HttpUrl, String},
+		{constlabels.SpanHttpEndpoint, constlabels.ContentKey, String},
 		{constlabels.SpanHttpStatusCode, constlabels.HttpStatusCode, Int64},
 		{constlabels.SpanHttpTraceId, constlabels.HttpApmTraceId, String},
 		{constlabels.SpanHttpTraceType, constlabels.HttpApmTraceType, String},
@@ -294,7 +299,7 @@ var traceStatus = []dictionary{
 	{constlabels.RequestProcessingStatus, constlabels.STR_EMPTY, String},
 	{constlabels.ResponseRspxferStatus, constlabels.STR_EMPTY, String},
 	{constlabels.RequestDurationStatus, constlabels.STR_EMPTY, String},
-	{constlabels.IsServer, constlabels.STR_EMPTY, Bool},
+	{constlabels.IsServer, constlabels.STR_EMPTY, Int64},
 }
 
 func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
@@ -316,7 +321,7 @@ func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
 		attribute.String(traceStatus[1].newKey, getSubStageStatus(waitingTtfb)),
 		attribute.String(traceStatus[2].newKey, getSubStageStatus(contentDownload)),
 		attribute.String(traceStatus[3].newKey, getRequestStatus(requestTotalTime)),
-		attribute.Bool(traceStatus[4].newKey, gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)),
+		attribute.Int64(traceStatus[4].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int))),
 	}
 }
 

@@ -200,14 +200,14 @@ func createNetAdapterManager(constLabels []attribute.KeyValue) *NetAdapterManage
 		build()
 
 	traceToSpanAdapter, _ := newAdapterBuilder(topologyMetricDicList,
-		[][]dictionary{topologyInstanceMetricDicList, SpanDicList}).
+		[][]dictionary{topologyInstanceMetricDicList, SpanDicList, dNatDicList}).
 		withExtraLabels(spanProtocol, updateProtocolKey).
 		withValueToLabels(traceSpanStatus, getTraceSpanStatusLabels).
 		withConstLabels(constLabels).
 		build()
 
 	traceToMetricAdapter, _ := newAdapterBuilder(topologyMetricDicList,
-		[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList}).
+		[][]dictionary{topologyInstanceMetricDicList, topologyDetailMetricDicList, dNatDicList}).
 		withExtraLabels(entityProtocol, updateProtocolKey).
 		withValueToLabels(traceStatus, getTraceStatusLabels).
 		withConstLabels(constLabels).

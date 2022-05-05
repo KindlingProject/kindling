@@ -3,16 +3,18 @@ package otelexporter
 import (
 	"context"
 	"github.com/Kindling-project/kindling/collector/component"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
-	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/observability/logger"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -105,21 +107,20 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 		}...)
 }
 
-func makeNetGroup(requestLatency int64) *model.GaugeGroup {
+func makeTraceAsMetricGroup(requestLatency int64, timestamp uint64, dstIp string) *model.GaugeGroup {
 	return model.NewGaugeGroup(
-		constnames.AggregatedNetRequestGaugeGroup,
+		constnames.TraceAsMetric,
 		model.NewAttributeMapWithValues(
 			map[string]model.AttributeValue{
 				// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
 				constlabels.SrcIp:   model.NewStringValue("src-ip"),
-				constlabels.SrcPort: model.NewIntValue(33333),
-				constlabels.DstIp:   model.NewStringValue("dst-ip"),
+				constlabels.DstIp:   model.NewStringValue(dstIp),
 				constlabels.DstPort: model.NewIntValue(8080),
 
 				// protocolInfo
-				constlabels.Protocol:       model.NewStringValue("http"),
-				constlabels.HttpUrl:        model.NewStringValue("/test"),
-				constlabels.HttpStatusCode: model.NewIntValue(200),
+				constlabels.Protocol:        model.NewStringValue("http"),
+				constlabels.RequestContent:  model.NewStringValue("/test"),
+				constlabels.ResponseContent: model.NewStringValue("200"),
 
 				// k8sInfo
 				constlabels.DstPod:          model.NewStringValue("dst-pod"),
@@ -134,51 +135,77 @@ func makeNetGroup(requestLatency int64) *model.GaugeGroup {
 				constlabels.DstService:      model.NewStringValue("dst-service"),
 				constlabels.SrcNode:         model.NewStringValue("src-node"),
 				constlabels.DstNode:         model.NewStringValue("dst-node"),
+				constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+				constlabels.DnatPort:        model.NewIntValue(80),
 
-				// isSlow
-				constlabels.IsSlow: model.NewBoolValue(false),
+				constlabels.IsServer:                model.NewIntValue(0),
+				constlabels.RequestDurationStatus:   model.NewStringValue(defaultadapter.GreenStatus),
+				constlabels.RequestReqxferStatus:    model.NewStringValue(defaultadapter.GreenStatus),
+				constlabels.RequestProcessingStatus: model.NewStringValue(defaultadapter.GreenStatus),
+				constlabels.ResponseRspxferStatus:   model.NewStringValue(defaultadapter.GreenStatus),
+
+				"const-labels1": model.NewStringValue("const-values1"),
 			}),
-		123,
-		[]*model.Gauge{
-			{constvalues.RequestTotalTime, requestLatency},
-		}...)
-}
-
-func makeTraceAsMetric(requestLatency int64) *model.GaugeGroup {
-	return model.NewGaugeGroup(
-		constnames.AggregatedNetRequestGaugeGroup,
-		model.NewAttributeMapWithValues(
-			map[string]model.AttributeValue{
-				// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
-				constlabels.SrcIp:   model.NewStringValue("src-ip"),
-				constlabels.SrcPort: model.NewIntValue(33333),
-				constlabels.DstIp:   model.NewStringValue("dst-ip"),
-				constlabels.DstPort: model.NewIntValue(8080),
-
-				// protocolInfo
-				constlabels.Protocol:       model.NewStringValue("http"),
-				constlabels.HttpUrl:        model.NewStringValue("/test"),
-				constlabels.HttpStatusCode: model.NewIntValue(200),
-
-				// k8sInfo
-				constlabels.DstPod:          model.NewStringValue("dst-pod"),
-				constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
-				constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
-				constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
-				constlabels.SrcPod:          model.NewStringValue("src-pod"),
-				constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
-				constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
-				constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
-				constlabels.SrcService:      model.NewStringValue("src-service"),
-				constlabels.DstService:      model.NewStringValue("dst-service"),
-				constlabels.SrcNode:         model.NewStringValue("src-node"),
-				constlabels.DstNode:         model.NewStringValue("dst-node"),
-
-				// isSlow
-				constlabels.IsSlow: model.NewBoolValue(false),
-			}),
-		123,
+		timestamp,
 		[]*model.Gauge{
 			{constnames.TraceAsMetric, requestLatency},
 		}...)
+}
+
+func Test_instrumentFactory_recordTraceAsMetric(t *testing.T) {
+	ins := newInstrumentFactory(metric.Meter{}, component.NewDefaultTelemetryTools().Logger, nil)
+	metricName := constnames.TraceAsMetric
+	var randTime int64
+	var timestamp uint64
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		select {
+		case <-ticker.C:
+			lastTraceAsMetric := ins.aggregator.DumpSingle(metricName)
+			if len(lastTraceAsMetric) != 2 {
+				t.Errorf("Labels Check failed,expected 2 groups , got %d", len(lastTraceAsMetric))
+			}
+
+			var t1 *model.GaugeGroup
+
+			for i := 0; i < len(lastTraceAsMetric); i++ {
+				if lastTraceAsMetric[i].Labels.GetStringValue(constlabels.DstIp) == "1.1.1.1" {
+					t1 = lastTraceAsMetric[i]
+
+					// value check
+					if gauge, ok := t1.GetGauge(constnames.TraceAsMetric); ok {
+						if gauge.Value != randTime {
+							t.Errorf("Value check failed")
+						}
+					} else {
+						t.Errorf("Value check failed")
+					}
+
+					// timestamp check
+					if t1.Timestamp != timestamp {
+						t.Errorf("Timestamp check failed")
+					}
+				}
+			}
+		}
+	}()
+
+	go func() {
+		for i := 0; i < 10; i++ {
+			randTime2 := rand.Int63n(1000)
+			timestamp2 := rand.Uint64()
+			singleGauge := makeTraceAsMetricGroup(randTime2, timestamp2, "2.2.2.2")
+			ins.aggregator.Aggregate(singleGauge, ins.getSelector(metricName))
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	for i := 0; i < 10; i++ {
+		randTime = rand.Int63n(1000)
+		timestamp = rand.Uint64()
+		singleGauge := makeTraceAsMetricGroup(randTime, timestamp, "1.1.1.1")
+		ins.aggregator.Aggregate(singleGauge, ins.getSelector(metricName))
+		time.Sleep(1 * time.Second)
+	}
 }
