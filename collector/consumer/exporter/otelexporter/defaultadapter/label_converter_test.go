@@ -483,7 +483,7 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 				constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
 				constlabels.DnatPort:        model.NewIntValue(80),
 
-				constlabels.IsServer:          model.NewBoolValue(false),
+				constlabels.IsServer:          model.NewIntValue(0),
 				constlabels.RequestTotalNs:    model.NewIntValue(123),
 				constlabels.RequestSentNs:     model.NewIntValue(201),
 				constlabels.WaitingTTfbNs:     model.NewIntValue(101),
