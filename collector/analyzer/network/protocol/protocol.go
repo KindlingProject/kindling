@@ -16,16 +16,17 @@ func SetPayLoadLength(protocol string, length int) {
 	payloadLength[protocol] = length
 }
 
-func GetHttpPayLoadLength() int {
-	if length, ok := payloadLength[HTTP]; ok {
+func GetPayLoadLength(protocol string) int {
+	if length, ok := payloadLength[protocol]; ok {
 		return length
 	}
-	return 0
+	return 80
+}
+
+func GetHttpPayLoadLength() int {
+	return GetPayLoadLength(HTTP)
 }
 
 func GetDubboPayLoadLength() int {
-	if length, ok := payloadLength[DUBBO]; ok {
-		return length
-	}
-	return 0
+	return GetPayLoadLength(DUBBO)
 }
