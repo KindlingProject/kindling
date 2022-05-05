@@ -310,6 +310,219 @@ func TestAdapter_transform(t *testing.T) {
 	}
 }
 
+func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
+	type fields struct {
+		labelsMap       map[extraLabelsKey]realAttributes
+		updateKeys      []updateKey
+		valueLabelsFunc valueToLabels
+		adjustFunctions []adjustFunctions
+	}
+	type args struct {
+		group *model.GaugeGroup
+	}
+	tests := []struct {
+		name           string
+		labelConverter *LabelConverter
+		args           args
+		want           *model.AttributeMap
+		wantErr        bool
+	}{
+		{
+			name:           "kindling_trace_to_metric",
+			labelConverter: baseAdapter.traceToMetricAdapter,
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+						constlabels.SrcIp:   model.NewStringValue("src-ip"),
+						constlabels.SrcPort: model.NewIntValue(33333),
+						constlabels.DstIp:   model.NewStringValue("dst-ip"),
+						constlabels.DstPort: model.NewIntValue(8080),
+
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.ContentKey:     model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+
+						// k8sInfo
+						constlabels.DstPod:          model.NewStringValue("dst-pod"),
+						constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+						constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+						constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+						constlabels.SrcPod:          model.NewStringValue("src-pod"),
+						constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+						constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+						constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+						constlabels.SrcService:      model.NewStringValue("src-service"),
+						constlabels.DstService:      model.NewStringValue("dst-service"),
+						constlabels.SrcNode:         model.NewStringValue("src-node"),
+						constlabels.DstNode:         model.NewStringValue("dst-node"),
+						constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+						constlabels.DnatPort:        model.NewIntValue(80),
+
+						// isSlow
+						constlabels.IsSlow: model.NewBoolValue(false),
+					}),
+				123,
+				[]*model.Gauge{
+					{constvalues.RequestIo, 456},
+					{constvalues.RequestTotalTime, 123e6},
+					{constvalues.RequestSentTime, 201e6},
+					{constvalues.WaitingTtfbTime, 101e6},
+					{constvalues.ContentDownloadTime, 801e6},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+				constlabels.SrcIp:   model.NewStringValue("src-ip"),
+				constlabels.DstIp:   model.NewStringValue("dst-ip"),
+				constlabels.DstPort: model.NewIntValue(8080),
+
+				// protocolInfo
+				constlabels.Protocol:        model.NewStringValue("http"),
+				constlabels.RequestContent:  model.NewStringValue("/test"),
+				constlabels.ResponseContent: model.NewStringValue("200"),
+
+				// k8sInfo
+				constlabels.DstPod:          model.NewStringValue("dst-pod"),
+				constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+				constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+				constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+				constlabels.SrcPod:          model.NewStringValue("src-pod"),
+				constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+				constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+				constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+				constlabels.SrcService:      model.NewStringValue("src-service"),
+				constlabels.DstService:      model.NewStringValue("dst-service"),
+				constlabels.SrcNode:         model.NewStringValue("src-node"),
+				constlabels.DstNode:         model.NewStringValue("dst-node"),
+				constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+				constlabels.DnatPort:        model.NewIntValue(80),
+
+				constlabels.IsServer:                model.NewBoolValue(false),
+				constlabels.RequestDurationStatus:   model.NewStringValue(getRequestStatus(123e6)),
+				constlabels.RequestReqxferStatus:    model.NewStringValue(getSubStageStatus(201e6)),
+				constlabels.RequestProcessingStatus: model.NewStringValue(getSubStageStatus(101e6)),
+				constlabels.ResponseRspxferStatus:   model.NewStringValue(getSubStageStatus(801e6)),
+
+				"const-labels1": model.NewStringValue("const-values1"),
+			}),
+		},
+		{
+			name:           "kindling_trace_to_span",
+			labelConverter: baseAdapter.traceToSpanAdapter,
+			args: args{group: model.NewGaugeGroup(
+				constnames.AggregatedNetRequestGaugeGroup,
+				model.NewAttributeMapWithValues(
+					map[string]model.AttributeValue{
+						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+						constlabels.SrcIp:   model.NewStringValue("src-ip"),
+						constlabels.SrcPort: model.NewIntValue(33333),
+						constlabels.DstIp:   model.NewStringValue("dst-ip"),
+						constlabels.DstPort: model.NewIntValue(8080),
+
+						// protocolInfo
+						constlabels.Protocol:       model.NewStringValue("http"),
+						constlabels.ContentKey:     model.NewStringValue("/test"),
+						constlabels.HttpStatusCode: model.NewIntValue(200),
+						constlabels.HttpUrl:        model.NewStringValue("/test?param=1"),
+
+						// k8sInfo
+						constlabels.DstPod:          model.NewStringValue("dst-pod"),
+						constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+						constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+						constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+						constlabels.SrcPod:          model.NewStringValue("src-pod"),
+						constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+						constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+						constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+						constlabels.SrcService:      model.NewStringValue("src-service"),
+						constlabels.DstService:      model.NewStringValue("dst-service"),
+						constlabels.SrcNode:         model.NewStringValue("src-node"),
+						constlabels.DstNode:         model.NewStringValue("dst-node"),
+						constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+						constlabels.DnatPort:        model.NewIntValue(80),
+
+						// isSlow
+						constlabels.IsSlow: model.NewIntValue(0),
+					}),
+				123*10e5,
+				[]*model.Gauge{
+					{constvalues.RequestTotalTime, 123},
+					{constvalues.RequestIo, 456},
+					{constvalues.RequestSentTime, 201},
+					{constvalues.WaitingTtfbTime, 101},
+					{constvalues.ContentDownloadTime, 801},
+				}...),
+			},
+			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
+				constlabels.SrcIp:   model.NewStringValue("src-ip"),
+				constlabels.DstIp:   model.NewStringValue("dst-ip"),
+				constlabels.DstPort: model.NewIntValue(8080),
+
+				// protocolInfo
+				constlabels.Protocol:           model.NewStringValue("http"),
+				constlabels.SpanHttpStatusCode: model.NewIntValue(200),
+				constlabels.SpanHttpEndpoint:   model.NewStringValue("/test?param=1"),
+
+				// k8sInfo
+				constlabels.DstPod:          model.NewStringValue("dst-pod"),
+				constlabels.DstWorkloadName: model.NewStringValue("dst-workloadName"),
+				constlabels.DstNamespace:    model.NewStringValue("dst-Namespace"),
+				constlabels.DstWorkloadKind: model.NewStringValue("dst-workloadKind"),
+				constlabels.SrcPod:          model.NewStringValue("src-pod"),
+				constlabels.SrcWorkloadName: model.NewStringValue("src-workloadName"),
+				constlabels.SrcNamespace:    model.NewStringValue("src-Namespace"),
+				constlabels.SrcWorkloadKind: model.NewStringValue("src-workloadKind"),
+				constlabels.SrcService:      model.NewStringValue("src-service"),
+				constlabels.DstService:      model.NewStringValue("dst-service"),
+				constlabels.SrcNode:         model.NewStringValue("src-node"),
+				constlabels.DstNode:         model.NewStringValue("dst-node"),
+				constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
+				constlabels.DnatPort:        model.NewIntValue(80),
+
+				constlabels.IsServer:          model.NewIntValue(0),
+				constlabels.RequestTotalNs:    model.NewIntValue(123),
+				constlabels.RequestSentNs:     model.NewIntValue(201),
+				constlabels.WaitingTTfbNs:     model.NewIntValue(101),
+				constlabels.ContentDownloadNs: model.NewIntValue(801),
+				constlabels.RequestIoBytes:    model.NewIntValue(456),
+				constlabels.IsError:           model.NewIntValue(0),
+				constlabels.IsSlow:            model.NewIntValue(0),
+				constlabels.IsConvergent:      model.NewIntValue(0),
+				constlabels.Timestamp:         model.NewIntValue(123),
+
+				"const-labels1": model.NewStringValue("const-values1"),
+			}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tt.labelConverter
+			got, free := m.transform(tt.args.group)
+			for key, value := range got.GetValues() {
+				if valueW, ok := tt.want.GetValues()[key]; ok {
+					if value.ToString() != valueW.ToString() {
+						t.Errorf("transform() get = '%v = %v', want '%v = %v'", key, value.ToString(), key, valueW.ToString())
+					}
+				} else {
+					if value.ToString() != "" {
+						t.Errorf("transform() get = '%v =  %v', don't want this label", key, value.ToString())
+					}
+				}
+			}
+			for key, value := range tt.want.GetValues() {
+				if _, ok := got.GetValues()[key]; !ok {
+					t.Errorf("transform() expected key '%v' ,value '%v',but not exist", key, value.ToString())
+				}
+			}
+			free(got)
+		})
+	}
+}
+
 func TestAdapter_adapt(t *testing.T) {
 	type fields struct {
 		labelsMap       map[extraLabelsKey]realAttributes

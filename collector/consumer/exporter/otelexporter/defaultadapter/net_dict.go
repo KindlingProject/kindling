@@ -49,12 +49,12 @@ var isSlowDicList = []dictionary{
 var topologyInstanceMetricDicList = []dictionary{
 	{constlabels.SrcIp, constlabels.SrcIp, String},
 	{constlabels.DstIp, constlabels.DstIp, String},
-	{constlabels.DstPort, constlabels.DstPort, FromInt64ToString},
+	{constlabels.DstPort, constlabels.DstPort, Int64},
 }
 
 var entityInstanceMetricDicList = []dictionary{
 	{constlabels.Ip, constlabels.DstIp, String},
-	{constlabels.Port, constlabels.DstPort, FromInt64ToString},
+	{constlabels.Port, constlabels.DstPort, Int64},
 }
 
 var entityDetailMetricDicList = []dictionary{
@@ -70,6 +70,11 @@ var entityMetricDicList = []dictionary{
 	{constlabels.WorkloadName, constlabels.DstWorkloadName, String},
 	{constlabels.Service, constlabels.DstService, String},
 	{constlabels.Protocol, constlabels.Protocol, String},
+}
+
+var dNatDicList = []dictionary{
+	{constlabels.DnatIp, constlabels.DnatIp, String},
+	{constlabels.DnatPort, constlabels.DnatPort, Int64},
 }
 
 var topologyDetailMetricDicList = []dictionary{
