@@ -299,7 +299,7 @@ var traceStatus = []dictionary{
 	{constlabels.RequestProcessingStatus, constlabels.STR_EMPTY, String},
 	{constlabels.ResponseRspxferStatus, constlabels.STR_EMPTY, String},
 	{constlabels.RequestDurationStatus, constlabels.STR_EMPTY, String},
-	{constlabels.IsServer, constlabels.STR_EMPTY, Int64},
+	{constlabels.IsServer, constlabels.STR_EMPTY, Bool},
 }
 
 func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
