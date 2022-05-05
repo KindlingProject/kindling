@@ -48,6 +48,8 @@ analyzers:
     # for the ports that are not in the lists, in which case the cpu usage will be increased much inevitably.
     protocol_config:
       - key: "http"
+        # payload_length indicates the maximum size that payload can be fetched for target protocol
+        # The trace data sent may contain such payload, so the higher this value, the larger network traffic.
         payload_length: 200
       - key: "dubbo"
         payload_length: 200
