@@ -426,6 +426,7 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 						constlabels.Protocol:       model.NewStringValue("http"),
 						constlabels.ContentKey:     model.NewStringValue("/test"),
 						constlabels.HttpStatusCode: model.NewIntValue(200),
+						constlabels.HttpUrl:        model.NewStringValue("/test?param=1"),
 
 						// k8sInfo
 						constlabels.DstPod:          model.NewStringValue("dst-pod"),
@@ -464,7 +465,7 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 				// protocolInfo
 				constlabels.Protocol:           model.NewStringValue("http"),
 				constlabels.SpanHttpStatusCode: model.NewIntValue(200),
-				constlabels.SpanHttpEndpoint:   model.NewStringValue("/test"),
+				constlabels.SpanHttpEndpoint:   model.NewStringValue("/test?param=1"),
 
 				// k8sInfo
 				constlabels.DstPod:          model.NewStringValue("dst-pod"),

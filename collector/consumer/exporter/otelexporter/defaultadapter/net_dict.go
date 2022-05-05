@@ -208,7 +208,7 @@ var entityProtocol = []extraLabelsParam{
 var spanProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.SpanHttpMethod, constlabels.HttpMethod, String},
-		{constlabels.SpanHttpEndpoint, constlabels.ContentKey, String},
+		{constlabels.SpanHttpEndpoint, constlabels.HttpUrl, String},
 		{constlabels.SpanHttpStatusCode, constlabels.HttpStatusCode, Int64},
 		{constlabels.SpanHttpTraceId, constlabels.HttpApmTraceId, String},
 		{constlabels.SpanHttpTraceType, constlabels.HttpApmTraceType, String},
