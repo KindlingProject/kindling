@@ -74,7 +74,6 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterReceiver(udsreceiver.Uds, udsreceiver.NewUdsReceiver, &udsreceiver.Config{})
 	a.componentsFactory.RegisterAnalyzer(network.Network.String(), network.NewNetworkAnalyzer, &network.Config{})
 	a.componentsFactory.RegisterProcessor(k8sprocessor.K8sMetadata, k8sprocessor.NewKubernetesProcessor, &k8sprocessor.DefaultConfig)
-	//a.componentsFactory.RegisterProcessor(kindlingformatprocessor.ProcessorName, kindlingformatprocessor.NewRelabelProcessor, &kindlingformatprocessor.Config{})
 	a.componentsFactory.RegisterExporter(otelexporter.Otel, otelexporter.NewExporter, &otelexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(tcpmetricanalyzer.TcpMetric.String(), tcpmetricanalyzer.NewTcpMetricAnalyzer, &tcpmetricanalyzer.Config{})
 	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
@@ -103,9 +102,7 @@ func (a *Application) buildPipeline() error {
 	otelExporterFactory := a.componentsFactory.Exporters[otelexporter.Otel]
 	otelExporter := otelExporterFactory.NewFunc(otelExporterFactory.Config, a.telemetry.Telemetry)
 	// Initialize all processors
-	// 1. Kindling Metric Format Processor
-	//formatProcessorFactory := a.componentsFactory.Processors[kindlingformatprocessor.ProcessorName]
-	//formatProcessor := formatProcessorFactory.NewFunc(formatProcessorFactory.Config, a.telemetry.Telemetry, otelExporter)
+	// 1. GaugeGroup Aggregator
 	aggregateProcessorFactory := a.componentsFactory.Processors[aggregateprocessor.Type]
 	aggregateProcessor := aggregateProcessorFactory.NewFunc(aggregateProcessorFactory.Config, a.telemetry.Telemetry, otelExporter)
 	// 2. Kubernetes metadata processor
