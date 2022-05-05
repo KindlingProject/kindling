@@ -96,7 +96,7 @@ func TestParseHttpRequest_GetPayLoad(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			protocol.SetHttpPayLoadLength(tt.size)
+			protocol.SetPayLoadLength(protocol.HTTP, tt.size)
 			message := protocol.NewRequestMessage([]byte(httpData))
 			NewHttpParser().ParseRequest(message)
 
@@ -124,7 +124,7 @@ func TestParseHttpResponse_GetPayLoad(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			protocol.SetHttpPayLoadLength(tt.size)
+			protocol.SetPayLoadLength(protocol.HTTP, tt.size)
 
 			message := protocol.NewResponseMessage([]byte(httpData), model.NewAttributeMap())
 			NewHttpParser().ParseResponse(message)
