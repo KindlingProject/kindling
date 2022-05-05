@@ -125,7 +125,6 @@ func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSele
 
 func newTraceAsMetricSelectors() *aggregator.LabelSelectors {
 	return aggregator.NewLabelSelectors(
-		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.Protocol, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.IsServer, VType: aggregator.BooleanType},
 		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
