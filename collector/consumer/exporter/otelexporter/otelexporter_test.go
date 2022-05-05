@@ -16,7 +16,6 @@ import (
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"strconv"
 	"testing"
@@ -191,14 +190,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		},
 	}
 
-	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
-		Filename:   "test.log",
-		MaxSize:    500,
-		MaxAge:     10,
-		MaxBackups: 1,
-		LocalTime:  true,
-		Compress:   false,
-	})
+	logger := logger.CreateConsoleLogger()
 	exporter, _ := newExporters(context.Background(), cfg, logger)
 
 	cont := controller.New(

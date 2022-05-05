@@ -13,7 +13,6 @@ import (
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"math/rand"
 	"testing"
 	"time"
@@ -46,14 +45,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 		},
 	}
 
-	loggerInstance := logger.CreateFileRotationLogger(&lumberjack.Logger{
-		Filename:   "test.log",
-		MaxSize:    500,
-		MaxAge:     10,
-		MaxBackups: 1,
-		LocalTime:  true,
-		Compress:   false,
-	})
+	loggerInstance := logger.CreateConsoleLogger()
 	exporter, _ := newExporters(context.Background(), cfg, loggerInstance)
 
 	cont := controller.New(

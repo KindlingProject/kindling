@@ -400,7 +400,7 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 				constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
 				constlabels.DnatPort:        model.NewIntValue(80),
 
-				constlabels.IsServer:                model.NewIntValue(0),
+				constlabels.IsServer:                model.NewBoolValue(false),
 				constlabels.RequestDurationStatus:   model.NewStringValue(getRequestStatus(123e6)),
 				constlabels.RequestReqxferStatus:    model.NewStringValue(getSubStageStatus(201e6)),
 				constlabels.RequestProcessingStatus: model.NewStringValue(getSubStageStatus(101e6)),
@@ -445,7 +445,7 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 						constlabels.DnatPort:        model.NewIntValue(80),
 
 						// isSlow
-						constlabels.IsSlow: model.NewBoolValue(false),
+						constlabels.IsSlow: model.NewIntValue(0),
 					}),
 				123*10e5,
 				[]*model.Gauge{
@@ -483,7 +483,7 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 				constlabels.DnatIp:          model.NewStringValue("dnat-ip"),
 				constlabels.DnatPort:        model.NewIntValue(80),
 
-				constlabels.IsServer:          model.NewIntValue(0),
+				constlabels.IsServer:          model.NewBoolValue(false),
 				constlabels.RequestTotalNs:    model.NewIntValue(123),
 				constlabels.RequestSentNs:     model.NewIntValue(201),
 				constlabels.WaitingTTfbNs:     model.NewIntValue(101),
