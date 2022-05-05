@@ -321,7 +321,7 @@ func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
 		attribute.String(traceStatus[1].newKey, getSubStageStatus(waitingTtfb)),
 		attribute.String(traceStatus[2].newKey, getSubStageStatus(contentDownload)),
 		attribute.String(traceStatus[3].newKey, getRequestStatus(requestTotalTime)),
-		attribute.Int64(traceStatus[4].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int))),
+		attribute.Bool(traceStatus[4].newKey, gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)),
 	}
 }
 
