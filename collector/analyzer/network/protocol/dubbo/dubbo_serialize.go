@@ -1,12 +1,12 @@
 package dubbo
 
 const (
-	JSON_NEXTLINE = byte(0x0a)
-	JSON_QUTOES   = byte(0x22)
-	JSON_COLON    = byte(0x3a)
+	JsonNextLine = byte(0x0a)
+	JsonQutoes   = byte(0x22)
+	JsonColon    = byte(0x3a)
 
-	SERIAL_HESSIAN2 = byte(0x02)
-	SERIAL_FASTJSON = byte(0x06)
+	SerialHessian2 = byte(0x02)
+	SerialFastjson = byte(0x06)
 )
 
 type dubboSerializer interface {
@@ -18,19 +18,19 @@ type dubboSerializer interface {
 }
 
 var (
-	serial_hessian2  = &dubboHessian{}
-	serial_fastjson  = &dubboFastJson{}
-	serial_unsupport = &dubboUnsupport{}
+	serialHessian2  = &dubboHessian{}
+	serialFastjson  = &dubboFastJson{}
+	serialUnsupport = &dubboUnsupport{}
 )
 
 func GetSerializer(serialID byte) dubboSerializer {
 	switch serialID {
-	case SERIAL_HESSIAN2:
-		return serial_hessian2
-	case SERIAL_FASTJSON:
-		return serial_fastjson
+	case SerialHessian2:
+		return serialHessian2
+	case SerialFastjson:
+		return serialFastjson
 	default:
-		return serial_unsupport
+		return serialUnsupport
 	}
 }
 
@@ -122,7 +122,7 @@ func (json *dubboFastJson) eatString(data []byte, offset int) int {
 	   off   i
 	*/
 	for i := offset + 1; i < dataLength; i++ {
-		if data[i] == JSON_NEXTLINE {
+		if data[i] == JsonNextLine {
 			return i + 1
 		}
 	}
@@ -141,7 +141,7 @@ func (json *dubboFastJson) getStringValue(data []byte, offset int) (int, string)
 	   off   i
 	*/
 	for i := offset + 1; i < dataLength; i++ {
-		if data[i] == JSON_NEXTLINE {
+		if data[i] == JsonNextLine {
 			return i + 1, string(data[offset+1 : i-1])
 		}
 	}
@@ -159,11 +159,11 @@ func (json *dubboFastJson) getStringValueByKey(data []byte, from int, key string
 	*/
 	quoteLeft := 0
 	for i := from; i < dataLength; i++ {
-		if data[i] == JSON_QUTOES {
+		if data[i] == JsonQutoes {
 			if quoteLeft == 0 {
 				// Set Left Index
 				quoteLeft = i
-			} else if data[i+1] == JSON_COLON && data[i+2] == JSON_QUTOES {
+			} else if data[i+1] == JsonColon && data[i+2] == JsonQutoes {
 				// "key":"value"
 				if i-quoteLeft-1 == keyLength && string(data[quoteLeft+1:i]) == key {
 					return json.getNextString(data, dataLength, i+2)
@@ -189,7 +189,7 @@ func (json *dubboFastJson) getNextString(data []byte, dataLength int, offset int
 	   off  i
 	*/
 	for i := offset + 1; i < dataLength; i++ {
-		if data[i] == JSON_QUTOES {
+		if data[i] == JsonQutoes {
 			return string(data[offset+1 : i])
 		}
 	}

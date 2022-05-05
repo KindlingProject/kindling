@@ -7,7 +7,7 @@ import (
 
 func fastfailDubboRequest() protocol.FastFailFn {
 	return func(message *protocol.PayloadMessage) bool {
-		return len(message.Data) < 16 || message.Data[0] != MAGIC_HIGH || message.Data[1] != MAGIC_LOW
+		return len(message.Data) < 16 || message.Data[0] != MagicHigh || message.Data[1] != MagicLow
 	}
 }
 
@@ -25,24 +25,24 @@ func parseDubboRequest() protocol.ParsePkgFn {
 }
 
 func getContentKey(requestData []byte) string {
-	serialID := requestData[2] & SERIAL_MASK
+	serialID := requestData[2] & SerialMask
 	if serialID == Zero {
 		return ""
 	}
-	if (requestData[2] & FLAG_EVENT) != Zero {
+	if (requestData[2] & FlagEvent) != Zero {
 		return "Heartbeat"
 	}
-	if (requestData[2] & FLAG_REQUEST) == Zero {
+	if (requestData[2] & FlagRequest) == Zero {
 		// Invalid Data
 		return ""
 	}
-	if (requestData[2] & FLAG_TWOWAY) == Zero {
+	if (requestData[2] & FlagTwoWay) == Zero {
 		// Ignore Oneway Data
 		return "Oneway"
 	}
 
 	serializer := GetSerializer(serialID)
-	if serializer == serial_unsupport {
+	if serializer == serialUnsupport {
 		// Unsupport Serial. only support hessian and fastjson.
 		return "UnSupportSerialFormat"
 	}

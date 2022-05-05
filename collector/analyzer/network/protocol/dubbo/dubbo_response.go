@@ -7,7 +7,7 @@ import (
 
 func fastfailDubboResponse() protocol.FastFailFn {
 	return func(message *protocol.PayloadMessage) bool {
-		return len(message.Data) < 16 || message.Data[0] != MAGIC_HIGH || message.Data[1] != MAGIC_LOW
+		return len(message.Data) < 16 || message.Data[0] != MagicHigh || message.Data[1] != MagicLow
 	}
 }
 
@@ -29,14 +29,14 @@ func parseDubboResponse() protocol.ParsePkgFn {
 }
 
 func getErrorCode(responseData []byte) int64 {
-	SerialID := responseData[2] & SERIAL_MASK
+	SerialID := responseData[2] & SerialMask
 	if SerialID == Zero {
 		return -1
 	}
-	if (responseData[2] & FLAG_EVENT) != Zero {
+	if (responseData[2] & FlagEvent) != Zero {
 		return 20
 	}
-	if (responseData[2] & FLAG_REQUEST) != Zero {
+	if (responseData[2] & FlagRequest) != Zero {
 		// Invalid Data
 		return -1
 	}
