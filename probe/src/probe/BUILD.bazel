@@ -80,7 +80,7 @@ container_push(
     name = "push_image",
     format = "Docker",
     image = ":kindling_probe_image",
-    # ATTENTION!! Modify this if you want to change docker registry.    
+    # ATTENTION!! Modify this if you want to change docker registry.
     registry = "docker.io",
     repository = "kindlingproject/kindling-probe",
     tag = "latest",
@@ -90,7 +90,7 @@ container_push(
     name = "push_image_localdriver",
     format = "Docker",
     image = ":kindling_probe_image_localdriver",
-    # ATTENTION!! Modify this if you want to change docker registry.    
+    # ATTENTION!! Modify this if you want to change docker registry.
     registry = "docker.io",
     repository = "kindlingproject/kindling-probe",
     tag = "latest",
