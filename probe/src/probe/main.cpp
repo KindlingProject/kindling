@@ -12,6 +12,9 @@
 #include "src/common/base/base.h"
 #include "src/probe/catch_sig.h"
 
+#include "src/probe/version.h"
+#include <ctime>
+#include <string>
 
 DEFINE_int32(sysdig_snaplen, 80, "The len of one sysdig event");
 DEFINE_int32(list_batch_size, 100, "The batch size of convert/send list");
@@ -108,6 +111,9 @@ int main(int argc, char** argv) {
 
     LOG(INFO) << "Start kindling probe...";
     LOG(INFO) << "KINDLING_PROBE_VERSION: " << KINDLING_PROBE_VERSION;
+    LOG(INFO) << "KINDLING_PROBE_"<< _VERSION_ ;
+    std::cout << "KINDLING_PROBE_"<< _VERSION_ << std::endl;
+
     TerminationHandler::InstallSignalHandlers();
     try {
         inspector = new sinsp();
