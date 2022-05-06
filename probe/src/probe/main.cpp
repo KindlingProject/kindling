@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
     output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
 
     LOG(INFO) << "Start kindling probe...";
-    LOG(INFO) << "KINDLING_PROBE_VERSION: " << KINDLING_PROBE_VERSION;
+    //LOG(INFO) << "KINDLING_PROBE_VERSION: " << KINDLING_PROBE_VERSION;
     LOG(INFO) << "KINDLING_PROBE_"<< _VERSION_ ;
     std::cout << "KINDLING_PROBE_"<< _VERSION_ << std::endl;
 
