@@ -54,6 +54,7 @@ func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
 func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
 	if e.defaultTracer == nil {
 		e.telemetry.Logger.Error("Send span failed: this exporter doesn't support Span Data", zap.String("exporter", e.cfg.ExportKind))
+		return
 	}
 	_, span := e.defaultTracer.Start(
 		context.Background(),
