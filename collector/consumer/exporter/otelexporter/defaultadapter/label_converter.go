@@ -276,15 +276,7 @@ func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 // transform is used to general final labels for Async Metric.It won't modify the origin model.GaugeGroup and should be free by calling the FreeAttrsMap after exported.
 func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap, FreeAttrsMap) {
 	labels := group.Labels
-	tmpExtraKey := &extraLabelsKey{protocol: empty}
-	for i := 0; i < len(m.updateKeys); i++ {
-		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
-	}
-	attrs, ok := m.labelsMap[*tmpExtraKey]
-	if !ok {
-		tmpExtraKey.protocol = UNSUPPORTED
-		attrs = m.labelsMap[*tmpExtraKey]
-	}
+	attrs := m.searchExtraAttribute(labels)
 	attrsMap := attrs.attrsMapPool.Get().(*model.AttributeMap)
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
@@ -321,20 +313,25 @@ func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap
 	return attrsMap, attrs.attrsMapPool.Free
 }
 
-// convert is used to general final labels for Sync Metric and Trace. It won't modify the origin model.GaugeGroup and should be free by calling the FreeAttrsList after exported.
-func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, FreeAttrsList) {
-	labels := group.Labels
+// searchExtraAttribute determine the final outPut struct for incoming gaugeGroup
+// return the default struct of `UNSUPPORTED Protocol` if failed
+func (m *LabelConverter) searchExtraAttribute(labels *model.AttributeMap) realAttributes {
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
 	for i := 0; i < len(m.updateKeys); i++ {
 		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
 	}
 	attrs, ok := m.labelsMap[*tmpExtraKey]
 	if !ok {
-		// some protocol is defined by updateKeys,but not defined by labelsMap
-		// check metricAdapterBuilder.withExtraLabels for more detail
 		tmpExtraKey.protocol = UNSUPPORTED
 		attrs = m.labelsMap[*tmpExtraKey]
 	}
+	return attrs
+}
+
+// convert is used to general final labels for Sync Metric and Trace. It won't modify the origin model.GaugeGroup and should be free by calling the FreeAttrsList after exported.
+func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, FreeAttrsList) {
+	labels := group.Labels
+	attrs := m.searchExtraAttribute(group.Labels)
 	attrsList := attrs.attrsListPool.Get().([]attribute.KeyValue)
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
