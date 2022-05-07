@@ -276,7 +276,11 @@ func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap
 	for i := 0; i < len(m.updateKeys); i++ {
 		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
 	}
-	attrs := m.labelsMap[*tmpExtraKey]
+	attrs, ok := m.labelsMap[*tmpExtraKey]
+	if !ok {
+		tmpExtraKey.protocol = UNSUPPORTED
+		attrs = m.labelsMap[*tmpExtraKey]
+	}
 	attrsMap := attrs.attrsMapPool.Get().(*model.AttributeMap)
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
@@ -320,7 +324,11 @@ func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue,
 	for i := 0; i < len(m.updateKeys); i++ {
 		tmpExtraKey = m.updateKeys[i](tmpExtraKey, labels)
 	}
-	attrs := m.labelsMap[*tmpExtraKey]
+	attrs, ok := m.labelsMap[*tmpExtraKey]
+	if !ok {
+		tmpExtraKey.protocol = UNSUPPORTED
+		attrs = m.labelsMap[*tmpExtraKey]
+	}
 	attrsList := attrs.attrsListPool.Get().([]attribute.KeyValue)
 	for i := 0; i < len(attrs.metricsDicList); i++ {
 		switch attrs.metricsDicList[i].valueType {
