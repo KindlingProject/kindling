@@ -1,0 +1,71 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Kindling-CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [release-*]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  buildprobes:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    env:
+      RELEASE: ${{ github.event.release.name }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          repository: Kindling-project/agent-libs.git
+          ref: kindling-dev
+
+      - name: setup-docker
+        # You may pin to the exact commit or the version.
+        # uses: docker-practice/actions-setup-docker@9fafeb38361d5d48e5afc207293715e023b6cfe0
+        uses: docker-practice/actions-setup-docker@1.0.9
+
+      - name: install kernel headers
+        run: sudo apt-get -y install linux-headers-$(uname -r)
+
+      - name: trigger compiling drivers
+        run: docker run -v /usr:/host/usr -v /lib/modules:/host/lib/modules -v $PWD:/source kindlingproject/kernel-builder:latest
+
+      - name: checkout kindling
+        uses: actions/checkout@v3
+        with:
+          path: subdir
+
+      - name: version
+        run: echo "version=alphatest" >> $GITHUB_ENV
+
+      - name: get release version
+        if: ${{startsWith(github.ref.name,'release-')}}
+        run: name=`echo ${{github.ref.name}}`; echo version=${name#*release-} >> $GITHUB_ENV
+
+      - name: copy drivers to probe and reset versions
+        run: |
+          tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/
+          cp kindling-falcolib-probe.tar.gz subdir/probe/deploy/
+          ls -l subdir/probe/deploy
+          cd subdir/probe/
+          sed -i[bak] -e 's/tag = "latest"/tag = "${{env.version}}"/g' src/probe/BUILD.bazel
+
+      - uses: addnab/docker-run-action@v3
+        with:
+          image: kindlingproject/kindling-compiler
+          options: -v /var/run/docker.sock:/var/run/docker.sock  -v /home/runner/work/kindling/kindling/subdir:/kindling -w /kindling/probe
+          run: |
+            docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
+            bazel build -s --config=clang src/probe:kindling_probe
+            bazel build -s --config=clang src/probe:push_image_localdriver
+            ./bazel-bin/src/probe/push_image_localdriver
