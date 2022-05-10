@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
-	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/model/constvalues"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	"go.opentelemetry.io/otel/metric"
 	exportmetric "go.opentelemetry.io/otel/sdk/export/metric"
 	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
@@ -26,7 +25,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
-	apitrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"os"
 	"time"
@@ -62,6 +60,7 @@ type OtelOutputExporters struct {
 }
 
 type OtelExporter struct {
+	cfg                  *Config
 	metricController     *controller.Controller
 	traceProvider        *sdktrace.TracerProvider
 	defaultTracer        trace.Tracer
@@ -69,6 +68,8 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
+
+	adapters []defaultadapter.Adapter
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
@@ -134,6 +135,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		}
 
 		otelexporter = &OtelExporter{
+			cfg:                  cfg,
 			metricController:     c,
 			traceProvider:        nil,
 			defaultTracer:        nil,
@@ -141,6 +143,15 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			adapters: []defaultadapter.Adapter{
+				defaultadapter.NewNetAdapter(customLabels, &defaultadapter.NetAdapterConfig{
+					StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
+					StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
+					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
+					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
+				}),
+				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
+			},
 		}
 		go func() {
 			err := StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
@@ -191,6 +202,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		tracer := tracerProvider.Tracer(TracerName)
 
 		otelexporter = &OtelExporter{
+			cfg:                  cfg,
 			metricController:     cont,
 			traceProvider:        tracerProvider,
 			defaultTracer:        tracer,
@@ -198,6 +210,15 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			adapters: []defaultadapter.Adapter{
+				defaultadapter.NewNetAdapter(customLabels, &defaultadapter.NetAdapterConfig{
+					StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
+					StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
+					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
+					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
+				}),
+				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
+			},
 		}
 
 		if err = cont.Start(context.Background()); err != nil {
@@ -209,77 +230,9 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 	return otelexporter
 }
 
-func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
-	if gaugeGroup == nil {
-		// no need consume
-		return nil
-	}
-	gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
-	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
-		ce.Write(
-			zap.String("gaugeGroup", gaugeGroup.String()),
-		)
-	}
-	if gaugeGroup.Name == constvalues.SpanInfo {
-		if e.defaultTracer == nil {
-			return errors.New("send span failed: this exporter can not support Span Data")
-		}
-		return e.PushTrace(gaugeGroup, gaugeGroup.Name)
-	} else {
-		return e.PushMetric(gaugeGroup)
-	}
-}
-
-func (e *OtelExporter) PushMetric(gaugeGroup *model.GaugeGroup) error {
-	storeGaugeGroupKeys(gaugeGroup)
-	values := gaugeGroup.Values
-	measurements := make([]metric.Measurement, 0, len(values))
-	for _, value := range values {
-		num := value.Value
-		name := value.Name
-		metricKind, ok := e.findInstrumentKind(name)
-		if !ok {
-			e.telemetry.Logger.Warn("Skip a Metric: No metric aggregation set for metric", zap.String("metricName", name))
-			continue
-		}
-		if metricKind == MAGaugeKind {
-			e.instrumentFactory.recordGaugeAsync(name, model.GaugeGroup{
-				Values:    []*model.Gauge{value},
-				Labels:    gaugeGroup.Labels,
-				Timestamp: gaugeGroup.Timestamp,
-			})
-		} else {
-			measurements = append(measurements, e.instrumentFactory.getInstrument(name, metricKind).Measurement(num))
-		}
-	}
-	if len(measurements) > 0 {
-		labels := gaugeGroup.Labels
-		e.instrumentFactory.meter.RecordBatch(context.Background(), GetLabels(labels, e.customLabels), measurements...)
-	}
-	return nil
-}
-
-func (e *OtelExporter) PushTrace(g *model.GaugeGroup, spanName string) error {
-	_, span := e.defaultTracer.Start(
-		context.Background(),
-		spanName,
-		apitrace.WithAttributes(GetLabels(g.Labels, e.customLabels)...),
-	)
-	span.End()
-	return nil
-}
-
 func (e *OtelExporter) findInstrumentKind(metricName string) (MetricAggregationKind, bool) {
 	kind, find := e.metricAggregationMap[metricName]
 	return kind, find
-}
-
-func ToStringKeyValues(values map[string]model.AttributeValue) []attribute.KeyValue {
-	stringKeyValues := make([]attribute.KeyValue, 0, len(values))
-	for k, v := range values {
-		stringKeyValues = append(stringKeyValues, attribute.String(k, v.ToString()))
-	}
-	return stringKeyValues
 }
 
 // Crete new opentelemetry-go exporter.

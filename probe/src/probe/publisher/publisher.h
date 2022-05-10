@@ -51,6 +51,8 @@ private:
     void subscribe(string sub_event, string &reason);
     void unsubscribe(string sub_event);
 
+    void swap_list(converter *cvt, KindlingEventList* kindlingEventList);
+
     // single sender
     Socket m_socket;
     map<converter *, KindlingEventList *> m_kindlingEventLists;

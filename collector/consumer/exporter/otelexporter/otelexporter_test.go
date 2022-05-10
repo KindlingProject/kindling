@@ -4,8 +4,10 @@ import (
 	"context"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/observability/logger"
 	"github.com/spf13/viper"
@@ -14,7 +16,6 @@ import (
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"strconv"
 	"testing"
@@ -36,39 +37,128 @@ func InitOtelExporter(t *testing.T) exporter.Exporter {
 	return NewExporter(config, component.NewDefaultTelemetryTools())
 }
 
-func TestConsumeGaugeGroup(t *testing.T) {
+func TestConsumeAggNetGaugeGroup(t *testing.T) {
 	latencyArray := []int64{1e6, 10e6, 20e6, 50e6, 100e6, 500e6}
 	exp := InitOtelExporter(t)
 	for {
 		for _, latency := range latencyArray {
-			_ = exp.Consume(makeGaugeGroup(latency))
+			_ = exp.Consume(makePreAggNetGaugeGroup(int(latency)))
 			time.Sleep(1 * time.Second)
 		}
 		time.Sleep(30 * time.Second)
 	}
 }
 
-func makeGaugeGroup(latency int64) *model.GaugeGroup {
-	labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-		constlabels.Node:            model.NewStringValue("test-node"),
-		constlabels.Namespace:       model.NewStringValue("test-namespace"),
-		constlabels.WorkloadKind:    model.NewStringValue("deployment"),
-		constlabels.WorkloadName:    model.NewStringValue("test-deploy"),
-		constlabels.Pod:             model.NewStringValue("test-pod"),
-		constlabels.Container:       model.NewStringValue("test-container"),
-		constlabels.Ip:              model.NewStringValue("10.0.0.1"),
-		constlabels.Port:            model.NewIntValue(80),
-		constlabels.RequestContent:  model.NewStringValue("/test"),
-		constlabels.ResponseContent: model.NewIntValue(201),
-	})
-
-	latencyGauge := &model.Gauge{
-		Name:  "kindling_entity_request_duration_nanoseconds",
-		Value: latency,
+func TestConsumeSingleNetGaugeGroup(t *testing.T) {
+	latencyArray := []int64{1e6, 10e6, 20e6, 50e6, 100e6, 500e6}
+	exp := InitOtelExporter(t)
+	for {
+		for _, latency := range latencyArray {
+			_ = exp.Consume(makeSingleGaugeGroup(int(latency)))
+			time.Sleep(1 * time.Second)
+		}
+		time.Sleep(30 * time.Second)
 	}
+}
 
-	gaugeGroup := model.NewGaugeGroup("", labels, 0, latencyGauge)
-	return gaugeGroup
+func makeSingleGaugeGroup(i int) *model.GaugeGroup {
+	gaugesGroup := &model.GaugeGroup{
+		Name: constnames.SingleNetRequestGaugeGroup,
+		Values: []*model.Gauge{
+			{
+				constvalues.ResponseIo,
+				1234567891,
+			},
+			{
+				constvalues.RequestTotalTime,
+				int64(i),
+			},
+			{
+				constvalues.RequestIo,
+				4500,
+			},
+			{
+				constvalues.RequestCount,
+				4500,
+			},
+		},
+		Labels:    model.NewAttributeMap(),
+		Timestamp: 19900909090,
+	}
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadName, "test-SrcWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadKind, "test-SrcWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcService, "test-SrcService"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcIp, "test-SrcIp"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNode, "test-DstNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNamespace, "test-DstNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstPod, "test-DstPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadName, "test-DstWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadKind, "test-DstWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstService, "test-DstService"+strconv.Itoa(i))
+
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainer, "test-SrcContainer"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainerId, "test-SrcContainerId"+strconv.Itoa(i))
+
+	gaugesGroup.Labels.AddStringValue(constlabels.Protocol, "http")
+	gaugesGroup.Labels.AddStringValue(constlabels.StatusCode, "200")
+
+	// Topology data preferentially use D Nat Ip and D Nat Port
+	gaugesGroup.Labels.AddStringValue(constlabels.DstIp, "test-DnatIp")
+	gaugesGroup.Labels.AddIntValue(constlabels.DstPort, 8081)
+	return gaugesGroup
+}
+
+func makePreAggNetGaugeGroup(i int) *model.GaugeGroup {
+	gaugesGroup := &model.GaugeGroup{
+		Name: constnames.AggregatedNetRequestGaugeGroup,
+		Values: []*model.Gauge{
+			{
+				constvalues.ResponseIo,
+				1234567891,
+			},
+			{
+				constvalues.RequestTotalTime,
+				int64(i),
+			},
+			{
+				constvalues.RequestIo,
+				4500,
+			},
+			{
+				constvalues.RequestCount,
+				4500,
+			},
+		},
+		Labels:    model.NewAttributeMap(),
+		Timestamp: 19900909090,
+	}
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadName, "test-SrcWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcWorkloadKind, "test-SrcWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcService, "test-SrcService"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcIp, "test-SrcIp"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNode, "test-DstNode"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstNamespace, "test-DstNamespace"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstPod, "test-DstPod"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadName, "test-DstWorkloadName"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstWorkloadKind, "test-DstWorkloadKind"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.DstService, "test-DstService"+strconv.Itoa(i))
+
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainer, "test-SrcContainer"+strconv.Itoa(i))
+	gaugesGroup.Labels.AddStringValue(constlabels.SrcContainerId, "test-SrcContainerId"+strconv.Itoa(i))
+
+	gaugesGroup.Labels.AddStringValue(constlabels.Protocol, "http")
+	gaugesGroup.Labels.AddStringValue(constlabels.StatusCode, "200")
+
+	// Topology data preferentially use D Nat Ip and D Nat Port
+	gaugesGroup.Labels.AddStringValue(constlabels.DstIp, "test-DnatIp")
+	gaugesGroup.Labels.AddIntValue(constlabels.DstPort, 8081)
+	return gaugesGroup
 }
 
 func BenchmarkOtelExporter_Consume(b *testing.B) {
@@ -81,27 +171,30 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		StdoutCfg:    &StdoutConfig{CollectPeriod: 30 * time.Second},
 		CustomLabels: nil,
 		MetricAggregationMap: map[string]MetricAggregationKind{
-			"kindling_entity_request_duration_nanoseconds":   2,
-			"kindling_entity_request_send_bytes_total":       1,
-			"kindling_entity_request_receive_bytes_total":    1,
-			"kindling_topology_request_duration_nanoseconds": 2,
-			"kindling_topology_request_request_bytes_total":  1,
-			"kindling_topology_request_response_bytes_total": 1,
-			"kindling_trace_request_duration_nanoseconds":    0,
-			"kindling_tcp_rtt_milliseconds":                  0,
-			"kindling_tcp_retransmit_total":                  1,
-			"kindling_tcp_packet_loss_total":                 1,
+			"kindling_entity_request_total":                          MACounterKind,
+			"kindling_entity_request_duration_nanoseconds_total":     MACounterKind,
+			"kindling_entity_request_average_duration_nanoseconds":   MAHistogramKind,
+			"kindling_entity_request_send_bytes_total":               MACounterKind,
+			"kindling_entity_request_receive_bytes_total":            MACounterKind,
+			"kindling_topology_request_total":                        MACounterKind,
+			"kindling_topology_request_duration_nanoseconds_total":   MACounterKind,
+			"kindling_topology_request_average_duration_nanoseconds": MAHistogramKind,
+			"kindling_topology_request_request_bytes_total":          MACounterKind,
+			"kindling_topology_request_response_bytes_total":         MACounterKind,
+			"kindling_trace_request_duration_nanoseconds":            MAGaugeKind,
+			"kindling_tcp_srtt_microseconds":                         MAGaugeKind,
+			"kindling_tcp_retransmit_total":                          MACounterKind,
+			"kindling_tcp_packet_loss_total":                         MACounterKind,
+		},
+		AdapterConfig: &AdapterConfig{
+			NeedTraceAsResourceSpan: true,
+			NeedTraceAsMetric:       true,
+			NeedPodDetail:           true,
+			StoreExternalSrcIP:      true,
 		},
 	}
 
-	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
-		Filename:   "test.log",
-		MaxSize:    500,
-		MaxAge:     10,
-		MaxBackups: 1,
-		LocalTime:  true,
-		Compress:   false,
-	})
+	logger := logger.CreateConsoleLogger()
 	exporter, _ := newExporters(context.Background(), cfg, logger)
 
 	cont := controller.New(
@@ -114,6 +207,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 	)
 
 	otelexporter := &OtelExporter{
+		cfg:                  cfg,
 		metricController:     cont,
 		traceProvider:        nil,
 		defaultTracer:        nil,
@@ -121,6 +215,15 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, nil),
 		metricAggregationMap: cfg.MetricAggregationMap,
 		telemetry:            component.NewDefaultTelemetryTools(),
+		adapters: []defaultadapter.Adapter{
+			defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
+				StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
+				StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
+				StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
+				StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
+			}),
+			defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, nil),
+		},
 	}
 
 	if err := cont.Start(context.Background()); err != nil {
@@ -136,18 +239,22 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 
 	for i := 0; i < dimension; i++ {
 		gaugesGroup := &model.GaugeGroup{
-			Name: "testGauge",
+			Name: constnames.AggregatedNetRequestGaugeGroup,
 			Values: []*model.Gauge{
 				{
-					constlabels.ToKindlingMetricName(constvalues.RequestTotalTime, false),
+					constvalues.ResponseIo,
 					1234567891,
 				},
 				{
-					constlabels.ToKindlingMetricName(constvalues.ResponseIo, false),
+					constvalues.RequestTotalTime,
 					3300,
 				},
 				{
-					constlabels.ToKindlingMetricName(constvalues.RequestIo, false),
+					constvalues.RequestIo,
+					4500,
+				},
+				{
+					constvalues.RequestCount,
 					4500,
 				},
 			},
