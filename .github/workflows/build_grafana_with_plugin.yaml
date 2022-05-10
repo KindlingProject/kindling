@@ -23,12 +23,10 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      # Checks-out
       - uses: actions/checkout@v3
 
       - name: setup-docker
-        # You may pin to the exact commit or the version.
-        # uses: docker-practice/actions-setup-docker@9fafeb38361d5d48e5afc207293715e023b6cfe0
         uses: docker-practice/actions-setup-docker@1.0.9
 
       - name: version
@@ -47,7 +45,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: grafana-plugins
-          file: docker/Dockerfile
+          context: ./grafana-plugins
+          file: ./grafana-plugins/docker/Dockerfile
           push: true
           tags: kindlingproject/kindling-grafana:${{env.version}}
