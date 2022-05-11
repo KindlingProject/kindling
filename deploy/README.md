@@ -4,7 +4,7 @@ The files under this directory are needed when releasing the Kindling.
 ## agent
 This directory contains files used for deploying `kindling-agent` in Kubernetes. 
 
-## grafana
+## grafana-with-plugins
 This directory contains files used for deploying `Grafana` in Kubernetes. 
 
 ## recompile-probe
