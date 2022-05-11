@@ -16,7 +16,6 @@ import (
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"strconv"
 	"testing"
@@ -172,16 +171,20 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		StdoutCfg:    &StdoutConfig{CollectPeriod: 30 * time.Second},
 		CustomLabels: nil,
 		MetricAggregationMap: map[string]MetricAggregationKind{
-			"kindling_entity_request_duration_nanoseconds":         2,
-			"kindling_entity_request_send_bytes_total":             1,
-			"kindling_entity_request_receive_bytes_total":          1,
-			"kindling_topology_request_duration_nanoseconds_total": 2,
-			"kindling_topology_request_request_bytes_total":        1,
-			"kindling_topology_request_response_bytes_total":       1,
-			"kindling_trace_request_duration_nanoseconds":          0,
-			"kindling_tcp_rtt_milliseconds":                        0,
-			"kindling_tcp_retransmit_total":                        1,
-			"kindling_tcp_packet_loss_total":                       1,
+			"kindling_entity_request_total":                          MACounterKind,
+			"kindling_entity_request_duration_nanoseconds_total":     MACounterKind,
+			"kindling_entity_request_average_duration_nanoseconds":   MAHistogramKind,
+			"kindling_entity_request_send_bytes_total":               MACounterKind,
+			"kindling_entity_request_receive_bytes_total":            MACounterKind,
+			"kindling_topology_request_total":                        MACounterKind,
+			"kindling_topology_request_duration_nanoseconds_total":   MACounterKind,
+			"kindling_topology_request_average_duration_nanoseconds": MAHistogramKind,
+			"kindling_topology_request_request_bytes_total":          MACounterKind,
+			"kindling_topology_request_response_bytes_total":         MACounterKind,
+			"kindling_trace_request_duration_nanoseconds":            MAGaugeKind,
+			"kindling_tcp_srtt_microseconds":                         MAGaugeKind,
+			"kindling_tcp_retransmit_total":                          MACounterKind,
+			"kindling_tcp_packet_loss_total":                         MACounterKind,
 		},
 		AdapterConfig: &AdapterConfig{
 			NeedTraceAsResourceSpan: true,
@@ -191,14 +194,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		},
 	}
 
-	logger := logger.CreateFileRotationLogger(&lumberjack.Logger{
-		Filename:   "test.log",
-		MaxSize:    500,
-		MaxAge:     10,
-		MaxBackups: 1,
-		LocalTime:  true,
-		Compress:   false,
-	})
+	logger := logger.CreateConsoleLogger()
 	exporter, _ := newExporters(context.Background(), cfg, logger)
 
 	cont := controller.New(

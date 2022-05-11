@@ -1,9 +1,9 @@
 package otelexporter
 
-type MetricAggregationKind int32
+type MetricAggregationKind string
 
 const (
-	MAGaugeKind MetricAggregationKind = iota
-	MACounterKind
-	MAHistogramKind
+	MAGaugeKind     MetricAggregationKind = "gauge"
+	MACounterKind   MetricAggregationKind = "counter"
+	MAHistogramKind MetricAggregationKind = "histogram"
 )

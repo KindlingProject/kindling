@@ -125,7 +125,6 @@ func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSele
 
 func newTraceAsMetricSelectors() *aggregator.LabelSelectors {
 	return aggregator.NewLabelSelectors(
-		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.Protocol, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.IsServer, VType: aggregator.BooleanType},
 		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
@@ -185,8 +184,6 @@ func newTcpRttMicroSecondsSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.DstService, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.DstIp, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.DnatIp, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.DnatPort, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
 	)
