@@ -28,7 +28,7 @@ func TestTruncateContainerId(t *testing.T) {
 
 func TestOnAdd(t *testing.T) {
 	globalPodInfo = &podMap{
-		info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*PodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
@@ -51,7 +51,7 @@ func TestOnAdd(t *testing.T) {
 
 func TestOnAddLowercaseWorkload(t *testing.T) {
 	globalPodInfo = &podMap{
-		info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*PodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),

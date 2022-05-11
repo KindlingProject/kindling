@@ -116,7 +116,7 @@ func TestServiceMap_GetServiceMatchLabels(t *testing.T) {
 
 func TestOnAddService(t *testing.T) {
 	globalPodInfo = &podMap{
-		info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*PodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
@@ -139,7 +139,7 @@ func TestOnAddService(t *testing.T) {
 
 func TestServiceMap_Delete(t *testing.T) {
 	globalPodInfo = &podMap{
-		info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*PodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),

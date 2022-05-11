@@ -29,7 +29,7 @@ type PodInfo struct {
 type podMap struct {
 	// namespace:
 	//   podName: podInfo{}
-	info  map[string]map[string]*PodInfo
+	Info  map[string]map[string]*PodInfo
 	mutex sync.RWMutex
 }
 
@@ -38,25 +38,25 @@ var podUpdateMutex sync.Mutex
 
 func newPodMap() *podMap {
 	return &podMap{
-		info:  make(map[string]map[string]*PodInfo),
+		Info:  make(map[string]map[string]*PodInfo),
 		mutex: sync.RWMutex{},
 	}
 }
 
 func (m *podMap) add(info *PodInfo) {
 	m.mutex.Lock()
-	podInfoMap, ok := m.info[info.Namespace]
+	podInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
 		podInfoMap = make(map[string]*PodInfo)
 	}
 	podInfoMap[info.Name] = info
-	m.info[info.Namespace] = podInfoMap
+	m.Info[info.Namespace] = podInfoMap
 	m.mutex.Unlock()
 }
 
 func (m *podMap) delete(namespace string, name string) {
 	m.mutex.Lock()
-	podInfoMap, ok := m.info[namespace]
+	podInfoMap, ok := m.Info[namespace]
 	if ok {
 		delete(podInfoMap, name)
 	}
@@ -66,7 +66,7 @@ func (m *podMap) delete(namespace string, name string) {
 func (m *podMap) get(namespace string, name string) (*PodInfo, bool) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	podInfoMap, ok := m.info[namespace]
+	podInfoMap, ok := m.Info[namespace]
 	if !ok {
 		return nil, false
 	}
@@ -86,7 +86,7 @@ func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]st
 	}
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	podInfoMap, ok := m.info[namespace]
+	podInfoMap, ok := m.Info[namespace]
 	if !ok {
 		return retPodInfoSlice
 	}
