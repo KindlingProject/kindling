@@ -9,6 +9,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.uber.org/zap"
+	"strconv"
 )
 
 const (
@@ -128,6 +129,7 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 		addContainerMetaInfoLabelDST(labelMap, resInfo)
 		labelMap.UpdateAddStringValue(constlabels.DstIp, resInfo.RefPodInfo.Ip)
 		labelMap.UpdateAddIntValue(constlabels.DstPort, int64(resInfo.HostPortMap[int32(dstPort)]))
+		labelMap.UpdateAddStringValue(constlabels.DstService, dstIp+":"+strconv.Itoa(int(dstPort)))
 	} else {
 		// DstIp is a IP from external
 		if nodeName, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
