@@ -31,7 +31,7 @@ container_image(
     directory = "/pl",
     files = [
 	"@kindling_falcolib_probe_tar_gz//file:file",
-	"//deploy:scripts",
+	"//docker:scripts",
 	":qianlu",
     ],
     cmd = ["/pl/docker-entrypoint.sh"],
