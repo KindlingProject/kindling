@@ -207,19 +207,22 @@ func onAdd(obj interface{}) {
 	if len(pod.Status.PodIP) > 0 {
 		for _, tmpContainer := range pod.Spec.Containers {
 			containerInfo := &K8sContainerInfo{
-				Name:       tmpContainer.Name,
-				RefPodInfo: kpi,
+				Name:        tmpContainer.Name,
+				HostPortMap: make(map[int32]int32),
+				RefPodInfo:  kpi,
 			}
 			if len(tmpContainer.Ports) == 0 {
 				// When there are many pods in one pod and only some of them have ports,
 				// the containers at the back will overwrite the one at the front here.
 				MetaDataCache.AddContainerByIpPort(pod.Status.PodIP, 0, containerInfo)
+				continue
 			}
 			for _, port := range tmpContainer.Ports {
 				pI.Ports = append(pI.Ports, port.ContainerPort)
 				// If hostPort is specified, add the container using HostIP and HostPort
 				if port.HostPort != 0 {
-					MetaDataCache.AddContainerByIpPort(pod.Status.HostIP, uint32(port.HostPort), containerInfo)
+					containerInfo.HostPortMap[port.HostPort] = port.ContainerPort
+					MetaDataCache.AddContainerByHostIpPort(pod.Status.HostIP, uint32(port.HostPort), containerInfo)
 				}
 				MetaDataCache.AddContainerByIpPort(pod.Status.PodIP, uint32(port.ContainerPort), containerInfo)
 			}
