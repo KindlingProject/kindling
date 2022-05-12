@@ -280,6 +280,14 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 		return
 	}
 
+	dstContainerInfo, ok = p.metadata.GetContainerByHostIpPort(dstIp, uint32(dstPort))
+	if ok {
+		addContainerMetaInfoLabelDST(labelMap, dstContainerInfo)
+		labelMap.UpdateAddStringValue(constlabels.DstIp, dstContainerInfo.RefPodInfo.Ip)
+		labelMap.UpdateAddIntValue(constlabels.DstPort, int64(dstContainerInfo.HostPortMap[int32(dstPort)]))
+		labelMap.UpdateAddStringValue(constlabels.DstService, dstIp+":"+strconv.Itoa(int(dstPort)))
+	}
+
 	dstPodInfo, ok := p.metadata.GetPodByIp(dstIp)
 	if ok {
 		addPodMetaInfoLabelDST(labelMap, dstPodInfo)
