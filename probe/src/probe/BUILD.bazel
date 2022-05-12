@@ -48,7 +48,7 @@ container_image(
     directory = "/pl",
     files = [
 	  "@kindling_falcolib_probe_tar_gz//file:file",
-	  "//deploy:scripts",
+	  "//docker:scripts",
 	  ":kindling_probe",
     ],
     cmd = ["/pl/docker-entrypoint.sh"],
@@ -60,8 +60,8 @@ container_image(
     base = "@px//:pl_cc_bpf_image",
     directory = "/pl",
     files = [
-	  "//deploy:scripts",
-	  "//deploy:localdriver",
+	  "//docker:scripts",
+	  "//docker:localdriver",
 	  ":kindling_probe",
     ],
     cmd = ["/pl/docker-entrypoint.sh"],
