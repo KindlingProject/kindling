@@ -217,6 +217,10 @@ func onAdd(obj interface{}) {
 			}
 			for _, port := range tmpContainer.Ports {
 				pI.Ports = append(pI.Ports, port.ContainerPort)
+				// If hostPort is specified, add the container using HostIP and HostPort
+				if port.HostPort != 0 {
+					MetaDataCache.AddContainerByIpPort(pod.Status.HostIP, uint32(port.HostPort), containerInfo)
+				}
 				MetaDataCache.AddContainerByIpPort(pod.Status.PodIP, uint32(port.ContainerPort), containerInfo)
 			}
 		}
