@@ -4,7 +4,6 @@ const (
 	defaultRequestTimeout        = 1
 	defaultConnectTimeout        = 1
 	defaultResponseSlowThreshold = 500
-	defaultHttpPayloadLength     = 200
 )
 
 type Config struct {
@@ -18,14 +17,14 @@ type Config struct {
 	ConntrackRateLimit    int    `mapstructure:"conntrack_rate_limit"`
 	ProcRoot              string `mapstructure:"proc_root"`
 
-	ProtocolParser    []string         `mapstructure:"protocol_parser"`
-	HttpPayloadLength int              `mapstructure:"http_payload_length"`
-	ProtocolConfigs   []ProtocolConfig `mapstructure:"protocol_config,omitempty"`
+	ProtocolParser  []string         `mapstructure:"protocol_parser"`
+	ProtocolConfigs []ProtocolConfig `mapstructure:"protocol_config,omitempty"`
 }
 
 type ProtocolConfig struct {
 	Key            string   `mapstructure:"key,omitempty"`
 	Ports          []uint32 `mapstructure:"ports,omitempty"`
+	PayloadLength  int      `mapstructure:"payload_length"`
 	DisableDiscern bool     `mapstructure:"disable_discern,omitempty"`
 	Threshold      int      `mapstructure:"slow_threshold,omitempty"`
 }
@@ -51,13 +50,5 @@ func (cfg *Config) getResponseSlowThreshold() int {
 		return cfg.ResponseSlowThreshold
 	} else {
 		return defaultResponseSlowThreshold
-	}
-}
-
-func (cfg *Config) getHttpPayloadLength() int {
-	if cfg.HttpPayloadLength > 0 {
-		return cfg.HttpPayloadLength
-	} else {
-		return defaultHttpPayloadLength
 	}
 }

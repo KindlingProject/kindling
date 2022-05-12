@@ -61,6 +61,13 @@ Service metrics are generated from the server-side events, which are used to sho
 | `request_content` | user-msg-topic | Topic of Kafka request. |
 | `response_content` |  | Empty temporarily. |
 
+- When protocol is `dubbo`:
+
+| **Label** | **Example**                   | **Notes**                           |
+| --- |-------------------------|--------------------------|
+| `request_content` | io.kindling.dubbo.api.service.OrderService#order | Service Info. The format of service is `package.class#method`                                                                                            |
+| `response_content` | 20                                               | "error_code" of Dubbo. 20 means OK, more details at `https://dubbo.apache.org/en/blog/2018/10/05/introduction-to-the-dubbo-protocol/#dubbo-protocol-details` |
+
 - For other cases, the `request_content` and `response_content` are both empty.
 
 ## Topology Metrics
@@ -114,6 +121,7 @@ These two terms are composed of two parts.
 
 - **HTTP**: 'Status Code' of HTTP response. 
 - **DNS**: rcode of DNS response.
+- **DUBBO**: 'Error Code' of Dubbo request.
 - **others**: empty temporarily
 
 ## Trace As Metric

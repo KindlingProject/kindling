@@ -76,7 +76,6 @@ func (na *NetworkAnalyzer) Start() error {
 
 	go na.consumerFdNoReusingTrace()
 
-	protocol.SetHttpPayLoadLength(na.cfg.getHttpPayloadLength())
 	na.staticPortMap = map[uint32]string{}
 	for _, config := range na.cfg.ProtocolConfigs {
 		for _, port := range config.Ports {
@@ -87,6 +86,7 @@ func (na *NetworkAnalyzer) Start() error {
 	na.slowThresholdMap = map[string]int{}
 	disableDisernProtocols := map[string]bool{}
 	for _, config := range na.cfg.ProtocolConfigs {
+		protocol.SetPayLoadLength(config.Key, config.PayloadLength)
 		na.slowThresholdMap[config.Key] = config.Threshold
 		disableDisernProtocols[config.Key] = config.DisableDiscern
 	}
@@ -591,7 +591,8 @@ func (na *NetworkAnalyzer) isSlow(duration uint64, protocol string) bool {
 }
 
 func (na *NetworkAnalyzer) getResponseSlowThreshold(protocol string) int {
-	if value, ok := na.slowThresholdMap[protocol]; ok {
+	if value, ok := na.slowThresholdMap[protocol]; ok && value > 0 {
+		// If value is not set, use response_slow_threshold by default.
 		return value
 	}
 	return na.cfg.getResponseSlowThreshold()

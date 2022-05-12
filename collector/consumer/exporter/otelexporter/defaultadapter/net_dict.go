@@ -16,6 +16,7 @@ const (
 	DNS
 	MYSQL
 	GRPC
+	DUBBO
 	UNSUPPORTED
 )
 
@@ -197,12 +198,14 @@ var entityProtocol = []extraLabelsParam{
 		{constlabels.RequestContent, constlabels.DnsDomain, String},
 		{constlabels.ResponseContent, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
-	{
-		[]dictionary{
-			{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
-			{constlabels.ResponseContent, constlabels.STR_EMPTY, StrEmpty},
-		}, extraLabelsKey{UNSUPPORTED},
-	},
+	{[]dictionary{
+		{constlabels.RequestContent, constlabels.ContentKey, String},
+		{constlabels.ResponseContent, constlabels.DubboErrorCode, FromInt64ToString},
+	}, extraLabelsKey{DUBBO}},
+	{[]dictionary{
+		{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
+		{constlabels.ResponseContent, constlabels.STR_EMPTY, StrEmpty},
+	}, extraLabelsKey{UNSUPPORTED}},
 }
 
 var spanProtocol = []extraLabelsParam{
@@ -226,6 +229,11 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanDnsDomain, constlabels.DnsDomain, String},
 		{constlabels.SpanDnsRCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
+	{[]dictionary{
+		{constlabels.SpanDubboRequestBody, constlabels.DubboRequestPayload, String},
+		{constlabels.SpanDubboResponseBody, constlabels.DubboResponsePayload, String},
+		{constlabels.SpanDubboErrorCode, constlabels.DubboErrorCode, Int64},
+	}, extraLabelsKey{DUBBO}},
 	{
 		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
 	},
@@ -248,6 +256,9 @@ var topologyProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
+	{[]dictionary{
+		{constlabels.StatusCode, constlabels.DubboErrorCode, FromInt64ToString},
+	}, extraLabelsKey{DUBBO}},
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{UNSUPPORTED}},
