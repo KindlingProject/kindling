@@ -2,6 +2,11 @@ package otelexporter
 
 import (
 	"context"
+	"log"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
@@ -16,10 +21,6 @@ import (
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
-	"log"
-	"strconv"
-	"testing"
-	"time"
 )
 
 func InitOtelExporter(t *testing.T) exporter.Exporter {

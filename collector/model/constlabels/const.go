@@ -9,6 +9,7 @@ const (
 
 const (
 	Pid             = "pid"
+	Tid             = "tid"
 	Protocol        = "protocol"
 	IsError         = "is_error"
 	ErrorType       = "error_type"
@@ -96,11 +97,17 @@ const (
 	SpanMysqlErrorCode = "mysql.error_code"
 	SpanMysqlErrorMsg  = "mysql.error_msg"
 
-	SpanDubboErrorCode    = "dubbo.error_code"
-	SpanDubboRequestBody  = "dubbo.request_body"
-	SpanDubboResponseBody = "dubbo.response_body"
-
+	SpanDubboErrorCode       = "dubbo.error_code"
+	SpanDubboRequestBody     = "dubbo.request_body"
+	SpanDubboResponseBody    = "dubbo.response_body"
 	NetWorkAnalyzeGaugeGroup = "netAnalyzeGauges"
+
+	NextPid = "next"
+	PgftMaj = "pgft_maj"
+	PgftMin = "pgft_min"
+	VmSize  = "vm_size"
+	VmRss   = "vm_rss"
+	VmSwap  = "vm_swap"
 )
 const (
 	STR_EMPTY = ""

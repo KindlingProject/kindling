@@ -1,6 +1,9 @@
 package aggregateprocessor
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
@@ -10,8 +13,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.uber.org/zap"
-	"math/rand"
-	"time"
 )
 
 const Type = "aggregateprocessor"
@@ -24,6 +25,7 @@ type AggregateProcessor struct {
 	aggregator               aggregator.Aggregator
 	netRequestLabelSelectors *aggregator.LabelSelectors
 	tcpLabelSelectors        *aggregator.LabelSelectors
+	pgftLabelSelectors       *aggregator.LabelSelectors
 	stopCh                   chan struct{}
 	ticker                   *time.Ticker
 }
@@ -38,6 +40,7 @@ func New(config interface{}, telemetry *component.TelemetryTools, nextConsumer c
 		aggregator:               defaultaggregator.NewDefaultAggregator(toAggregatedConfig(cfg.AggregateKindMap)),
 		netRequestLabelSelectors: newNetRequestLabelSelectors(),
 		tcpLabelSelectors:        newTcpLabelSelectors(),
+		pgftLabelSelectors:       newPgftLabelSelectors(),
 		stopCh:                   make(chan struct{}),
 		ticker:                   time.NewTicker(time.Duration(cfg.TickerInterval) * time.Second),
 	}
@@ -99,6 +102,9 @@ func (p *AggregateProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 	case constnames.TcpGaugeGroupName:
 		p.aggregator.Aggregate(gaugeGroup, p.tcpLabelSelectors)
 		return nil
+	case constnames.PgftGaugeGroupName:
+		p.aggregator.Aggregate(gaugeGroup, p.pgftLabelSelectors)
+		return nil
 	default:
 		p.aggregator.Aggregate(gaugeGroup, p.netRequestLabelSelectors)
 		return nil
@@ -146,7 +152,29 @@ func newNetRequestLabelSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.KafkaTopic, VType: aggregator.StringType},
 	)
 }
-
+func newPgftLabelSelectors() *aggregator.LabelSelectors {
+	return aggregator.NewLabelSelectors(
+		aggregator.LabelSelector{Name: constlabels.Container, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.WorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.WorkloadName, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Pod, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Ip, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Service, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Node, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Namespace, VType: aggregator.StringType},
+		//aggregator.LabelSelector{Name: constlabels.NextPid, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.PgftMaj, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.PgftMin, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.VmSize, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.VmRss, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.VmSwap, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.Tid, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Container, VType: aggregator.StringType},
+	)
+}
 func newTcpLabelSelectors() *aggregator.LabelSelectors {
 	return aggregator.NewLabelSelectors(
 		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},

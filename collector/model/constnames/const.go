@@ -10,6 +10,8 @@ const (
 	SendMsgEvent  = "sendmsg"
 	RecvMsgEvent  = "recvmsg"
 
+	SwitchEvent = "switch"
+
 	TcpCloseEvent          = "tcp_close"
 	TcpRcvEstablishedEvent = "tcp_rcv_established"
 	TcpDropEvent           = "tcp_drop"
@@ -26,4 +28,5 @@ const (
 
 	TcpGaugeGroupName  = "tcp_metric_gauge_group"
 	NodeGaugeGroupName = "node_metric_gauge_group"
+	PgftGaugeGroupName = "pgft_metric_gauge_group"
 )

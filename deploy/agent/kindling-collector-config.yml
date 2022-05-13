@@ -27,8 +27,10 @@ receivers:
         - name: kprobe-tcp_rcv_established
         - name: kprobe-tcp_drop
         - name: kprobe-tcp_retransmit_skb
+        - name: tracepoint-sched_switch
 analyzers:
   tcpmetricanalyzer:
+  pgftmetricanalyzer:
   networkanalyzer:
     connect_timeout: 100
     # How many seconds to wait until we consider a request as no response.
@@ -110,6 +112,7 @@ exporters:
       # send trace data in the format of ResourceSpan
       need_trace_as_span: false
     metric_aggregation_map:
+      kindling_pagefault_total: counter
       kindling_entity_request_total: counter
       kindling_entity_request_duration_nanoseconds_total: counter
       kindling_entity_request_average_duration_nanoseconds: histogram

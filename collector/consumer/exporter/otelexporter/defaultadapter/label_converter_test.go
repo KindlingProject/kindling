@@ -1,12 +1,13 @@
 package defaultadapter
 
 import (
+	"testing"
+
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
-	"testing"
 )
 
 var baseAdapter = createNetAdapterManager([]attribute.KeyValue{

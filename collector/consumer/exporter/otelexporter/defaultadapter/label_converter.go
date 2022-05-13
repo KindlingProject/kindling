@@ -1,13 +1,14 @@
 package defaultadapter
 
 import (
+	"sort"
+	"strconv"
+	"sync"
+
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
-	"sort"
-	"strconv"
-	"sync"
 )
 
 // LabelConverter works label's transformation.It can reduce the memory allocation by using the sync.Pool.

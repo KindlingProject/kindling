@@ -2,6 +2,7 @@ package otelexporter
 
 import (
 	"context"
+
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"

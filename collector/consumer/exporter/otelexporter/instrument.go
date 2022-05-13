@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
@@ -12,7 +14,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 )
