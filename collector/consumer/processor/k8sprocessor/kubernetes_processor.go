@@ -9,6 +9,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.uber.org/zap"
+	"strconv"
 )
 
 const (
@@ -124,6 +125,11 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 	} else if resInfo, ok := p.metadata.GetContainerByIpPort(dstIp, uint32(dstPort)); ok {
 		// DstIp is IP of a container
 		addContainerMetaInfoLabelDST(labelMap, resInfo)
+	} else if resInfo, ok := p.metadata.GetContainerByHostIpPort(dstIp, uint32(dstPort)); ok {
+		addContainerMetaInfoLabelDST(labelMap, resInfo)
+		labelMap.UpdateAddStringValue(constlabels.DstIp, resInfo.RefPodInfo.Ip)
+		labelMap.UpdateAddIntValue(constlabels.DstPort, int64(resInfo.HostPortMap[int32(dstPort)]))
+		labelMap.UpdateAddStringValue(constlabels.DstService, dstIp+":"+strconv.Itoa(int(dstPort)))
 	} else {
 		// DstIp is a IP from external
 		if nodeName, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
@@ -272,6 +278,14 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 	if ok {
 		addContainerMetaInfoLabelDST(labelMap, dstContainerInfo)
 		return
+	}
+
+	dstContainerInfo, ok = p.metadata.GetContainerByHostIpPort(dstIp, uint32(dstPort))
+	if ok {
+		addContainerMetaInfoLabelDST(labelMap, dstContainerInfo)
+		labelMap.UpdateAddStringValue(constlabels.DstIp, dstContainerInfo.RefPodInfo.Ip)
+		labelMap.UpdateAddIntValue(constlabels.DstPort, int64(dstContainerInfo.HostPortMap[int32(dstPort)]))
+		labelMap.UpdateAddStringValue(constlabels.DstService, dstIp+":"+strconv.Itoa(int(dstPort)))
 	}
 
 	dstPodInfo, ok := p.metadata.GetPodByIp(dstIp)

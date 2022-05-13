@@ -19,7 +19,7 @@ type deleteRequest struct {
 	ts  time.Time
 }
 
-// deleteLoop deletes pods from cache priodically.
+// deleteLoop deletes pods from cache periodically.
 func podDeleteLoop(interval time.Duration, gracePeriod time.Duration, stopCh chan struct{}) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -63,6 +63,10 @@ func deletePod(pod *corev1.Pod) {
 		for _, port := range container.Ports {
 			// Assume that PodIP:Port can't be reused in a few seconds
 			MetaDataCache.DeleteContainerByIpPort(pod.Status.PodIP, uint32(port.ContainerPort))
+			// If hostPort is specified, add the container using HostIP and HostPort
+			if port.HostPort != 0 {
+				MetaDataCache.DeleteContainerByHostIpPort(pod.Status.HostIP, uint32(port.HostPort))
+			}
 		}
 	}
 }
