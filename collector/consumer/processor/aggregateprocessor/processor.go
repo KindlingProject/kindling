@@ -103,7 +103,7 @@ func (p *AggregateProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 		p.aggregator.Aggregate(gaugeGroup, p.tcpLabelSelectors)
 		return nil
 	case constnames.PgftGaugeGroupName:
-		p.aggregator.Aggregate(gaugeGroup, p.pgftLabelSelectors)
+		p.nextConsumer.Consume(gaugeGroup)
 		return nil
 	default:
 		p.aggregator.Aggregate(gaugeGroup, p.netRequestLabelSelectors)
@@ -154,8 +154,6 @@ func newNetRequestLabelSelectors() *aggregator.LabelSelectors {
 }
 func newPgftLabelSelectors() *aggregator.LabelSelectors {
 	return aggregator.NewLabelSelectors(
-		aggregator.LabelSelector{Name: constlabels.Container, VType: aggregator.StringType},
-		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.WorkloadKind, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.WorkloadName, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.Pod, VType: aggregator.StringType},
@@ -164,11 +162,11 @@ func newPgftLabelSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.Node, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.Namespace, VType: aggregator.StringType},
 		//aggregator.LabelSelector{Name: constlabels.NextPid, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.PgftMaj, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.PgftMin, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.VmSize, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.VmRss, VType: aggregator.IntType},
-		aggregator.LabelSelector{Name: constlabels.VmSwap, VType: aggregator.IntType},
+		//aggregator.LabelSelector{Name: constlabels.PgftMaj, VType: aggregator.IntType},
+		//aggregator.LabelSelector{Name: constlabels.PgftMin, VType: aggregator.IntType},
+		//aggregator.LabelSelector{Name: constlabels.VmSize, VType: aggregator.IntType},
+		//aggregator.LabelSelector{Name: constlabels.VmRss, VType: aggregator.IntType},
+		//aggregator.LabelSelector{Name: constlabels.VmSwap, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.Tid, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},

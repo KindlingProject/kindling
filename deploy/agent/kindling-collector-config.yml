@@ -75,7 +75,7 @@ analyzers:
 processors:
   k8smetadataprocessor:
     kube_auth_type: serviceAccount
-    kube_config_dir: ~/.kube/config
+    kube_config_dir: /root/.kube/config
     grace_delete_period: 60
   aggregateprocessor:
     # Aggregation duration window size. The unit is second.
@@ -112,7 +112,8 @@ exporters:
       # send trace data in the format of ResourceSpan
       need_trace_as_span: false
     metric_aggregation_map:
-      kindling_pagefault_total: counter
+      kindling_pagefault_major_total: gauge
+      kindling_pagefault_minor_total: gauge
       kindling_entity_request_total: counter
       kindling_entity_request_duration_nanoseconds_total: counter
       kindling_entity_request_average_duration_nanoseconds: histogram

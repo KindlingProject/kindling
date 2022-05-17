@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
@@ -26,8 +29,6 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"os"
-	"time"
 )
 
 const (
@@ -150,7 +151,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
+				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName, constnames.PgftGaugeGroupName}, customLabels),
 			},
 		}
 		go func() {
@@ -217,7 +218,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, customLabels),
+				defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName, constnames.PgftGaugeGroupName}, customLabels),
 			},
 		}
 

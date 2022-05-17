@@ -1,8 +1,6 @@
 package pgftmetricanalyzer
 
 import (
-	"log"
-
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
@@ -85,21 +83,39 @@ func (a *PgftMetricAnalyzer) generateSwitchPgft(event *model.KindlingEvent) (*mo
 		return nil, err
 	}
 
-	gauge := &model.Gauge{
-		Name:  constnames.PgftSwitchMetricName,
-		Value: 1,
+	pgftMaj := event.GetUserAttribute("pgft_maj")
+	pgftMin := event.GetUserAttribute("pgft_min")
+	ptMaj := (int64)(pgftMaj.GetUintValue())
+	ptMin := (int64)(pgftMin.GetUintValue())
+
+	var gaugeSlice []*model.Gauge
+	gaugeMaj := &model.Gauge{
+		Name:  constnames.PgftSwitchMajorMetricName,
+		Value: ptMaj,
 	}
-	return model.NewGaugeGroup(constnames.PgftGaugeGroupName, labels, event.Timestamp, gauge), nil
+
+	gaugeMin := &model.Gauge{
+		Name:  constnames.PgftSwitchMinorMetricName,
+		Value: ptMin,
+	}
+	if ptMaj != 0 {
+		gaugeSlice = append(gaugeSlice, gaugeMaj)
+	}
+	if ptMin != 0 {
+		gaugeSlice = append(gaugeSlice, gaugeMin)
+	}
+
+	return model.NewGaugeGroup(constnames.PgftGaugeGroupName, labels, event.Timestamp, gaugeSlice...), nil
 }
 
 func (a *PgftMetricAnalyzer) getSwitchLabels(event *model.KindlingEvent) (*model.AttributeMap, error) {
 
-	next := event.GetUserAttribute("next")
-	pgftMaj := event.GetUserAttribute("pgft_maj")
-	pgftMin := event.GetUserAttribute("pgft_min")
-	vmSize := event.GetUserAttribute("vm_size")
-	vmRss := event.GetUserAttribute("vm_rss")
-	vmSwap := event.GetUserAttribute("vm_swap")
+	// next := event.GetUserAttribute("next")
+	//pgftMaj := event.GetUserAttribute("pgft_maj")
+	//pgftMin := event.GetUserAttribute("pgft_min")
+	// vmSize := event.GetUserAttribute("vm_size")
+	// vmRss := event.GetUserAttribute("vm_rss")
+	// vmSwap := event.GetUserAttribute("vm_swap")
 
 	ctx := event.GetCtx()
 	threadinfo := ctx.GetThreadInfo()
@@ -108,27 +124,24 @@ func (a *PgftMetricAnalyzer) getSwitchLabels(event *model.KindlingEvent) (*model
 	containerId := threadinfo.GetContainerId()
 	containerName := threadinfo.GetContainerName()
 
-	nextPid := (int64)(next.GetIntValue())
-	ptMaj := (int64)(pgftMaj.GetUintValue())
-	ptMin := (int64)(pgftMin.GetUintValue())
-	vmsize := (int64)(vmSize.GetUintValue())
-	vmrss := (int64)(vmRss.GetUintValue())
-	vmswap := (int64)(vmSwap.GetUintValue())
+	// nextPid := (int64)(next.GetIntValue())
+	//ptMaj := (int64)(pgftMaj.GetUintValue())
+	//ptMin := (int64)(pgftMin.GetUintValue())
+	// vmsize := (int64)(vmSize.GetUintValue())
+	// vmrss := (int64)(vmRss.GetUintValue())
+	// vmswap := (int64)(vmSwap.GetUintValue())
 
 	labels := model.NewAttributeMap()
-	labels.AddIntValue(constlabels.NextPid, nextPid)
-	labels.AddIntValue(constlabels.PgftMaj, ptMaj)
-	labels.AddIntValue(constlabels.PgftMin, ptMin)
-	labels.AddIntValue(constlabels.VmSize, vmsize)
-	labels.AddIntValue(constlabels.VmRss, vmrss)
-	labels.AddIntValue(constlabels.VmSwap, vmswap)
+	//labels.AddIntValue(constlabels.NextPid, nextPid)
+	//labels.AddIntValue(constlabels.PgftMaj, ptMaj)
+	//labels.AddIntValue(constlabels.PgftMin, ptMin)
+	//labels.AddIntValue(constlabels.VmSize, vmsize)
+	//labels.AddIntValue(constlabels.VmRss, vmrss)
+	//labels.AddIntValue(constlabels.VmSwap, vmswap)
 	labels.AddIntValue(constlabels.Tid, tid)
 	labels.AddIntValue(constlabels.Pid, pid)
 	labels.AddStringValue(constlabels.ContainerId, containerId)
 	labels.AddStringValue(constlabels.Container, containerName)
-
-	log.Printf("getSwitchLabels\n")
-	log.Printf("nextpid: %d, pgftmaj: %d, pgftmin: %d, vmsize: %d, vmrss: %d, vmswap:%d", nextPid, ptMaj, ptMin, vmsize, vmrss, vmswap)
 
 	return labels, nil
 }

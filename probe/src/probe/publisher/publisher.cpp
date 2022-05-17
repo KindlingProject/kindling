@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <zmq.h>
 #include <regex>
@@ -27,6 +28,14 @@ publisher::~publisher() {
     delete m_client_event_map;
 }
 
+bool filterSwitch(char *val, int threshold){
+    int len = strlen(val), num = 0;
+    for(int i = 0;i < len;i++){
+        num *= 10;
+        num += val[i] - '0';
+    }
+    return num <= threshold;
+}
 void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigConverter) {
     if (!m_socket) {
         return;
@@ -40,6 +49,13 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
     }
     // convert sysdig event to kindling event
     if (m_selector->select(evt->get_type(), ((sysdig_converter *) sysdigConverter)->get_kindling_category(evt))) {
+
+        if(evt->get_type() == PPME_SCHEDSWITCH_6_E){
+            if(filterSwitch(evt->get_param(1)->m_val, 0)){ //filter major
+                return;
+            }
+        }
+
         auto it = m_kindlingEventLists.find(sysdigConverter);
         KindlingEventList* kindlingEventList;
         if (it == m_kindlingEventLists.end()) {
