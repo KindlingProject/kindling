@@ -99,7 +99,7 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 			}),
 		123,
 		[]*model.Gauge{
-			{constnames.TcpRttMetricName, rttLatency},
+			model.NewIntGauge(constnames.TcpRttMetricName, rttLatency),
 		}...)
 }
 
@@ -144,7 +144,7 @@ func makeTraceAsMetricGroup(requestLatency int64, timestamp uint64, dstIp string
 			}),
 		timestamp,
 		[]*model.Gauge{
-			{constnames.TraceAsMetric, requestLatency},
+			model.NewIntGauge(constnames.TraceAsMetric, requestLatency),
 		}...)
 }
 
@@ -171,7 +171,7 @@ func Test_instrumentFactory_recordTraceAsMetric(t *testing.T) {
 
 					// value check
 					if gauge, ok := t1.GetGauge(constnames.TraceAsMetric); ok {
-						if gauge.Value != randTime {
+						if gauge.GetInt().Value != randTime {
 							t.Errorf("Value check failed")
 						}
 					} else {

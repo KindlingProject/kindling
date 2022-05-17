@@ -87,7 +87,7 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *mode
 			}
 			for s := 0; s < len(dumps); s++ {
 				if len(dumps[s].Values) > 0 {
-					result.Observe(dumps[s].Values[0].Value, defaultadapter.GetLabels(dumps[s].Labels, i.customLabels)...)
+					result.Observe(dumps[s].Values[0].GetInt().Value, defaultadapter.GetLabels(dumps[s].Labels, i.customLabels)...)
 				}
 			}
 		}, WithDescription(metricName))

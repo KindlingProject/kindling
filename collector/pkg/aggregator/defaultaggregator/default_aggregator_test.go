@@ -33,7 +33,7 @@ func TestConcurrentAggregator(t *testing.T) {
 	go func() {
 		for i := 0; i < runLoop; i++ {
 			gaugeValues := []*model.Gauge{
-				{"duration", duration},
+				{Name: "duration", Data: &model.Gauge_Int{Int: &model.Int{Value: duration}}},
 			}
 			gaugeGroup := model.NewGaugeGroup("testGauge", labels, 0, gaugeValues...)
 			aggregatorInstance.Aggregate(gaugeGroup, labelSelectors)
@@ -55,9 +55,9 @@ func TestConcurrentAggregator(t *testing.T) {
 				for _, g := range ret {
 					for _, v := range g.Values {
 						if v.Name == "duration_sum" {
-							durationSum += v.Value
+							durationSum += v.GetInt().Value
 						} else if v.Name == "request_count" {
-							requestCount += v.Value
+							requestCount += v.GetInt().Value
 						}
 					}
 				}
@@ -66,9 +66,9 @@ func TestConcurrentAggregator(t *testing.T) {
 				for _, g := range ret {
 					for _, v := range g.Values {
 						if v.Name == "duration_sum" {
-							durationSum += v.Value
+							durationSum += v.GetInt().Value
 						} else if v.Name == "request_count" {
-							requestCount += v.Value
+							requestCount += v.GetInt().Value
 						}
 					}
 				}

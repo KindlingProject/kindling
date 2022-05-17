@@ -50,12 +50,9 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 	if n.StoreTraceAsMetric {
 		labels, free := n.traceToMetricAdapter.transform(gaugeGroup)
 		results = append(results, &AdaptedResult{
-			ResultType: Metric,
-			AttrsList:  nil,
-			Gauges: []*model.Gauge{{
-				Name:  constnames.TraceAsMetric,
-				Value: requestTotalTime.Value,
-			}},
+			ResultType:   Metric,
+			AttrsList:    nil,
+			Gauges:       []*model.Gauge{model.NewIntGauge(constnames.TraceAsMetric, requestTotalTime.GetInt().Value)},
 			AttrsMap:     labels,
 			Timestamp:    gaugeGroup.Timestamp,
 			FreeAttrsMap: free,
@@ -100,15 +97,13 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 	requestCount := make([]*model.Gauge, 0, 1)
 	for _, gauge := range gaugeGroup.Values {
 		if gauge.Name != constvalues.RequestCount {
-			gaugesExceptRequestCount = append(gaugesExceptRequestCount, &model.Gauge{
-				Name:  constnames.ToKindlingNetMetricName(gauge.Name, isServer),
-				Value: gauge.Value,
-			})
+			gaugesExceptRequestCount = append(gaugesExceptRequestCount, model.NewIntGauge(
+				constnames.ToKindlingNetMetricName(gauge.Name, isServer),
+				gauge.GetInt().Value))
 		} else {
-			requestCount = append(requestCount, &model.Gauge{
-				Name:  constnames.ToKindlingNetMetricName(gauge.Name, isServer),
-				Value: gauge.Value,
-			})
+			requestCount = append(requestCount, model.NewIntGauge(
+				constnames.ToKindlingNetMetricName(gauge.Name, isServer),
+				gauge.GetInt().Value))
 		}
 	}
 	attrsCommon, free := adapter[0].convert(gaugeGroup)

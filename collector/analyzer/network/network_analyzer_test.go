@@ -217,9 +217,9 @@ func (trace *Trace) Validate(t *testing.T, results []*model.GaugeGroup) {
 		for _, value := range result.Values {
 			expectValue, ok := expect.Values[value.Name]
 			if !ok {
-				t.Errorf("[Miss %s] want=nil, got=%d", value.Name, value.Value)
+				t.Errorf("[Miss %s] want=nil, got=%d", value.Name, value.GetInt().Value)
 			} else {
-				checkInt64Equal(t, value.Name, expectValue, value.Value)
+				checkInt64Equal(t, value.Name, expectValue, value.GetInt().Value)
 			}
 		}
 

@@ -283,17 +283,17 @@ func getTraceSpanStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		switch gaugeGroup.Values[i].Name {
 		case constvalues.RequestSentTime:
-			valueLabels[0] = attribute.Int64(traceSpanStatus[0].newKey, gaugeGroup.Values[i].Value)
+			valueLabels[0] = attribute.Int64(traceSpanStatus[0].newKey, gaugeGroup.Values[i].GetInt().Value)
 		case constvalues.WaitingTtfbTime:
-			valueLabels[1] = attribute.Int64(traceSpanStatus[1].newKey, gaugeGroup.Values[i].Value)
+			valueLabels[1] = attribute.Int64(traceSpanStatus[1].newKey, gaugeGroup.Values[i].GetInt().Value)
 		case constvalues.ContentDownloadTime:
-			valueLabels[2] = attribute.Int64(traceSpanStatus[2].newKey, gaugeGroup.Values[i].Value)
+			valueLabels[2] = attribute.Int64(traceSpanStatus[2].newKey, gaugeGroup.Values[i].GetInt().Value)
 		case constvalues.RequestTotalTime:
-			valueLabels[3] = attribute.Int64(traceSpanStatus[3].newKey, gaugeGroup.Values[i].Value)
+			valueLabels[3] = attribute.Int64(traceSpanStatus[3].newKey, gaugeGroup.Values[i].GetInt().Value)
 		case constvalues.RequestIo:
-			valueLabels[4] = attribute.Int64(traceSpanStatus[4].newKey, gaugeGroup.Values[i].Value)
+			valueLabels[4] = attribute.Int64(traceSpanStatus[4].newKey, gaugeGroup.Values[i].GetInt().Value)
 		case constvalues.ResponseIo:
-			valueLabels[5] = attribute.Int64(traceSpanStatus[5].newKey, gaugeGroup.Values[i].Value)
+			valueLabels[5] = attribute.Int64(traceSpanStatus[5].newKey, gaugeGroup.Values[i].GetInt().Value)
 		}
 	}
 
@@ -317,13 +317,13 @@ func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
 	var requestSend, waitingTtfb, contentDownload, requestTotalTime int64
 	for i := 0; i < len(gaugeGroup.Values); i++ {
 		if gaugeGroup.Values[i].Name == constvalues.RequestSentTime {
-			requestSend = gaugeGroup.Values[i].Value
+			requestSend = gaugeGroup.Values[i].GetInt().Value
 		} else if gaugeGroup.Values[i].Name == constvalues.WaitingTtfbTime {
-			waitingTtfb = gaugeGroup.Values[i].Value
+			waitingTtfb = gaugeGroup.Values[i].GetInt().Value
 		} else if gaugeGroup.Values[i].Name == constvalues.ContentDownloadTime {
-			contentDownload = gaugeGroup.Values[i].Value
+			contentDownload = gaugeGroup.Values[i].GetInt().Value
 		} else if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
-			requestTotalTime = gaugeGroup.Values[i].Value
+			requestTotalTime = gaugeGroup.Values[i].GetInt().Value
 		}
 	}
 

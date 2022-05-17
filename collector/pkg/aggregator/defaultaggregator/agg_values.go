@@ -150,7 +150,7 @@ func newAggValue(name string, kind AggregatorKind) aggregatedValues {
 type aggregatedValues interface {
 	calculate(value int64) int64
 	// get returns the value
-	get() int64
+	get() *model.Gauge
 	// getName returns the value's name
 	getName() string
 }
@@ -169,10 +169,10 @@ func (v *maxValue) calculate(value int64) int64 {
 	}
 	return v.value
 }
-func (v *maxValue) get() int64 {
+func (v *maxValue) get() *model.Gauge {
 	v.mut.RLock()
 	defer v.mut.RUnlock()
-	return v.value
+	return model.NewIntGauge(v.name, v.value)
 }
 func (v *maxValue) getName() string {
 	return v.name
@@ -186,8 +186,8 @@ type sumValue struct {
 func (v *sumValue) calculate(value int64) int64 {
 	return atomic.AddInt64(&v.value, value)
 }
-func (v *sumValue) get() int64 {
-	return atomic.LoadInt64(&v.value)
+func (v *sumValue) get() *model.Gauge {
+	return model.NewIntGauge(v.name, atomic.LoadInt64(&v.value))
 }
 func (v *sumValue) getName() string {
 	return v.name
@@ -209,10 +209,10 @@ func (v *avgValue) calculate(value int64) int64 {
 	v.count++
 	return v.count
 }
-func (v *avgValue) get() int64 {
+func (v *avgValue) get() *model.Gauge {
 	v.mut.RLock()
 	defer v.mut.RUnlock()
-	return v.value / v.count
+	return model.NewIntGauge(v.name, v.value/v.count)
 }
 func (v *avgValue) getName() string {
 	return v.name
@@ -226,8 +226,8 @@ type lastValue struct {
 func (v *lastValue) calculate(value int64) int64 {
 	return atomic.SwapInt64(&v.value, value)
 }
-func (v *lastValue) get() int64 {
-	return atomic.LoadInt64(&v.value)
+func (v *lastValue) get() *model.Gauge {
+	return model.NewIntGauge(v.name, atomic.LoadInt64(&v.value))
 }
 func (v *lastValue) getName() string {
 	return v.name
@@ -242,8 +242,8 @@ type countValue struct {
 func (v *countValue) calculate(_ int64) int64 {
 	return atomic.AddInt64(&v.value, 1)
 }
-func (v *countValue) get() int64 {
-	return atomic.LoadInt64(&v.value)
+func (v *countValue) get() *model.Gauge {
+	return model.NewIntGauge(v.name, atomic.LoadInt64(&v.value))
 }
 func (v *countValue) getName() string {
 	return v.name

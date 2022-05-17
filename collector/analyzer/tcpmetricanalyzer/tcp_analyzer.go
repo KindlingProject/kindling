@@ -99,10 +99,7 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Gaug
 	if rtt == 0 {
 		return nil, nil
 	}
-	gauge := &model.Gauge{
-		Name:  constnames.TcpRttMetricName,
-		Value: int64(rtt),
-	}
+	gauge := model.NewIntGauge(constnames.TcpRttMetricName, int64(rtt))
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
 }
 
@@ -111,10 +108,7 @@ func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*mod
 	if err != nil {
 		return nil, err
 	}
-	gauge := &model.Gauge{
-		Name:  constnames.TcpRetransmitMetricName,
-		Value: 1,
-	}
+	gauge := model.NewIntGauge(constnames.TcpRetransmitMetricName, 1)
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
 }
 
@@ -123,10 +117,7 @@ func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.Gau
 	if err != nil {
 		return nil, err
 	}
-	gauge := &model.Gauge{
-		Name:  constnames.TcpDropMetricName,
-		Value: 1,
-	}
+	gauge := model.NewIntGauge(constnames.TcpDropMetricName, 1)
 	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
 }
 

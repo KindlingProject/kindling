@@ -74,7 +74,7 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 			}
 			err := e.instrumentFactory.recordLastValue(gauge.Name, &model.GaugeGroup{
 				Name:      gauge.Name,
-				Values:    []*model.Gauge{{gauge.Name, gauge.Value}},
+				Values:    []*model.Gauge{model.NewIntGauge(gauge.Name, gauge.GetInt().Value)},
 				Labels:    result.AttrsMap,
 				Timestamp: result.Timestamp,
 			})
@@ -82,7 +82,7 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 				e.telemetry.Logger.Error("Failed to record Gauge", zap.Error(err))
 			}
 		} else if ok {
-			measurements = append(measurements, e.instrumentFactory.getInstrument(gauge.Name, metricKind).Measurement(gauge.Value))
+			measurements = append(measurements, e.instrumentFactory.getInstrument(gauge.Name, metricKind).Measurement(gauge.GetInt().Value))
 		} else {
 			e.telemetry.Logger.Warn("Undefined metricKind for this Gauge", zap.String("GaugeName", gauge.Name))
 		}

@@ -472,8 +472,8 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.GaugeGroup {
 	evt := mps.connects.event
 	ret := na.gaugeGroupPool.Get()
-	ret.UpdateAddGauge(constvalues.ConnectTime, int64(mps.connects.getDuration()))
-	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mps.connects.getDuration()))
+	ret.UpdateAddIntGauge(constvalues.ConnectTime, int64(mps.connects.getDuration()))
+	ret.UpdateAddIntGauge(constvalues.RequestTotalTime, int64(mps.connects.getDuration()))
 	ret.Labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
 	ret.Labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	ret.Labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
@@ -526,13 +526,13 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mps.natTuple.ReplSrcPort))
 	}
 
-	ret.UpdateAddGauge(constvalues.ConnectTime, int64(mps.getConnectDuration()))
-	ret.UpdateAddGauge(constvalues.RequestSentTime, mps.getSentTime())
-	ret.UpdateAddGauge(constvalues.WaitingTtfbTime, mps.getWaitingTime())
-	ret.UpdateAddGauge(constvalues.ContentDownloadTime, mps.getDownloadTime())
-	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mps.getConnectDuration()+mps.getDuration()))
-	ret.UpdateAddGauge(constvalues.RequestIo, int64(mps.getRquestSize()))
-	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mps.getResponseSize()))
+	ret.UpdateAddIntGauge(constvalues.ConnectTime, int64(mps.getConnectDuration()))
+	ret.UpdateAddIntGauge(constvalues.RequestSentTime, mps.getSentTime())
+	ret.UpdateAddIntGauge(constvalues.WaitingTtfbTime, mps.getWaitingTime())
+	ret.UpdateAddIntGauge(constvalues.ContentDownloadTime, mps.getDownloadTime())
+	ret.UpdateAddIntGauge(constvalues.RequestTotalTime, int64(mps.getConnectDuration()+mps.getDuration()))
+	ret.UpdateAddIntGauge(constvalues.RequestIo, int64(mps.getRquestSize()))
+	ret.UpdateAddIntGauge(constvalues.ResponseIo, int64(mps.getResponseSize()))
 
 	ret.Timestamp = evt.GetStartTime()
 
@@ -574,13 +574,13 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mps.natTuple.ReplSrcPort))
 	}
 
-	ret.UpdateAddGauge(constvalues.ConnectTime, 0)
-	ret.UpdateAddGauge(constvalues.RequestSentTime, mp.getSentTime())
-	ret.UpdateAddGauge(constvalues.WaitingTtfbTime, mp.getWaitingTime())
-	ret.UpdateAddGauge(constvalues.ContentDownloadTime, mp.getDownloadTime())
-	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mp.getDuration()))
-	ret.UpdateAddGauge(constvalues.RequestIo, int64(mp.getRquestSize()))
-	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mp.getResponseSize()))
+	ret.UpdateAddIntGauge(constvalues.ConnectTime, 0)
+	ret.UpdateAddIntGauge(constvalues.RequestSentTime, mp.getSentTime())
+	ret.UpdateAddIntGauge(constvalues.WaitingTtfbTime, mp.getWaitingTime())
+	ret.UpdateAddIntGauge(constvalues.ContentDownloadTime, mp.getDownloadTime())
+	ret.UpdateAddIntGauge(constvalues.RequestTotalTime, int64(mp.getDuration()))
+	ret.UpdateAddIntGauge(constvalues.RequestIo, int64(mp.getRquestSize()))
+	ret.UpdateAddIntGauge(constvalues.ResponseIo, int64(mp.getResponseSize()))
 
 	ret.Timestamp = evt.GetStartTime()
 	return ret
