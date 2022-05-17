@@ -67,8 +67,8 @@ func TestAdapter_transform(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -133,8 +133,8 @@ func TestAdapter_transform(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -202,8 +202,8 @@ func TestAdapter_transform(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -265,8 +265,8 @@ func TestAdapter_transform(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -343,8 +343,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -369,8 +369,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -396,8 +396,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -423,8 +423,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -504,11 +504,11 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestIo, 456},
-					{constvalues.RequestTotalTime, 123e6},
-					{constvalues.RequestSentTime, 201e6},
-					{constvalues.WaitingTtfbTime, 101e6},
-					{constvalues.ContentDownloadTime, 801e6},
+					model.NewIntGauge(constvalues.RequestIo, 456),
+					model.NewIntGauge(constvalues.RequestTotalTime, 123e6),
+					model.NewIntGauge(constvalues.RequestSentTime, 201e6),
+					model.NewIntGauge(constvalues.WaitingTtfbTime, 101e6),
+					model.NewIntGauge(constvalues.ContentDownloadTime, 801e6),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -587,11 +587,11 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 					}),
 				123*10e5,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
-					{constvalues.RequestSentTime, 201},
-					{constvalues.WaitingTtfbTime, 101},
-					{constvalues.ContentDownloadTime, 801},
+					model.NewIntGauge(constvalues.RequestIo, 456),
+					model.NewIntGauge(constvalues.RequestTotalTime, 123e6),
+					model.NewIntGauge(constvalues.RequestSentTime, 201e6),
+					model.NewIntGauge(constvalues.WaitingTtfbTime, 101e6),
+					model.NewIntGauge(constvalues.ContentDownloadTime, 801e6),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -715,8 +715,8 @@ func TestAdapter_adapt(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: []attribute.KeyValue{
@@ -812,8 +812,8 @@ func TestAdapter_transform_async(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -878,8 +878,8 @@ func TestAdapter_transform_async(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -947,8 +947,8 @@ func TestAdapter_transform_async(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -1010,8 +1010,8 @@ func TestAdapter_transform_async(t *testing.T) {
 					}),
 				123,
 				[]*model.Gauge{
-					{constvalues.RequestTotalTime, 123},
-					{constvalues.RequestIo, 456},
+					model.NewIntGauge(constvalues.RequestTotalTime, 123),
+					model.NewIntGauge(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
