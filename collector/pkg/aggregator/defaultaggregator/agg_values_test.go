@@ -2,6 +2,7 @@ package defaultaggregator
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
+	"reflect"
 	"sync"
 	"testing"
 )
@@ -15,12 +16,21 @@ func startTask(workerNum int, task func(wg *sync.WaitGroup)) {
 	wg.Wait()
 }
 
-func assertTest(t *testing.T, aggValues aggregatedValues, workerNum int, expectedNum int64,
+func assertIntTest(t *testing.T, aggValues aggregatedValues, workerNum int, expectedNum int64,
 	task func(wg *sync.WaitGroup)) {
 	startTask(workerNum, task)
 	got := aggValues.get()
-	if expectedNum != aggValues.get() {
-		t.Errorf("The result is expected to be %d, but got %d", expectedNum, got)
+	if expectedNum != aggValues.get().GetInt().Value {
+		t.Errorf("The result is expected to be %d, but got %d", expectedNum, got.GetInt().Value)
+	}
+}
+
+func assertHistogramTest(t *testing.T, aggValues aggregatedValues, workerNum int, expected *model.Histogram,
+	task func(wg *sync.WaitGroup)) {
+	startTask(workerNum, task)
+	got := aggValues.get().GetHistogram()
+	if reflect.DeepEqual(got, expected) {
+		t.Errorf("The result is expected to be %v, but got %d", expected, got)
 	}
 }
 
@@ -29,7 +39,7 @@ func Test_aggValues_sum(t *testing.T) {
 	loopNum := 10000
 	expectedNum := int64(workerNum * loopNum)
 	aggValues := &sumValue{}
-	assertTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
+	assertIntTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
 		for j := 0; j < loopNum; j++ {
 			aggValues.calculate(1)
 		}
@@ -42,7 +52,7 @@ func Test_aggValues_max(t *testing.T) {
 	loopNum := 10000
 	expectedNum := int64(loopNum - 1)
 	aggValues := &maxValue{}
-	assertTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
+	assertIntTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
 		for j := 0; j < loopNum; j++ {
 			aggValues.calculate(int64(j))
 		}
@@ -55,7 +65,7 @@ func Test_aggValues_avg(t *testing.T) {
 	loopNum := 10000
 	var expectedNum int64 = 1
 	aggValues := &avgValue{}
-	assertTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
+	assertIntTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
 		for j := 0; j < loopNum; j++ {
 			aggValues.calculate(1)
 		}
@@ -68,7 +78,7 @@ func Test_aggValues_last(t *testing.T) {
 	loopNum := 10000
 	var expectedNum int64 = 1
 	aggValues := &lastValue{}
-	assertTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
+	assertIntTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
 		for j := loopNum; j > 0; j-- {
 			aggValues.calculate(int64(j))
 		}
@@ -81,7 +91,30 @@ func Test_aggValues_count(t *testing.T) {
 	loopNum := 10000
 	var expectedNum = int64(workerNum * loopNum)
 	aggValues := &countValue{}
-	assertTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
+	assertIntTest(t, aggValues, workerNum, expectedNum, func(wg *sync.WaitGroup) {
+		for j := loopNum; j > 0; j-- {
+			aggValues.calculate(int64(j))
+		}
+		wg.Done()
+	})
+}
+
+func Test_aggValues_histogram(t *testing.T) {
+	workerNum := 5
+	loopNum := 10000
+	aggValues := &histogramValue{
+		sum:                0,
+		count:              0,
+		explicitBoundaries: []int64{0, 100, 200, 500, 1000, 2000, 5000, 10000},
+		bucketCounts:       []uint64{0, 0, 0, 0, 0, 0, 0, 0},
+	}
+	expected := &model.Histogram{
+		Sum:                int64((10000*4999 + 15000) * workerNum),
+		Count:              uint64(10000 * workerNum),
+		ExplicitBoundaries: []int64{0, 100, 200, 500, 1000, 2000, 5000, 10000},
+		BucketCounts:       []uint64{0, 500, 1000, 2500, 5000, 10000, 25000, 50000},
+	}
+	assertHistogramTest(t, aggValues, workerNum, expected, func(wg *sync.WaitGroup) {
 		for j := loopNum; j > 0; j-- {
 			aggValues.calculate(int64(j))
 		}
@@ -168,5 +201,26 @@ func Test_defaultValuesMap_countValue(t *testing.T) {
 	got := m.get("count_value")
 	if got == nil || got[0].Name != "count_value_count" || got[0].GetInt().Value != 10000 {
 		t.Errorf("lastValue result is %v, expected %v", got, 10000)
+	}
+}
+
+func Test_defaultValuesMap_histogramValue(t *testing.T) {
+	kindMap := make(map[string][]KindConfig)
+	kindMap["histogram_value"] = []KindConfig{{OutputName: "histogram_value", Kind: HistogramKind, ExplicitBoundaries: []int64{0, 100, 200, 500, 1000, 2000, 5000, 10000}}}
+	gauges := []*model.Gauge{{Name: "histogram_value"}}
+	m := newAggValuesMap(gauges, kindMap)
+	for i := 10000; i > 0; i-- {
+		m.calculate("histogram_value", int64(i), 0)
+	}
+	got := m.get("histogram_value")
+	expected := model.NewHistogramGauge("histogram_value", &model.Histogram{
+		Sum:                10000*4999 + 15000,
+		Count:              10000,
+		ExplicitBoundaries: []int64{0, 100, 200, 500, 1000, 2000, 5000, 10000},
+		BucketCounts:       []uint64{0, 100, 200, 500, 1000, 2000, 5000, 10000},
+	})
+	if got == nil || got[0].Name != "histogram_value" || got[0].GetHistogram() == nil ||
+		reflect.DeepEqual(got[0], expected) {
+		t.Errorf("lastValue result is %v, expected %v", got[0], expected)
 	}
 }

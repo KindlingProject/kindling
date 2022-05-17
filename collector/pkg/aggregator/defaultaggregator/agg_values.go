@@ -14,6 +14,7 @@ const (
 	AvgKind
 	LastKind
 	CountKind
+	HistogramKind
 )
 
 func (k AggregatorKind) name() string {
@@ -28,6 +29,8 @@ func (k AggregatorKind) name() string {
 		return "last"
 	case CountKind:
 		return "count"
+	case HistogramKind:
+		return "histogram"
 	default:
 		return ""
 	}
@@ -45,6 +48,8 @@ func GetAggregatorKind(kind string) AggregatorKind {
 		return LastKind
 	case "count":
 		return CountKind
+	case "histogram":
+		return HistogramKind
 	default:
 		return SumKind
 	}
@@ -58,6 +63,8 @@ type (
 	KindConfig struct {
 		OutputName string
 		Kind       AggregatorKind
+		// Only HistogramKind has this value
+		ExplicitBoundaries []int64
 	}
 )
 
@@ -84,7 +91,7 @@ func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]KindConfig) agg
 
 		aggValuesSlice := make([]aggregatedValues, len(kindSlice))
 		for i, kind := range kindSlice {
-			aggValuesSlice[i] = newAggValue(kind.OutputName, kind.Kind)
+			aggValuesSlice[i] = newAggValue(kind)
 		}
 		ret.values[gauge.Name] = aggValuesSlice
 	}
@@ -110,10 +117,7 @@ func (m *defaultValuesMap) get(name string) []*model.Gauge {
 	}
 	ret := make([]*model.Gauge, len(vSlice))
 	for i, v := range vSlice {
-		ret[i] = &model.Gauge{
-			Name:  v.getName(),
-			Value: v.get(),
-		}
+		ret[i] = v.get()
 	}
 	return ret
 }
@@ -130,8 +134,9 @@ func (m *defaultValuesMap) getTimestamp() uint64 {
 	return atomic.LoadUint64(&m.timestamp)
 }
 
-func newAggValue(name string, kind AggregatorKind) aggregatedValues {
-	switch kind {
+func newAggValue(cfg KindConfig) aggregatedValues {
+	name := cfg.OutputName
+	switch cfg.Kind {
 	case SumKind:
 		return &sumValue{name: name}
 	case MaxKind:
@@ -142,6 +147,8 @@ func newAggValue(name string, kind AggregatorKind) aggregatedValues {
 		return &lastValue{name: name}
 	case CountKind:
 		return &countValue{name: name}
+	case HistogramKind:
+		return &histogramValue{name: name, explicitBoundaries: cfg.ExplicitBoundaries, bucketCounts: make([]uint64, len(cfg.ExplicitBoundaries))}
 	default:
 		return &lastValue{name: name}
 	}
@@ -247,4 +254,43 @@ func (v *countValue) get() *model.Gauge {
 }
 func (v *countValue) getName() string {
 	return v.name
+}
+
+type histogramValue struct {
+	name               string
+	sum                int64
+	count              uint64
+	explicitBoundaries []int64
+	bucketCounts       []uint64
+	mut                sync.RWMutex
+}
+
+func (h *histogramValue) calculate(value int64) int64 {
+	h.mut.Lock()
+	defer h.mut.Unlock()
+	h.sum += value
+	h.count++
+	for i := 0; i < len(h.explicitBoundaries); i++ {
+		if value < h.explicitBoundaries[i] {
+			atomic.AddUint64(&h.bucketCounts[i], 1)
+		} else {
+			break
+		}
+	}
+	return int64(h.count)
+}
+
+func (h *histogramValue) get() *model.Gauge {
+	h.mut.RLock()
+	defer h.mut.RUnlock()
+	return model.NewHistogramGauge(h.name, &model.Histogram{
+		Sum:                h.sum,
+		Count:              h.count,
+		ExplicitBoundaries: h.explicitBoundaries,
+		BucketCounts:       h.bucketCounts,
+	})
+}
+
+func (h *histogramValue) getName() string {
+	return h.name
 }
