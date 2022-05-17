@@ -22,16 +22,16 @@ func TestGaugeGroup_RemoveGauge(t *testing.T) {
 			name: "normal",
 			fields: fields{
 				Values: []*Gauge{
-					{Name: "a", Value: 1},
-					{Name: "b", Value: 2},
-					{Name: "c", Value: 3},
+					NewIntGauge("a", 1),
+					NewIntGauge("b", 2),
+					NewIntGauge("c", 3),
 				},
 			},
 			args: args{name: "b"},
 			want: fields{
 				Values: []*Gauge{
-					{Name: "a", Value: 1},
-					{Name: "c", Value: 3},
+					NewIntGauge("a", 1),
+					NewIntGauge("c", 3),
 				},
 			},
 		},

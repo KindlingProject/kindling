@@ -14,11 +14,6 @@ type GaugeGroup struct {
 	Timestamp uint64
 }
 
-type Gauge struct {
-	Name  string
-	Value int64
-}
-
 func NewGaugeGroup(name string, labels *AttributeMap, timestamp uint64, values ...*Gauge) *GaugeGroup {
 	return &GaugeGroup{
 		Name:      name,
@@ -34,11 +29,11 @@ func (g *GaugeGroup) GetGauge(name string) (*Gauge, bool) {
 			return gauge, true
 		}
 	}
-	return &Gauge{}, false
+	return nil, false
 }
 
-func (g *GaugeGroup) AddGaugeWithName(name string, value int64) {
-	g.AddGauge(&Gauge{Name: name, Value: value})
+func (g *GaugeGroup) AddIntGaugeWithName(name string, value int64) {
+	g.AddGauge(NewIntGauge(name, value))
 }
 
 func (g *GaugeGroup) AddGauge(gauge *Gauge) {
@@ -48,12 +43,12 @@ func (g *GaugeGroup) AddGauge(gauge *Gauge) {
 	g.Values = append(g.Values, gauge)
 }
 
-// UpdateAddGauge updates the gauge with the key of 'name' if existing, or adds the gauge if not existing.
-func (g *GaugeGroup) UpdateAddGauge(name string, value int64) {
+// UpdateAddIntGauge overwrite the gauge with the key of 'name' if existing, or adds the gauge if not existing.
+func (g *GaugeGroup) UpdateAddIntGauge(name string, value int64) {
 	if gauge, ok := g.GetGauge(name); ok {
-		gauge.Value = value
+		gauge.Data = &Gauge_Int{Int: &Int{Value: value}}
 	} else {
-		g.AddGaugeWithName(name, value)
+		g.AddIntGaugeWithName(name, value)
 	}
 }
 
@@ -74,7 +69,13 @@ func (g *GaugeGroup) String() string {
 	str.WriteString(fmt.Sprintf("\tName: %s\n", g.Name))
 	str.WriteString(fmt.Sprintf("\tValues: \n"))
 	for _, v := range g.Values {
-		str.WriteString(fmt.Sprintf("\t\t{Name: %s, Value:%d}\n", v.Name, v.Value))
+		switch v.DataType() {
+		case IntGaugeType:
+			str.WriteString(fmt.Sprintf("\t\t{Name: %s, Value: %d}\n", v.Name, v.GetInt().Value))
+		case HistogramGaugeType:
+			histogram := v.GetHistogram()
+			str.WriteString(fmt.Sprintf("\t\t{Name: %s, Sum: %d, Count: %d,ExplicitBoundaries: %v,BucketCount: %v}\n", v.Name, histogram.Sum, histogram.Count, histogram.ExplicitBoundaries, histogram.BucketCounts))
+		}
 	}
 	str.WriteString(fmt.Sprintf("\tLabels: %v\n", g.Labels))
 	str.WriteString(fmt.Sprintf("\tTimestamp: %d\n", g.Timestamp))
@@ -84,7 +85,7 @@ func (g *GaugeGroup) String() string {
 func (g *GaugeGroup) Reset() {
 	g.Name = ""
 	for _, v := range g.Values {
-		v.Value = 0
+		v.Clear()
 	}
 	g.Labels.ResetValues()
 	g.Timestamp = 0
