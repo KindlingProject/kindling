@@ -65,22 +65,10 @@ func makeSingleGaugeGroup(i int) *model.GaugeGroup {
 	gaugesGroup := &model.GaugeGroup{
 		Name: constnames.SingleNetRequestGaugeGroup,
 		Values: []*model.Gauge{
-			{
-				constvalues.ResponseIo,
-				1234567891,
-			},
-			{
-				constvalues.RequestTotalTime,
-				int64(i),
-			},
-			{
-				constvalues.RequestIo,
-				4500,
-			},
-			{
-				constvalues.RequestCount,
-				4500,
-			},
+			model.NewIntGauge(constvalues.ResponseIo, 1234567891),
+			model.NewIntGauge(constvalues.RequestTotalTime, int64(i)),
+			model.NewIntGauge(constvalues.RequestIo, 4500),
+			model.NewIntGauge(constvalues.RequestCount, 4500),
 		},
 		Labels:    model.NewAttributeMap(),
 		Timestamp: 19900909090,
@@ -115,22 +103,10 @@ func makePreAggNetGaugeGroup(i int) *model.GaugeGroup {
 	gaugesGroup := &model.GaugeGroup{
 		Name: constnames.AggregatedNetRequestGaugeGroup,
 		Values: []*model.Gauge{
-			{
-				constvalues.ResponseIo,
-				1234567891,
-			},
-			{
-				constvalues.RequestTotalTime,
-				int64(i),
-			},
-			{
-				constvalues.RequestIo,
-				4500,
-			},
-			{
-				constvalues.RequestCount,
-				4500,
-			},
+			model.NewIntGauge(constvalues.ResponseIo, 1234567891),
+			model.NewIntGauge(constvalues.RequestTotalTime, int64(i)),
+			model.NewIntGauge(constvalues.RequestIo, 4500),
+			model.NewIntGauge(constvalues.RequestCount, 4500),
 		},
 		Labels:    model.NewAttributeMap(),
 		Timestamp: 19900909090,
@@ -241,22 +217,10 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		gaugesGroup := &model.GaugeGroup{
 			Name: constnames.AggregatedNetRequestGaugeGroup,
 			Values: []*model.Gauge{
-				{
-					constvalues.ResponseIo,
-					1234567891,
-				},
-				{
-					constvalues.RequestTotalTime,
-					3300,
-				},
-				{
-					constvalues.RequestIo,
-					4500,
-				},
-				{
-					constvalues.RequestCount,
-					4500,
-				},
+				model.NewIntGauge(constvalues.ResponseIo, 1234567891),
+				model.NewIntGauge(constvalues.RequestTotalTime, int64(i)),
+				model.NewIntGauge(constvalues.RequestIo, 4500),
+				model.NewIntGauge(constvalues.RequestCount, 4500),
 			},
 			Labels:    model.NewAttributeMap(),
 			Timestamp: 19900909090,
