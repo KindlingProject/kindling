@@ -1,6 +1,7 @@
 package defaultaggregator
 
 import (
+	"errors"
 	"github.com/Kindling-project/kindling/collector/model"
 	"sync"
 	"sync/atomic"
@@ -70,10 +71,14 @@ type (
 
 type aggValuesMap interface {
 	// calculate should be thread-safe to use
-	calculate(name string, value int64, timestamp uint64)
+	calculate(gauge *model.Gauge, timestamp uint64)
 	get(name string) []*model.Gauge
 	getAll() []*model.Gauge
 	getTimestamp() uint64
+}
+
+type histogramValuesMap struct {
+	defaultValuesMap
 }
 
 type defaultValuesMap struct {
@@ -99,13 +104,17 @@ func newAggValuesMap(gauges []*model.Gauge, kindMap map[string][]KindConfig) agg
 }
 
 // calculate returns the result value
-func (m *defaultValuesMap) calculate(name string, value int64, timestamp uint64) {
-	vSlice, ok := m.values[name]
+func (m *defaultValuesMap) calculate(gauge *model.Gauge, timestamp uint64) {
+	vSlice, ok := m.values[gauge.Name]
 	if !ok {
 		return
 	}
 	for _, v := range vSlice {
-		v.calculate(value)
+		if gauge.DataType() == model.IntGaugeType {
+			v.calculate(gauge.GetInt().Value)
+		} else if gauge.DataType() == model.HistogramGaugeType {
+			v.merge(gauge.GetHistogram())
+		}
 	}
 	atomic.StoreUint64(&m.timestamp, timestamp)
 }
@@ -155,6 +164,7 @@ func newAggValue(cfg KindConfig) aggregatedValues {
 }
 
 type aggregatedValues interface {
+	merge(gauge *model.Histogram) error
 	calculate(value int64) int64
 	// get returns the value
 	get() *model.Gauge
@@ -181,8 +191,13 @@ func (v *maxValue) get() *model.Gauge {
 	defer v.mut.RUnlock()
 	return model.NewIntGauge(v.name, v.value)
 }
+
 func (v *maxValue) getName() string {
 	return v.name
+}
+
+func (v *maxValue) merge(gauge *model.Histogram) error {
+	return errors.New("can not use max on a histogram gauge")
 }
 
 type sumValue struct {
@@ -198,6 +213,10 @@ func (v *sumValue) get() *model.Gauge {
 }
 func (v *sumValue) getName() string {
 	return v.name
+}
+func (v *sumValue) merge(gauge *model.Histogram) error {
+	atomic.AddInt64(&v.value, gauge.Sum)
+	return nil
 }
 
 type avgValue struct {
@@ -225,6 +244,14 @@ func (v *avgValue) getName() string {
 	return v.name
 }
 
+func (v *avgValue) merge(gauge *model.Histogram) error {
+	v.mut.Lock()
+	defer v.mut.Unlock()
+	v.count += int64(gauge.Count)
+	v.value += gauge.Sum
+	return nil
+}
+
 type lastValue struct {
 	name  string
 	value int64
@@ -239,6 +266,9 @@ func (v *lastValue) get() *model.Gauge {
 func (v *lastValue) getName() string {
 	return v.name
 }
+func (v *lastValue) merge(gauge *model.Histogram) error {
+	return errors.New("can not use lastValue on a histogram gauge")
+}
 
 type countValue struct {
 	name  string
@@ -249,6 +279,13 @@ type countValue struct {
 func (v *countValue) calculate(_ int64) int64 {
 	return atomic.AddInt64(&v.value, 1)
 }
+
+// calculate add 1 to its own value
+func (v *countValue) merge(gauge *model.Histogram) error {
+	atomic.AddInt64(&v.value, int64(gauge.Count))
+	return nil
+}
+
 func (v *countValue) get() *model.Gauge {
 	return model.NewIntGauge(v.name, atomic.LoadInt64(&v.value))
 }
@@ -265,32 +302,44 @@ type histogramValue struct {
 	mut                sync.RWMutex
 }
 
-func (h *histogramValue) calculate(value int64) int64 {
-	h.mut.Lock()
-	defer h.mut.Unlock()
-	h.sum += value
-	h.count++
-	for i := 0; i < len(h.explicitBoundaries); i++ {
-		if value < h.explicitBoundaries[i] {
-			atomic.AddUint64(&h.bucketCounts[i], 1)
-		} else {
-			break
+func (v *histogramValue) calculate(value int64) int64 {
+	v.mut.Lock()
+	defer v.mut.Unlock()
+	v.sum += value
+	v.count++
+	for i := 0; i < len(v.explicitBoundaries); i++ {
+		if value >= v.explicitBoundaries[i] {
+			atomic.AddUint64(&v.bucketCounts[i], 1)
 		}
 	}
-	return int64(h.count)
+	return int64(v.count)
 }
 
-func (h *histogramValue) get() *model.Gauge {
-	h.mut.RLock()
-	defer h.mut.RUnlock()
-	return model.NewHistogramGauge(h.name, &model.Histogram{
-		Sum:                h.sum,
-		Count:              h.count,
-		ExplicitBoundaries: h.explicitBoundaries,
-		BucketCounts:       h.bucketCounts,
+func (v *histogramValue) get() *model.Gauge {
+	v.mut.RLock()
+	defer v.mut.RUnlock()
+	return model.NewHistogramGauge(v.name, &model.Histogram{
+		Sum:                v.sum,
+		Count:              v.count,
+		ExplicitBoundaries: v.explicitBoundaries,
+		BucketCounts:       v.bucketCounts,
 	})
 }
 
-func (h *histogramValue) getName() string {
-	return h.name
+func (v *histogramValue) getName() string {
+	return v.name
+}
+
+func (v *histogramValue) merge(gauge *model.Histogram) error {
+	v.mut.Lock()
+	defer v.mut.Unlock()
+	if len(v.explicitBoundaries) != len(gauge.ExplicitBoundaries) {
+		return errors.New("merge histogram failed when aggregating,the incoming gauge's explicitBoundaries is different from memory")
+	}
+	v.sum += gauge.Sum
+	v.count += gauge.Count
+	for i := 0; i < len(gauge.BucketCounts); i++ {
+		v.bucketCounts[i] += gauge.BucketCounts[i]
+	}
+	return nil
 }

@@ -32,7 +32,7 @@ func (r *valueRecorder) Record(key *aggregator.LabelKeys, gaugeValues []*model.G
 		aggValues, _ = r.labelValues.LoadOrStore(*key, newAggValuesMap(gaugeValues, r.aggKindMap))
 	}
 	for _, gauge := range gaugeValues {
-		aggValues.(aggValuesMap).calculate(gauge.Name, gauge.GetInt().Value, timestamp)
+		aggValues.(aggValuesMap).calculate(gauge, timestamp)
 	}
 }
 
