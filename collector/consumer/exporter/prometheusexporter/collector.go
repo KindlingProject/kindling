@@ -2,7 +2,8 @@ package prometheusexporter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
+	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -10,18 +11,18 @@ import (
 )
 
 type collector struct {
-	aggregator *defaultaggregator.DefaultAggregator
+	aggregator *defaultaggregator.CumulativeAggregator
 }
 
 func (c *collector) Collect(metrics chan<- prometheus.Metric) {
-	gaugeGroups := c.aggregator.Dump()
-
+	// TODO debug
+	gaugeGroups := c.aggregator.DumpAndRemoveExpired(time.Now())
 	for i := 0; i < len(gaugeGroups); i++ {
 		gaugeGroup := gaugeGroups[i]
 		labelMap := gaugeGroup.Labels.GetValues()
 		ts := getTimestamp(gaugeGroup.Timestamp)
-		keys := make([]string, len(labelMap))
-		values := make([]string, len(labelMap))
+		keys := make([]string, 0, len(labelMap))
+		values := make([]string, 0, len(labelMap))
 		for k, v := range labelMap {
 			keys = append(keys, k)
 			values = append(values, v.ToString())
@@ -31,13 +32,14 @@ func (c *collector) Collect(metrics chan<- prometheus.Metric) {
 			switch gauge.DataType() {
 			case model.IntGaugeType:
 				metric, error := prometheus.NewConstMetric(prometheus.NewDesc(
-					gauge.Name,
+					sanitize(gauge.Name, true),
 					"",
 					keys,
 					nil,
+					// TODO not all IntGauge are Counter, they can also be a Gauge
 				), prometheus.CounterValue, float64(gauge.GetInt().Value), values...)
-				tm := prometheus.NewMetricWithTimestamp(ts, metric)
-				if error != nil {
+				if error == nil {
+					tm := prometheus.NewMetricWithTimestamp(ts, metric)
 					metrics <- tm
 				}
 			case model.HistogramGaugeType:
@@ -48,13 +50,13 @@ func (c *collector) Collect(metrics chan<- prometheus.Metric) {
 					buckets[float64(bound)] = histogram.BucketCounts[x]
 				}
 				metric, error := prometheus.NewConstHistogram(prometheus.NewDesc(
-					gauge.Name,
+					sanitize(gauge.Name, true),
 					"",
 					keys,
 					nil,
 				), histogram.Count, float64(histogram.Sum), buckets, values...)
-				tm := prometheus.NewMetricWithTimestamp(ts, metric)
-				if error != nil {
+				if error == nil {
+					tm := prometheus.NewMetricWithTimestamp(ts, metric)
 					metrics <- tm
 				}
 			}
@@ -63,29 +65,37 @@ func (c *collector) Collect(metrics chan<- prometheus.Metric) {
 }
 
 func (c *collector) recordGaugeGroups(group *model.GaugeGroup) {
-	c.aggregator.Aggregate(group, getSelector(group.Name))
+	c.aggregator.AggregatorWithAllLabelsAndGauge(group, time.Now())
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
-	return &collector{aggregator: defaultaggregator.NewDefaultAggregator(&defaultaggregator.AggregatedConfig{
-		//TODO create Aggregator...
-	})}
+	// TODO Do this in config later !!!!
+	requestTotalTimeTopologyMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTotalTime, false)
+	requestTotalTimeEntityMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTotalTime, true)
+	return &collector{
+		aggregator: defaultaggregator.NewCumulativeAggregator(
+			&defaultaggregator.AggregatedConfig{
+				KindMap: map[string][]defaultaggregator.KindConfig{
+					constnames.TcpRttMetricName: {{Kind: defaultaggregator.LastKind, OutputName: constnames.TcpRttMetricName}},
+					constnames.TraceAsMetric:    {{Kind: defaultaggregator.LastKind, OutputName: constnames.TraceAsMetric}},
+					requestTotalTimeTopologyMetric: {{
+						Kind:               defaultaggregator.HistogramKind,
+						OutputName:         requestTotalTimeTopologyMetric,
+						ExplicitBoundaries: []int64{1e6, 2e6, 5e6, 1e7, 2e7, 5e7, 1e8, 2e8, 5e8, 1e9, 2e9, 5e9},
+					}},
+					requestTotalTimeEntityMetric: {{
+						Kind:               defaultaggregator.HistogramKind,
+						OutputName:         requestTotalTimeEntityMetric,
+						ExplicitBoundaries: []int64{1e6, 2e6, 5e6, 1e7, 2e7, 5e7, 1e8, 2e8, 5e8, 1e9, 2e9, 5e9},
+					}},
+				},
+			}, time.Minute*5)}
 }
 
 func getTimestamp(ts uint64) time.Time {
-	return time.UnixMilli(int64(ts))
+	return time.UnixMicro(int64(ts / 1000))
 }
 
+// Describe is a no-op, because the collector dynamically allocates metrics.
+// https://github.com/prometheus/client_golang/blob/v1.9.0/prometheus/collector.go#L28-L40
 func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
-
-// TODO
-func getSelector(metricName string) *aggregator.LabelSelectors {
-	switch metricName {
-	//case constnames.TraceAsMetric:
-	//	return i.traceAsMetricSelector
-	//case constnames.TcpRttMetricName:
-	//	return i.TcpRttMillsSelector
-	default:
-		return nil
-	}
-}

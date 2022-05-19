@@ -77,10 +77,6 @@ type aggValuesMap interface {
 	getTimestamp() uint64
 }
 
-type histogramValuesMap struct {
-	defaultValuesMap
-}
-
 type defaultValuesMap struct {
 	values    map[string][]aggregatedValues
 	timestamp uint64
@@ -308,7 +304,7 @@ func (v *histogramValue) calculate(value int64) int64 {
 	v.sum += value
 	v.count++
 	for i := 0; i < len(v.explicitBoundaries); i++ {
-		if value >= v.explicitBoundaries[i] {
+		if value <= v.explicitBoundaries[i] {
 			atomic.AddUint64(&v.bucketCounts[i], 1)
 		}
 	}

@@ -30,8 +30,8 @@ func assertHistogramTest(t *testing.T, aggValues aggregatedValues, workerNum int
 	task func(wg *sync.WaitGroup)) {
 	startTask(workerNum, task)
 	got := aggValues.get().GetHistogram()
-	if reflect.DeepEqual(got, expected) {
-		t.Errorf("The result is expected to be %v, but got %d", expected, got)
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("The result is expected to be %v, but got %d", *expected, *got)
 	}
 }
 

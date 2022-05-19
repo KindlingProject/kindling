@@ -37,21 +37,10 @@ func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeG
 		return nil
 	}
 	results := make([]*AdaptedResult, 0, 2)
-	if n.StoreTraceAsSpan {
-		attrs, free := n.traceToSpanAdapter.convert(gaugeGroup)
-		results = append(results, &AdaptedResult{
-			ResultType:    Trace,
-			AttrsList:     attrs,
-			Gauges:        []*model.Gauge{requestTotalTime},
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
-		})
-	}
 	if n.StoreTraceAsMetric {
 		labels, free := n.traceToMetricAdapter.transform(gaugeGroup)
 		results = append(results, &AdaptedResult{
 			ResultType:   Metric,
-			AttrsList:    nil,
 			Gauges:       []*model.Gauge{model.NewIntGauge(constnames.TraceAsMetric, requestTotalTime.GetInt().Value)},
 			AttrsMap:     labels,
 			Timestamp:    gaugeGroup.Timestamp,
@@ -106,26 +95,26 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 				gauge.GetInt().Value))
 		}
 	}
-	attrsCommon, free := adapter[0].convert(gaugeGroup)
+	attrsCommon, free := adapter[0].transform(gaugeGroup)
 	tmpResults = make([]*AdaptedResult, 0, 2)
 	if len(gaugesExceptRequestCount) > 0 {
 		// for request count
 		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType:    Metric,
-			AttrsList:     attrsCommon,
-			Gauges:        gaugesExceptRequestCount,
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
+			ResultType:   Metric,
+			AttrsMap:     attrsCommon,
+			Gauges:       gaugesExceptRequestCount,
+			Timestamp:    gaugeGroup.Timestamp,
+			FreeAttrsMap: free,
 		})
 	}
 	if len(requestCount) > 0 {
-		attrsWithSlow, free := adapter[1].convert(gaugeGroup)
+		attrsWithSlow, free := adapter[1].transform(gaugeGroup)
 		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType:    Metric,
-			AttrsList:     attrsWithSlow,
-			Gauges:        requestCount,
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
+			ResultType:   Metric,
+			AttrsMap:     attrsWithSlow,
+			Gauges:       requestCount,
+			Timestamp:    gaugeGroup.Timestamp,
+			FreeAttrsMap: free,
 		})
 	}
 	return

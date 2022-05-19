@@ -17,10 +17,10 @@ func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, e
 	return []*AdaptedResult{
 		{
 			ResultType: Metric,
-			AttrsMap:   gaugeGroup.Labels,
-			AttrsList:  GetLabels(gaugeGroup.Labels, d.constLabels),
-			Gauges:     gaugeGroup.Values,
-			Timestamp:  gaugeGroup.Timestamp,
+			// TODO add const labels
+			AttrsMap:  gaugeGroup.Labels,
+			Gauges:    gaugeGroup.Values,
+			Timestamp: gaugeGroup.Timestamp,
 		},
 	}, nil
 }

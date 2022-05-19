@@ -13,6 +13,7 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
 	github.com/pebbe/zmq4 v1.2.7
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.0
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74

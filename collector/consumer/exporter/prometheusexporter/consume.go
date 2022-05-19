@@ -17,8 +17,18 @@ func (p *prometheusExporter) Consume(gaugeGroup *model.GaugeGroup) error {
 		)
 	}
 
-	for i := 0; i < len(p.adapters); i++ {
-		results, err := p.adapters[i].Adapt(gaugeGroup)
+	if adapters, ok := p.adapters[gaugeGroup.Name]; ok {
+		for i := 0; i < len(adapters); i++ {
+			results, err := adapters[i].Adapt(gaugeGroup)
+			if err != nil {
+				p.telemetry.Logger.Error("Failed to adapt gaugeGroup", zap.Error(err))
+			}
+			if results != nil && len(results) > 0 {
+				p.Export(results)
+			}
+		}
+	} else {
+		results, err := p.defaultAdapter.Adapt(gaugeGroup)
 		if err != nil {
 			p.telemetry.Logger.Error("Failed to adapt gaugeGroup", zap.Error(err))
 		}

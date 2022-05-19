@@ -1,5 +1,5 @@
 exporters:
-  otelexporter:
+  prometheusexporter:
     adapter_config:
       need_trace_as_metric: true
       need_pod_detail: true
@@ -26,9 +26,4 @@ exporters:
     custom_labels:
       job: test-hcmine
     prometheus:
-      port: :8080
-    otlp:
-      collect_period: 15s
-      endpoint: 10.10.10.10:8080
-    stdout:
-      collect_period: 15s
+      endpoint: 127.0.0.1:8080

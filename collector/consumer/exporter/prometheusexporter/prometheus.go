@@ -1,11 +1,13 @@
 package prometheusexporter
 
 import (
+	"fmt"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -30,8 +32,8 @@ type prometheusExporter struct {
 	registry             *prometheus.Registry
 	shutdownFunc         func() error
 	handler              http.Handler
-
-	adapters []defaultadapter.Adapter
+	adapters             map[string][]defaultadapter.Adapter
+	defaultAdapter       defaultadapter.Adapter
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
@@ -44,19 +46,33 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 	registry := prometheus.NewRegistry()
 	registry.Register(collector)
 
+	netAdapter := defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
+		StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
+		StoreTraceAsSpan:   false,
+		StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
+		StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
+	})
+	simpleAdapter := defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, nil)
+
 	prometheusExporter := &prometheusExporter{
-		cfg:                  cfg,
+		cfg:       cfg,
+		collector: collector,
+		handler: promhttp.HandlerFor(
+			registry,
+			promhttp.HandlerOpts{
+				ErrorHandling: promhttp.ContinueOnError,
+				ErrorLog:      &promLogger{realLog: telemetry.Logger},
+			},
+		),
 		metricAggregationMap: cfg.MetricAggregationMap,
 		telemetry:            telemetry,
-		adapters: []defaultadapter.Adapter{
-			defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
-				StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
-				StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
-				StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
-				StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
-			}),
-			defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, nil),
+		adapters: map[string][]defaultadapter.Adapter{
+			constnames.NetRequestGaugeGroupName:       {netAdapter},
+			constnames.AggregatedNetRequestGaugeGroup: {netAdapter},
+			constnames.SingleNetRequestGaugeGroup:     {netAdapter},
+			constnames.TcpGaugeGroupName:              {simpleAdapter},
 		},
+		defaultAdapter: simpleAdapter,
 	}
 
 	go func() {
@@ -83,7 +99,7 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 }(exponentialInt64Boundaries)
 
 func (p *prometheusExporter) Start(_ context.Context) error {
-	ln, err := net.Listen("tcp", p.cfg.PromCfg.Port)
+	ln, err := net.Listen("tcp", p.cfg.PromCfg.Endpoint)
 	if err != nil {
 		return err
 	}
@@ -98,4 +114,18 @@ func (p *prometheusExporter) Start(_ context.Context) error {
 	}()
 
 	return nil
+}
+
+type promLogger struct {
+	realLog *zap.Logger
+}
+
+func newPromLogger(zapLog *zap.Logger) *promLogger {
+	return &promLogger{
+		realLog: zapLog,
+	}
+}
+
+func (l *promLogger) Println(v ...interface{}) {
+	l.realLog.Error(fmt.Sprintln(v...))
 }

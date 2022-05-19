@@ -97,35 +97,47 @@ func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGro
 	requestCount := make([]*model.Gauge, 0, 1)
 	for _, gauge := range gaugeGroup.Values {
 		if gauge.Name != constvalues.RequestCount {
-			gaugesExceptRequestCount = append(gaugesExceptRequestCount, model.NewIntGauge(
-				constnames.ToKindlingNetMetricName(gauge.Name, isServer),
-				gauge.GetInt().Value))
+			switch gauge.DataType() {
+			case model.IntGaugeType:
+				gaugesExceptRequestCount = append(gaugesExceptRequestCount, model.NewIntGauge(
+					constnames.ToKindlingNetMetricName(gauge.Name, isServer),
+					gauge.GetInt().Value))
+			case model.HistogramGaugeType:
+				gaugesExceptRequestCount = append(gaugesExceptRequestCount, model.NewHistogramGauge(
+					constnames.ToKindlingNetMetricName(gauge.Name, isServer),
+					gauge.GetHistogram()))
+			}
 		} else {
-			requestCount = append(requestCount, model.NewIntGauge(
-				constnames.ToKindlingNetMetricName(gauge.Name, isServer),
-				gauge.GetInt().Value))
+			switch gauge.DataType() {
+			case model.IntGaugeType:
+				requestCount = append(gaugesExceptRequestCount, model.NewIntGauge(
+					constnames.ToKindlingNetMetricName(gauge.Name, isServer),
+					gauge.GetInt().Value))
+			case model.HistogramGaugeType:
+				requestCount = append(gaugesExceptRequestCount, gauge)
+			}
 		}
 	}
-	attrsCommon, free := adapter[0].convert(gaugeGroup)
+	attrsCommon, free := adapter[0].transform(gaugeGroup)
 	tmpResults = make([]*AdaptedResult, 0, 2)
 	if len(gaugesExceptRequestCount) > 0 {
 		// for request count
 		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType:    Metric,
-			AttrsList:     attrsCommon,
-			Gauges:        gaugesExceptRequestCount,
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
+			ResultType:   Metric,
+			AttrsMap:     attrsCommon,
+			Gauges:       gaugesExceptRequestCount,
+			Timestamp:    gaugeGroup.Timestamp,
+			FreeAttrsMap: free,
 		})
 	}
 	if len(requestCount) > 0 {
-		attrsWithSlow, free := adapter[1].convert(gaugeGroup)
+		attrsWithSlow, free := adapter[1].transform(gaugeGroup)
 		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType:    Metric,
-			AttrsList:     attrsWithSlow,
-			Gauges:        requestCount,
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
+			ResultType:   Metric,
+			AttrsMap:     attrsWithSlow,
+			Gauges:       requestCount,
+			Timestamp:    gaugeGroup.Timestamp,
+			FreeAttrsMap: free,
 		})
 	}
 	return
