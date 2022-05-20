@@ -1,10 +1,11 @@
 package pgftmetricanalyzer
 
 import (
+	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
-	conntrackerpackge "github.com/Kindling-project/kindling/collector/metadata/conntracker"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -22,9 +23,8 @@ var consumableEvents = map[string]bool{
 }
 
 type PgftMetricAnalyzer struct {
-	consumers   []consumer.Consumer
-	conntracker conntrackerpackge.Conntracker
-	telemetry   *component.TelemetryTools
+	consumers []consumer.Consumer
+	telemetry *component.TelemetryTools
 }
 
 func NewPgftMetricAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, nextConsumers []consumer.Consumer) analyzer.Analyzer {
@@ -32,11 +32,6 @@ func NewPgftMetricAnalyzer(cfg interface{}, telemetry *component.TelemetryTools,
 		consumers: nextConsumers,
 		telemetry: telemetry,
 	}
-	conntracker, err := conntrackerpackge.NewConntracker(nil)
-	if err != nil {
-		telemetry.Logger.Warn("Conntracker cannot work as expected:", zap.Error(err))
-	}
-	retAnalyzer.conntracker = conntracker
 	return retAnalyzer
 }
 
@@ -110,34 +105,23 @@ func (a *PgftMetricAnalyzer) generateSwitchPgft(event *model.KindlingEvent) (*mo
 
 func (a *PgftMetricAnalyzer) getSwitchLabels(event *model.KindlingEvent) (*model.AttributeMap, error) {
 
-	// next := event.GetUserAttribute("next")
-	//pgftMaj := event.GetUserAttribute("pgft_maj")
-	//pgftMin := event.GetUserAttribute("pgft_min")
-	// vmSize := event.GetUserAttribute("vm_size")
-	// vmRss := event.GetUserAttribute("vm_rss")
-	// vmSwap := event.GetUserAttribute("vm_swap")
-
+	labels := model.NewAttributeMap()
 	ctx := event.GetCtx()
+	if ctx == nil {
+		return labels, fmt.Errorf("ctx is nil for event %s", event.Name)
+	}
+
 	threadinfo := ctx.GetThreadInfo()
-	tid := (int64)(threadinfo.GetTid())
-	pid := (int64)(threadinfo.GetPid())
+	if threadinfo == nil {
+		return labels, fmt.Errorf("threadinfo is nil for event %s", event.Name)
+	}
+
 	containerId := threadinfo.GetContainerId()
 	containerName := threadinfo.GetContainerName()
 
-	// nextPid := (int64)(next.GetIntValue())
-	//ptMaj := (int64)(pgftMaj.GetUintValue())
-	//ptMin := (int64)(pgftMin.GetUintValue())
-	// vmsize := (int64)(vmSize.GetUintValue())
-	// vmrss := (int64)(vmRss.GetUintValue())
-	// vmswap := (int64)(vmSwap.GetUintValue())
+	tid := (int64)(threadinfo.GetTid())
+	pid := (int64)(threadinfo.GetPid())
 
-	labels := model.NewAttributeMap()
-	//labels.AddIntValue(constlabels.NextPid, nextPid)
-	//labels.AddIntValue(constlabels.PgftMaj, ptMaj)
-	//labels.AddIntValue(constlabels.PgftMin, ptMin)
-	//labels.AddIntValue(constlabels.VmSize, vmsize)
-	//labels.AddIntValue(constlabels.VmRss, vmrss)
-	//labels.AddIntValue(constlabels.VmSwap, vmswap)
 	labels.AddIntValue(constlabels.Tid, tid)
 	labels.AddIntValue(constlabels.Pid, pid)
 	labels.AddStringValue(constlabels.ContainerId, containerId)

@@ -29,11 +29,7 @@ publisher::~publisher() {
 }
 
 bool filterSwitch(char *val, int threshold){
-    int len = strlen(val), num = 0;
-    for(int i = 0;i < len;i++){
-        num *= 10;
-        num += val[i] - '0';
-    }
+    int num = atoi(val);
     return num <= threshold;
 }
 void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigConverter) {
