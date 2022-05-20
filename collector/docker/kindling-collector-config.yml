@@ -91,6 +91,10 @@ processors:
         - kind: sum
       response_io:
         - kind: sum
+      kindling_pagefault_major_total:
+        - kind: last
+      kindling_pagefault_minor_total:
+        - kind: last
       kindling_tcp_srtt_microseconds:
         - kind: last
       kindling_tcp_retransmit_total:
