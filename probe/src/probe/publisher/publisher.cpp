@@ -28,10 +28,6 @@ publisher::~publisher() {
     delete m_client_event_map;
 }
 
-bool filterSwitch(char *val, int threshold){
-    int num = atoi(val);
-    return num <= threshold;
-}
 void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigConverter) {
     if (!m_socket) {
         return;
@@ -47,7 +43,7 @@ void publisher::consume_sysdig_event(sinsp_evt *evt, int pid, converter *sysdigC
     if (m_selector->select(evt->get_type(), ((sysdig_converter *) sysdigConverter)->get_kindling_category(evt))) {
 
         if(evt->get_type() == PPME_SCHEDSWITCH_6_E){
-            if(filterSwitch(evt->get_param(1)->m_val, 0)){ //filter major
+            if(*((uint64_t *)(evt->get_param(1)->m_val)) <= 0){ //filter the zero major page fault
                 return;
             }
         }
