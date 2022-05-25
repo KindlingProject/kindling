@@ -16,6 +16,9 @@ import (
 
 const Type = "aggregateprocessor"
 
+var exponentialInt64Boundaries = []int64{10e6, 20e6, 50e6, 80e6, 130e6, 200e6, 300e6,
+	400e6, 500e6, 700e6, 1e9, 2e9, 5e9, 30e9}
+
 type AggregateProcessor struct {
 	cfg          *Config
 	telemetry    *component.TelemetryTools
@@ -53,14 +56,34 @@ func toAggregatedConfig(m map[string][]AggregatedKindConfig) *defaultaggregator.
 			if kind.OutputName == "" {
 				kind.OutputName = k
 			}
-			kindConfig[i] = defaultaggregator.KindConfig{
-				OutputName: kind.OutputName,
-				Kind:       defaultaggregator.GetAggregatorKind(kind.Kind),
-			}
+			kindConfig[i] = newKindConfig(&kind)
 		}
 		ret.KindMap[k] = kindConfig
 	}
 	return ret
+}
+
+func newKindConfig(rawConfig *AggregatedKindConfig) (kindConfig defaultaggregator.KindConfig) {
+	kind := defaultaggregator.GetAggregatorKind(rawConfig.Kind)
+	switch kind {
+	case defaultaggregator.HistogramKind:
+		var boundaries []int64
+		if rawConfig.ExplicitBoundaries != nil {
+			boundaries = rawConfig.ExplicitBoundaries
+		} else {
+			boundaries = exponentialInt64Boundaries
+		}
+		return defaultaggregator.KindConfig{
+			OutputName:         rawConfig.OutputName,
+			Kind:               kind,
+			ExplicitBoundaries: boundaries,
+		}
+	default:
+		return defaultaggregator.KindConfig{
+			OutputName: rawConfig.OutputName,
+			Kind:       kind,
+		}
+	}
 }
 
 // TODO: Graceful shutdown
