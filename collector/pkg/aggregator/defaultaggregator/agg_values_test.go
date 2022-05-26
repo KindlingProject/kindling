@@ -31,7 +31,7 @@ func assertHistogramTest(t *testing.T, aggValues aggregatedValues, workerNum int
 	startTask(workerNum, task)
 	got := aggValues.get().GetHistogram()
 	if !reflect.DeepEqual(got, expected) {
-		t.Errorf("The result is expected to be %v, but got %d", *expected, *got)
+		t.Errorf("The result is expected to be %v, but got %v", expected, got)
 	}
 }
 
@@ -186,7 +186,7 @@ func Test_aggValues_histogram_histogram(t *testing.T) {
 	tmp := loopNum * workerNum
 	expected := &model.Histogram{
 		Sum:                int64((10000*4999 + 15000) * workerNum),
-		Count:              uint64(10000 * workerNum),
+		Count:              uint64(10000 * workerNum * 100),
 		ExplicitBoundaries: []int64{0, 100, 200, 500, 1000, 2000, 5000, 10000},
 		BucketCounts:       []uint64{uint64(tmp), uint64(tmp * 2), uint64(tmp * 3), uint64(tmp * 4), uint64(tmp * 5), uint64(tmp * 6), uint64(tmp * 7), uint64(tmp * 8)},
 	}
@@ -302,7 +302,7 @@ func Test_defaultValuesMap_histogramValue(t *testing.T) {
 		BucketCounts:       []uint64{0, 100, 200, 500, 1000, 2000, 5000, 10000},
 	})
 	if got == nil || got[0].Name != "histogram_value" || got[0].GetHistogram() == nil ||
-		reflect.DeepEqual(got[0], expected) {
-		t.Errorf("lastValue result is %v, expected %v", got[0], expected)
+		!reflect.DeepEqual(got[0].GetHistogram(), expected.GetHistogram()) {
+		t.Errorf("lastValue result is %v, expected %v", got[0].GetHistogram(), expected.GetHistogram())
 	}
 }

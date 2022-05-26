@@ -71,7 +71,7 @@ func TestRecord(t *testing.T) {
 		Sum:                10000,
 		Count:              100,
 		ExplicitBoundaries: []int64{0, 100, 200, 500, 1000},
-		BucketCounts:       []uint64{100, 100, 0, 0, 0},
+		BucketCounts:       []uint64{0, 100, 100, 100, 100},
 	}
 	if !reflect.DeepEqual(histogramValue.GetHistogram(), expectedValue) {
 		t.Errorf("expected %+v, got %+v", expectedValue, histogramValue.GetHistogram())
