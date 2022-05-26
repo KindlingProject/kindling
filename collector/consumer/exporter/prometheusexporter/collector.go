@@ -16,41 +16,41 @@ type collector struct {
 
 func (c *collector) Collect(metrics chan<- prometheus.Metric) {
 	// TODO debug
-	gaugeGroups := c.aggregator.DumpAndRemoveExpired(time.Now())
-	for i := 0; i < len(gaugeGroups); i++ {
-		gaugeGroup := gaugeGroups[i]
-		labelMap := gaugeGroup.Labels.GetValues()
-		ts := getTimestamp(gaugeGroup.Timestamp)
+	metricGroups := c.aggregator.DumpAndRemoveExpired(time.Now())
+	for i := 0; i < len(metricGroups); i++ {
+		metricGroup := metricGroups[i]
+		labelMap := metricGroup.Labels.GetValues()
+		ts := getTimestamp(metricGroup.Timestamp)
 		keys := make([]string, 0, len(labelMap))
 		values := make([]string, 0, len(labelMap))
 		for k, v := range labelMap {
 			keys = append(keys, k)
 			values = append(values, v.ToString())
 		}
-		for s := 0; s < len(gaugeGroup.Values); s++ {
-			gauge := gaugeGroup.Values[s]
-			switch gauge.DataType() {
-			case model.IntGaugeType:
+		for s := 0; s < len(metricGroup.Metrics); s++ {
+			metric := metricGroup.Metrics[s]
+			switch metric.DataType() {
+			case model.IntMetricType:
 				metric, error := prometheus.NewConstMetric(prometheus.NewDesc(
-					sanitize(gauge.Name, true),
+					sanitize(metric.Name, true),
 					"",
 					keys,
 					nil,
-					// TODO not all IntGauge are Counter, they can also be a Gauge
-				), prometheus.CounterValue, float64(gauge.GetInt().Value), values...)
+					// TODO not all IntMetric are Counter, they can also be a Metric
+				), prometheus.CounterValue, float64(metric.GetInt().Value), values...)
 				if error == nil {
 					tm := prometheus.NewMetricWithTimestamp(ts, metric)
 					metrics <- tm
 				}
-			case model.HistogramGaugeType:
-				histogram := gauge.GetHistogram()
+			case model.HistogramMetricType:
+				histogram := metric.GetHistogram()
 				buckets := make(map[float64]uint64, len(histogram.ExplicitBoundaries))
 				for x := 0; x < len(histogram.ExplicitBoundaries); x++ {
 					bound := histogram.ExplicitBoundaries[x]
 					buckets[float64(bound)] = histogram.BucketCounts[x]
 				}
 				metric, error := prometheus.NewConstHistogram(prometheus.NewDesc(
-					sanitize(gauge.Name, true),
+					sanitize(metric.Name, true),
 					"",
 					keys,
 					nil,
@@ -64,8 +64,8 @@ func (c *collector) Collect(metrics chan<- prometheus.Metric) {
 	}
 }
 
-func (c *collector) recordGaugeGroups(group *model.GaugeGroup) {
-	c.aggregator.AggregatorWithAllLabelsAndGauge(group, time.Now())
+func (c *collector) recordMetricGroups(group *model.DataGroup) {
+	c.aggregator.AggregatorWithAllLabelsAndMetric(group, time.Now())
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {

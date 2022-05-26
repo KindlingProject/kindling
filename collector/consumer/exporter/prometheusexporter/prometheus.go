@@ -52,7 +52,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 		StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 	})
-	simpleAdapter := defaultadapter.NewSimpleAdapter([]string{constnames.TcpGaugeGroupName}, nil)
+	simpleAdapter := defaultadapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, nil)
 
 	prometheusExporter := &prometheusExporter{
 		cfg:       cfg,
@@ -67,10 +67,10 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		metricAggregationMap: cfg.MetricAggregationMap,
 		telemetry:            telemetry,
 		adapters: map[string][]defaultadapter.Adapter{
-			constnames.NetRequestGaugeGroupName:       {netAdapter},
-			constnames.AggregatedNetRequestGaugeGroup: {netAdapter},
-			constnames.SingleNetRequestGaugeGroup:     {netAdapter},
-			constnames.TcpGaugeGroupName:              {simpleAdapter},
+			constnames.NetRequestMetricGroupName:       {netAdapter},
+			constnames.AggregatedNetRequestMetricGroup: {netAdapter},
+			constnames.SingleNetRequestMetricGroup:     {netAdapter},
+			constnames.TcpMetricGroupName:              {simpleAdapter},
 		},
 		defaultAdapter: simpleAdapter,
 	}

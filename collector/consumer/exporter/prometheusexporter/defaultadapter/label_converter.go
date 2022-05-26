@@ -14,10 +14,10 @@ import (
 type LabelConverter struct {
 	labelsMap map[extraLabelsKey]realAttributes
 
-	// updateKeys generals extraLabelsKey for incoming model.GaugeGroup
+	// updateKeys generals extraLabelsKey for incoming model.DataGroup
 	updateKeys []updateKey
 
-	// valueLabelsFunc generals labels from Gauge.Values
+	// valueLabelsFunc generals labels from Metric.Metrics
 	valueLabelsFunc valueToLabels
 	// adjustFunctions modify the final output
 	adjustFunctions []adjustFunctions
@@ -86,7 +86,7 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 	return key
 }
 
-type valueToLabels func(gaugeGroup *model.GaugeGroup) []attribute.KeyValue
+type valueToLabels func(metricGroup *model.DataGroup) []attribute.KeyValue
 type updateKey func(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey
 type adjustAttrMaps func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap
 type adjustLabels func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue
@@ -275,8 +275,8 @@ func (m *metricAdapterBuilder) build() (*LabelConverter, error) {
 	}, nil
 }
 
-// transform is used to general final labels for Async Metric.It won't modify the origin model.GaugeGroup and should be free by calling the FreeAttrsMap after exported.
-func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap, FreeAttrsMap) {
+// transform is used to general final labels for Async Metric.It won't modify the origin model.DataGroup and should be free by calling the FreeAttrsMap after exported.
+func (m *LabelConverter) transform(group *model.DataGroup) (*model.AttributeMap, FreeAttrsMap) {
 	labels := group.Labels
 	attrs := m.searchExtraAttribute(labels)
 	attrsMap := attrs.attrsMapPool.Get().(*model.AttributeMap)
@@ -315,7 +315,7 @@ func (m *LabelConverter) transform(group *model.GaugeGroup) (*model.AttributeMap
 	return attrsMap, attrs.attrsMapPool.Free
 }
 
-// searchExtraAttribute determine the final outPut struct for incoming gaugeGroup
+// searchExtraAttribute determine the final outPut struct for incoming metricGroup
 // return the default struct of `UNSUPPORTED Protocol` if failed
 func (m *LabelConverter) searchExtraAttribute(labels *model.AttributeMap) realAttributes {
 	tmpExtraKey := &extraLabelsKey{protocol: empty}
@@ -330,8 +330,8 @@ func (m *LabelConverter) searchExtraAttribute(labels *model.AttributeMap) realAt
 	return attrs
 }
 
-// convert is used to general final labels for Sync Metric and Trace. It won't modify the origin model.GaugeGroup and should be free by calling the FreeAttrsList after exported.
-func (m *LabelConverter) convert(group *model.GaugeGroup) ([]attribute.KeyValue, FreeAttrsList) {
+// convert is used to general final labels for Sync Metric and Trace. It won't modify the origin model.DataGroup and should be free by calling the FreeAttrsList after exported.
+func (m *LabelConverter) convert(group *model.DataGroup) ([]attribute.KeyValue, FreeAttrsList) {
 	labels := group.Labels
 	attrs := m.searchExtraAttribute(group.Labels)
 	attrsList := attrs.attrsListPool.Get().([]attribute.KeyValue)

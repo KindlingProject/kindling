@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// GaugeGroup
+// DataGroup
 // Name:
 //   labels:
-//      GaugeGroup
+//      DataGroup
 
 type CumulativeAggregator struct {
 	*DefaultAggregator
@@ -21,17 +21,17 @@ type cumulativeValueRecorder struct {
 	*valueRecorder
 }
 
-func (r *cumulativeValueRecorder) RecordWithDefaultSumKindAgg(key *aggregator.LabelKeys, gaugeValues []*model.Gauge, timestamp uint64, now time.Time) {
+func (r *cumulativeValueRecorder) RecordWithDefaultSumKindAgg(key *aggregator.LabelKeys, metricValues []*model.Metric, timestamp uint64, now time.Time) {
 	if key == nil {
 		return
 	}
 	aggValues, ok := r.labelValues.Load(*key)
 	if !ok {
 		// double check to avoid double writing
-		aggValues, _ = r.labelValues.LoadOrStore(*key, newExpiredAggValuesMapWithDefaultSumKind(gaugeValues, r.aggKindMap))
+		aggValues, _ = r.labelValues.LoadOrStore(*key, newExpiredAggValuesMapWithDefaultSumKind(metricValues, r.aggKindMap))
 	}
-	for _, gauge := range gaugeValues {
-		aggValues.(*expiredValuesMap).calculateWithExpired(gauge, timestamp, now)
+	for _, metric := range metricValues {
+		aggValues.(*expiredValuesMap).calculateWithExpired(metric, timestamp, now)
 	}
 }
 
@@ -55,7 +55,7 @@ func (r *cumulativeValueRecorder) removeExpired(expirationTime time.Time) {
 	}
 }
 
-func (c *CumulativeAggregator) AggregatorWithAllLabelsAndGauge(g *model.GaugeGroup, now time.Time) {
+func (c *CumulativeAggregator) AggregatorWithAllLabelsAndMetric(g *model.DataGroup, now time.Time) {
 	name := g.Name
 	c.mut.RLock()
 	defer c.mut.RUnlock()
@@ -67,12 +67,12 @@ func (c *CumulativeAggregator) AggregatorWithAllLabelsAndGauge(g *model.GaugeGro
 		recorder, _ = c.recordersMap.LoadOrStore(name, &cumulativeValueRecorder{newValueRecorder(name, c.config.KindMap)})
 	}
 	key := aggregator.GetLabelsKeys(g.Labels)
-	recorder.(*cumulativeValueRecorder).RecordWithDefaultSumKindAgg(key, g.Values, g.Timestamp, now)
+	recorder.(*cumulativeValueRecorder).RecordWithDefaultSumKindAgg(key, g.Metrics, g.Timestamp, now)
 }
 
-func (c *CumulativeAggregator) DumpAndRemoveExpired(now time.Time) []*model.GaugeGroup {
+func (c *CumulativeAggregator) DumpAndRemoveExpired(now time.Time) []*model.DataGroup {
 	expirationTime := now.Add(-c.MetricExpiration)
-	ret := make([]*model.GaugeGroup, 0)
+	ret := make([]*model.DataGroup, 0)
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	c.recordersMap.Range(func(_, value interface{}) bool {
@@ -98,26 +98,26 @@ type expiredValuesMap struct {
 	update time.Time
 }
 
-func (e *expiredValuesMap) calculateWithExpired(gauge *model.Gauge, timestamp uint64, now time.Time) {
-	vSlice, ok := e.values[gauge.Name]
+func (e *expiredValuesMap) calculateWithExpired(metric *model.Metric, timestamp uint64, now time.Time) {
+	vSlice, ok := e.values[metric.Name]
 	if !ok {
 		return
 	}
 	for _, v := range vSlice {
-		if gauge.DataType() == model.IntGaugeType {
-			v.calculate(gauge.GetInt().Value)
-		} else if gauge.DataType() == model.HistogramGaugeType {
-			v.merge(gauge.GetHistogram())
+		if metric.DataType() == model.IntMetricType {
+			v.calculate(metric.GetInt().Value)
+		} else if metric.DataType() == model.HistogramMetricType {
+			v.merge(metric.GetHistogram())
 		}
 	}
 	e.update = now
 	atomic.StoreUint64(&e.timestamp, timestamp)
 }
 
-func newExpiredAggValuesMapWithDefaultSumKind(gauges []*model.Gauge, kindMap map[string][]KindConfig) aggValuesMap {
+func newExpiredAggValuesMapWithDefaultSumKind(metrics []*model.Metric, kindMap map[string][]KindConfig) aggValuesMap {
 	ret := &expiredValuesMap{defaultValuesMap: &defaultValuesMap{values: make(map[string][]aggregatedValues)}}
-	for _, gauge := range gauges {
-		kindSlice, found := kindMap[gauge.Name]
+	for _, metric := range metrics {
+		kindSlice, found := kindMap[metric.Name]
 		var aggValuesSlice []aggregatedValues
 		if found {
 			aggValuesSlice = make([]aggregatedValues, len(kindSlice))
@@ -127,11 +127,11 @@ func newExpiredAggValuesMapWithDefaultSumKind(gauges []*model.Gauge, kindMap map
 		} else {
 			aggValuesSlice = make([]aggregatedValues, 1)
 			aggValuesSlice[0] = newAggValue(KindConfig{
-				OutputName: gauge.Name,
+				OutputName: metric.Name,
 				Kind:       SumKind,
 			})
 		}
-		ret.values[gauge.Name] = aggValuesSlice
+		ret.values[metric.Name] = aggValuesSlice
 	}
 	return ret
 }

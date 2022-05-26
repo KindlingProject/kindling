@@ -40,7 +40,7 @@ func (a *LogAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		)
 	}
 	for _, nextConsumer := range a.nextConsumers {
-		nextConsumer.Consume(&model.GaugeGroup{})
+		nextConsumer.Consume(&model.DataGroup{})
 	}
 	return nil
 }

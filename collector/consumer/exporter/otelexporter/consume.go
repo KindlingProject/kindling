@@ -11,23 +11,23 @@ import (
 	"go.uber.org/zap"
 )
 
-func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
-	if gaugeGroup == nil {
+func (e *OtelExporter) Consume(metricGroup *model.DataGroup) error {
+	if metricGroup == nil {
 		// no need consume
 		return nil
 	}
 
-	gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
-	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
+	metricGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", metricGroup.Name))
+	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a metricGroup: "); ce != nil {
 		ce.Write(
-			zap.String("gaugeGroup", gaugeGroup.String()),
+			zap.String("metricGroup", metricGroup.String()),
 		)
 	}
 
 	for i := 0; i < len(e.adapters); i++ {
-		results, err := e.adapters[i].Adapt(gaugeGroup)
+		results, err := e.adapters[i].Adapt(metricGroup)
 		if err != nil {
-			e.telemetry.Logger.Error("Failed to adapt gaugeGroup", zap.Error(err))
+			e.telemetry.Logger.Error("Failed to adapt metricGroup", zap.Error(err))
 		}
 		if results != nil && len(results) > 0 {
 			e.Export(results)
@@ -65,26 +65,26 @@ func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
 }
 
 func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
-	measurements := make([]metric.Measurement, 0, len(result.Gauges))
-	for s := 0; s < len(result.Gauges); s++ {
-		gauge := result.Gauges[s]
-		if metricKind, ok := e.findInstrumentKind(gauge.Name); ok && metricKind == MAGaugeKind {
+	measurements := make([]metric.Measurement, 0, len(result.Metrics))
+	for s := 0; s < len(result.Metrics); s++ {
+		metric := result.Metrics[s]
+		if metricKind, ok := e.findInstrumentKind(metric.Name); ok && metricKind == MAGaugeKind {
 			if result.AttrsMap == nil {
-				e.telemetry.Logger.Error("Unexpected Error: no labels find for MAGaugeKind", zap.String("GaugeName", gauge.Name))
+				e.telemetry.Logger.Error("Unexpected Error: no labels find for MAGaugeKind", zap.String("MetricName", metric.Name))
 			}
-			err := e.instrumentFactory.recordLastValue(gauge.Name, &model.GaugeGroup{
-				Name:      gauge.Name,
-				Values:    []*model.Gauge{model.NewIntGauge(gauge.Name, gauge.GetInt().Value)},
+			err := e.instrumentFactory.recordLastValue(metric.Name, &model.DataGroup{
+				Name:      metric.Name,
+				Metrics:   []*model.Metric{model.NewIntMetric(metric.Name, metric.GetInt().Value)},
 				Labels:    result.AttrsMap,
 				Timestamp: result.Timestamp,
 			})
 			if err != nil {
-				e.telemetry.Logger.Error("Failed to record Gauge", zap.Error(err))
+				e.telemetry.Logger.Error("Failed to record Metric", zap.Error(err))
 			}
 		} else if ok {
-			measurements = append(measurements, e.instrumentFactory.getInstrument(gauge.Name, metricKind).Measurement(gauge.GetInt().Value))
+			measurements = append(measurements, e.instrumentFactory.getInstrument(metric.Name, metricKind).Measurement(metric.GetInt().Value))
 		} else {
-			e.telemetry.Logger.Warn("Undefined metricKind for this Gauge", zap.String("GaugeName", gauge.Name))
+			e.telemetry.Logger.Warn("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name))
 		}
 	}
 	if len(measurements) > 0 {

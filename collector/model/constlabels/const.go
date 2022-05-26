@@ -100,7 +100,7 @@ const (
 	SpanDubboRequestBody  = "dubbo.request_body"
 	SpanDubboResponseBody = "dubbo.response_body"
 
-	NetWorkAnalyzeGaugeGroup = "netAnalyzeGauges"
+	NetWorkAnalyzeMetricGroup = "netAnalyzeMetrics"
 )
 const (
 	STR_EMPTY = ""

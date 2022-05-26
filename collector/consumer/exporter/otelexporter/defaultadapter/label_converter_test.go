@@ -21,7 +21,7 @@ func TestAdapter_transform(t *testing.T) {
 		adjustFunctions []adjustFunctions
 	}
 	type args struct {
-		group *model.GaugeGroup
+		group *model.DataGroup
 	}
 	tests := []struct {
 		name           string
@@ -33,8 +33,8 @@ func TestAdapter_transform(t *testing.T) {
 		{
 			name:           "kindling_agg_net_topology_http",
 			labelConverter: baseAdapter.aggTopologyAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -66,9 +66,9 @@ func TestAdapter_transform(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -97,8 +97,8 @@ func TestAdapter_transform(t *testing.T) {
 		{
 			name:           "kindling_detail_net_topology_http",
 			labelConverter: baseAdapter.detailTopologyAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -132,9 +132,9 @@ func TestAdapter_transform(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -166,8 +166,8 @@ func TestAdapter_transform(t *testing.T) {
 		{
 			name:           "kindling_detail_net_entity_http",
 			labelConverter: baseAdapter.detailEntityAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -201,9 +201,9 @@ func TestAdapter_transform(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -229,8 +229,8 @@ func TestAdapter_transform(t *testing.T) {
 		{
 			name:           "kindling_agg_net_entity_http",
 			labelConverter: baseAdapter.aggEntityAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -264,9 +264,9 @@ func TestAdapter_transform(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -318,7 +318,7 @@ func TestAdapter_transform_protocol(t *testing.T) {
 		adjustFunctions []adjustFunctions
 	}
 	type args struct {
-		group *model.GaugeGroup
+		group *model.DataGroup
 	}
 	tests := []struct {
 		name           string
@@ -330,8 +330,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 		{
 			name:           "kindling_net_topology_http",
 			labelConverter: baseAdapter.detailTopologyAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// protocolInfo
@@ -342,9 +342,9 @@ func TestAdapter_transform_protocol(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -356,8 +356,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 		{
 			name:           "kindling_net_entity_http",
 			labelConverter: baseAdapter.detailEntityAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// protocolInfo
@@ -368,9 +368,9 @@ func TestAdapter_transform_protocol(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -383,8 +383,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 		{
 			name:           "kindling_net_entity_dubbo",
 			labelConverter: baseAdapter.aggEntityAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// protocolInfo
@@ -395,9 +395,9 @@ func TestAdapter_transform_protocol(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -410,8 +410,8 @@ func TestAdapter_transform_protocol(t *testing.T) {
 		{
 			name:           "kindling_net_topology_dubbo",
 			labelConverter: baseAdapter.detailTopologyAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// protocolInfo
@@ -422,9 +422,9 @@ func TestAdapter_transform_protocol(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -448,7 +448,7 @@ func TestAdapter_transform_protocol(t *testing.T) {
 	}
 }
 
-func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
+func TestAdapter_transform_single_net_metricGroup(t *testing.T) {
 	type fields struct {
 		labelsMap       map[extraLabelsKey]realAttributes
 		updateKeys      []updateKey
@@ -456,7 +456,7 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 		adjustFunctions []adjustFunctions
 	}
 	type args struct {
-		group *model.GaugeGroup
+		group *model.DataGroup
 	}
 	tests := []struct {
 		name           string
@@ -468,8 +468,8 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 		{
 			name:           "kindling_trace_to_metric",
 			labelConverter: baseAdapter.traceToMetricAdapter,
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -503,12 +503,12 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestIo, 456),
-					model.NewIntGauge(constvalues.RequestTotalTime, 123e6),
-					model.NewIntGauge(constvalues.RequestSentTime, 201e6),
-					model.NewIntGauge(constvalues.WaitingTtfbTime, 101e6),
-					model.NewIntGauge(constvalues.ContentDownloadTime, 801e6),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestIo, 456),
+					model.NewIntMetric(constvalues.RequestTotalTime, 123e6),
+					model.NewIntMetric(constvalues.RequestSentTime, 201e6),
+					model.NewIntMetric(constvalues.WaitingTtfbTime, 101e6),
+					model.NewIntMetric(constvalues.ContentDownloadTime, 801e6),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -550,8 +550,8 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 		{
 			name:           "kindling_trace_to_span",
 			labelConverter: baseAdapter.traceToSpanAdapter,
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -586,12 +586,12 @@ func TestAdapter_transform_single_net_gaugeGroup(t *testing.T) {
 						constlabels.IsSlow: model.NewIntValue(0),
 					}),
 				123*10e5,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestIo, 456),
-					model.NewIntGauge(constvalues.RequestTotalTime, 123e6),
-					model.NewIntGauge(constvalues.RequestSentTime, 201e6),
-					model.NewIntGauge(constvalues.WaitingTtfbTime, 101e6),
-					model.NewIntGauge(constvalues.ContentDownloadTime, 801e6),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestIo, 456),
+					model.NewIntMetric(constvalues.RequestTotalTime, 123e6),
+					model.NewIntMetric(constvalues.RequestSentTime, 201e6),
+					model.NewIntMetric(constvalues.WaitingTtfbTime, 101e6),
+					model.NewIntMetric(constvalues.ContentDownloadTime, 801e6),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -669,7 +669,7 @@ func TestAdapter_adapt(t *testing.T) {
 		adjustFunctions []adjustFunctions
 	}
 	type args struct {
-		group *model.GaugeGroup
+		group *model.DataGroup
 	}
 	tests := []struct {
 		name    string
@@ -681,8 +681,8 @@ func TestAdapter_adapt(t *testing.T) {
 		{
 			name:    "kindling_agg_net_topology_http",
 			adapter: baseAdapter.aggTopologyAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -714,9 +714,9 @@ func TestAdapter_adapt(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: []attribute.KeyValue{
@@ -766,7 +766,7 @@ func TestAdapter_transform_async(t *testing.T) {
 		adjustFunctions []adjustFunctions
 	}
 	type args struct {
-		group *model.GaugeGroup
+		group *model.DataGroup
 	}
 	tests := []struct {
 		name           string
@@ -778,8 +778,8 @@ func TestAdapter_transform_async(t *testing.T) {
 		{
 			name:           "kindling_agg_net_topology",
 			labelConverter: baseAdapter.aggTopologyAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -811,9 +811,9 @@ func TestAdapter_transform_async(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -842,8 +842,8 @@ func TestAdapter_transform_async(t *testing.T) {
 		{
 			name:           "kindling_detail_net_topology",
 			labelConverter: baseAdapter.detailTopologyAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -877,9 +877,9 @@ func TestAdapter_transform_async(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -911,8 +911,8 @@ func TestAdapter_transform_async(t *testing.T) {
 		{
 			name:           "kindling_detail_net_entity",
 			labelConverter: baseAdapter.detailEntityAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -946,9 +946,9 @@ func TestAdapter_transform_async(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
@@ -974,8 +974,8 @@ func TestAdapter_transform_async(t *testing.T) {
 		{
 			name:           "kindling_agg_net_entity",
 			labelConverter: baseAdapter.aggEntityAdapter[0],
-			args: args{group: model.NewGaugeGroup(
-				constnames.AggregatedNetRequestGaugeGroup,
+			args: args{group: model.NewDataGroup(
+				constnames.AggregatedNetRequestMetricGroup,
 				model.NewAttributeMapWithValues(
 					map[string]model.AttributeValue{
 						// instanceInfo *Need to remove dstIp and dstPort from internal agg topology*
@@ -1009,9 +1009,9 @@ func TestAdapter_transform_async(t *testing.T) {
 						constlabels.IsSlow: model.NewBoolValue(false),
 					}),
 				123,
-				[]*model.Gauge{
-					model.NewIntGauge(constvalues.RequestTotalTime, 123),
-					model.NewIntGauge(constvalues.RequestIo, 456),
+				[]*model.Metric{
+					model.NewIntMetric(constvalues.RequestTotalTime, 123),
+					model.NewIntMetric(constvalues.RequestIo, 456),
 				}...),
 			},
 			want: model.NewAttributeMapWithValues(map[string]model.AttributeValue{

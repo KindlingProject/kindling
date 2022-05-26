@@ -78,23 +78,23 @@ func (i *instrumentFactory) createNewInstrument(metricName string, kind MetricAg
 }
 
 // recordLastValue Only support TraceAsMetric and TcpRttMills now
-func (i *instrumentFactory) recordLastValue(metricName string, singleGauge *model.GaugeGroup) error {
-	if !i.aggregator.CheckExist(singleGauge.Name) {
+func (i *instrumentFactory) recordLastValue(metricName string, singleMetric *model.DataGroup) error {
+	if !i.aggregator.CheckExist(singleMetric.Name) {
 		metric.Must(i.meter).NewInt64GaugeObserver(metricName, func(ctx context.Context, result metric.Int64ObserverResult) {
-			dumps := i.aggregator.DumpSingle(singleGauge.Name)
+			dumps := i.aggregator.DumpSingle(singleMetric.Name)
 			if dumps == nil {
 				return
 			}
 			for s := 0; s < len(dumps); s++ {
-				if len(dumps[s].Values) > 0 {
-					result.Observe(dumps[s].Values[0].GetInt().Value, defaultadapter.GetLabels(dumps[s].Labels, i.customLabels)...)
+				if len(dumps[s].Metrics) > 0 {
+					result.Observe(dumps[s].Metrics[0].GetInt().Value, defaultadapter.GetLabels(dumps[s].Labels, i.customLabels)...)
 				}
 			}
 		}, WithDescription(metricName))
 	}
 
 	if selector := i.getSelector(metricName); selector != nil {
-		i.aggregator.Aggregate(singleGauge, selector)
+		i.aggregator.Aggregate(singleMetric, selector)
 		return nil
 	} else {
 		return errors.New(fmt.Sprintf("no matched Selector has been be defined for %s", metricName))
@@ -209,5 +209,5 @@ func (h *histogramInstrument) Measurement(value int64) metric.Measurement {
 	return h.instrument.Measurement(value)
 }
 
-type AsyncGaugeGroup struct {
+type AsyncMetricGroup struct {
 }

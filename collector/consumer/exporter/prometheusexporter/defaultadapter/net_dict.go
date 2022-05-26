@@ -278,30 +278,30 @@ var traceSpanStatus = []dictionary{
 	{constlabels.Timestamp, constlabels.STR_EMPTY, Int64},
 }
 
-func getTraceSpanStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
+func getTraceSpanStatusLabels(metricGroup *model.DataGroup) []attribute.KeyValue {
 	valueLabels := make([]attribute.KeyValue, 11)
-	for i := 0; i < len(gaugeGroup.Values); i++ {
-		switch gaugeGroup.Values[i].Name {
+	for i := 0; i < len(metricGroup.Metrics); i++ {
+		switch metricGroup.Metrics[i].Name {
 		case constvalues.RequestSentTime:
-			valueLabels[0] = attribute.Int64(traceSpanStatus[0].newKey, gaugeGroup.Values[i].GetInt().Value)
+			valueLabels[0] = attribute.Int64(traceSpanStatus[0].newKey, metricGroup.Metrics[i].GetInt().Value)
 		case constvalues.WaitingTtfbTime:
-			valueLabels[1] = attribute.Int64(traceSpanStatus[1].newKey, gaugeGroup.Values[i].GetInt().Value)
+			valueLabels[1] = attribute.Int64(traceSpanStatus[1].newKey, metricGroup.Metrics[i].GetInt().Value)
 		case constvalues.ContentDownloadTime:
-			valueLabels[2] = attribute.Int64(traceSpanStatus[2].newKey, gaugeGroup.Values[i].GetInt().Value)
+			valueLabels[2] = attribute.Int64(traceSpanStatus[2].newKey, metricGroup.Metrics[i].GetInt().Value)
 		case constvalues.RequestTotalTime:
-			valueLabels[3] = attribute.Int64(traceSpanStatus[3].newKey, gaugeGroup.Values[i].GetInt().Value)
+			valueLabels[3] = attribute.Int64(traceSpanStatus[3].newKey, metricGroup.Metrics[i].GetInt().Value)
 		case constvalues.RequestIo:
-			valueLabels[4] = attribute.Int64(traceSpanStatus[4].newKey, gaugeGroup.Values[i].GetInt().Value)
+			valueLabels[4] = attribute.Int64(traceSpanStatus[4].newKey, metricGroup.Metrics[i].GetInt().Value)
 		case constvalues.ResponseIo:
-			valueLabels[5] = attribute.Int64(traceSpanStatus[5].newKey, gaugeGroup.Values[i].GetInt().Value)
+			valueLabels[5] = attribute.Int64(traceSpanStatus[5].newKey, metricGroup.Metrics[i].GetInt().Value)
 		}
 	}
 
-	valueLabels[6] = attribute.Int64(traceSpanStatus[6].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int)))
-	valueLabels[7] = attribute.Int64(traceSpanStatus[7].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsError), 1, 0).(int)))
-	valueLabels[8] = attribute.Int64(traceSpanStatus[8].newKey, int64(If(gaugeGroup.Labels.GetBoolValue(constlabels.IsSlow), 1, 0).(int)))
+	valueLabels[6] = attribute.Int64(traceSpanStatus[6].newKey, int64(If(metricGroup.Labels.GetBoolValue(constlabels.IsServer), 1, 0).(int)))
+	valueLabels[7] = attribute.Int64(traceSpanStatus[7].newKey, int64(If(metricGroup.Labels.GetBoolValue(constlabels.IsError), 1, 0).(int)))
+	valueLabels[8] = attribute.Int64(traceSpanStatus[8].newKey, int64(If(metricGroup.Labels.GetBoolValue(constlabels.IsSlow), 1, 0).(int)))
 	valueLabels[9] = attribute.Int64(traceSpanStatus[9].newKey, 0)
-	valueLabels[10] = attribute.Int64(traceSpanStatus[10].newKey, int64(gaugeGroup.Timestamp/millToNano))
+	valueLabels[10] = attribute.Int64(traceSpanStatus[10].newKey, int64(metricGroup.Timestamp/millToNano))
 	return valueLabels
 }
 
@@ -313,17 +313,17 @@ var traceStatus = []dictionary{
 	{constlabels.IsServer, constlabels.STR_EMPTY, Bool},
 }
 
-func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
+func getTraceStatusLabels(metricGroup *model.DataGroup) []attribute.KeyValue {
 	var requestSend, waitingTtfb, contentDownload, requestTotalTime int64
-	for i := 0; i < len(gaugeGroup.Values); i++ {
-		if gaugeGroup.Values[i].Name == constvalues.RequestSentTime {
-			requestSend = gaugeGroup.Values[i].GetInt().Value
-		} else if gaugeGroup.Values[i].Name == constvalues.WaitingTtfbTime {
-			waitingTtfb = gaugeGroup.Values[i].GetInt().Value
-		} else if gaugeGroup.Values[i].Name == constvalues.ContentDownloadTime {
-			contentDownload = gaugeGroup.Values[i].GetInt().Value
-		} else if gaugeGroup.Values[i].Name == constvalues.RequestTotalTime {
-			requestTotalTime = gaugeGroup.Values[i].GetInt().Value
+	for i := 0; i < len(metricGroup.Metrics); i++ {
+		if metricGroup.Metrics[i].Name == constvalues.RequestSentTime {
+			requestSend = metricGroup.Metrics[i].GetInt().Value
+		} else if metricGroup.Metrics[i].Name == constvalues.WaitingTtfbTime {
+			waitingTtfb = metricGroup.Metrics[i].GetInt().Value
+		} else if metricGroup.Metrics[i].Name == constvalues.ContentDownloadTime {
+			contentDownload = metricGroup.Metrics[i].GetInt().Value
+		} else if metricGroup.Metrics[i].Name == constvalues.RequestTotalTime {
+			requestTotalTime = metricGroup.Metrics[i].GetInt().Value
 		}
 	}
 
@@ -332,7 +332,7 @@ func getTraceStatusLabels(gaugeGroup *model.GaugeGroup) []attribute.KeyValue {
 		attribute.String(traceStatus[1].newKey, getSubStageStatus(waitingTtfb)),
 		attribute.String(traceStatus[2].newKey, getSubStageStatus(contentDownload)),
 		attribute.String(traceStatus[3].newKey, getRequestStatus(requestTotalTime)),
-		attribute.Bool(traceStatus[4].newKey, gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)),
+		attribute.Bool(traceStatus[4].newKey, metricGroup.Labels.GetBoolValue(constlabels.IsServer)),
 	}
 }
 

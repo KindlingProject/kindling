@@ -76,7 +76,7 @@ func Test_aggValues_max(t *testing.T) {
 
 func Test_aggValues_max_histogram(t *testing.T) {
 	aggValues := &maxValue{}
-	assert.EqualError(t, aggValues.merge(&model.Histogram{Sum: 1}), "can not use max on a histogram gauge")
+	assert.EqualError(t, aggValues.merge(&model.Histogram{Sum: 1}), "can not use max on a histogram metric")
 }
 
 func Test_aggValues_avg(t *testing.T) {
@@ -120,7 +120,7 @@ func Test_aggValues_last(t *testing.T) {
 
 func Test_aggValues_last_histogram(t *testing.T) {
 	aggValues := &lastValue{}
-	assert.EqualError(t, aggValues.merge(&model.Histogram{Sum: 1}), "can not use lastValue on a histogram gauge")
+	assert.EqualError(t, aggValues.merge(&model.Histogram{Sum: 1}), "can not use lastValue on a histogram metric")
 }
 
 func Test_aggValues_count(t *testing.T) {
@@ -207,10 +207,10 @@ func Test_aggValues_histogram_histogram(t *testing.T) {
 func Test_defaultValuesMap_sum(t *testing.T) {
 	kindMap := make(map[string][]KindConfig)
 	kindMap["sum_value"] = []KindConfig{{OutputName: "sum_value_sum", Kind: SumKind}}
-	gauges := []*model.Gauge{{Name: "sum_value"}}
-	m := newAggValuesMap(gauges, kindMap)
+	metrics := []*model.Metric{{Name: "sum_value"}}
+	m := newAggValuesMap(metrics, kindMap)
 	for i := 0; i < 10000; i++ {
-		m.calculate(model.NewIntGauge("sum_value", int64(1)), 0)
+		m.calculate(model.NewIntMetric("sum_value", int64(1)), 0)
 	}
 	got := m.get("sum_value")
 	if got[0].Name != "sum_value_sum" || got[0].GetInt().Value != 10000 {
@@ -221,10 +221,10 @@ func Test_defaultValuesMap_sum(t *testing.T) {
 func Test_defaultValuesMap_avg(t *testing.T) {
 	kindMap := make(map[string][]KindConfig)
 	kindMap["avg_value"] = []KindConfig{{OutputName: "avg_value_avg", Kind: AvgKind}}
-	gauges := []*model.Gauge{{Name: "avg_value"}}
-	m := newAggValuesMap(gauges, kindMap)
+	metrics := []*model.Metric{{Name: "avg_value"}}
+	m := newAggValuesMap(metrics, kindMap)
 	for i := 0; i < 10000; i++ {
-		m.calculate(model.NewIntGauge("avg_value", int64(1)), 0)
+		m.calculate(model.NewIntMetric("avg_value", int64(1)), 0)
 	}
 	got := m.get("avg_value")
 	if got[0].Name != "avg_value_avg" || got[0].GetInt().Value != 1 {
@@ -235,10 +235,10 @@ func Test_defaultValuesMap_avg(t *testing.T) {
 func Test_defaultValuesMap_max(t *testing.T) {
 	kindMap := make(map[string][]KindConfig)
 	kindMap["max_value"] = []KindConfig{{OutputName: "max_value_max", Kind: MaxKind}}
-	gauges := []*model.Gauge{{Name: "max_value"}}
-	m := newAggValuesMap(gauges, kindMap)
+	metrics := []*model.Metric{{Name: "max_value"}}
+	m := newAggValuesMap(metrics, kindMap)
 	for i := 0; i < 10000; i++ {
-		m.calculate(model.NewIntGauge("max_value", int64(i)), 0)
+		m.calculate(model.NewIntMetric("max_value", int64(i)), 0)
 	}
 	got := m.get("max_value")
 	var expected int64 = 9999
@@ -247,10 +247,10 @@ func Test_defaultValuesMap_max(t *testing.T) {
 	}
 
 	kindMap["reserve_max_value"] = []KindConfig{{OutputName: "reserve_max_value_max", Kind: MaxKind}}
-	gauges = []*model.Gauge{{Name: "reserve_max_value"}}
-	m = newAggValuesMap(gauges, kindMap)
+	metrics = []*model.Metric{{Name: "reserve_max_value"}}
+	m = newAggValuesMap(metrics, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate(model.NewIntGauge("reserve_max_value", int64(i)), 0)
+		m.calculate(model.NewIntMetric("reserve_max_value", int64(i)), 0)
 	}
 	got = m.get("reserve_max_value")
 	if got[0].Name != "reserve_max_value_max" || got[0].GetInt().Value != 10000 {
@@ -261,10 +261,10 @@ func Test_defaultValuesMap_max(t *testing.T) {
 func Test_defaultValuesMap_lastValue(t *testing.T) {
 	kindMap := make(map[string][]KindConfig)
 	kindMap["last_value"] = []KindConfig{{OutputName: "last_value_last", Kind: LastKind}}
-	gauges := []*model.Gauge{{Name: "last_value"}}
-	m := newAggValuesMap(gauges, kindMap)
+	metrics := []*model.Metric{{Name: "last_value"}}
+	m := newAggValuesMap(metrics, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate(model.NewIntGauge("last_value", int64(i)), 0)
+		m.calculate(model.NewIntMetric("last_value", int64(i)), 0)
 	}
 	got := m.get("last_value")
 	if got[0].Name != "last_value_last" || got[0].GetInt().Value != 1 {
@@ -275,10 +275,10 @@ func Test_defaultValuesMap_lastValue(t *testing.T) {
 func Test_defaultValuesMap_countValue(t *testing.T) {
 	kindMap := make(map[string][]KindConfig)
 	kindMap["count_value"] = []KindConfig{{OutputName: "count_value_count", Kind: CountKind}}
-	gauges := []*model.Gauge{{Name: "count_value"}}
-	m := newAggValuesMap(gauges, kindMap)
+	metrics := []*model.Metric{{Name: "count_value"}}
+	m := newAggValuesMap(metrics, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate(model.NewIntGauge("count_value", int64(i)), 0)
+		m.calculate(model.NewIntMetric("count_value", int64(i)), 0)
 	}
 	got := m.get("count_value")
 	if got == nil || got[0].Name != "count_value_count" || got[0].GetInt().Value != 10000 {
@@ -289,13 +289,13 @@ func Test_defaultValuesMap_countValue(t *testing.T) {
 func Test_defaultValuesMap_histogramValue(t *testing.T) {
 	kindMap := make(map[string][]KindConfig)
 	kindMap["histogram_value"] = []KindConfig{{OutputName: "histogram_value", Kind: HistogramKind, ExplicitBoundaries: []int64{0, 100, 200, 500, 1000, 2000, 5000, 10000}}}
-	gauges := []*model.Gauge{{Name: "histogram_value"}}
-	m := newAggValuesMap(gauges, kindMap)
+	metrics := []*model.Metric{{Name: "histogram_value"}}
+	m := newAggValuesMap(metrics, kindMap)
 	for i := 10000; i > 0; i-- {
-		m.calculate(model.NewIntGauge("histogram_value", int64(i)), 0)
+		m.calculate(model.NewIntMetric("histogram_value", int64(i)), 0)
 	}
 	got := m.get("histogram_value")
-	expected := model.NewHistogramGauge("histogram_value", &model.Histogram{
+	expected := model.NewHistogramMetric("histogram_value", &model.Histogram{
 		Sum:                10000*4999 + 15000,
 		Count:              10000,
 		ExplicitBoundaries: []int64{0, 100, 200, 500, 1000, 2000, 5000, 10000},

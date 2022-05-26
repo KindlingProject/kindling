@@ -6,31 +6,31 @@ import (
 	"go.uber.org/zap"
 )
 
-func (p *prometheusExporter) Consume(gaugeGroup *model.GaugeGroup) error {
-	if gaugeGroup == nil {
+func (p *prometheusExporter) Consume(metricGroup *model.DataGroup) error {
+	if metricGroup == nil {
 		// no need consume
 		return nil
 	}
-	if ce := p.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
+	if ce := p.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a metricGroup: "); ce != nil {
 		ce.Write(
-			zap.String("gaugeGroup", gaugeGroup.String()),
+			zap.String("metricGroup", metricGroup.String()),
 		)
 	}
 
-	if adapters, ok := p.adapters[gaugeGroup.Name]; ok {
+	if adapters, ok := p.adapters[metricGroup.Name]; ok {
 		for i := 0; i < len(adapters); i++ {
-			results, err := adapters[i].Adapt(gaugeGroup)
+			results, err := adapters[i].Adapt(metricGroup)
 			if err != nil {
-				p.telemetry.Logger.Error("Failed to adapt gaugeGroup", zap.Error(err))
+				p.telemetry.Logger.Error("Failed to adapt metricGroup", zap.Error(err))
 			}
 			if results != nil && len(results) > 0 {
 				p.Export(results)
 			}
 		}
 	} else {
-		results, err := p.defaultAdapter.Adapt(gaugeGroup)
+		results, err := p.defaultAdapter.Adapt(metricGroup)
 		if err != nil {
-			p.telemetry.Logger.Error("Failed to adapt gaugeGroup", zap.Error(err))
+			p.telemetry.Logger.Error("Failed to adapt metricGroup", zap.Error(err))
 		}
 		if results != nil && len(results) > 0 {
 			p.Export(results)
@@ -53,5 +53,5 @@ func (p *prometheusExporter) Export(results []*defaultadapter.AdaptedResult) {
 }
 
 func (p *prometheusExporter) exportMetric(result *defaultadapter.AdaptedResult) {
-	p.collector.recordGaugeGroups(model.NewGaugeGroup("", result.AttrsMap, result.Timestamp, result.Gauges...))
+	p.collector.recordMetricGroups(model.NewDataGroup("", result.AttrsMap, result.Timestamp, result.Metrics...))
 }

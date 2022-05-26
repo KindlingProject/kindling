@@ -6,36 +6,36 @@ import (
 )
 
 type SimpleAdapter struct {
-	acceptGaugeGroupNames map[string]struct{}
-	constLabels           []attribute.KeyValue
+	acceptMetricGroupNames map[string]struct{}
+	constLabels            []attribute.KeyValue
 }
 
-func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	if _, accept := d.acceptGaugeGroupNames[gaugeGroup.Name]; !accept {
+func (d *SimpleAdapter) Adapt(metricGroup *model.DataGroup) ([]*AdaptedResult, error) {
+	if _, accept := d.acceptMetricGroupNames[metricGroup.Name]; !accept {
 		return nil, nil
 	}
 	return []*AdaptedResult{
 		{
 			ResultType: Metric,
 			// TODO add const labels
-			AttrsMap:  gaugeGroup.Labels,
-			Gauges:    gaugeGroup.Values,
-			Timestamp: gaugeGroup.Timestamp,
+			AttrsMap:  metricGroup.Labels,
+			Metrics:   metricGroup.Metrics,
+			Timestamp: metricGroup.Timestamp,
 		},
 	}, nil
 }
 
 func NewSimpleAdapter(
-	acceptGaugeGroupNames []string,
+	acceptMetricGroupNames []string,
 	customLabels []attribute.KeyValue,
 ) *SimpleAdapter {
-	acceptMap := make(map[string]struct{}, len(acceptGaugeGroupNames))
-	for i := 0; i < len(acceptGaugeGroupNames); i++ {
-		acceptMap[acceptGaugeGroupNames[i]] = struct{}{}
+	acceptMap := make(map[string]struct{}, len(acceptMetricGroupNames))
+	for i := 0; i < len(acceptMetricGroupNames); i++ {
+		acceptMap[acceptMetricGroupNames[i]] = struct{}{}
 	}
 	return &SimpleAdapter{
-		constLabels:           customLabels,
-		acceptGaugeGroupNames: acceptMap,
+		constLabels:            customLabels,
+		acceptMetricGroupNames: acceptMap,
 	}
 }
 

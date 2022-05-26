@@ -5,9 +5,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// Adapter is used to transform *model.GaugeGroup into Trace or Metric
+// Adapter is used to transform *model.DataGroup into Trace or Metric
 type Adapter interface {
-	Adapt(group *model.GaugeGroup) ([]*AdaptedResult, error)
+	Adapt(group *model.DataGroup) ([]*AdaptedResult, error)
 }
 
 type AdaptedResult struct {
@@ -15,7 +15,7 @@ type AdaptedResult struct {
 
 	// AttrsMap contains labels for Async Metric
 	AttrsMap  *model.AttributeMap
-	Gauges    []*model.Gauge
+	Metrics   []*model.Metric
 	Timestamp uint64
 
 	// FreeAttrsMap provides an interface for those adapters which need to reuse AttrsList and AttrsMap

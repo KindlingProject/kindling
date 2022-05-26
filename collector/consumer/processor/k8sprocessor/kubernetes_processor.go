@@ -55,30 +55,30 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	}
 }
 
-func (p *K8sMetadataProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
-	name := gaugeGroup.Name
+func (p *K8sMetadataProcessor) Consume(metricGroup *model.DataGroup) error {
+	name := metricGroup.Name
 	switch name {
-	case constnames.NetRequestGaugeGroupName:
-		p.processNetRequestMetric(gaugeGroup)
-	case constnames.TcpGaugeGroupName:
-		p.processTcpMetric(gaugeGroup)
+	case constnames.NetRequestMetricGroupName:
+		p.processNetRequestMetric(metricGroup)
+	case constnames.TcpMetricGroupName:
+		p.processTcpMetric(metricGroup)
 	default:
-		p.processNetRequestMetric(gaugeGroup)
+		p.processNetRequestMetric(metricGroup)
 	}
-	return p.nextConsumer.Consume(gaugeGroup)
+	return p.nextConsumer.Consume(metricGroup)
 }
 
-func (p *K8sMetadataProcessor) processNetRequestMetric(gaugeGroup *model.GaugeGroup) {
-	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
+func (p *K8sMetadataProcessor) processNetRequestMetric(metricGroup *model.DataGroup) {
+	isServer := metricGroup.Labels.GetBoolValue(constlabels.IsServer)
 	if isServer {
-		p.addK8sMetaDataForServerLabel(gaugeGroup.Labels)
+		p.addK8sMetaDataForServerLabel(metricGroup.Labels)
 	} else {
-		p.addK8sMetaDataForClientLabel(gaugeGroup.Labels)
+		p.addK8sMetaDataForClientLabel(metricGroup.Labels)
 	}
 }
 
-func (p *K8sMetadataProcessor) processTcpMetric(gaugeGroup *model.GaugeGroup) {
-	p.addK8sMetaDataViaIp(gaugeGroup.Labels)
+func (p *K8sMetadataProcessor) processTcpMetric(metricGroup *model.DataGroup) {
+	p.addK8sMetaDataViaIp(metricGroup.Labels)
 }
 
 func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.AttributeMap) {

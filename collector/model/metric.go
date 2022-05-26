@@ -1,92 +1,87 @@
 package model
 
-import (
-	"fmt"
-	"strings"
+const (
+	IntMetricType MetricType = iota
+	HistogramMetricType
+	NoneMetricType
 )
 
-// GaugeGroup describes the result of analyzers.
-// Notice: Currently the definition of GaugeGroup is not stable.
-type GaugeGroup struct {
-	Name      string
-	Values    []*Gauge
-	Labels    *AttributeMap
-	Timestamp uint64
+type MetricType int
+
+type Metric struct {
+	Name string
+	//	Data can be assigned by:
+	//	Int
+	//	Histogram
+	Data isMetricData
 }
 
-func NewGaugeGroup(name string, labels *AttributeMap, timestamp uint64, values ...*Gauge) *GaugeGroup {
-	return &GaugeGroup{
-		Name:      name,
-		Values:    values,
-		Labels:    labels,
-		Timestamp: timestamp,
+func (i *Metric) GetData() isMetricData {
+	if i != nil {
+		return i.Data
+	}
+	return nil
+}
+
+func (i *Metric) GetInt() *Int {
+	if x, ok := i.GetData().(*Metric_Int); ok {
+		return x.Int
+	}
+	return nil
+}
+
+func (i *Metric) GetHistogram() *Histogram {
+	if x, ok := i.GetData().(*Metric_Histogram); ok {
+		return x.Histogram
+	}
+	return nil
+}
+
+func (i *Metric) DataType() MetricType {
+	switch i.GetData().(type) {
+	case *Metric_Int:
+		return IntMetricType
+	case *Metric_Histogram:
+		return HistogramMetricType
+	default:
+		return NoneMetricType
 	}
 }
 
-func (g *GaugeGroup) GetGauge(name string) (*Gauge, bool) {
-	for _, gauge := range g.Values {
-		if gauge.Name == name {
-			return gauge, true
-		}
-	}
-	return nil, false
+func (i *Metric) Clear() {
+	i.Data = nil
 }
 
-func (g *GaugeGroup) AddIntGaugeWithName(name string, value int64) {
-	g.AddGauge(NewIntGauge(name, value))
+type Int struct {
+	Value int64
 }
 
-func (g *GaugeGroup) AddGauge(gauge *Gauge) {
-	if g.Values == nil {
-		g.Values = make([]*Gauge, 0)
-	}
-	g.Values = append(g.Values, gauge)
+func NewIntMetric(name string, value int64) *Metric {
+	return &Metric{Name: name, Data: &Metric_Int{Int: &Int{Value: value}}}
 }
 
-// UpdateAddIntGauge overwrite the gauge with the key of 'name' if existing, or adds the gauge if not existing.
-func (g *GaugeGroup) UpdateAddIntGauge(name string, value int64) {
-	if gauge, ok := g.GetGauge(name); ok {
-		gauge.Data = &Gauge_Int{Int: &Int{Value: value}}
-	} else {
-		g.AddIntGaugeWithName(name, value)
-	}
+type Histogram struct {
+	Sum                int64
+	Count              uint64
+	ExplicitBoundaries []int64
+	BucketCounts       []uint64
 }
 
-func (g *GaugeGroup) RemoveGauge(name string) {
-	newValues := make([]*Gauge, 0)
-	for _, value := range g.Values {
-		if value.Name == name {
-			continue
-		}
-		newValues = append(newValues, value)
-	}
-	g.Values = newValues
+func NewHistogramMetric(name string, histogram *Histogram) *Metric {
+	return &Metric{Name: name, Data: &Metric_Histogram{Histogram: histogram}}
 }
 
-func (g *GaugeGroup) String() string {
-	var str strings.Builder
-	str.WriteString(fmt.Sprintf("GagugeGroup:\n"))
-	str.WriteString(fmt.Sprintf("\tName: %s\n", g.Name))
-	str.WriteString(fmt.Sprintf("\tValues: \n"))
-	for _, v := range g.Values {
-		switch v.DataType() {
-		case IntGaugeType:
-			str.WriteString(fmt.Sprintf("\t\t{Name: %s, Value: %d}\n", v.Name, v.GetInt().Value))
-		case HistogramGaugeType:
-			histogram := v.GetHistogram()
-			str.WriteString(fmt.Sprintf("\t\t{Name: %s, Sum: %d, Count: %d,ExplicitBoundaries: %v,BucketCount: %v}\n", v.Name, histogram.Sum, histogram.Count, histogram.ExplicitBoundaries, histogram.BucketCounts))
-		}
-	}
-	str.WriteString(fmt.Sprintf("\tLabels: %v\n", g.Labels))
-	str.WriteString(fmt.Sprintf("\tTimestamp: %d\n", g.Timestamp))
-	return str.String()
+type isMetricData interface {
+	isMetricData()
 }
 
-func (g *GaugeGroup) Reset() {
-	g.Name = ""
-	for _, v := range g.Values {
-		v.Clear()
-	}
-	g.Labels.ResetValues()
-	g.Timestamp = 0
+func (*Metric_Int) isMetricData()       {}
+func (*Metric_Histogram) isMetricData() {}
+
+type Metric_Int struct {
+	Int *Int
+}
+
+type Metric_Histogram struct {
+	Histogram *Histogram
 }

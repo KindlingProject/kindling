@@ -32,11 +32,11 @@ func TestConcurrentAggregator(t *testing.T) {
 	var duration int64 = 100
 	go func() {
 		for i := 0; i < runLoop; i++ {
-			gaugeValues := []*model.Gauge{
-				{Name: "duration", Data: &model.Gauge_Int{Int: &model.Int{Value: duration}}},
+			metricValues := []*model.Metric{
+				{Name: "duration", Data: &model.Metric_Int{Int: &model.Int{Value: duration}}},
 			}
-			gaugeGroup := model.NewGaugeGroup("testGauge", labels, 0, gaugeValues...)
-			aggregatorInstance.Aggregate(gaugeGroup, labelSelectors)
+			metricGroup := model.NewDataGroup("testMetric", labels, 0, metricValues...)
+			aggregatorInstance.Aggregate(metricGroup, labelSelectors)
 			time.Sleep(time.Microsecond)
 		}
 		stopCh <- true
@@ -53,7 +53,7 @@ func TestConcurrentAggregator(t *testing.T) {
 			case <-ticker.C:
 				ret := aggregatorInstance.Dump()
 				for _, g := range ret {
-					for _, v := range g.Values {
+					for _, v := range g.Metrics {
 						if v.Name == "duration_sum" {
 							durationSum += v.GetInt().Value
 						} else if v.Name == "request_count" {
@@ -64,7 +64,7 @@ func TestConcurrentAggregator(t *testing.T) {
 			case <-stopCh:
 				ret := aggregatorInstance.Dump()
 				for _, g := range ret {
-					for _, v := range g.Values {
+					for _, v := range g.Metrics {
 						if v.Name == "duration_sum" {
 							durationSum += v.GetInt().Value
 						} else if v.Name == "request_count" {

@@ -8,34 +8,34 @@ import (
 	"time"
 )
 
-func createGaugeGroup() interface{} {
-	values := []*model.Gauge{
-		model.NewIntGauge(constvalues.ConnectTime, 0),
-		model.NewIntGauge(constvalues.RequestSentTime, 0),
-		model.NewIntGauge(constvalues.WaitingTtfbTime, 0),
-		model.NewIntGauge(constvalues.ContentDownloadTime, 0),
-		model.NewIntGauge(constvalues.RequestTotalTime, 0),
-		model.NewIntGauge(constvalues.RequestIo, 0),
-		model.NewIntGauge(constvalues.ResponseIo, 0),
+func createMetricGroup() interface{} {
+	values := []*model.Metric{
+		model.NewIntMetric(constvalues.ConnectTime, 0),
+		model.NewIntMetric(constvalues.RequestSentTime, 0),
+		model.NewIntMetric(constvalues.WaitingTtfbTime, 0),
+		model.NewIntMetric(constvalues.ContentDownloadTime, 0),
+		model.NewIntMetric(constvalues.RequestTotalTime, 0),
+		model.NewIntMetric(constvalues.RequestIo, 0),
+		model.NewIntMetric(constvalues.ResponseIo, 0),
 	}
-	gaugeGroup := model.NewGaugeGroup(constnames.NetRequestGaugeGroupName, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
-	return gaugeGroup
+	metricGroup := model.NewDataGroup(constnames.NetRequestMetricGroupName, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
+	return metricGroup
 }
 
-type GaugeGroupPool struct {
+type MetricGroupPool struct {
 	pool *sync.Pool
 }
 
-func NewGaugePool() *GaugeGroupPool {
-	return &GaugeGroupPool{pool: &sync.Pool{New: createGaugeGroup}}
+func NewMetricPool() *MetricGroupPool {
+	return &MetricGroupPool{pool: &sync.Pool{New: createMetricGroup}}
 }
 
-func (p *GaugeGroupPool) Get() *model.GaugeGroup {
-	return p.pool.Get().(*model.GaugeGroup)
+func (p *MetricGroupPool) Get() *model.DataGroup {
+	return p.pool.Get().(*model.DataGroup)
 }
 
-func (p *GaugeGroupPool) Free(gaugeGroup *model.GaugeGroup) {
-	gaugeGroup.Reset()
-	gaugeGroup.Name = constnames.NetRequestGaugeGroupName
-	p.pool.Put(gaugeGroup)
+func (p *MetricGroupPool) Free(metricGroup *model.DataGroup) {
+	metricGroup.Reset()
+	metricGroup.Name = constnames.NetRequestMetricGroupName
+	p.pool.Put(metricGroup)
 }

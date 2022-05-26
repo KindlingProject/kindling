@@ -39,34 +39,34 @@ func TestRecord(t *testing.T) {
 	}...)
 
 	for i := 0; i < 100; i++ {
-		gaugeValues := []*model.Gauge{
-			model.NewIntGauge("duration", int64(100)),
-			model.NewIntGauge("last", int64(i)),
+		metricValues := []*model.Metric{
+			model.NewIntMetric("duration", int64(100)),
+			model.NewIntMetric("last", int64(i)),
 		}
-		recorder.Record(keys, gaugeValues, 0)
+		recorder.Record(keys, metricValues, 0)
 	}
-	retGaugeGroup := recorder.dump()
-	sumValue, _ := retGaugeGroup[0].GetGauge("duration_sum")
+	retMetricGroup := recorder.dump()
+	sumValue, _ := retMetricGroup[0].GetMetric("duration_sum")
 	if sumValue.GetInt().Value != 10000 {
 		t.Errorf("sum expected %v, got %v", 10000, sumValue.GetInt().Value)
 	}
-	countValue, _ := retGaugeGroup[0].GetGauge("request_count")
+	countValue, _ := retMetricGroup[0].GetMetric("request_count")
 	if countValue.GetInt().Value != 100 {
 		t.Errorf("expected %v, got %v", 100, countValue.GetInt().Value)
 	}
-	maxValue, _ := retGaugeGroup[0].GetGauge("duration_max")
+	maxValue, _ := retMetricGroup[0].GetMetric("duration_max")
 	if maxValue.GetInt().Value != 100 {
 		t.Errorf("expected %v, got %v", 100, maxValue.GetInt().Value)
 	}
-	avgValue, _ := retGaugeGroup[0].GetGauge("duration_avg")
+	avgValue, _ := retMetricGroup[0].GetMetric("duration_avg")
 	if avgValue.GetInt().Value != 100 {
 		t.Errorf("expected %v, got %v", 100, avgValue.GetInt().Value)
 	}
-	lastValue, _ := retGaugeGroup[0].GetGauge("last")
+	lastValue, _ := retMetricGroup[0].GetMetric("last")
 	if lastValue.GetInt().Value != 99 {
 		t.Errorf("expected %v, got %v", 99, lastValue.GetInt().Value)
 	}
-	histogramValue, _ := retGaugeGroup[0].GetGauge("duration_histogram")
+	histogramValue, _ := retMetricGroup[0].GetMetric("duration_histogram")
 	expectedValue := &model.Histogram{
 		Sum:                10000,
 		Count:              100,
