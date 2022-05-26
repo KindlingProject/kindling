@@ -35,8 +35,8 @@ func TestConcurrentAggregator(t *testing.T) {
 			metricValues := []*model.Metric{
 				{Name: "duration", Data: &model.Metric_Int{Int: &model.Int{Value: duration}}},
 			}
-			metricGroup := model.NewDataGroup("testMetric", labels, 0, metricValues...)
-			aggregatorInstance.Aggregate(metricGroup, labelSelectors)
+			dataGroup := model.NewDataGroup("testMetric", labels, 0, metricValues...)
+			aggregatorInstance.Aggregate(dataGroup, labelSelectors)
 			time.Sleep(time.Microsecond)
 		}
 		stopCh <- true

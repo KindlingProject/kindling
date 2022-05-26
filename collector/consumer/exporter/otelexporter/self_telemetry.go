@@ -14,12 +14,12 @@ var once sync.Once
 var labelsSet map[labelKey]bool
 var labelsSetMutex sync.RWMutex
 
-var metricGroupReceiverCounter metric.Int64Counter
+var dataGroupReceiverCounter metric.Int64Counter
 var metricExportedCardinalitySize metric.Int64UpDownCounterObserver
 
 func newSelfMetrics(meterProvider metric.MeterProvider) {
 	once.Do(func() {
-		metricGroupReceiverCounter = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(otelexporterMetricgroupsReceivedTotal)
+		dataGroupReceiverCounter = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(otelexporterMetricgroupsReceivedTotal)
 		metricExportedCardinalitySize = metric.Must(meterProvider.Meter("kindling")).NewInt64UpDownCounterObserver(
 			otelexporterCardinalitySize, func(ctx context.Context, result metric.Int64ObserverResult) {
 				labelsSetMutex.Lock()

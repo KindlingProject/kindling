@@ -16,19 +16,19 @@ type collector struct {
 
 func (c *collector) Collect(metrics chan<- prometheus.Metric) {
 	// TODO debug
-	metricGroups := c.aggregator.DumpAndRemoveExpired(time.Now())
-	for i := 0; i < len(metricGroups); i++ {
-		metricGroup := metricGroups[i]
-		labelMap := metricGroup.Labels.GetValues()
-		ts := getTimestamp(metricGroup.Timestamp)
+	dataGroups := c.aggregator.DumpAndRemoveExpired(time.Now())
+	for i := 0; i < len(dataGroups); i++ {
+		dataGroup := dataGroups[i]
+		labelMap := dataGroup.Labels.GetValues()
+		ts := getTimestamp(dataGroup.Timestamp)
 		keys := make([]string, 0, len(labelMap))
 		values := make([]string, 0, len(labelMap))
 		for k, v := range labelMap {
 			keys = append(keys, k)
 			values = append(values, v.ToString())
 		}
-		for s := 0; s < len(metricGroup.Metrics); s++ {
-			metric := metricGroup.Metrics[s]
+		for s := 0; s < len(dataGroup.Metrics); s++ {
+			metric := dataGroup.Metrics[s]
 			switch metric.DataType() {
 			case model.IntMetricType:
 				metric, error := prometheus.NewConstMetric(prometheus.NewDesc(

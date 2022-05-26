@@ -20,10 +20,10 @@ func New(config interface{}, telemetry *component.TelemetryTools) exporter.Expor
 	}
 }
 
-func (e *LogExporter) Consume(metricGroup *model.DataGroup) error {
+func (e *LogExporter) Consume(dataGroup *model.DataGroup) error {
 	if ce := e.telemetry.Logger.Check(zapcore.DebugLevel, "Receiver DataGroup"); ce != nil {
 		ce.Write(
-			zap.String("metricGroup", metricGroup.String()),
+			zap.String("dataGroup", dataGroup.String()),
 		)
 	}
 	return nil

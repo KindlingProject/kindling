@@ -55,16 +55,16 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if !ok {
 		return nil
 	}
-	var metricGroup *model.DataGroup
+	var dataGroup *model.DataGroup
 	var err error
 	switch event.Name {
 	case constnames.TcpCloseEvent:
 	case constnames.TcpRcvEstablishedEvent:
-		metricGroup, err = a.generateRtt(event)
+		dataGroup, err = a.generateRtt(event)
 	case constnames.TcpDropEvent:
-		metricGroup, err = a.generateDrop(event)
+		dataGroup, err = a.generateDrop(event)
 	case constnames.TcpRetransmitSkbEvent:
-		metricGroup, err = a.generateRetransmit(event)
+		dataGroup, err = a.generateRetransmit(event)
 	}
 	if err != nil {
 		if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, "Event Skip, "); ce != nil {
@@ -74,12 +74,12 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		}
 		return nil
 	}
-	if metricGroup == nil {
+	if dataGroup == nil {
 		return nil
 	}
 	var retError error
 	for _, nextConsumer := range a.consumers {
-		err := nextConsumer.Consume(metricGroup)
+		err := nextConsumer.Consume(dataGroup)
 		if err != nil {
 			retError = multierror.Append(retError, err)
 		}

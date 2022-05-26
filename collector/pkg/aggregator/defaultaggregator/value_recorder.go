@@ -43,8 +43,8 @@ func (r *valueRecorder) dump() []*model.DataGroup {
 	r.labelValues.Range(func(key, value interface{}) bool {
 		k := key.(aggregator.LabelKeys)
 		v := value.(aggValuesMap)
-		metricGroup := model.NewDataGroup(r.name, k.GetLabels(), v.getTimestamp(), v.getAll()...)
-		ret = append(ret, metricGroup)
+		dataGroup := model.NewDataGroup(r.name, k.GetLabels(), v.getTimestamp(), v.getAll()...)
+		ret = append(ret, dataGroup)
 		return true
 	})
 	return ret

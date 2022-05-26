@@ -17,11 +17,11 @@ const (
 	OtherEvent             = "other"
 
 	GrpcUprobeEvent = "grpc_uprobe"
-	// NetRequestMetricGroupName is used for metricGroup generated from networkAnalyzer.
+	// NetRequestMetricGroupName is used for dataGroup generated from networkAnalyzer.
 	NetRequestMetricGroupName = "net_request_metric_group"
-	// SingleNetRequestMetricGroup stands for the metricGroup with abnormal status.
+	// SingleNetRequestMetricGroup stands for the dataGroup with abnormal status.
 	SingleNetRequestMetricGroup = "single_net_request_metric_group"
-	// AggregatedNetRequestMetricGroup stands for the metricGroup after aggregation.
+	// AggregatedNetRequestMetricGroup stands for the dataGroup after aggregation.
 	AggregatedNetRequestMetricGroup = "aggregated_net_request_metric_group"
 
 	TcpMetricGroupName  = "tcp_metric_metric_group"

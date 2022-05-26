@@ -10,17 +10,17 @@ type SimpleAdapter struct {
 	constLabels            []attribute.KeyValue
 }
 
-func (d *SimpleAdapter) Adapt(metricGroup *model.DataGroup) ([]*AdaptedResult, error) {
-	if _, accept := d.acceptMetricGroupNames[metricGroup.Name]; !accept {
+func (d *SimpleAdapter) Adapt(dataGroup *model.DataGroup) ([]*AdaptedResult, error) {
+	if _, accept := d.acceptMetricGroupNames[dataGroup.Name]; !accept {
 		return nil, nil
 	}
 	return []*AdaptedResult{
 		{
 			ResultType: Metric,
 			// TODO add const labels
-			AttrsMap:  metricGroup.Labels,
-			Metrics:   metricGroup.Metrics,
-			Timestamp: metricGroup.Timestamp,
+			AttrsMap:  dataGroup.Labels,
+			Metrics:   dataGroup.Metrics,
+			Timestamp: dataGroup.Timestamp,
 		},
 	}, nil
 }

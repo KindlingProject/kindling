@@ -56,10 +56,10 @@ func (s *DefaultAggregator) Dump() []*model.DataGroup {
 	return ret
 }
 
-func (s *DefaultAggregator) DumpSingle(metricGroupName string) []*model.DataGroup {
+func (s *DefaultAggregator) DumpSingle(dataGroupName string) []*model.DataGroup {
 	s.mut.Lock()
 	defer s.mut.Unlock()
-	if v, ok := s.recordersMap.Load(metricGroupName); ok {
+	if v, ok := s.recordersMap.Load(dataGroupName); ok {
 		vr := v.(*valueRecorder)
 		result := vr.dump()
 		vr.reset()
@@ -68,9 +68,9 @@ func (s *DefaultAggregator) DumpSingle(metricGroupName string) []*model.DataGrou
 	return nil
 }
 
-func (s *DefaultAggregator) CheckExist(metricGroupName string) bool {
+func (s *DefaultAggregator) CheckExist(dataGroupName string) bool {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
-	_, result := s.recordersMap.Load(metricGroupName)
+	_, result := s.recordersMap.Load(dataGroupName)
 	return result
 }

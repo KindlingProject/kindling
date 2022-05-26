@@ -86,7 +86,7 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 	return key
 }
 
-type valueToLabels func(metricGroup *model.DataGroup) []attribute.KeyValue
+type valueToLabels func(dataGroup *model.DataGroup) []attribute.KeyValue
 type updateKey func(key *extraLabelsKey, labels *model.AttributeMap) *extraLabelsKey
 type adjustAttrMaps func(labels *model.AttributeMap, attributeMap *model.AttributeMap) *model.AttributeMap
 type adjustLabels func(labels *model.AttributeMap, attrs []attribute.KeyValue) []attribute.KeyValue
@@ -315,7 +315,7 @@ func (m *LabelConverter) transform(group *model.DataGroup) (*model.AttributeMap,
 	return attrsMap, attrs.attrsMapPool.Free
 }
 
-// searchExtraAttribute determine the final outPut struct for incoming metricGroup
+// searchExtraAttribute determine the final outPut struct for incoming dataGroup
 // return the default struct of `UNSUPPORTED Protocol` if failed
 func (m *LabelConverter) searchExtraAttribute(labels *model.AttributeMap) realAttributes {
 	tmpExtraKey := &extraLabelsKey{protocol: empty}

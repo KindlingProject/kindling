@@ -58,8 +58,8 @@ func TestDubboProtocol(t *testing.T) {
 type NopProcessor struct {
 }
 
-func (n NopProcessor) Consume(metricGroup *model.DataGroup) error {
-	// fmt.Printf("Consume %v\n", metricGroup)
+func (n NopProcessor) Consume(dataGroup *model.DataGroup) error {
+	// fmt.Printf("Consume %v\n", dataGroup)
 	return nil
 }
 
@@ -78,10 +78,10 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 		viper.UnmarshalKey("analyzers.networkanalyzer", config)
 
 		na = &NetworkAnalyzer{
-			cfg:             config,
-			metricGroupPool: NewMetricPool(),
-			nextConsumers:   []consumer.Consumer{&NopProcessor{}},
-			telemetry:       component.NewDefaultTelemetryTools(),
+			cfg:           config,
+			dataGroupPool: NewMetricPool(),
+			nextConsumers: []consumer.Consumer{&NopProcessor{}},
+			telemetry:     component.NewDefaultTelemetryTools(),
 		}
 		na.Start()
 	}

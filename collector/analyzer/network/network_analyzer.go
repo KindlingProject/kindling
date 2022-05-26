@@ -40,7 +40,7 @@ type NetworkAnalyzer struct {
 	protocolMap      map[string]*protocol.ProtocolParser
 	parsers          []*protocol.ProtocolParser
 
-	metricGroupPool    *MetricGroupPool
+	dataGroupPool      *MetricGroupPool
 	requestMonitor     sync.Map
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
@@ -50,10 +50,10 @@ type NetworkAnalyzer struct {
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
 	na := &NetworkAnalyzer{
-		cfg:             config,
-		metricGroupPool: NewMetricPool(),
-		nextConsumers:   consumers,
-		telemetry:       telemetry,
+		cfg:           config,
+		dataGroupPool: NewMetricPool(),
+		nextConsumers: consumers,
+		telemetry:     telemetry,
 	}
 	if config.EnableConntrack {
 		connConfig := &conntracker.Config{
@@ -312,7 +312,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}
-		na.metricGroupPool.Free(record)
+		na.dataGroupPool.Free(record)
 	}
 	return nil
 }
@@ -471,7 +471,7 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 
 func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.DataGroup {
 	evt := mps.connects.event
-	ret := na.metricGroupPool.Get()
+	ret := na.dataGroupPool.Get()
 	ret.UpdateAddIntMetric(constvalues.ConnectTime, int64(mps.connects.getDuration()))
 	ret.UpdateAddIntMetric(constvalues.RequestTotalTime, int64(mps.connects.getDuration()))
 	ret.Labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
@@ -498,7 +498,7 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 		slow = na.isSlow(mps.getDuration(), protocol)
 	}
 
-	ret := na.metricGroupPool.Get()
+	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
@@ -546,7 +546,7 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	evt := mp.request
 
 	slow := na.isSlow(mp.getDuration(), protocol)
-	ret := na.metricGroupPool.Get()
+	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())

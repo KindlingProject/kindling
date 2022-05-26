@@ -20,41 +20,41 @@ type NetAdapterConfig struct {
 	StoreExternalSrcIP bool
 }
 
-func (n *NetMetricGroupAdapter) Adapt(metricGroup *model.DataGroup) ([]*AdaptedResult, error) {
-	switch metricGroup.Name {
+func (n *NetMetricGroupAdapter) Adapt(dataGroup *model.DataGroup) ([]*AdaptedResult, error) {
+	switch dataGroup.Name {
 	case constnames.AggregatedNetRequestMetricGroup:
-		return n.dealWithPreAggMetricGroups(metricGroup), nil
+		return n.dealWithPreAggMetricGroups(dataGroup), nil
 	case constnames.SingleNetRequestMetricGroup:
-		return n.dealWithSingleMetricGroup(metricGroup), nil
+		return n.dealWithSingleMetricGroup(dataGroup), nil
 	default:
 		return nil, nil
 	}
 }
 
-func (n *NetMetricGroupAdapter) dealWithSingleMetricGroup(metricGroup *model.DataGroup) []*AdaptedResult {
-	requestTotalTime, ok := metricGroup.GetMetric(constvalues.RequestTotalTime)
+func (n *NetMetricGroupAdapter) dealWithSingleMetricGroup(dataGroup *model.DataGroup) []*AdaptedResult {
+	requestTotalTime, ok := dataGroup.GetMetric(constvalues.RequestTotalTime)
 	if !ok {
 		return nil
 	}
 	results := make([]*AdaptedResult, 0, 2)
 	if n.StoreTraceAsSpan {
-		attrs, free := n.traceToSpanAdapter.convert(metricGroup)
+		attrs, free := n.traceToSpanAdapter.convert(dataGroup)
 		results = append(results, &AdaptedResult{
 			ResultType:    Trace,
 			AttrsList:     attrs,
 			Metrics:       []*model.Metric{requestTotalTime},
-			Timestamp:     metricGroup.Timestamp,
+			Timestamp:     dataGroup.Timestamp,
 			FreeAttrsList: free,
 		})
 	}
 	if n.StoreTraceAsMetric {
-		labels, free := n.traceToMetricAdapter.transform(metricGroup)
+		labels, free := n.traceToMetricAdapter.transform(dataGroup)
 		results = append(results, &AdaptedResult{
 			ResultType:   Metric,
 			AttrsList:    nil,
 			Metrics:      []*model.Metric{model.NewIntMetric(constnames.TraceAsMetric, requestTotalTime.GetInt().Value)},
 			AttrsMap:     labels,
-			Timestamp:    metricGroup.Timestamp,
+			Timestamp:    dataGroup.Timestamp,
 			FreeAttrsMap: free,
 		})
 	}
@@ -62,13 +62,13 @@ func (n *NetMetricGroupAdapter) dealWithSingleMetricGroup(metricGroup *model.Dat
 	return results
 }
 
-func (n *NetMetricGroupAdapter) dealWithPreAggMetricGroups(metricGroup *model.DataGroup) []*AdaptedResult {
+func (n *NetMetricGroupAdapter) dealWithPreAggMetricGroups(dataGroup *model.DataGroup) []*AdaptedResult {
 	results := make([]*AdaptedResult, 0, 4)
-	isServer := metricGroup.Labels.GetBoolValue(constlabels.IsServer)
-	srcNamespace := metricGroup.Labels.GetStringValue(constlabels.SrcNamespace)
+	isServer := dataGroup.Labels.GetBoolValue(constlabels.IsServer)
+	srcNamespace := dataGroup.Labels.GetStringValue(constlabels.SrcNamespace)
 	if n.StoreExternalSrcIP && srcNamespace == constlabels.ExternalClusterNamespace && isServer {
 		externalAdapterCache := n.detailTopologyAdapter
-		externalTopology := n.createNetMetricResults(metricGroup, externalAdapterCache)
+		externalTopology := n.createNetMetricResults(dataGroup, externalAdapterCache)
 		results = append(results, externalTopology...)
 	}
 
@@ -86,16 +86,16 @@ func (n *NetMetricGroupAdapter) dealWithPreAggMetricGroups(metricGroup *model.Da
 			metricAdapterCache = n.aggTopologyAdapter
 		}
 	}
-	metrics := n.createNetMetricResults(metricGroup, metricAdapterCache)
+	metrics := n.createNetMetricResults(dataGroup, metricAdapterCache)
 	return append(results, metrics...)
 }
 
-func (n *NetMetricGroupAdapter) createNetMetricResults(metricGroup *model.DataGroup, adapter [2]*LabelConverter) (tmpResults []*AdaptedResult) {
-	values := metricGroup.Metrics
-	isServer := metricGroup.Labels.GetBoolValue(constlabels.IsServer)
+func (n *NetMetricGroupAdapter) createNetMetricResults(dataGroup *model.DataGroup, adapter [2]*LabelConverter) (tmpResults []*AdaptedResult) {
+	values := dataGroup.Metrics
+	isServer := dataGroup.Labels.GetBoolValue(constlabels.IsServer)
 	metricsExceptRequestCount := make([]*model.Metric, 0, len(values))
 	requestCount := make([]*model.Metric, 0, 1)
-	for _, metric := range metricGroup.Metrics {
+	for _, metric := range dataGroup.Metrics {
 		if metric.Name != constvalues.RequestCount {
 			switch metric.DataType() {
 			case model.IntMetricType:
@@ -118,7 +118,7 @@ func (n *NetMetricGroupAdapter) createNetMetricResults(metricGroup *model.DataGr
 			}
 		}
 	}
-	attrsCommon, free := adapter[0].transform(metricGroup)
+	attrsCommon, free := adapter[0].transform(dataGroup)
 	tmpResults = make([]*AdaptedResult, 0, 2)
 	if len(metricsExceptRequestCount) > 0 {
 		// for request count
@@ -126,17 +126,17 @@ func (n *NetMetricGroupAdapter) createNetMetricResults(metricGroup *model.DataGr
 			ResultType:   Metric,
 			AttrsMap:     attrsCommon,
 			Metrics:      metricsExceptRequestCount,
-			Timestamp:    metricGroup.Timestamp,
+			Timestamp:    dataGroup.Timestamp,
 			FreeAttrsMap: free,
 		})
 	}
 	if len(requestCount) > 0 {
-		attrsWithSlow, free := adapter[1].transform(metricGroup)
+		attrsWithSlow, free := adapter[1].transform(dataGroup)
 		tmpResults = append(tmpResults, &AdaptedResult{
 			ResultType:   Metric,
 			AttrsMap:     attrsWithSlow,
 			Metrics:      requestCount,
-			Timestamp:    metricGroup.Timestamp,
+			Timestamp:    dataGroup.Timestamp,
 			FreeAttrsMap: free,
 		})
 	}

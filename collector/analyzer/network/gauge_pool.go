@@ -18,8 +18,8 @@ func createMetricGroup() interface{} {
 		model.NewIntMetric(constvalues.RequestIo, 0),
 		model.NewIntMetric(constvalues.ResponseIo, 0),
 	}
-	metricGroup := model.NewDataGroup(constnames.NetRequestMetricGroupName, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
-	return metricGroup
+	dataGroup := model.NewDataGroup(constnames.NetRequestMetricGroupName, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
+	return dataGroup
 }
 
 type MetricGroupPool struct {
@@ -34,8 +34,8 @@ func (p *MetricGroupPool) Get() *model.DataGroup {
 	return p.pool.Get().(*model.DataGroup)
 }
 
-func (p *MetricGroupPool) Free(metricGroup *model.DataGroup) {
-	metricGroup.Reset()
-	metricGroup.Name = constnames.NetRequestMetricGroupName
-	p.pool.Put(metricGroup)
+func (p *MetricGroupPool) Free(dataGroup *model.DataGroup) {
+	dataGroup.Reset()
+	dataGroup.Name = constnames.NetRequestMetricGroupName
+	p.pool.Put(dataGroup)
 }

@@ -448,7 +448,7 @@ func TestAdapter_transform_protocol(t *testing.T) {
 	}
 }
 
-func TestAdapter_transform_single_net_metricGroup(t *testing.T) {
+func TestAdapter_transform_single_net_dataGroup(t *testing.T) {
 	type fields struct {
 		labelsMap       map[extraLabelsKey]realAttributes
 		updateKeys      []updateKey

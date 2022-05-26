@@ -37,8 +37,8 @@ func New(config interface{}, telemetry *component.TelemetryTools, nextConsumer c
 	}
 }
 
-func (p *NodeMetricProcessor) Consume(metricGroup *model.DataGroup) error {
-	labels := metricGroup.Labels
+func (p *NodeMetricProcessor) Consume(dataGroup *model.DataGroup) error {
+	labels := dataGroup.Labels
 	// Filter the data which labels is nil
 	if labels == nil {
 		return nil
@@ -50,17 +50,17 @@ func (p *NodeMetricProcessor) Consume(metricGroup *model.DataGroup) error {
 	} else {
 		role = "client"
 	}
-	return p.process(metricGroup, role)
+	return p.process(dataGroup, role)
 }
 
-func (p *NodeMetricProcessor) process(metricGroup *model.DataGroup, role string) error {
-	labels := metricGroup.Labels
+func (p *NodeMetricProcessor) process(dataGroup *model.DataGroup, role string) error {
+	labels := dataGroup.Labels
 	dstNodeIp := labels.GetStringValue(constlabels.DstNodeIp)
 	srcNodeIp := labels.GetStringValue(constlabels.SrcNodeIp)
 	if dstNodeIp == "" || srcNodeIp == "" {
 		if ce := p.telemetry.Logger.Check(zapcore.DebugLevel, "dstNodeIp or srcNodeIp is empty which is not expected, skip: "); ce != nil {
 			ce.Write(
-				zap.String("metricGroup", metricGroup.String()),
+				zap.String("dataGroup", dataGroup.String()),
 			)
 		}
 		return nil
@@ -71,7 +71,7 @@ func (p *NodeMetricProcessor) process(metricGroup *model.DataGroup, role string)
 
 	var retError error
 	// For request, the transmit direction is SrcNode->DstNode
-	requestIo, ok := metricGroup.GetMetric(constvalues.RequestIo)
+	requestIo, ok := dataGroup.GetMetric(constvalues.RequestIo)
 	if ok {
 		newLabels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcNodeIp: model.NewStringValue(srcNodeIp),
@@ -93,7 +93,7 @@ func (p *NodeMetricProcessor) process(metricGroup *model.DataGroup, role string)
 		}
 	}
 	// For response, the transmit direction is DstNode->SrcNode
-	responseIo, ok := metricGroup.GetMetric(constvalues.ResponseIo)
+	responseIo, ok := dataGroup.GetMetric(constvalues.ResponseIo)
 	if ok {
 		newLabels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcNodeIp: model.NewStringValue(dstNodeIp),

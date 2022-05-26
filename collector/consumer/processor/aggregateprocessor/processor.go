@@ -105,25 +105,25 @@ func (p *AggregateProcessor) runTicker() {
 	}
 }
 
-func (p *AggregateProcessor) Consume(metricGroup *model.DataGroup) error {
-	switch metricGroup.Name {
+func (p *AggregateProcessor) Consume(dataGroup *model.DataGroup) error {
+	switch dataGroup.Name {
 	case constnames.NetRequestMetricGroupName:
 		var abnormalDataErr error
 		// The abnormal recordersMap will be treated as trace in later processing.
 		// Must trace be merged into metrics in this place? Yes, because we have to generate histogram metrics,
 		// trace recordersMap should not be recorded again, otherwise the percentiles will be much higher.
-		if p.isSampled(metricGroup) {
-			metricGroup.Name = constnames.SingleNetRequestMetricGroup
-			abnormalDataErr = p.nextConsumer.Consume(metricGroup)
+		if p.isSampled(dataGroup) {
+			dataGroup.Name = constnames.SingleNetRequestMetricGroup
+			abnormalDataErr = p.nextConsumer.Consume(dataGroup)
 		}
-		metricGroup.Name = constnames.AggregatedNetRequestMetricGroup
-		p.aggregator.Aggregate(metricGroup, p.netRequestLabelSelectors)
+		dataGroup.Name = constnames.AggregatedNetRequestMetricGroup
+		p.aggregator.Aggregate(dataGroup, p.netRequestLabelSelectors)
 		return abnormalDataErr
 	case constnames.TcpMetricGroupName:
-		p.aggregator.Aggregate(metricGroup, p.tcpLabelSelectors)
+		p.aggregator.Aggregate(dataGroup, p.tcpLabelSelectors)
 		return nil
 	default:
-		p.aggregator.Aggregate(metricGroup, p.netRequestLabelSelectors)
+		p.aggregator.Aggregate(dataGroup, p.netRequestLabelSelectors)
 		return nil
 	}
 }
@@ -197,13 +197,13 @@ func newTcpLabelSelectors() *aggregator.LabelSelectors {
 	)
 }
 
-func (p *AggregateProcessor) isSampled(metricGroup *model.DataGroup) bool {
+func (p *AggregateProcessor) isSampled(dataGroup *model.DataGroup) bool {
 	randSeed := rand.Intn(100)
-	if isAbnormal(metricGroup) {
-		if (randSeed < p.cfg.SamplingRate.SlowData) && metricGroup.Labels.GetBoolValue(constlabels.IsSlow) {
+	if isAbnormal(dataGroup) {
+		if (randSeed < p.cfg.SamplingRate.SlowData) && dataGroup.Labels.GetBoolValue(constlabels.IsSlow) {
 			return true
 		}
-		if (randSeed < p.cfg.SamplingRate.ErrorData) && metricGroup.Labels.GetBoolValue(constlabels.IsError) {
+		if (randSeed < p.cfg.SamplingRate.ErrorData) && dataGroup.Labels.GetBoolValue(constlabels.IsError) {
 			return true
 		}
 	} else {
@@ -214,7 +214,7 @@ func (p *AggregateProcessor) isSampled(metricGroup *model.DataGroup) bool {
 	return false
 }
 
-// shouldAggregate returns true if the metricGroup is slow or has errors.
+// shouldAggregate returns true if the dataGroup is slow or has errors.
 func isAbnormal(g *model.DataGroup) bool {
 	return g.Labels.GetBoolValue(constlabels.IsSlow) || g.Labels.GetBoolValue(constlabels.IsError) ||
 		g.Labels.GetIntValue(constlabels.ErrorType) > constlabels.NoError

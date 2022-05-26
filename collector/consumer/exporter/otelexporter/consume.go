@@ -11,23 +11,23 @@ import (
 	"go.uber.org/zap"
 )
 
-func (e *OtelExporter) Consume(metricGroup *model.DataGroup) error {
-	if metricGroup == nil {
+func (e *OtelExporter) Consume(dataGroup *model.DataGroup) error {
+	if dataGroup == nil {
 		// no need consume
 		return nil
 	}
 
-	metricGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", metricGroup.Name))
-	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a metricGroup: "); ce != nil {
+	dataGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", dataGroup.Name))
+	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a dataGroup: "); ce != nil {
 		ce.Write(
-			zap.String("metricGroup", metricGroup.String()),
+			zap.String("dataGroup", dataGroup.String()),
 		)
 	}
 
 	for i := 0; i < len(e.adapters); i++ {
-		results, err := e.adapters[i].Adapt(metricGroup)
+		results, err := e.adapters[i].Adapt(dataGroup)
 		if err != nil {
-			e.telemetry.Logger.Error("Failed to adapt metricGroup", zap.Error(err))
+			e.telemetry.Logger.Error("Failed to adapt dataGroup", zap.Error(err))
 		}
 		if results != nil && len(results) > 0 {
 			e.Export(results)
