@@ -305,7 +305,7 @@ func (v *histogramValue) calculate(value int64) int64 {
 	v.count++
 	for i := 0; i < len(v.explicitBoundaries); i++ {
 		if value <= v.explicitBoundaries[i] {
-			atomic.AddUint64(&v.bucketCounts[i], 1)
+			v.bucketCounts[i] += 1
 		}
 	}
 	return int64(v.count)
