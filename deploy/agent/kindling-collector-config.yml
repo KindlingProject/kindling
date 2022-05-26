@@ -85,8 +85,6 @@ processors:
           output_name: request_total_time_avg
         - kind: count
           output_name: request_count
-        - kind: histogram
-          explicit_boundaries: [ 10e6, 20e6, 50e6, 80e6, 130e6, 200e6, 300e6, 400e6, 500e6, 700e6, 1000e6, 2000e6, 5000e6, 30000e6 ]
       request_io:
         - kind: sum
       response_io:
