@@ -49,7 +49,16 @@ func (i *Metric) DataType() MetricType {
 }
 
 func (i *Metric) Clear() {
-	i.Data = nil
+	switch i.DataType() {
+	case IntMetricType:
+		i.GetInt().Value = 0
+	case HistogramMetricType:
+		histogram := i.GetHistogram()
+		histogram.BucketCounts = nil
+		histogram.Count = 0
+		histogram.Sum = 0
+		histogram.ExplicitBoundaries = nil
+	}
 }
 
 type Int struct {
