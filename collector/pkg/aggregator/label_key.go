@@ -58,9 +58,7 @@ func (k *LabelKeys) Len() int {
 }
 
 func (k *LabelKeys) Swap(i, j int) {
-	tmp := k.keys[i]
-	k.keys[i] = k.keys[j]
-	k.keys[j] = tmp
+	k.keys[i], k.keys[j] = k.keys[j], k.keys[i]
 }
 
 func (k *LabelKeys) Less(i, j int) bool {
