@@ -70,7 +70,9 @@ func (e *OtelExporter) exportMetric(result *adapter.AdaptedResult) {
 	measurements := make([]metric.Measurement, 0, len(result.Metrics))
 	for s := 0; s < len(result.Metrics); s++ {
 		metric := result.Metrics[s]
-		if metricKind, ok := e.findInstrumentKind(metric.Name); ok && metricKind == MAGaugeKind {
+		if metricKind, ok := e.findInstrumentKind(metric.Name); ok &&
+			metricKind == MAGaugeKind &&
+			metric.DataType() == model.IntMetricType {
 			if result.AttrsMap == nil {
 				e.telemetry.Logger.Error("Unexpected Error: no labels find for MAGaugeKind", zap.String("MetricName", metric.Name))
 			}
@@ -81,10 +83,12 @@ func (e *OtelExporter) exportMetric(result *adapter.AdaptedResult) {
 				Timestamp: result.Timestamp,
 			})
 			if err != nil {
-				e.telemetry.Logger.Error("Failed to record Metric", zap.Error(err))
+				e.telemetry.Logger.Error("Failed to record lastValue of Metric", zap.String("MetricName", metric.Name), zap.Error(err))
 			}
 		} else if ok && metric.DataType() == model.IntMetricType {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(metric.Name, metricKind).Measurement(metric.GetInt().Value))
+		} else if metric.DataType() == model.HistogramMetricType {
+			e.telemetry.Logger.Error("Failed to exporter Metric: can not use otlp-exporter to export histogram Data", zap.String("MetricName", metric.Name))
 		} else {
 			e.telemetry.Logger.Warn("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
 		}
