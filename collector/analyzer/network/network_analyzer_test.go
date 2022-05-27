@@ -79,7 +79,7 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 
 		na = &NetworkAnalyzer{
 			cfg:           config,
-			dataGroupPool: NewMetricPool(),
+			dataGroupPool: NewDataGroupPool(),
 			nextConsumers: []consumer.Consumer{&NopProcessor{}},
 			telemetry:     component.NewDefaultTelemetryTools(),
 		}

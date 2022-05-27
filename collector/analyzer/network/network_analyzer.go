@@ -40,7 +40,7 @@ type NetworkAnalyzer struct {
 	protocolMap      map[string]*protocol.ProtocolParser
 	parsers          []*protocol.ProtocolParser
 
-	dataGroupPool      *MetricGroupPool
+	dataGroupPool      *DataGroupPool
 	requestMonitor     sync.Map
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
@@ -51,7 +51,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 	config, _ := cfg.(*Config)
 	na := &NetworkAnalyzer{
 		cfg:           config,
-		dataGroupPool: NewMetricPool(),
+		dataGroupPool: NewDataGroupPool(),
 		nextConsumers: consumers,
 		telemetry:     telemetry,
 	}
