@@ -10,13 +10,14 @@ type SimpleAdapter struct {
 	constLabels            []attribute.KeyValue
 }
 
-func (d *SimpleAdapter) Adapt(dataGroup *model.DataGroup) ([]*AdaptedResult, error) {
+func (d *SimpleAdapter) Adapt(dataGroup *model.DataGroup, attrType AttrType) ([]*AdaptedResult, error) {
 	if _, accept := d.acceptMetricGroupNames[dataGroup.Name]; !accept {
 		return nil, nil
 	}
 	return []*AdaptedResult{
 		{
 			ResultType: Metric,
+			AttrsList:  GetLabels(dataGroup.Labels, d.constLabels),
 			// TODO add const labels
 			AttrsMap:  dataGroup.Labels,
 			Metrics:   dataGroup.Metrics,

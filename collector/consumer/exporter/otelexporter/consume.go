@@ -27,11 +27,11 @@ func (e *OtelExporter) Consume(dataGroup *model.DataGroup) error {
 	}
 
 	for i := 0; i < len(e.adapters); i++ {
-		results, err := e.adapters[i].Adapt(dataGroup)
+		results, err := e.adapters[i].Adapt(dataGroup, adapter.AttributeList)
 		if err != nil {
 			e.telemetry.Logger.Error("Failed to adapt dataGroup", zap.Error(err))
 		}
-		if results != nil && len(results) > 0 {
+		if len(results) > 0 {
 			e.Export(results)
 		}
 	}

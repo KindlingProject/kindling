@@ -7,7 +7,7 @@ import (
 
 // Adapter is used to transform *model.DataGroup into Trace or Metric
 type Adapter interface {
-	Adapt(group *model.DataGroup) ([]*AdaptedResult, error)
+	Adapt(group *model.DataGroup, attrType AttrType) ([]*AdaptedResult, error)
 }
 
 type AdaptedResult struct {
@@ -25,6 +25,8 @@ type AdaptedResult struct {
 	FreeAttrsList
 }
 
+type AttrType string
+
 type FreeAttrsMap func(attrsMap *model.AttributeMap)
 type FreeAttrsList func(attrsList []attribute.KeyValue)
 
@@ -32,7 +34,12 @@ type ResultType string
 
 const (
 	Metric ResultType = "metric"
-	Trace             = "trace"
+	Trace  ResultType = "trace"
+)
+
+const (
+	AttributeList AttrType = "attributeList"
+	AttributeMap  AttrType = "attributeMap"
 )
 
 func (r *AdaptedResult) Free() {

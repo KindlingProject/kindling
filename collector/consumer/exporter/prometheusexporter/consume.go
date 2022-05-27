@@ -19,20 +19,20 @@ func (p *prometheusExporter) Consume(dataGroup *model.DataGroup) error {
 
 	if adapters, ok := p.adapters[dataGroup.Name]; ok {
 		for i := 0; i < len(adapters); i++ {
-			results, err := adapters[i].Adapt(dataGroup)
+			results, err := adapters[i].Adapt(dataGroup, adapter.AttributeMap)
 			if err != nil {
 				p.telemetry.Logger.Error("Failed to adapt dataGroup", zap.Error(err))
 			}
-			if results != nil && len(results) > 0 {
+			if len(results) > 0 {
 				p.Export(results)
 			}
 		}
 	} else {
-		results, err := p.adapter.Adapt(dataGroup)
+		results, err := p.adapter.Adapt(dataGroup, adapter.AttributeMap)
 		if err != nil {
 			p.telemetry.Logger.Error("Failed to adapt dataGroup", zap.Error(err))
 		}
-		if results != nil && len(results) > 0 {
+		if len(results) > 0 {
 			p.Export(results)
 		}
 	}
