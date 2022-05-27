@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+
+	"sync"
+
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -12,7 +15,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 )
@@ -87,7 +89,7 @@ func (i *instrumentFactory) recordLastValue(metricName string, singleMetric *mod
 			}
 			for s := 0; s < len(dumps); s++ {
 				if len(dumps[s].Metrics) > 0 {
-					result.Observe(dumps[s].Metrics[0].GetInt().Value, defaultadapter.GetLabels(dumps[s].Labels, i.customLabels)...)
+					result.Observe(dumps[s].Metrics[0].GetInt().Value, adapter.GetLabels(dumps[s].Labels, i.customLabels)...)
 				}
 			}
 		}, WithDescription(metricName))

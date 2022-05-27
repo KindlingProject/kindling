@@ -2,9 +2,14 @@ package otelexporter
 
 import (
 	"context"
+	"log"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -16,10 +21,6 @@ import (
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
-	"log"
-	"strconv"
-	"testing"
-	"time"
 )
 
 func InitOtelExporter(t *testing.T) exporter.Exporter {
@@ -191,14 +192,14 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, nil),
 		metricAggregationMap: cfg.MetricAggregationMap,
 		telemetry:            component.NewDefaultTelemetryTools(),
-		adapters: []defaultadapter.Adapter{
-			defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
+		adapters: []adapter.Adapter{
+			adapter.NewNetAdapter(nil, &adapter.NetAdapterConfig{
 				StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
 				StoreTraceAsSpan:   cfg.AdapterConfig.NeedTraceAsResourceSpan,
 				StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 				StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 			}),
-			defaultadapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, nil),
+			adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, nil),
 		},
 	}
 

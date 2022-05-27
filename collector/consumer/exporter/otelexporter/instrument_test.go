@@ -2,8 +2,12 @@ package otelexporter
 
 import (
 	"context"
+	"math/rand"
+	"testing"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/component"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -13,9 +17,6 @@ import (
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"math/rand"
-	"testing"
-	"time"
 )
 
 func Test_instrumentFactory_recordLastValue(t *testing.T) {
@@ -135,10 +136,10 @@ func makeTraceAsMetricGroup(requestLatency int64, timestamp uint64, dstIp string
 				constlabels.DnatPort:        model.NewIntValue(80),
 
 				constlabels.IsServer:                model.NewIntValue(0),
-				constlabels.RequestDurationStatus:   model.NewStringValue(defaultadapter.GreenStatus),
-				constlabels.RequestReqxferStatus:    model.NewStringValue(defaultadapter.GreenStatus),
-				constlabels.RequestProcessingStatus: model.NewStringValue(defaultadapter.GreenStatus),
-				constlabels.ResponseRspxferStatus:   model.NewStringValue(defaultadapter.GreenStatus),
+				constlabels.RequestDurationStatus:   model.NewStringValue(adapter.GreenStatus),
+				constlabels.RequestReqxferStatus:    model.NewStringValue(adapter.GreenStatus),
+				constlabels.RequestProcessingStatus: model.NewStringValue(adapter.GreenStatus),
+				constlabels.ResponseRspxferStatus:   model.NewStringValue(adapter.GreenStatus),
 
 				"const-labels1": model.NewStringValue("const-values1"),
 			}),

@@ -1,10 +1,10 @@
 package prometheusexporter
 
 type Config struct {
-	PromCfg              *PrometheusConfig                `mapstructure:"prometheus"`
-	CustomLabels         map[string]string                `mapstructure:"custom_labels"`
-	MetricAggregationMap map[string]MetricAggregationKind `mapstructure:"metric_aggregation_map"`
-	AdapterConfig        *AdapterConfig                   `mapstructure:"adapter_config"`
+	PromCfg      *PrometheusConfig `mapstructure:"prometheus"`
+	CustomLabels map[string]string `mapstructure:"custom_labels"`
+	// MetricAggregationMap map[string]MetricAggregationKind `mapstructure:"metric_aggregation_map"`
+	AdapterConfig *AdapterConfig `mapstructure:"adapter_config"`
 }
 
 type PrometheusConfig struct {

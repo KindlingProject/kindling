@@ -1,4 +1,4 @@
-package defaultadapter
+package adapter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
@@ -37,21 +37,10 @@ func (n *NetMetricGroupAdapter) dealWithSingleMetricGroup(dataGroup *model.DataG
 		return nil
 	}
 	results := make([]*AdaptedResult, 0, 2)
-	if n.StoreTraceAsSpan {
-		attrs, free := n.traceToSpanAdapter.convert(dataGroup)
-		results = append(results, &AdaptedResult{
-			ResultType:    Trace,
-			AttrsList:     attrs,
-			Metrics:       []*model.Metric{requestTotalTime},
-			Timestamp:     dataGroup.Timestamp,
-			FreeAttrsList: free,
-		})
-	}
 	if n.StoreTraceAsMetric {
 		labels, free := n.traceToMetricAdapter.transform(dataGroup)
 		results = append(results, &AdaptedResult{
 			ResultType:   Metric,
-			AttrsList:    nil,
 			Metrics:      []*model.Metric{model.NewIntMetric(constnames.TraceAsMetric, requestTotalTime.GetInt().Value)},
 			AttrsMap:     labels,
 			Timestamp:    dataGroup.Timestamp,
@@ -97,25 +86,9 @@ func (n *NetMetricGroupAdapter) createNetMetricResults(dataGroup *model.DataGrou
 	requestCount := make([]*model.Metric, 0, 1)
 	for _, metric := range dataGroup.Metrics {
 		if metric.Name != constvalues.RequestCount {
-			switch metric.DataType() {
-			case model.IntMetricType:
-				metricsExceptRequestCount = append(metricsExceptRequestCount, model.NewIntMetric(
-					constnames.ToKindlingNetMetricName(metric.Name, isServer),
-					metric.GetInt().Value))
-			case model.HistogramMetricType:
-				metricsExceptRequestCount = append(metricsExceptRequestCount, model.NewHistogramMetric(
-					constnames.ToKindlingNetMetricName(metric.Name, isServer),
-					metric.GetHistogram()))
-			}
+			metricsExceptRequestCount = append(metricsExceptRequestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer), metric.GetData()))
 		} else {
-			switch metric.DataType() {
-			case model.IntMetricType:
-				requestCount = append(metricsExceptRequestCount, model.NewIntMetric(
-					constnames.ToKindlingNetMetricName(metric.Name, isServer),
-					metric.GetInt().Value))
-			case model.HistogramMetricType:
-				requestCount = append(metricsExceptRequestCount, metric)
-			}
+			requestCount = append(requestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer), metric.GetData()))
 		}
 	}
 	attrsCommon, free := adapter[0].transform(dataGroup)

@@ -1,13 +1,14 @@
 package prometheusexporter
 
 import (
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	"time"
 )
 
 type collector struct {
@@ -70,23 +71,22 @@ func (c *collector) recordMetricGroups(group *model.DataGroup) {
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	// TODO Do this in config later !!!!
-	requestTotalTimeTopologyMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTotalTime, false)
-	requestTotalTimeEntityMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTotalTime, true)
+	requestTimeHistogramTopologyMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTimeHistogram, false)
+	requestTimeHistogramEntityMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTimeHistogram, true)
 	return &collector{
 		aggregator: defaultaggregator.NewCumulativeAggregator(
 			&defaultaggregator.AggregatedConfig{
 				KindMap: map[string][]defaultaggregator.KindConfig{
 					constnames.TcpRttMetricName: {{Kind: defaultaggregator.LastKind, OutputName: constnames.TcpRttMetricName}},
-					constnames.TraceAsMetric:    {{Kind: defaultaggregator.LastKind, OutputName: constnames.TraceAsMetric}},
-					requestTotalTimeTopologyMetric: {{
+					requestTimeHistogramTopologyMetric: {{
 						Kind:               defaultaggregator.HistogramKind,
-						OutputName:         requestTotalTimeTopologyMetric,
-						ExplicitBoundaries: []int64{1e6, 2e6, 5e6, 1e7, 2e7, 5e7, 1e8, 2e8, 5e8, 1e9, 2e9, 5e9},
+						OutputName:         requestTimeHistogramTopologyMetric,
+						ExplicitBoundaries: []int64{10e6, 20e6, 50e6, 80e6, 130e6, 200e6, 300e6, 400e6, 500e6, 700e6, 1000e6, 2000e6, 5000e6, 30000e6},
 					}},
-					requestTotalTimeEntityMetric: {{
+					requestTimeHistogramEntityMetric: {{
 						Kind:               defaultaggregator.HistogramKind,
-						OutputName:         requestTotalTimeEntityMetric,
-						ExplicitBoundaries: []int64{1e6, 2e6, 5e6, 1e7, 2e7, 5e7, 1e8, 2e8, 5e8, 1e9, 2e9, 5e9},
+						OutputName:         requestTimeHistogramEntityMetric,
+						ExplicitBoundaries: []int64{10e6, 20e6, 50e6, 80e6, 130e6, 200e6, 300e6, 400e6, 500e6, 700e6, 1000e6, 2000e6, 5000e6, 30000e6},
 					}},
 				},
 			}, time.Minute*5)}

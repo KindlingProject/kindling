@@ -69,6 +69,10 @@ func NewIntMetric(name string, value int64) *Metric {
 	return &Metric{Name: name, Data: &Metric_Int{Int: &Int{Value: value}}}
 }
 
+func NewMetric(name string, data isMetricData) *Metric {
+	return &Metric{Name: name, Data: data}
+}
+
 type Histogram struct {
 	Sum                int64
 	Count              uint64

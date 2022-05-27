@@ -2,7 +2,9 @@ package otelexporter
 
 import (
 	"context"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"reflect"
+
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
@@ -36,13 +38,13 @@ func (e *OtelExporter) Consume(dataGroup *model.DataGroup) error {
 	return nil
 }
 
-func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
+func (e *OtelExporter) Export(results []*adapter.AdaptedResult) {
 	for i := 0; i < len(results); i++ {
 		result := results[i]
 		switch result.ResultType {
-		case defaultadapter.Metric:
+		case adapter.Metric:
 			e.exportMetric(result)
-		case defaultadapter.Trace:
+		case adapter.Trace:
 			e.exportTrace(result)
 		default:
 			e.telemetry.Logger.Error("Unexpected ResultType", zap.String("type", string(result.ResultType)))
@@ -51,7 +53,7 @@ func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
 	}
 }
 
-func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
+func (e *OtelExporter) exportTrace(result *adapter.AdaptedResult) {
 	if e.defaultTracer == nil {
 		e.telemetry.Logger.Error("Send span failed: this exporter doesn't support Span Data", zap.String("exporter", e.cfg.ExportKind))
 		return
@@ -64,7 +66,7 @@ func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
 	span.End()
 }
 
-func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
+func (e *OtelExporter) exportMetric(result *adapter.AdaptedResult) {
 	measurements := make([]metric.Measurement, 0, len(result.Metrics))
 	for s := 0; s < len(result.Metrics); s++ {
 		metric := result.Metrics[s]
@@ -81,10 +83,10 @@ func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
 			if err != nil {
 				e.telemetry.Logger.Error("Failed to record Metric", zap.Error(err))
 			}
-		} else if ok {
+		} else if ok && metric.DataType() == model.IntMetricType {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(metric.Name, metricKind).Measurement(metric.GetInt().Value))
 		} else {
-			e.telemetry.Logger.Warn("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name))
+			e.telemetry.Logger.Warn("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
 		}
 	}
 	if len(measurements) > 0 {

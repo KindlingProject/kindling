@@ -1,4 +1,4 @@
-package defaultadapter
+package adapter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
@@ -13,6 +13,8 @@ type Adapter interface {
 type AdaptedResult struct {
 	ResultType ResultType
 
+	// AttrsList contains labels for sync Metric and Trace
+	AttrsList []attribute.KeyValue
 	// AttrsMap contains labels for Async Metric
 	AttrsMap  *model.AttributeMap
 	Metrics   []*model.Metric
@@ -30,10 +32,14 @@ type ResultType string
 
 const (
 	Metric ResultType = "metric"
+	Trace             = "trace"
 )
 
 func (r *AdaptedResult) Free() {
 	if r.FreeAttrsMap != nil {
 		r.FreeAttrsMap(r.AttrsMap)
+	}
+	if r.FreeAttrsList != nil {
+		r.FreeAttrsList(r.AttrsList)
 	}
 }

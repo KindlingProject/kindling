@@ -9,6 +9,7 @@ var metricNameDictionary = map[string]map[bool]string{
 	constvalues.RequestTotalTime:          {true: EntityRequestLatencyTotalMetric, false: TopologyRequestLatencyTotalMetric},
 	constvalues.RequestCount:              {true: EntityRequestCountMetric, false: TopologyRequestCountMetric},
 	constvalues.RequestTotalTime + "_avg": {true: EntityRequestLatencyAverageMetric, false: TopologyRequestLatencyAverageMetric},
+	constvalues.RequestTimeHistogram:      {true: EntityRequestTimeHistogramMetric, false: TopologyRequestTimeHistogramMetric},
 }
 
 const (
@@ -18,6 +19,8 @@ const (
 	TopologyRequestLatencyAverageMetric = "average_duration_nanoseconds"
 	TopologyRequestLatencyTotalMetric   = "duration_nanoseconds_total"
 	TopologyRequestCountMetric          = "total"
+	// TopologyRequestTimeHistogramMetric is a histogram
+	TopologyRequestTimeHistogramMetric = "request_time_histogram"
 
 	EntityRequestIoMetric  = "receive_bytes_total"
 	EntityResponseIoMetric = "send_bytes_total"
@@ -25,6 +28,7 @@ const (
 	EntityRequestLatencyAverageMetric = "average_duration_nanoseconds"
 	EntityRequestLatencyTotalMetric   = "duration_nanoseconds_total"
 	EntityRequestCountMetric          = "total"
+	EntityRequestTimeHistogramMetric  = "request_time_histogram"
 
 	TraceAsMetric           = NPMPrefixKindling + "_trace_request_duration_nanoseconds"
 	TcpRttMetricName        = "kindling_tcp_srtt_microseconds"

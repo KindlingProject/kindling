@@ -1,4 +1,4 @@
-package defaultadapter
+package adapter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"

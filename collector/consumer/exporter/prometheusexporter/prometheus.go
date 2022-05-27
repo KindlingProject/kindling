@@ -2,20 +2,21 @@ package prometheusexporter
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
-	"net"
-	"net/http"
 )
 
-const TYPE = "prometheus"
+const Type = "prometheus"
 
 const (
 	Int64BoundaryMultiplier = 1e6
@@ -32,27 +33,27 @@ type prometheusExporter struct {
 	registry             *prometheus.Registry
 	shutdownFunc         func() error
 	handler              http.Handler
-	adapters             map[string][]defaultadapter.Adapter
-	defaultAdapter       defaultadapter.Adapter
+	adapters             map[string][]adapter.Adapter
+	adapter              adapter.Adapter
 }
 
 func NewExporter(config interface{}, telemetry *component.TelemetryTools) exporter.Exporter {
 	cfg, ok := config.(*Config)
 	if !ok {
-		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", TYPE))
+		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", Type))
 	}
 
 	collector := newCollector(cfg, telemetry.Logger)
 	registry := prometheus.NewRegistry()
 	registry.Register(collector)
 
-	netAdapter := defaultadapter.NewNetAdapter(nil, &defaultadapter.NetAdapterConfig{
+	netAdapter := adapter.NewNetAdapter(nil, &adapter.NetAdapterConfig{
 		StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
 		StoreTraceAsSpan:   false,
 		StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 		StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 	})
-	simpleAdapter := defaultadapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, nil)
+	simpleAdapter := adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, nil)
 
 	prometheusExporter := &prometheusExporter{
 		cfg:       cfg,
@@ -64,15 +65,15 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 				ErrorLog:      &promLogger{realLog: telemetry.Logger},
 			},
 		),
-		metricAggregationMap: cfg.MetricAggregationMap,
-		telemetry:            telemetry,
-		adapters: map[string][]defaultadapter.Adapter{
+		// metricAggregationMap: cfg.MetricAggregationMap,
+		telemetry: telemetry,
+		adapters: map[string][]adapter.Adapter{
 			constnames.NetRequestMetricGroupName:       {netAdapter},
 			constnames.AggregatedNetRequestMetricGroup: {netAdapter},
 			constnames.SingleNetRequestMetricGroup:     {netAdapter},
 			constnames.TcpMetricGroupName:              {simpleAdapter},
 		},
-		defaultAdapter: simpleAdapter,
+		adapter: simpleAdapter,
 	}
 
 	go func() {
