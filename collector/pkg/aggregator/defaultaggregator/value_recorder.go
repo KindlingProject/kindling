@@ -22,29 +22,29 @@ func newValueRecorder(recorderName string, aggKindMap map[string][]KindConfig) *
 }
 
 // Record is thread-safe, and return the result value
-func (r *valueRecorder) Record(key *aggregator.LabelKeys, gaugeValues []*model.Gauge, timestamp uint64) {
+func (r *valueRecorder) Record(key *aggregator.LabelKeys, metricValues []*model.Metric, timestamp uint64) {
 	if key == nil {
 		return
 	}
 	aggValues, ok := r.labelValues.Load(*key)
 	if !ok {
 		// double check to avoid double writing
-		aggValues, _ = r.labelValues.LoadOrStore(*key, newAggValuesMap(gaugeValues, r.aggKindMap))
+		aggValues, _ = r.labelValues.LoadOrStore(*key, newAggValuesMap(metricValues, r.aggKindMap))
 	}
-	for _, gauge := range gaugeValues {
-		aggValues.(aggValuesMap).calculate(gauge.Name, gauge.Value, timestamp)
+	for _, metric := range metricValues {
+		aggValues.(aggValuesMap).calculate(metric, timestamp)
 	}
 }
 
 // dump a set of metric from counter cache.
 // The return value holds the reference to the metric, not the copied one.
-func (r *valueRecorder) dump() []*model.GaugeGroup {
-	ret := make([]*model.GaugeGroup, 0)
+func (r *valueRecorder) dump() []*model.DataGroup {
+	ret := make([]*model.DataGroup, 0)
 	r.labelValues.Range(func(key, value interface{}) bool {
 		k := key.(aggregator.LabelKeys)
 		v := value.(aggValuesMap)
-		gaugeGroup := model.NewGaugeGroup(r.name, k.GetLabels(), v.getTimestamp(), v.getAll()...)
-		ret = append(ret, gaugeGroup)
+		dataGroup := model.NewDataGroup(r.name, k.GetLabels(), v.getTimestamp(), v.getAll()...)
+		ret = append(ret, dataGroup)
 		return true
 	})
 	return ret

@@ -2,6 +2,7 @@ package aggregator
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
+	"sort"
 	"strconv"
 )
 
@@ -52,10 +53,23 @@ type LabelKeys struct {
 	keys [maxLabelKeySize]LabelKey
 }
 
+func (k *LabelKeys) Len() int {
+	return len(k.keys)
+}
+
+func (k *LabelKeys) Swap(i, j int) {
+	k.keys[i], k.keys[j] = k.keys[j], k.keys[i]
+}
+
+func (k *LabelKeys) Less(i, j int) bool {
+	return k.keys[i].Name < k.keys[j].Name
+}
+
 type LabelKey struct {
 	Name  string
 	Value string
 	VType vType
+	sort.Interface
 }
 
 func NewLabelKeys(keys ...LabelKey) *LabelKeys {
@@ -83,4 +97,26 @@ func (k *LabelKeys) GetLabels() *model.AttributeMap {
 		}
 	}
 	return ret
+}
+
+// GetLabelsKeys TODO Sort before you real need to use this key
+func GetLabelsKeys(attributeMap *model.AttributeMap) *LabelKeys {
+	keys := &LabelKeys{}
+	labels := attributeMap.GetValues()
+	index := 0
+	for k, v := range labels {
+		keys.keys[index].Name = k
+		keys.keys[index].Value = v.ToString()
+		switch v.Type() {
+		case model.StringAttributeValueType:
+			keys.keys[index].VType = StringType
+		case model.IntAttributeValueType:
+			keys.keys[index].VType = IntType
+		case model.BooleanAttributeValueType:
+			keys.keys[index].VType = BooleanType
+		}
+		index++
+	}
+	sort.Sort(keys)
+	return keys
 }

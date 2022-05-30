@@ -2,7 +2,9 @@ package otelexporter
 
 import (
 	"context"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"reflect"
+
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
 	"go.opentelemetry.io/otel/attribute"
@@ -11,38 +13,38 @@ import (
 	"go.uber.org/zap"
 )
 
-func (e *OtelExporter) Consume(gaugeGroup *model.GaugeGroup) error {
-	if gaugeGroup == nil {
+func (e *OtelExporter) Consume(dataGroup *model.DataGroup) error {
+	if dataGroup == nil {
 		// no need consume
 		return nil
 	}
 
-	gaugeGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", gaugeGroup.Name))
-	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a gaugeGroup: "); ce != nil {
+	dataGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", dataGroup.Name))
+	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a dataGroup: "); ce != nil {
 		ce.Write(
-			zap.String("gaugeGroup", gaugeGroup.String()),
+			zap.String("dataGroup", dataGroup.String()),
 		)
 	}
 
 	for i := 0; i < len(e.adapters); i++ {
-		results, err := e.adapters[i].Adapt(gaugeGroup)
+		results, err := e.adapters[i].Adapt(dataGroup, adapter.AttributeList)
 		if err != nil {
-			e.telemetry.Logger.Error("Failed to adapt gaugeGroup", zap.Error(err))
+			e.telemetry.Logger.Error("Failed to adapt dataGroup", zap.Error(err))
 		}
-		if results != nil && len(results) > 0 {
+		if len(results) > 0 {
 			e.Export(results)
 		}
 	}
 	return nil
 }
 
-func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
+func (e *OtelExporter) Export(results []*adapter.AdaptedResult) {
 	for i := 0; i < len(results); i++ {
 		result := results[i]
 		switch result.ResultType {
-		case defaultadapter.Metric:
+		case adapter.Metric:
 			e.exportMetric(result)
-		case defaultadapter.Trace:
+		case adapter.Trace:
 			e.exportTrace(result)
 		default:
 			e.telemetry.Logger.Error("Unexpected ResultType", zap.String("type", string(result.ResultType)))
@@ -51,7 +53,7 @@ func (e *OtelExporter) Export(results []*defaultadapter.AdaptedResult) {
 	}
 }
 
-func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
+func (e *OtelExporter) exportTrace(result *adapter.AdaptedResult) {
 	if e.defaultTracer == nil {
 		e.telemetry.Logger.Error("Send span failed: this exporter doesn't support Span Data", zap.String("exporter", e.cfg.ExportKind))
 		return
@@ -64,27 +66,31 @@ func (e *OtelExporter) exportTrace(result *defaultadapter.AdaptedResult) {
 	span.End()
 }
 
-func (e *OtelExporter) exportMetric(result *defaultadapter.AdaptedResult) {
-	measurements := make([]metric.Measurement, 0, len(result.Gauges))
-	for s := 0; s < len(result.Gauges); s++ {
-		gauge := result.Gauges[s]
-		if metricKind, ok := e.findInstrumentKind(gauge.Name); ok && metricKind == MAGaugeKind {
+func (e *OtelExporter) exportMetric(result *adapter.AdaptedResult) {
+	measurements := make([]metric.Measurement, 0, len(result.Metrics))
+	for s := 0; s < len(result.Metrics); s++ {
+		metric := result.Metrics[s]
+		if metricKind, ok := e.findInstrumentKind(metric.Name); ok &&
+			metricKind == MAGaugeKind &&
+			metric.DataType() == model.IntMetricType {
 			if result.AttrsMap == nil {
-				e.telemetry.Logger.Error("Unexpected Error: no labels find for MAGaugeKind", zap.String("GaugeName", gauge.Name))
+				e.telemetry.Logger.Error("Unexpected Error: no labels find for MAGaugeKind", zap.String("MetricName", metric.Name))
 			}
-			err := e.instrumentFactory.recordLastValue(gauge.Name, &model.GaugeGroup{
-				Name:      gauge.Name,
-				Values:    []*model.Gauge{{gauge.Name, gauge.Value}},
+			err := e.instrumentFactory.recordLastValue(metric.Name, &model.DataGroup{
+				Name:      metric.Name,
+				Metrics:   []*model.Metric{model.NewIntMetric(metric.Name, metric.GetInt().Value)},
 				Labels:    result.AttrsMap,
 				Timestamp: result.Timestamp,
 			})
 			if err != nil {
-				e.telemetry.Logger.Error("Failed to record Gauge", zap.Error(err))
+				e.telemetry.Logger.Error("Failed to record lastValue of Metric", zap.String("MetricName", metric.Name), zap.Error(err))
 			}
-		} else if ok {
-			measurements = append(measurements, e.instrumentFactory.getInstrument(gauge.Name, metricKind).Measurement(gauge.Value))
+		} else if ok && metric.DataType() == model.IntMetricType {
+			measurements = append(measurements, e.instrumentFactory.getInstrument(metric.Name, metricKind).Measurement(metric.GetInt().Value))
+		} else if metric.DataType() == model.HistogramMetricType {
+			e.telemetry.Logger.Error("Failed to exporter Metric: can not use otlp-exporter to export histogram Data", zap.String("MetricName", metric.Name))
 		} else {
-			e.telemetry.Logger.Warn("Undefined metricKind for this Gauge", zap.String("GaugeName", gauge.Name))
+			e.telemetry.Logger.Warn("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
 		}
 	}
 	if len(measurements) > 0 {

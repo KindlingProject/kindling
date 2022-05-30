@@ -55,16 +55,16 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if !ok {
 		return nil
 	}
-	var gaugeGroup *model.GaugeGroup
+	var dataGroup *model.DataGroup
 	var err error
 	switch event.Name {
 	case constnames.TcpCloseEvent:
 	case constnames.TcpRcvEstablishedEvent:
-		gaugeGroup, err = a.generateRtt(event)
+		dataGroup, err = a.generateRtt(event)
 	case constnames.TcpDropEvent:
-		gaugeGroup, err = a.generateDrop(event)
+		dataGroup, err = a.generateDrop(event)
 	case constnames.TcpRetransmitSkbEvent:
-		gaugeGroup, err = a.generateRetransmit(event)
+		dataGroup, err = a.generateRetransmit(event)
 	}
 	if err != nil {
 		if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, "Event Skip, "); ce != nil {
@@ -74,12 +74,12 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		}
 		return nil
 	}
-	if gaugeGroup == nil {
+	if dataGroup == nil {
 		return nil
 	}
 	var retError error
 	for _, nextConsumer := range a.consumers {
-		err := nextConsumer.Consume(gaugeGroup)
+		err := nextConsumer.Consume(dataGroup)
 		if err != nil {
 			retError = multierror.Append(retError, err)
 		}
@@ -87,7 +87,7 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	return retError
 }
 
-func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.GaugeGroup, error) {
+func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.DataGroup, error) {
 	// Only client-side has rtt metric
 	labels, err := a.getTupleLabels(event)
 	if err != nil {
@@ -99,35 +99,26 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Gaug
 	if rtt == 0 {
 		return nil, nil
 	}
-	gauge := &model.Gauge{
-		Name:  constnames.TcpRttMetricName,
-		Value: int64(rtt),
-	}
-	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
+	metric := model.NewIntMetric(constnames.TcpRttMetricName, int64(rtt))
+	return model.NewDataGroup(constnames.TcpMetricGroupName, labels, event.Timestamp, metric), nil
 }
 
-func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*model.GaugeGroup, error) {
+func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*model.DataGroup, error) {
 	labels, err := a.getTupleLabels(event)
 	if err != nil {
 		return nil, err
 	}
-	gauge := &model.Gauge{
-		Name:  constnames.TcpRetransmitMetricName,
-		Value: 1,
-	}
-	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
+	metric := model.NewIntMetric(constnames.TcpRetransmitMetricName, 1)
+	return model.NewDataGroup(constnames.TcpMetricGroupName, labels, event.Timestamp, metric), nil
 }
 
-func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.GaugeGroup, error) {
+func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.DataGroup, error) {
 	labels, err := a.getTupleLabels(event)
 	if err != nil {
 		return nil, err
 	}
-	gauge := &model.Gauge{
-		Name:  constnames.TcpDropMetricName,
-		Value: 1,
-	}
-	return model.NewGaugeGroup(constnames.TcpGaugeGroupName, labels, event.Timestamp, gauge), nil
+	metric := model.NewIntMetric(constnames.TcpDropMetricName, 1)
+	return model.NewDataGroup(constnames.TcpMetricGroupName, labels, event.Timestamp, metric), nil
 }
 
 func (a *TcpMetricAnalyzer) getTupleLabels(event *model.KindlingEvent) (*model.AttributeMap, error) {
