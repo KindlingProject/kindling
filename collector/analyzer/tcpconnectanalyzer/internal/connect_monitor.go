@@ -311,18 +311,32 @@ func (c *ConnectMonitor) GetMapSize() int {
 }
 
 func getConnKeyForTcpConnect(event *model.KindlingEvent) (ConnKey, error) {
+	var sIpString string
+	var sPortUint uint64
+	var dIpString string
+	var dPortUint uint64
 	sIp := event.GetUserAttribute("sip")
+	if sIp != nil {
+		sIpString = model.IPLong2String(uint32(sIp.GetUintValue()))
+	}
 	sPort := event.GetUserAttribute("sport")
+	if sPort != nil {
+		sPortUint = sPort.GetUintValue()
+	}
 	dIp := event.GetUserAttribute("dip")
+	if dIp != nil {
+		dIpString = model.IPLong2String(uint32(dIp.GetUintValue()))
+	}
 	dPort := event.GetUserAttribute("dport")
+	if dPort != nil {
+		dPortUint = dPort.GetUintValue()
+	}
 
 	if sIp == nil || sPort == nil || dIp == nil || dPort == nil {
-		return ConnKey{}, fmt.Errorf("one of sip or dip or dport is nil for event %s", event.Name)
+		return ConnKey{}, fmt.Errorf("some fields are nil for event %s. srcIp=%v, srcPort=%v, "+
+			"dstIp=%v, dstPort=%v", event.Name, sIpString, sPortUint, dIpString, dPortUint)
 	}
-	sIpString := model.IPLong2String(uint32(sIp.GetUintValue()))
-	sPortUint := sPort.GetUintValue()
-	dIpString := model.IPLong2String(uint32(dIp.GetUintValue()))
-	dPortUint := dPort.GetUintValue()
+
 	connKey := ConnKey{
 		SrcIP:   sIpString,
 		SrcPort: uint32(sPortUint),
