@@ -72,7 +72,7 @@ func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
 	oldPOD.SetResourceVersion("old")
 	oldPOD.OwnerReferences[0].Controller = &controller
 	newPOD := CreatePod(true)
-	oldPOD.SetResourceVersion("new")
+	newPOD.SetResourceVersion("new")
 	newPOD.OwnerReferences[0].Controller = &controller
 	onAddReplicaSet(oldRs)
 	onAdd(oldPOD)
