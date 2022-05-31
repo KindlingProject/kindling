@@ -1,6 +1,9 @@
 package aggregateprocessor
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
@@ -10,14 +13,14 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"go.uber.org/zap"
-	"math/rand"
-	"time"
 )
 
 const Type = "aggregateprocessor"
 
 var exponentialInt64Boundaries = []int64{10e6, 20e6, 50e6, 80e6, 130e6, 200e6, 300e6,
 	400e6, 500e6, 700e6, 1e9, 2e9, 5e9, 30e9}
+
+var tcpConnectLabelSelectors = newTcpConnectLabelSelectors()
 
 type AggregateProcessor struct {
 	cfg          *Config
@@ -122,6 +125,9 @@ func (p *AggregateProcessor) Consume(dataGroup *model.DataGroup) error {
 	case constnames.TcpMetricGroupName:
 		p.aggregator.Aggregate(dataGroup, p.tcpLabelSelectors)
 		return nil
+	case constnames.TcpConnectGaugeGroupName:
+		p.aggregator.Aggregate(dataGroup, tcpConnectLabelSelectors)
+		return nil
 	default:
 		p.aggregator.Aggregate(dataGroup, p.netRequestLabelSelectors)
 		return nil
@@ -194,6 +200,34 @@ func newTcpLabelSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
+	)
+}
+
+func newTcpConnectLabelSelectors() *aggregator.LabelSelectors {
+	return aggregator.NewLabelSelectors(
+		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcNodeIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcNamespace, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcPod, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcWorkloadName, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcWorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcService, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.SrcContainer, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNode, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNodeIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstNamespace, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstPod, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstWorkloadName, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstWorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstService, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstIp, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Errno, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.Success, VType: aggregator.BooleanType},
 	)
 }
 

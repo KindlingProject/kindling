@@ -9,11 +9,14 @@ const (
 	RecvFromEvent = "recvfrom"
 	SendMsgEvent  = "sendmsg"
 	RecvMsgEvent  = "recvmsg"
+	ConnectEvent  = "connect"
 
 	TcpCloseEvent          = "tcp_close"
 	TcpRcvEstablishedEvent = "tcp_rcv_established"
 	TcpDropEvent           = "tcp_drop"
 	TcpRetransmitSkbEvent  = "tcp_retransmit_skb"
+	TcpConnectEvent        = "tcp_connect"
+	TcpSetStateEvent       = "tcp_set_state"
 	OtherEvent             = "other"
 
 	GrpcUprobeEvent = "grpc_uprobe"
@@ -26,4 +29,5 @@ const (
 
 	TcpMetricGroupName  = "tcp_metric_metric_group"
 	NodeMetricGroupName = "node_metric_metric_group"
+	TcpConnectGaugeGroupName = "tcp_connect_gauge_group"
 )

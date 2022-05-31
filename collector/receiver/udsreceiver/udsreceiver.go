@@ -1,8 +1,13 @@
 package udsreceiver
 
 import (
+	"os"
+	"sync"
+	"time"
+
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
+	"github.com/Kindling-project/kindling/collector/analyzer/tcpconnectanalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
@@ -12,9 +17,6 @@ import (
 	zmq "github.com/pebbe/zmq4"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"sync"
-	"time"
 )
 
 const (
@@ -239,6 +241,12 @@ func (r *UdsReceiver) SendToNextConsumer(events *model.KindlingEventList) error 
 			fallthrough
 		case constnames.TcpRetransmitSkbEvent:
 			analyzer, isFound = r.analyzerManager.GetAnalyzer(tcpmetricanalyzer.TcpMetric)
+		case constnames.ConnectEvent:
+			fallthrough
+		case constnames.TcpConnectEvent:
+			fallthrough
+		case constnames.TcpSetStateEvent:
+			analyzer, isFound = r.analyzerManager.GetAnalyzer(tcpconnectanalyzer.Type)
 		default:
 			analyzer, isFound = r.analyzerManager.GetAnalyzer(network.Network)
 		}

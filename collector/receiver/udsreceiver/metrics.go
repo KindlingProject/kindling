@@ -2,11 +2,12 @@ package udsreceiver
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
+
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"sync"
-	"sync/atomic"
 )
 
 var once sync.Once
@@ -39,11 +40,14 @@ type stats struct {
 	recvFrom          int64
 	sendMsg           int64
 	recvMsg           int64
+	connect           int64
 	grpcUprobe        int64
 	tcpClose          int64
 	tcpRcvEstablished int64
 	tcpDrop           int64
 	tcpRetransmitSkb  int64
+	tcpConnect        int64
+	tcpSetState       int64
 	other             int64
 }
 
@@ -75,6 +79,12 @@ func (i *stats) add(name string, value int64) {
 		atomic.AddInt64(&i.tcpDrop, value)
 	case constnames.TcpRetransmitSkbEvent:
 		atomic.AddInt64(&i.tcpRetransmitSkb, value)
+	case constnames.ConnectEvent:
+		atomic.AddInt64(&i.connect, value)
+	case constnames.TcpConnectEvent:
+		atomic.AddInt64(&i.tcpConnect, value)
+	case constnames.TcpSetStateEvent:
+		atomic.AddInt64(&i.tcpSetState, value)
 	default:
 		atomic.AddInt64(&i.other, value)
 	}
@@ -95,6 +105,9 @@ func (i *stats) getStats() map[string]int64 {
 	ret[constnames.TcpRcvEstablishedEvent] = atomic.LoadInt64(&i.tcpRcvEstablished)
 	ret[constnames.TcpCloseEvent] = atomic.LoadInt64(&i.tcpClose)
 	ret[constnames.TcpRetransmitSkbEvent] = atomic.LoadInt64(&i.tcpRetransmitSkb)
+	ret[constnames.ConnectEvent] = atomic.LoadInt64(&i.connect)
+	ret[constnames.TcpConnectEvent] = atomic.LoadInt64(&i.tcpConnect)
+	ret[constnames.TcpSetStateEvent] = atomic.LoadInt64(&i.tcpSetState)
 	ret[constnames.OtherEvent] = atomic.LoadInt64(&i.other)
 	return ret
 }

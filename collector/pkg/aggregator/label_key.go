@@ -45,6 +45,10 @@ func (s *LabelSelectors) GetLabelKeys(labels *model.AttributeMap) *LabelKeys {
 	return keys
 }
 
+func (s *LabelSelectors) AppendSelectors(selectors ...LabelSelector) {
+	s.selectors = append(s.selectors, selectors...)
+}
+
 const maxLabelKeySize = 35
 
 type LabelKeys struct {

@@ -1,0 +1,334 @@
+package internal
+
+import (
+	"fmt"
+	"os"
+	"syscall"
+	"time"
+
+	"github.com/Kindling-project/kindling/collector/model"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+// ConnectMonitor reads in events related to TCP connect operations and updates its
+// status to record the connection procedure.
+// This is not thread safe to use.
+type ConnectMonitor struct {
+	connMap        map[ConnKey]*ConnectionStats
+	statesResource StatesResource
+	hostProcPath   string
+	logger         *zap.Logger
+}
+
+const HostProc = "HOST_PROC_PATH"
+
+func NewConnectMonitor(logger *zap.Logger) *ConnectMonitor {
+	path, ok := os.LookupEnv(HostProc)
+	if !ok {
+		path = "/proc"
+	}
+	return &ConnectMonitor{
+		connMap:        make(map[ConnKey]*ConnectionStats),
+		statesResource: createStatesResource(),
+		hostProcPath:   path,
+		logger:         logger,
+	}
+}
+
+func (c *ConnectMonitor) ReadInConnectExitSyscall(event *model.KindlingEvent) (*ConnectionStats, error) {
+	retValue := event.GetUserAttribute("res")
+	if retValue == nil {
+		return nil, fmt.Errorf("res of connect_exit is nil")
+	}
+	retValueInt := retValue.GetIntValue()
+
+	connKey := ConnKey{
+		SrcIP:   event.GetSip(),
+		SrcPort: event.GetSport(),
+		DstIP:   event.GetDip(),
+		DstPort: event.GetDport(),
+	}
+	if ce := c.logger.Check(zapcore.DebugLevel, "Receive connect_exit event:"); ce != nil {
+		ce.Write(
+			zap.String("ConnKey", connKey.String()),
+			zap.Int64("retValue", retValueInt),
+		)
+	}
+
+	connStats, ok := c.connMap[connKey]
+	if !ok {
+		// Maybe the connStats have been closed by tcp_set_state_from_established event.
+		// We don't care about it.
+		return nil, nil
+	} else {
+		// "connect_exit" comes to analyzer after "tcp_connect"
+		connStats.EndTimestamp = event.Timestamp
+		connStats.ConnectSyscall = event
+		connStats.pid = event.GetPid()
+		var eventType EventType
+		if retValueInt == 0 {
+			eventType = connectExitSyscallSuccess
+		} else if isNotErrorReturnCode(connCode(retValueInt)) {
+			eventType = connectExitSyscallNotConcern
+		} else {
+			eventType = connectExitSyscallFailure
+			connStats.Code = connCode(retValueInt)
+		}
+		return connStats.StateMachine.ReceiveEvent(eventType, c.connMap)
+	}
+}
+
+func isNotErrorReturnCode(code connCode) bool {
+	return code == einprogress || code == eintr || code == eisconn || code == ealready
+}
+
+func (c *ConnectMonitor) ReadInTcpConnect(event *model.KindlingEvent) (*ConnectionStats, error) {
+	connKey, err := getConnKeyForTcpConnect(event)
+	if err != nil {
+		return nil, err
+	}
+	retValue := event.GetUserAttribute("retval")
+	if retValue == nil {
+		return nil, fmt.Errorf("retval of tcp_connect is nil")
+	}
+	retValueInt := retValue.GetUintValue()
+
+	if ce := c.logger.Check(zapcore.DebugLevel, "Receive tcp_connect event:"); ce != nil {
+		ce.Write(
+			zap.String("ConnKey", connKey.String()),
+			zap.Uint64("retValue", retValueInt),
+		)
+	}
+
+	var eventType EventType
+	if retValueInt == 0 {
+		eventType = tcpConnectNoError
+	} else {
+		eventType = tcpConnectError
+	}
+
+	connStats, ok := c.connMap[connKey]
+	if !ok {
+		// "tcp_connect" comes to analyzer before "connect_exit"
+		connStats = &ConnectionStats{
+			ConnKey:          connKey,
+			InitialTimestamp: event.Timestamp,
+			EndTimestamp:     event.Timestamp,
+			Code:             connCode(retValueInt),
+			ConnectSyscall:   nil,
+			TcpConnect:       event,
+			TcpSetState:      nil,
+		}
+		connStats.StateMachine = NewStateMachine(Inprogress, c.statesResource, connStats)
+		c.connMap[connKey] = connStats
+	} else {
+		// "tcp_connect" comes to analyzer after "connect_exit"
+		connStats.TcpConnect = event
+		connStats.EndTimestamp = event.Timestamp
+		connStats.Code = connCode(retValueInt)
+	}
+	return connStats.StateMachine.ReceiveEvent(eventType, c.connMap)
+}
+
+const (
+	establishedState = 1
+)
+
+func (c *ConnectMonitor) ReadInTcpSetState(event *model.KindlingEvent) (*ConnectionStats, error) {
+	connKey, err := getConnKeyForTcpConnect(event)
+	if err != nil {
+		return nil, err
+	}
+
+	oldState := event.GetUserAttribute("old_state")
+	newState := event.GetUserAttribute("new_state")
+	if oldState == nil || newState == nil {
+		return nil, fmt.Errorf("tcp_set_state events have nil state, ConnKey: %s", connKey.String())
+	}
+	oldStateInt := oldState.GetIntValue()
+	newStateInt := newState.GetIntValue()
+
+	if oldStateInt == establishedState {
+		return c.readInTcpSetStateFromEstablished(connKey, event)
+	} else if newStateInt == establishedState {
+		return c.readInTcpSetStateToEstablished(connKey, event)
+	} else {
+		return nil, fmt.Errorf("no state is 'established' for tcp_set_state event, "+
+			"old state: %d, new state: %d", oldStateInt, newStateInt)
+	}
+}
+
+func (c *ConnectMonitor) readInTcpSetStateToEstablished(connKey ConnKey, event *model.KindlingEvent) (*ConnectionStats, error) {
+	if ce := c.logger.Check(zapcore.DebugLevel, "Receive tcp_set_state(to established) event:"); ce != nil {
+		ce.Write(
+			zap.String("ConnKey", connKey.String()),
+		)
+	}
+	connStats, ok := c.connMap[connKey]
+	if !ok {
+		// No tcp_connect or connect_exit received.
+		// This is the events from server-side.
+		c.logger.Debug("No tcp_connect or connect_exit, but receive tcp_set_state_to_established")
+		return nil, nil
+	} else {
+		connStats.TcpSetState = event
+		connStats.EndTimestamp = event.Timestamp
+		if connStats.TcpConnect == nil {
+			c.logger.Debug("No tcp_connect event, but receive tcp_set_state_to_established")
+		}
+		return connStats.StateMachine.ReceiveEvent(tcpSetStateToEstablished, c.connMap)
+	}
+}
+
+func (c *ConnectMonitor) readInTcpSetStateFromEstablished(connKey ConnKey, event *model.KindlingEvent) (*ConnectionStats, error) {
+	if ce := c.logger.Check(zapcore.DebugLevel, "Receive tcp_set_state(from established) event:"); ce != nil {
+		ce.Write(
+			zap.String("ConnKey", connKey.String()),
+		)
+	}
+	connStats, ok := c.connMap[connKey]
+	if !ok {
+		// Connection has been established and the connStats have been emitted.
+		return nil, nil
+	} else {
+		connStats.TcpSetState = event
+		connStats.EndTimestamp = event.Timestamp
+		// There should be multiple transmission happened.
+		if connStats.StateMachine.currentStateType == Inprogress {
+			stats, err := connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
+			_, _ = connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
+			return stats, err
+		}
+		return connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
+	}
+}
+
+// TrimExpiredConnections traverses the map, remove the expired entries based on timeout,
+// and return them.
+// The unit of timeout is second.
+func (c *ConnectMonitor) TrimExpiredConnections(timeout int) []*ConnectionStats {
+	ret := make([]*ConnectionStats, 0)
+	if timeout <= 0 {
+		return ret
+	}
+	timeoutNano := int64(timeout) * 1000000000
+	for _, connStat := range c.connMap {
+		if time.Now().UnixNano()-int64(connStat.InitialTimestamp) >= timeoutNano {
+			stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
+			if err != nil {
+				c.logger.Warn("error happened when receiving event:", zap.Error(err))
+				continue
+			}
+			if stats != nil {
+				ret = append(ret, stats)
+			}
+		}
+	}
+
+	return ret
+}
+
+func (c *ConnectMonitor) TrimConnectionsWithTcpStat() []*ConnectionStats {
+	ret := make([]*ConnectionStats, 0, len(c.connMap))
+	// Only scan once for each pid
+	pidTcpStateMap := make(map[uint32]NetSocketStateMap)
+	for key, connStat := range c.connMap {
+		if connStat.pid == 0 {
+			continue
+		}
+		tcpStateMap, ok := pidTcpStateMap[connStat.pid]
+		if !ok {
+			tcpState, err := NewPidTcpStat(c.hostProcPath, int(connStat.pid))
+			if err != nil {
+				if err == syscall.ENOENT {
+					// No such file or directory, which means the process has been purged.
+					// We consider the connection failed to be established.
+					stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
+					if err != nil {
+						c.logger.Warn("error happened when receiving event:", zap.Error(err))
+					}
+					if stats != nil {
+						ret = append(ret, stats)
+					}
+				} else {
+					c.logger.Info("error happened when scanning net/tcp",
+						zap.Uint32("pid", connStat.pid), zap.Error(err))
+				}
+				continue
+			}
+			pidTcpStateMap[connStat.pid] = tcpState
+			tcpStateMap = tcpState
+		}
+		state, ok := tcpStateMap[key.toSocketKey()]
+		// There are two possible reasons for no such socket found:
+		//   1. The connection was established and has been closed.
+		//      There should have been received a tcp_set_state event, and c.connMap
+		//      should not contain such socket. In this case, we won't enter this piece of code.
+		//   2. The connection failed to be established and has been closed.
+		if !ok {
+			stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
+			if err != nil {
+				c.logger.Warn("error happened when receiving event:", zap.Error(err))
+			}
+			if stats != nil {
+				ret = append(ret, stats)
+			}
+			continue
+		}
+		if state == established {
+			stats, err := connStat.StateMachine.ReceiveEvent(tcpSetStateToEstablished, c.connMap)
+			if err != nil {
+				c.logger.Warn("error happened when receiving event:", zap.Error(err))
+			}
+			if stats != nil {
+				ret = append(ret, stats)
+			}
+		} else if state == synSent || state == synRecv {
+			continue
+		} else {
+			// These states are behind the ESTABLISHED state. As we believe that
+			// tcp_set_state event that is from established to other states always comes,
+			// the codes should not run into this branch.
+			c.logger.Debug("See sockets whose state is behind ESTABLISHED, which means no "+
+				"tcp_set_state_from_established received.", zap.String("state", state))
+			stats, err := connStat.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
+			if err != nil {
+				c.logger.Warn("error happened when receiving event:", zap.Error(err))
+			}
+			if stats != nil {
+				ret = append(ret, stats)
+			}
+			if connStat.StateMachine.currentStateType == Success {
+				_, _ = connStat.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
+			}
+		}
+	}
+	return ret
+}
+
+func (c *ConnectMonitor) GetMapSize() int {
+	return len(c.connMap)
+}
+
+func getConnKeyForTcpConnect(event *model.KindlingEvent) (ConnKey, error) {
+	sIp := event.GetUserAttribute("sip")
+	sPort := event.GetUserAttribute("sport")
+	dIp := event.GetUserAttribute("dip")
+	dPort := event.GetUserAttribute("dport")
+
+	if sIp == nil || sPort == nil || dIp == nil || dPort == nil {
+		return ConnKey{}, fmt.Errorf("one of sip or dip or dport is nil for event %s", event.Name)
+	}
+	sIpString := model.IPLong2String(uint32(sIp.GetUintValue()))
+	sPortUint := sPort.GetUintValue()
+	dIpString := model.IPLong2String(uint32(dIp.GetUintValue()))
+	dPortUint := dPort.GetUintValue()
+	connKey := ConnKey{
+		SrcIP:   sIpString,
+		SrcPort: uint32(sPortUint),
+		DstIP:   dIpString,
+		DstPort: uint32(dPortUint),
+	}
+	return connKey, nil
+}
