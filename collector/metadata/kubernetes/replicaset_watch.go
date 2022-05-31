@@ -2,6 +2,9 @@ package kubernetes
 
 import (
 	"fmt"
+	_ "path/filepath"
+	"sync"
+
 	appv1 "k8s.io/api/apps/v1"
 	_ "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,8 +14,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	_ "k8s.io/client-go/tools/clientcmd"
 	_ "k8s.io/client-go/util/homedir"
-	_ "path/filepath"
-	"sync"
 )
 
 const ReplicaSetKind = "ReplicaSet"
@@ -24,7 +25,7 @@ type ReplicaSetMap struct {
 }
 
 var globalRsInfo = newReplicaSetMap()
-var rsUpdateMutex sync.Mutex
+var rsUpdateMutex sync.RWMutex
 
 type Controller struct {
 	Name       string
