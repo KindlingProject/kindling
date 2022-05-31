@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	"github.com/Kindling-project/kindling/collector/model"
@@ -229,31 +228,31 @@ func (c *ConnectMonitor) TrimExpiredConnections(timeout int) []*ConnectionStats 
 	return ret
 }
 
-func (c *ConnectMonitor) TrimConnectionsWithTcpStat() []*ConnectionStats {
+func (c *ConnectMonitor) TrimConnectionsWithTcpStat(waitForEventSecond int) []*ConnectionStats {
 	ret := make([]*ConnectionStats, 0, len(c.connMap))
 	// Only scan once for each pid
 	pidTcpStateMap := make(map[uint32]NetSocketStateMap)
+	waitForEventNano := int64(waitForEventSecond) * 1000000000
 	for key, connStat := range c.connMap {
 		if connStat.pid == 0 {
+			continue
+		}
+		if time.Now().UnixNano()-int64(connStat.InitialTimestamp) < waitForEventNano {
+			// Still waiting for other events
 			continue
 		}
 		tcpStateMap, ok := pidTcpStateMap[connStat.pid]
 		if !ok {
 			tcpState, err := NewPidTcpStat(c.hostProcPath, int(connStat.pid))
 			if err != nil {
-				if err == syscall.ENOENT {
-					// No such file or directory, which means the process has been purged.
-					// We consider the connection failed to be established.
-					stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
-					if err != nil {
-						c.logger.Warn("error happened when receiving event:", zap.Error(err))
-					}
-					if stats != nil {
-						ret = append(ret, stats)
-					}
-				} else {
-					c.logger.Info("error happened when scanning net/tcp",
-						zap.Uint32("pid", connStat.pid), zap.Error(err))
+				// No such file or directory, which means the process has been purged.
+				// We consider the connection failed to be established.
+				stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
+				if err != nil {
+					c.logger.Warn("error happened when receiving event:", zap.Error(err))
+				}
+				if stats != nil {
+					ret = append(ret, stats)
 				}
 				continue
 			}

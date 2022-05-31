@@ -33,7 +33,7 @@ receivers:
 analyzers:
   tcpconnectanalyzer:
     channel_size: 10000
-    timeout_second: 60
+    wait_event_second: 10
   tcpmetricanalyzer:
   networkanalyzer:
     connect_timeout: 100

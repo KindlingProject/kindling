@@ -59,12 +59,9 @@ func New(cfg interface{}, telemetry *component.TelemetryTools, consumers []consu
 // Start initializes the analyzer
 func (a *TcpConnectAnalyzer) Start() error {
 	go func() {
-		timeoutTicker := time.NewTicker(time.Duration(a.config.TimeoutSecond/5) * time.Second)
-		scanTcpStateTicker := time.NewTicker(5 * time.Second)
+		scanTcpStateTicker := time.NewTicker(time.Duration(a.config.WaitEventSecond/3) * time.Second)
 		for {
 			select {
-			case <-timeoutTicker.C:
-				a.trimExpiredConnStats()
 			case <-scanTcpStateTicker.C:
 				a.trimConnectionsWithTcpStat()
 			case event := <-a.eventChannel:
@@ -73,7 +70,6 @@ func (a *TcpConnectAnalyzer) Start() error {
 				// Only trim the connections expired. For those unfinished, we leave them
 				// unchanged and just shutdown this goroutine.
 				a.trimConnectionsWithTcpStat()
-				a.trimExpiredConnStats()
 				return
 			}
 		}
@@ -123,7 +119,7 @@ func (a *TcpConnectAnalyzer) consumeChannelEvent(event *model.KindlingEvent) {
 }
 
 func (a *TcpConnectAnalyzer) trimExpiredConnStats() {
-	connStats := a.connectMonitor.TrimExpiredConnections(a.config.TimeoutSecond)
+	connStats := a.connectMonitor.TrimExpiredConnections(a.config.WaitEventSecond * 3)
 	for _, connStat := range connStats {
 		gaugeGroup := a.generateGaugeGroup(connStat)
 		a.passThroughConsumers(gaugeGroup)
@@ -131,7 +127,7 @@ func (a *TcpConnectAnalyzer) trimExpiredConnStats() {
 }
 
 func (a *TcpConnectAnalyzer) trimConnectionsWithTcpStat() {
-	connStats := a.connectMonitor.TrimConnectionsWithTcpStat()
+	connStats := a.connectMonitor.TrimConnectionsWithTcpStat(a.config.WaitEventSecond)
 	for _, connStat := range connStats {
 		gaugeGroup := a.generateGaugeGroup(connStat)
 		a.passThroughConsumers(gaugeGroup)
