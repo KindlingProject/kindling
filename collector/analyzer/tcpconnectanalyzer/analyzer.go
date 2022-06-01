@@ -176,32 +176,35 @@ func (a *TcpConnectAnalyzer) passThroughConsumers(dataGroup *model.DataGroup) {
 }
 
 func (a *TcpConnectAnalyzer) generateDataGroup(connectStats *internal.ConnectionStats) *model.DataGroup {
-	labels := a.generateLabels(connectStats, true)
-	countValue := model.NewIntMetric(constnames.TcpConnectTotalMetric, 1)
-	durationValue := model.NewIntMetric(constnames.TcpConnectDurationMetric, connectStats.GetConnectDuration())
+	labels := a.generateLabels(connectStats)
+	metrics := make([]*model.Metric, 0, 2)
+	metrics = append(metrics, model.NewIntMetric(constnames.TcpConnectTotalMetric, 1))
+	// Only record the connection's duration when it is successfully established
+	if connectStats.StateMachine.GetCurrentState() == internal.Success {
+		metrics = append(metrics, model.NewIntMetric(constnames.TcpConnectDurationMetric, connectStats.GetConnectDuration()))
+	}
 
 	retDataGroup := model.NewDataGroup(
 		constnames.TcpConnectMetricGroupName,
 		labels,
 		connectStats.EndTimestamp,
-		countValue, durationValue)
+		metrics...)
 
 	return retDataGroup
 }
 
-func (a *TcpConnectAnalyzer) generateLabels(connectStats *internal.ConnectionStats, includeState bool) *model.AttributeMap {
+func (a *TcpConnectAnalyzer) generateLabels(connectStats *internal.ConnectionStats) *model.AttributeMap {
 	labels := model.NewAttributeMap()
 	// The connect events always come from the client-side
 	labels.AddBoolValue(constlabels.IsServer, false)
 	labels.AddStringValue(constlabels.ContainerId, connectStats.ContainerId)
 	labels.AddIntValue(constlabels.Errno, int64(connectStats.Code))
-	if includeState {
-		if connectStats.StateMachine.GetCurrentState() == internal.Success {
-			labels.AddBoolValue(constlabels.Success, true)
-		} else {
-			labels.AddBoolValue(constlabels.Success, false)
-		}
+	if connectStats.StateMachine.GetCurrentState() == internal.Success {
+		labels.AddBoolValue(constlabels.Success, true)
+	} else {
+		labels.AddBoolValue(constlabels.Success, false)
 	}
+
 	srcIp := connectStats.ConnKey.SrcIP
 	dstIp := connectStats.ConnKey.DstIP
 	srcPort := connectStats.ConnKey.SrcPort
