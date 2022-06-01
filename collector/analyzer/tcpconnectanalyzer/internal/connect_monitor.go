@@ -205,32 +205,8 @@ func (c *ConnectMonitor) readInTcpSetStateFromEstablished(connKey ConnKey, event
 		// Connection has been established and the connStats have been emitted.
 		return nil, nil
 	}
+	connStats.EndTimestamp = event.Timestamp
 	return connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
-}
-
-// TrimExpiredConnections traverses the map, remove the expired entries based on timeout,
-// and return them.
-// The unit of timeout is second.
-func (c *ConnectMonitor) TrimExpiredConnections(timeout int) []*ConnectionStats {
-	ret := make([]*ConnectionStats, 0)
-	if timeout <= 0 {
-		return ret
-	}
-	timeoutNano := int64(timeout) * 1000000000
-	for _, connStat := range c.connMap {
-		if time.Now().UnixNano()-int64(connStat.InitialTimestamp) >= timeoutNano {
-			stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
-			if err != nil {
-				c.logger.Warn("error happened when receiving event:", zap.Error(err))
-				continue
-			}
-			if stats != nil {
-				ret = append(ret, stats)
-			}
-		}
-	}
-
-	return ret
 }
 
 func (c *ConnectMonitor) TrimConnectionsWithTcpStat(waitForEventSecond int) []*ConnectionStats {

@@ -127,7 +127,7 @@ func (a *TcpConnectAnalyzer) consumeChannelEvent(event *model.KindlingEvent) {
 		return
 	}
 
-	dataGroup := a.generateMetricGroup(connectStats)
+	dataGroup := a.generateDataGroup(connectStats)
 	a.passThroughConsumers(dataGroup)
 }
 
@@ -154,18 +154,10 @@ func filterRequestEvent(event *model.KindlingEvent) bool {
 	return false
 }
 
-func (a *TcpConnectAnalyzer) trimExpiredConnStats() {
-	connStats := a.connectMonitor.TrimExpiredConnections(a.config.WaitEventSecond * 3)
-	for _, connStat := range connStats {
-		dataGroup := a.generateMetricGroup(connStat)
-		a.passThroughConsumers(dataGroup)
-	}
-}
-
 func (a *TcpConnectAnalyzer) trimConnectionsWithTcpStat() {
 	connStats := a.connectMonitor.TrimConnectionsWithTcpStat(a.config.WaitEventSecond)
 	for _, connStat := range connStats {
-		dataGroup := a.generateMetricGroup(connStat)
+		dataGroup := a.generateDataGroup(connStat)
 		a.passThroughConsumers(dataGroup)
 	}
 }
@@ -183,23 +175,32 @@ func (a *TcpConnectAnalyzer) passThroughConsumers(dataGroup *model.DataGroup) {
 	}
 }
 
-func (a *TcpConnectAnalyzer) generateMetricGroup(connectStats *internal.ConnectionStats) *model.DataGroup {
+func (a *TcpConnectAnalyzer) generateDataGroup(connectStats *internal.ConnectionStats) *model.DataGroup {
+	labels := a.generateLabels(connectStats, true)
+	countValue := model.NewIntMetric(constnames.TcpConnectTotalMetric, 1)
+	durationValue := model.NewIntMetric(constnames.TcpConnectDurationMetric, connectStats.GetConnectDuration())
+
+	retDataGroup := model.NewDataGroup(
+		constnames.TcpConnectMetricGroupName,
+		labels,
+		connectStats.EndTimestamp,
+		countValue, durationValue)
+
+	return retDataGroup
+}
+
+func (a *TcpConnectAnalyzer) generateLabels(connectStats *internal.ConnectionStats, includeState bool) *model.AttributeMap {
 	labels := model.NewAttributeMap()
 	// The connect events always come from the client-side
 	labels.AddBoolValue(constlabels.IsServer, false)
 	labels.AddStringValue(constlabels.ContainerId, connectStats.ContainerId)
 	labels.AddIntValue(constlabels.Errno, int64(connectStats.Code))
-	if connectStats.StateMachine.GetCurrentState() == internal.Closed {
-		lastState := connectStats.StateMachine.GetLastState()
-		if lastState == internal.Success {
+	if includeState {
+		if connectStats.StateMachine.GetCurrentState() == internal.Success {
 			labels.AddBoolValue(constlabels.Success, true)
 		} else {
 			labels.AddBoolValue(constlabels.Success, false)
 		}
-	} else if connectStats.StateMachine.GetCurrentState() == internal.Success {
-		labels.AddBoolValue(constlabels.Success, true)
-	} else {
-		labels.AddBoolValue(constlabels.Success, false)
 	}
 	srcIp := connectStats.ConnKey.SrcIP
 	dstIp := connectStats.ConnKey.DstIP
@@ -212,17 +213,7 @@ func (a *TcpConnectAnalyzer) generateMetricGroup(connectStats *internal.Connecti
 	dNatIp, dNatPort := a.findDNatTuple(srcIp, uint64(srcPort), dstIp, uint64(dstPort))
 	labels.AddStringValue(constlabels.DnatIp, dNatIp)
 	labels.AddIntValue(constlabels.DnatPort, dNatPort)
-
-	countValue := model.NewIntMetric(constnames.TcpConnectTotalMetric, 1)
-	durationValue := model.NewIntMetric(constnames.TcpConnectDurationMetric, connectStats.GetConnectDuration())
-
-	retDataGroup := model.NewDataGroup(
-		constnames.TcpConnectMetricGroupName,
-		labels,
-		connectStats.EndTimestamp,
-		countValue, durationValue)
-
-	return retDataGroup
+	return labels
 }
 
 func (a *TcpConnectAnalyzer) findDNatTuple(sIp string, sPort uint64, dIp string, dPort uint64) (string, int64) {
