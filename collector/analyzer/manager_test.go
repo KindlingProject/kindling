@@ -27,6 +27,11 @@ func TestNewManager(t *testing.T) {
 	assert.True(t, ok)
 	_, ok = analyzers[1].(*testConsumeAllAnalyzer)
 	assert.True(t, ok)
+
+	analyzers = manager.GetConsumableAnalyzers("evt3")
+	assert.Equal(t, 1, len(analyzers))
+	_, ok = analyzers[0].(*testConsumeAllAnalyzer)
+	assert.True(t, ok)
 }
 
 type testAnalyzer struct {
