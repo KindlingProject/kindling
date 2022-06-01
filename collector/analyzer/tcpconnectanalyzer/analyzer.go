@@ -187,9 +187,7 @@ func (a *TcpConnectAnalyzer) generateMetricGroup(connectStats *internal.Connecti
 	labels := model.NewAttributeMap()
 	// The connect events always come from the client-side
 	labels.AddBoolValue(constlabels.IsServer, false)
-	if connectStats.ConnectSyscall != nil {
-		labels.AddStringValue(constlabels.ContainerId, connectStats.ConnectSyscall.GetContainerId())
-	}
+	labels.AddStringValue(constlabels.ContainerId, connectStats.ContainerId)
 	labels.AddIntValue(constlabels.Errno, int64(connectStats.Code))
 	if connectStats.StateMachine.GetCurrentState() == internal.Closed {
 		lastState := connectStats.StateMachine.GetLastState()

@@ -65,6 +65,7 @@ func (c *ConnectMonitor) ReadInConnectExitSyscall(event *model.KindlingEvent) (*
 	connStats.EndTimestamp = event.Timestamp
 	connStats.ConnectSyscall = event
 	connStats.pid = event.GetPid()
+	connStats.ContainerId = event.GetContainerId()
 	var eventType EventType
 	if retValueInt == 0 {
 		eventType = connectExitSyscallSuccess
@@ -97,6 +98,7 @@ func (c *ConnectMonitor) ReadSendRequestSyscall(event *model.KindlingEvent) (*Co
 		return nil, nil
 	}
 	connStats.pid = event.GetPid()
+	connStats.ContainerId = event.GetContainerId()
 	return connStats.StateMachine.ReceiveEvent(sendRequestSyscall, c.connMap)
 }
 

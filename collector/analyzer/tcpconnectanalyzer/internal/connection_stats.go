@@ -33,6 +33,7 @@ const (
 
 type ConnectionStats struct {
 	pid              uint32
+	ContainerId      string
 	ConnKey          ConnKey
 	StateMachine     *StateMachine
 	InitialTimestamp uint64
