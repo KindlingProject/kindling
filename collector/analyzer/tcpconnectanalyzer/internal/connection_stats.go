@@ -107,35 +107,17 @@ func createStatesResource() StatesResource {
 			callback: nil,
 		},
 		Success: {
-			eventsMap: map[EventType]StateType{
-				tcpSetStateToEstablished:     Success,
-				sendRequestSyscall:           Success,
-				tcpSetStateFromEstablished:   Closed,
-				connectExitSyscallSuccess:    Success,
-				connectExitSyscallNotConcern: Success,
-				// Sometimes tcpSetStateFromEstablished is missing, so expiredEvent is used to
-				// close the connection.
-				expiredEvent: Closed,
-			},
+			eventsMap: map[EventType]StateType{},
 			callback: func(connStats *ConnectionStats, connMap map[ConnKey]*ConnectionStats) *ConnectionStats {
+				delete(connMap, connStats.ConnKey)
 				return connStats
 			},
 		},
 		Failure: {
-			eventsMap: map[EventType]StateType{
-				connectExitSyscallFailure:    Failure,
-				connectExitSyscallNotConcern: Failure,
-				expiredEvent:                 Closed,
-			},
-			callback: func(connStats *ConnectionStats, connMap map[ConnKey]*ConnectionStats) *ConnectionStats {
-				return connStats
-			},
-		},
-		Closed: {
 			eventsMap: map[EventType]StateType{},
 			callback: func(connStats *ConnectionStats, connMap map[ConnKey]*ConnectionStats) *ConnectionStats {
 				delete(connMap, connStats.ConnKey)
-				return nil
+				return connStats
 			},
 		},
 	}

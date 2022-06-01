@@ -146,7 +146,7 @@ func (c *ConnectMonitor) ReadInTcpConnect(event *model.KindlingEvent) (*Connecti
 		connStats.StateMachine = NewStateMachine(Inprogress, c.statesResource, connStats)
 		c.connMap[connKey] = connStats
 	} else {
-		// "tcp_connect" comes to analyzer after "connect_exit"
+		// Not possible to enter this branch
 		connStats.TcpConnect = event
 		connStats.EndTimestamp = event.Timestamp
 		connStats.Code = connCode(retValueInt)
@@ -215,12 +215,6 @@ func (c *ConnectMonitor) readInTcpSetStateFromEstablished(connKey ConnKey, event
 		return nil, nil
 	}
 	connStats.TcpSetState = event
-	// There should be multiple transmission happened.
-	if connStats.StateMachine.currentStateType == Inprogress {
-		stats, err := connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
-		_, _ = connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
-		return stats, err
-	}
 	return connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
 }
 
@@ -309,9 +303,8 @@ func (c *ConnectMonitor) TrimConnectionsWithTcpStat(waitForEventSecond int) []*C
 		} else if state == synSent || state == synRecv {
 			continue
 		} else {
-			// These states are behind the ESTABLISHED state. As we believe that
-			// tcp_set_state event that is from established to other states always comes,
-			// the codes should not run into this branch.
+			// These states are behind the ESTABLISHED state.
+			// The codes could run into this branch if tcpSetStateToEstablished not received.
 			c.logger.Debug("See sockets whose state is behind ESTABLISHED, which means no "+
 				"tcp_set_state_from_established received.", zap.String("state", state))
 			stats, err := connStat.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
@@ -320,9 +313,6 @@ func (c *ConnectMonitor) TrimConnectionsWithTcpStat(waitForEventSecond int) []*C
 			}
 			if stats != nil {
 				ret = append(ret, stats)
-			}
-			if connStat.StateMachine.currentStateType == Success {
-				_, _ = connStat.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
 			}
 		}
 	}
