@@ -245,6 +245,7 @@ func (c *ConnectMonitor) TrimConnectionsWithTcpStat(waitForEventSecond int) []*C
 		if !ok {
 			tcpState, err := NewPidTcpStat(c.hostProcPath, int(connStat.pid))
 			if err != nil {
+				c.logger.Debug("error happened when scanning tcp state:", zap.Error(err))
 				// No such file or directory, which means the process has been purged.
 				// We consider the connection failed to be established.
 				stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
