@@ -49,6 +49,14 @@ func (a *TcpMetricAnalyzer) Start() error {
 	return nil
 }
 
+func (a *TcpMetricAnalyzer) ConsumableEvents() []string {
+	ret := make([]string, len(consumableEvents))
+	for key := range consumableEvents {
+		ret = append(ret, key)
+	}
+	return ret
+}
+
 // ConsumeEvent gets the event from the previous component
 func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	_, ok := consumableEvents[event.Name]

@@ -53,5 +53,9 @@ func (a *LogAnalyzer) Type() analyzer.Type {
 	return Type
 }
 
+func (a *LogAnalyzer) ConsumableEvents() []string {
+	return []string{analyzer.ConsumeAllEvents}
+}
+
 type Config struct {
 }

@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.uber.org/zap"
@@ -68,6 +69,19 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 	}
 
 	return na
+}
+
+func (na *NetworkAnalyzer) ConsumableEvents() []string {
+	return []string{
+		constnames.ReadEvent,
+		constnames.WriteEvent,
+		constnames.ReadvEvent,
+		constnames.WritevEvent,
+		constnames.SendToEvent,
+		constnames.RecvFromEvent,
+		constnames.SendMsgEvent,
+		constnames.RecvMsgEvent,
+	}
 }
 
 func (na *NetworkAnalyzer) Start() error {
