@@ -39,16 +39,4 @@ func TestCallback(t *testing.T) {
 	if connStats.StateMachine.currentStateType != Success {
 		t.Errorf("expected success, got %v", connStats.StateMachine.currentStateType)
 	}
-
-	stats, err = connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, connMap)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if connStats.StateMachine.currentStateType != Closed {
-		t.Errorf("expected closed, got %v", connStats.StateMachine.currentStateType)
-	}
-
-	if len(connMap) != 0 {
-		t.Errorf("expected empty map, but current map is %v", connMap)
-	}
 }
