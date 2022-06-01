@@ -26,7 +26,7 @@ type Application struct {
 	componentsFactory *ComponentsFactory
 	telemetry         *component.TelemetryManager
 	receiver          receiver.Receiver
-	analyzerManager   analyzer.Manager
+	analyzerManager   *analyzer.Manager
 }
 
 func New() (*Application, error) {

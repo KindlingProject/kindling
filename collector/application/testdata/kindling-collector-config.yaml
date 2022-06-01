@@ -1,6 +1,4 @@
 receivers:
-  mockreceiver:
-    name: mock
   udsreceiver:
     zeromqpull:
       endpoint: ipc:///home/kindling-sub/0

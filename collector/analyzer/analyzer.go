@@ -17,4 +17,6 @@ type Analyzer interface {
 	Shutdown() error
 	// Type returns the type of the analyzer
 	Type() Type
+	// ConsumableEvents returns the events' name that this analyzer can consume
+	ConsumableEvents() []string
 }

@@ -6,12 +6,8 @@ import (
 	"time"
 
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
-	"github.com/Kindling-project/kindling/collector/analyzer/network"
-	"github.com/Kindling-project/kindling/collector/analyzer/tcpconnectanalyzer"
-	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/receiver"
 	"github.com/gogo/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
@@ -29,7 +25,7 @@ type Socket struct {
 
 type UdsReceiver struct {
 	cfg             *Config
-	analyzerManager analyzerpackage.Manager
+	analyzerManager *analyzerpackage.Manager
 	zmqPullSocket   Socket
 	zmqReqSocket    Socket
 	shutdownWG      sync.WaitGroup
@@ -99,7 +95,7 @@ func (soc Socket) connect(endpoint string) error {
 	return err
 }
 
-func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager analyzerpackage.Manager) receiver.Receiver {
+func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
 	cfg, ok := config.(*Config)
 	if !ok {
 		telemetry.Logger.Sugar().Panicf("Cannot convert [%s] config", Uds)
@@ -227,41 +223,26 @@ func (r *UdsReceiver) Shutdown() error {
 }
 
 func (r *UdsReceiver) SendToNextConsumer(events *model.KindlingEventList) error {
-	// TODO: Decouple dispatching logic from receiver and conduct it at analyzerManager via configuration
 	for _, evt := range events.KindlingEventList {
 		r.stats.add(evt.Name, 1)
-		var analyzer analyzerpackage.Analyzer
-		var isFound bool
-		switch evt.Name {
-		case constnames.TcpCloseEvent:
-			fallthrough
-		case constnames.TcpRcvEstablishedEvent:
-			fallthrough
-		case constnames.TcpDropEvent:
-			fallthrough
-		case constnames.TcpRetransmitSkbEvent:
-			analyzer, isFound = r.analyzerManager.GetAnalyzer(tcpmetricanalyzer.TcpMetric)
-		case constnames.ConnectEvent:
-			fallthrough
-		case constnames.TcpConnectEvent:
-			fallthrough
-		case constnames.TcpSetStateEvent:
-			analyzer, isFound = r.analyzerManager.GetAnalyzer(tcpconnectanalyzer.Type)
-		default:
-			analyzer, isFound = r.analyzerManager.GetAnalyzer(network.Network)
-		}
-		if !isFound {
-			r.telemetry.Logger.Info("analyzer not found for event %s", zap.String("eventName", evt.Name))
-			continue
-		}
 		if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, "Receive Event"); ce != nil {
 			ce.Write(
 				zap.String("event", evt.String()),
 			)
 		}
-		err := analyzer.ConsumeEvent(evt)
-		if err != nil {
-			return err
+		analyzers := r.analyzerManager.GetConsumableAnalyzers(evt.Name)
+		if analyzers == nil || len(analyzers) == 0 {
+			r.telemetry.Logger.Info("analyzer not found for event ", zap.String("eventName", evt.Name))
+			continue
+		}
+		for _, analyzer := range analyzers {
+			err := analyzer.ConsumeEvent(evt)
+			if err != nil {
+				return err
+			}
+			if err != nil {
+				r.telemetry.Logger.Warn("Error sending event to next consumer: ", zap.Error(err))
+			}
 		}
 	}
 	return nil
