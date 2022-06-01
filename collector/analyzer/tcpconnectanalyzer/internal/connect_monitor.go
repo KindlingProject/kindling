@@ -63,17 +63,16 @@ func (c *ConnectMonitor) ReadInConnectExitSyscall(event *model.KindlingEvent) (*
 	}
 	// "connect_exit" comes to analyzer after "tcp_connect"
 	connStats.EndTimestamp = event.Timestamp
-	connStats.ConnectSyscall = event
 	connStats.pid = event.GetPid()
 	connStats.ContainerId = event.GetContainerId()
 	var eventType EventType
 	if retValueInt == 0 {
 		eventType = connectExitSyscallSuccess
-	} else if isNotErrorReturnCode(connCode(retValueInt)) {
+	} else if isNotErrorReturnCode(retValueInt) {
 		eventType = connectExitSyscallNotConcern
 	} else {
 		eventType = connectExitSyscallFailure
-		connStats.Code = connCode(retValueInt)
+		connStats.Code = int(retValueInt)
 	}
 	return connStats.StateMachine.ReceiveEvent(eventType, c.connMap)
 }
@@ -102,7 +101,7 @@ func (c *ConnectMonitor) ReadSendRequestSyscall(event *model.KindlingEvent) (*Co
 	return connStats.StateMachine.ReceiveEvent(sendRequestSyscall, c.connMap)
 }
 
-func isNotErrorReturnCode(code connCode) bool {
+func isNotErrorReturnCode(code int64) bool {
 	return code == einprogress || code == eintr || code == eisconn || code == ealready
 }
 
@@ -138,18 +137,14 @@ func (c *ConnectMonitor) ReadInTcpConnect(event *model.KindlingEvent) (*Connecti
 			ConnKey:          connKey,
 			InitialTimestamp: event.Timestamp,
 			EndTimestamp:     event.Timestamp,
-			Code:             connCode(retValueInt),
-			ConnectSyscall:   nil,
-			TcpConnect:       event,
-			TcpSetState:      nil,
+			Code:             int(retValueInt),
 		}
 		connStats.StateMachine = NewStateMachine(Inprogress, c.statesResource, connStats)
 		c.connMap[connKey] = connStats
 	} else {
 		// Not possible to enter this branch
-		connStats.TcpConnect = event
 		connStats.EndTimestamp = event.Timestamp
-		connStats.Code = connCode(retValueInt)
+		connStats.Code = int(retValueInt)
 	}
 	return connStats.StateMachine.ReceiveEvent(eventType, c.connMap)
 }
@@ -192,14 +187,10 @@ func (c *ConnectMonitor) readInTcpSetStateToEstablished(connKey ConnKey, event *
 	if !ok {
 		// No tcp_connect or connect_exit received.
 		// This is the events from server-side.
-		c.logger.Debug("No tcp_connect or connect_exit, but receive tcp_set_state_to_established")
+		c.logger.Debug("No tcp_connect received, but receive tcp_set_state_to_established")
 		return nil, nil
 	}
-	connStats.TcpSetState = event
 	connStats.EndTimestamp = event.Timestamp
-	if connStats.TcpConnect == nil {
-		c.logger.Debug("No tcp_connect event, but receive tcp_set_state_to_established")
-	}
 	return connStats.StateMachine.ReceiveEvent(tcpSetStateToEstablished, c.connMap)
 }
 
@@ -214,7 +205,6 @@ func (c *ConnectMonitor) readInTcpSetStateFromEstablished(connKey ConnKey, event
 		// Connection has been established and the connStats have been emitted.
 		return nil, nil
 	}
-	connStats.TcpSetState = event
 	return connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
 }
 

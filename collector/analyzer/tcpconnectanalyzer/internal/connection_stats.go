@@ -2,14 +2,9 @@ package internal
 
 import (
 	"fmt"
-
-	"github.com/Kindling-project/kindling/collector/model"
 )
 
-type connCode int
-
 const (
-	noError connCode = iota
 	// See <errno.h> in Linux
 	einprogress = -115
 	ealready    = -114
@@ -38,11 +33,7 @@ type ConnectionStats struct {
 	StateMachine     *StateMachine
 	InitialTimestamp uint64
 	EndTimestamp     uint64
-	Code             connCode
-
-	ConnectSyscall *model.KindlingEvent
-	TcpConnect     *model.KindlingEvent
-	TcpSetState    *model.KindlingEvent
+	Code             int
 }
 
 func (c *ConnectionStats) GetConnectDuration() int64 {

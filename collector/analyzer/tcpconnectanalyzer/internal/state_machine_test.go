@@ -17,9 +17,6 @@ func TestCallback(t *testing.T) {
 		InitialTimestamp: 0,
 		EndTimestamp:     0,
 		Code:             0,
-		ConnectSyscall:   nil,
-		TcpConnect:       nil,
-		TcpSetState:      nil,
 	}
 	connStats.StateMachine = NewStateMachine(Inprogress, statesResource, connStats)
 	connMap[connKey] = connStats
