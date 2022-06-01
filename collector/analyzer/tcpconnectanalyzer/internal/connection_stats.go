@@ -82,15 +82,21 @@ const (
 	connectExitSyscallFailure    EventType = "connect_exit_syscall_failure"
 	connectExitSyscallNotConcern EventType = "connect_exit_syscall_not_concern"
 	expiredEvent                 EventType = "expired_event"
+	sendRequestSyscall           EventType = "send_request_syscall"
 )
 
 func createStatesResource() StatesResource {
 	return StatesResource{
 		Inprogress: State{
 			eventsMap: map[EventType]StateType{
-				tcpConnectNoError:            Inprogress,
-				tcpConnectError:              Failure,
-				tcpSetStateToEstablished:     Success,
+				tcpConnectNoError:        Inprogress,
+				tcpConnectError:          Failure,
+				tcpSetStateToEstablished: Success,
+				// Sometimes tcpSetStateToEstablished and tcpSetStateFromEstablished are both missing,
+				// so sendRequestSyscall is used to mark the state as Success from Inprogress.
+				sendRequestSyscall: Success,
+				// Sometimes tcpSetStateToEstablished is missing and sendRequestSyscall is not triggered,
+				// so tcpSetStateFromEstablished is used to mark the state as Success from Inprogress.
 				tcpSetStateFromEstablished:   Success,
 				connectExitSyscallSuccess:    Success,
 				connectExitSyscallFailure:    Failure,
@@ -102,10 +108,13 @@ func createStatesResource() StatesResource {
 		Success: {
 			eventsMap: map[EventType]StateType{
 				tcpSetStateToEstablished:     Success,
+				sendRequestSyscall:           Success,
 				tcpSetStateFromEstablished:   Closed,
 				connectExitSyscallSuccess:    Success,
 				connectExitSyscallNotConcern: Success,
-				expiredEvent:                 Closed,
+				// Sometimes tcpSetStateFromEstablished is missing, so expiredEvent is used to
+				// close the connection.
+				expiredEvent: Closed,
 			},
 			callback: func(connStats *ConnectionStats, connMap map[ConnKey]*ConnectionStats) *ConnectionStats {
 				return connStats

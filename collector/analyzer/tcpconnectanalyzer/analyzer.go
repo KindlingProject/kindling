@@ -17,12 +17,6 @@ import (
 
 const Type analyzer.Type = "tcpconnectanalyzer"
 
-var consumableEvents = map[string]bool{
-	constnames.ConnectEvent:     true,
-	constnames.TcpConnectEvent:  true,
-	constnames.TcpSetStateEvent: true,
-}
-
 type TcpConnectAnalyzer struct {
 	config        *Config
 	nextConsumers []consumer.Consumer
@@ -56,6 +50,18 @@ func New(cfg interface{}, telemetry *component.TelemetryTools, consumers []consu
 	return ret
 }
 
+func (a *TcpConnectAnalyzer) ConsumableEvents() []string {
+	return []string{
+		constnames.ConnectEvent,
+		constnames.TcpConnectEvent,
+		constnames.TcpSetStateEvent,
+		constnames.WriteEvent,
+		constnames.WritevEvent,
+		constnames.SendMsgEvent,
+		constnames.SendToEvent,
+	}
+}
+
 // Start initializes the analyzer
 func (a *TcpConnectAnalyzer) Start() error {
 	go func() {
@@ -79,10 +85,6 @@ func (a *TcpConnectAnalyzer) Start() error {
 
 // ConsumeEvent gets the event from the previous component
 func (a *TcpConnectAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
-	eventName := event.Name
-	if ok := consumableEvents[eventName]; !ok {
-		return nil
-	}
 	a.eventChannel <- event
 	return nil
 }
@@ -103,6 +105,17 @@ func (a *TcpConnectAnalyzer) consumeChannelEvent(event *model.KindlingEvent) {
 		connectStats, err = a.connectMonitor.ReadInTcpConnect(event)
 	case constnames.TcpSetStateEvent:
 		connectStats, err = a.connectMonitor.ReadInTcpSetState(event)
+	case constnames.WriteEvent:
+		fallthrough
+	case constnames.WritevEvent:
+		fallthrough
+	case constnames.SendToEvent:
+		fallthrough
+	case constnames.SendMsgEvent:
+		if filterRequestEvent(event) {
+			return
+		}
+		connectStats, err = a.connectMonitor.ReadSendRequestSyscall(event)
 	}
 
 	if err != nil {
@@ -114,30 +127,53 @@ func (a *TcpConnectAnalyzer) consumeChannelEvent(event *model.KindlingEvent) {
 		return
 	}
 
-	gaugeGroup := a.generateGaugeGroup(connectStats)
-	a.passThroughConsumers(gaugeGroup)
+	dataGroup := a.generateMetricGroup(connectStats)
+	a.passThroughConsumers(dataGroup)
+}
+
+func filterRequestEvent(event *model.KindlingEvent) bool {
+	if event.Category != model.Category_CAT_NET {
+		return true
+	}
+
+	ctx := event.GetCtx()
+	if ctx == nil || ctx.GetThreadInfo() == nil {
+		return true
+	}
+	fd := ctx.GetFdInfo()
+	if fd == nil {
+		return true
+	}
+	if fd.GetProtocol() != model.L4Proto_TCP {
+		return true
+	}
+	if fd.GetSip() == nil || fd.GetDip() == nil {
+		return true
+	}
+
+	return false
 }
 
 func (a *TcpConnectAnalyzer) trimExpiredConnStats() {
 	connStats := a.connectMonitor.TrimExpiredConnections(a.config.WaitEventSecond * 3)
 	for _, connStat := range connStats {
-		gaugeGroup := a.generateGaugeGroup(connStat)
-		a.passThroughConsumers(gaugeGroup)
+		dataGroup := a.generateMetricGroup(connStat)
+		a.passThroughConsumers(dataGroup)
 	}
 }
 
 func (a *TcpConnectAnalyzer) trimConnectionsWithTcpStat() {
 	connStats := a.connectMonitor.TrimConnectionsWithTcpStat(a.config.WaitEventSecond)
 	for _, connStat := range connStats {
-		gaugeGroup := a.generateGaugeGroup(connStat)
-		a.passThroughConsumers(gaugeGroup)
+		dataGroup := a.generateMetricGroup(connStat)
+		a.passThroughConsumers(dataGroup)
 	}
 }
 
-func (a *TcpConnectAnalyzer) passThroughConsumers(gaugeGroup *model.GaugeGroup) {
+func (a *TcpConnectAnalyzer) passThroughConsumers(dataGroup *model.DataGroup) {
 	var retError error
 	for _, nextConsumer := range a.nextConsumers {
-		err := nextConsumer.Consume(gaugeGroup)
+		err := nextConsumer.Consume(dataGroup)
 		if err != nil {
 			retError = multierror.Append(retError, err)
 		}
@@ -147,7 +183,7 @@ func (a *TcpConnectAnalyzer) passThroughConsumers(gaugeGroup *model.GaugeGroup) 
 	}
 }
 
-func (a *TcpConnectAnalyzer) generateGaugeGroup(connectStats *internal.ConnectionStats) *model.GaugeGroup {
+func (a *TcpConnectAnalyzer) generateMetricGroup(connectStats *internal.ConnectionStats) *model.DataGroup {
 	labels := model.NewAttributeMap()
 	// The connect events always come from the client-side
 	labels.AddBoolValue(constlabels.IsServer, false)
@@ -179,22 +215,16 @@ func (a *TcpConnectAnalyzer) generateGaugeGroup(connectStats *internal.Connectio
 	labels.AddStringValue(constlabels.DnatIp, dNatIp)
 	labels.AddIntValue(constlabels.DnatPort, dNatPort)
 
-	countValue := &model.Gauge{
-		Name:  constnames.TcpConnectTotalMetric,
-		Value: 1,
-	}
-	durationValue := &model.Gauge{
-		Name:  constnames.TcpConnectDurationMetric,
-		Value: connectStats.GetConnectDuration(),
-	}
+	countValue := model.NewIntMetric(constnames.TcpConnectTotalMetric, 1)
+	durationValue := model.NewIntMetric(constnames.TcpConnectDurationMetric, connectStats.GetConnectDuration())
 
-	retGaugeGroup := model.NewGaugeGroup(
-		constnames.TcpConnectGaugeGroupName,
+	retDataGroup := model.NewDataGroup(
+		constnames.TcpConnectMetricGroupName,
 		labels,
 		connectStats.EndTimestamp,
 		countValue, durationValue)
 
-	return retGaugeGroup
+	return retDataGroup
 }
 
 func (a *TcpConnectAnalyzer) findDNatTuple(sIp string, sPort uint64, dIp string, dPort uint64) (string, int64) {

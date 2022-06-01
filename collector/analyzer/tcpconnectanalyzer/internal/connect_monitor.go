@@ -60,22 +60,44 @@ func (c *ConnectMonitor) ReadInConnectExitSyscall(event *model.KindlingEvent) (*
 		// Maybe the connStats have been closed by tcp_set_state_from_established event.
 		// We don't care about it.
 		return nil, nil
-	} else {
-		// "connect_exit" comes to analyzer after "tcp_connect"
-		connStats.EndTimestamp = event.Timestamp
-		connStats.ConnectSyscall = event
-		connStats.pid = event.GetPid()
-		var eventType EventType
-		if retValueInt == 0 {
-			eventType = connectExitSyscallSuccess
-		} else if isNotErrorReturnCode(connCode(retValueInt)) {
-			eventType = connectExitSyscallNotConcern
-		} else {
-			eventType = connectExitSyscallFailure
-			connStats.Code = connCode(retValueInt)
-		}
-		return connStats.StateMachine.ReceiveEvent(eventType, c.connMap)
 	}
+	// "connect_exit" comes to analyzer after "tcp_connect"
+	connStats.EndTimestamp = event.Timestamp
+	connStats.ConnectSyscall = event
+	connStats.pid = event.GetPid()
+	var eventType EventType
+	if retValueInt == 0 {
+		eventType = connectExitSyscallSuccess
+	} else if isNotErrorReturnCode(connCode(retValueInt)) {
+		eventType = connectExitSyscallNotConcern
+	} else {
+		eventType = connectExitSyscallFailure
+		connStats.Code = connCode(retValueInt)
+	}
+	return connStats.StateMachine.ReceiveEvent(eventType, c.connMap)
+}
+
+func (c *ConnectMonitor) ReadSendRequestSyscall(event *model.KindlingEvent) (*ConnectionStats, error) {
+	// The events without sip/sport/dip/dport have been filtered outside this method.
+	connKey := ConnKey{
+		SrcIP:   event.GetSip(),
+		SrcPort: event.GetSport(),
+		DstIP:   event.GetDip(),
+		DstPort: event.GetDport(),
+	}
+	if ce := c.logger.Check(zapcore.DebugLevel, "Receive sendRequestSyscall event:"); ce != nil {
+		ce.Write(
+			zap.String("ConnKey", connKey.String()),
+			zap.String("eventName", event.Name),
+		)
+	}
+
+	connStats, ok := c.connMap[connKey]
+	if !ok {
+		return nil, nil
+	}
+	connStats.pid = event.GetPid()
+	return connStats.StateMachine.ReceiveEvent(sendRequestSyscall, c.connMap)
 }
 
 func isNotErrorReturnCode(code connCode) bool {
@@ -170,14 +192,13 @@ func (c *ConnectMonitor) readInTcpSetStateToEstablished(connKey ConnKey, event *
 		// This is the events from server-side.
 		c.logger.Debug("No tcp_connect or connect_exit, but receive tcp_set_state_to_established")
 		return nil, nil
-	} else {
-		connStats.TcpSetState = event
-		connStats.EndTimestamp = event.Timestamp
-		if connStats.TcpConnect == nil {
-			c.logger.Debug("No tcp_connect event, but receive tcp_set_state_to_established")
-		}
-		return connStats.StateMachine.ReceiveEvent(tcpSetStateToEstablished, c.connMap)
 	}
+	connStats.TcpSetState = event
+	connStats.EndTimestamp = event.Timestamp
+	if connStats.TcpConnect == nil {
+		c.logger.Debug("No tcp_connect event, but receive tcp_set_state_to_established")
+	}
+	return connStats.StateMachine.ReceiveEvent(tcpSetStateToEstablished, c.connMap)
 }
 
 func (c *ConnectMonitor) readInTcpSetStateFromEstablished(connKey ConnKey, event *model.KindlingEvent) (*ConnectionStats, error) {
@@ -190,17 +211,15 @@ func (c *ConnectMonitor) readInTcpSetStateFromEstablished(connKey ConnKey, event
 	if !ok {
 		// Connection has been established and the connStats have been emitted.
 		return nil, nil
-	} else {
-		connStats.TcpSetState = event
-		connStats.EndTimestamp = event.Timestamp
-		// There should be multiple transmission happened.
-		if connStats.StateMachine.currentStateType == Inprogress {
-			stats, err := connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
-			_, _ = connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
-			return stats, err
-		}
-		return connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
 	}
+	connStats.TcpSetState = event
+	// There should be multiple transmission happened.
+	if connStats.StateMachine.currentStateType == Inprogress {
+		stats, err := connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
+		_, _ = connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
+		return stats, err
+	}
+	return connStats.StateMachine.ReceiveEvent(tcpSetStateFromEstablished, c.connMap)
 }
 
 // TrimExpiredConnections traverses the map, remove the expired entries based on timeout,

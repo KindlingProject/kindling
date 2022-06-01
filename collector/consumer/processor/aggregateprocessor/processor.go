@@ -125,7 +125,7 @@ func (p *AggregateProcessor) Consume(dataGroup *model.DataGroup) error {
 	case constnames.TcpMetricGroupName:
 		p.aggregator.Aggregate(dataGroup, p.tcpLabelSelectors)
 		return nil
-	case constnames.TcpConnectGaugeGroupName:
+	case constnames.TcpConnectMetricGroupName:
 		p.aggregator.Aggregate(dataGroup, tcpConnectLabelSelectors)
 		return nil
 	default:
