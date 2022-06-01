@@ -19,13 +19,6 @@ const (
 	TcpMetric analyzer.Type = "tcpmetricanalyzer"
 )
 
-var consumableEvents = map[string]bool{
-	constnames.TcpCloseEvent:          true,
-	constnames.TcpRcvEstablishedEvent: true,
-	constnames.TcpDropEvent:           true,
-	constnames.TcpRetransmitSkbEvent:  true,
-}
-
 type TcpMetricAnalyzer struct {
 	consumers   []consumer.Consumer
 	conntracker conntrackerpackge.Conntracker
@@ -49,12 +42,17 @@ func (a *TcpMetricAnalyzer) Start() error {
 	return nil
 }
 
+func (a *TcpMetricAnalyzer) ConsumableEvents() []string {
+	return []string{
+		constnames.TcpCloseEvent,
+		constnames.TcpRcvEstablishedEvent,
+		constnames.TcpDropEvent,
+		constnames.TcpRetransmitSkbEvent,
+	}
+}
+
 // ConsumeEvent gets the event from the previous component
 func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
-	_, ok := consumableEvents[event.Name]
-	if !ok {
-		return nil
-	}
 	var dataGroup *model.DataGroup
 	var err error
 	switch event.Name {
@@ -65,6 +63,8 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		dataGroup, err = a.generateDrop(event)
 	case constnames.TcpRetransmitSkbEvent:
 		dataGroup, err = a.generateRetransmit(event)
+	default:
+		return nil
 	}
 	if err != nil {
 		if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, "Event Skip, "); ce != nil {

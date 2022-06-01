@@ -3,6 +3,7 @@ package application
 import (
 	"flag"
 	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/loganalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
@@ -24,7 +25,7 @@ type Application struct {
 	componentsFactory *ComponentsFactory
 	telemetry         *component.TelemetryManager
 	receiver          receiver.Receiver
-	analyzerManager   analyzer.Manager
+	analyzerManager   *analyzer.Manager
 }
 
 func New() (*Application, error) {
