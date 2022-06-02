@@ -12,7 +12,7 @@ func TestCallback(t *testing.T) {
 	}
 	statesResource := createStatesResource()
 	connStats := &ConnectionStats{
-		pid:              0,
+		Pid:              0,
 		ConnKey:          connKey,
 		InitialTimestamp: 0,
 		EndTimestamp:     0,

@@ -63,7 +63,7 @@ func (c *ConnectMonitor) ReadInConnectExitSyscall(event *model.KindlingEvent) (*
 	}
 	// "connect_exit" comes to analyzer after "tcp_connect"
 	connStats.EndTimestamp = event.Timestamp
-	connStats.pid = event.GetPid()
+	connStats.Pid = event.GetPid()
 	connStats.ContainerId = event.GetContainerId()
 	var eventType EventType
 	if retValueInt == 0 {
@@ -96,7 +96,7 @@ func (c *ConnectMonitor) ReadSendRequestSyscall(event *model.KindlingEvent) (*Co
 	if !ok {
 		return nil, nil
 	}
-	connStats.pid = event.GetPid()
+	connStats.Pid = event.GetPid()
 	connStats.ContainerId = event.GetContainerId()
 	return connStats.StateMachine.ReceiveEvent(sendRequestSyscall, c.connMap)
 }
@@ -212,24 +212,24 @@ func (c *ConnectMonitor) readInTcpSetStateFromEstablished(connKey ConnKey, event
 
 func (c *ConnectMonitor) TrimConnectionsWithTcpStat(waitForEventSecond int) []*ConnectionStats {
 	ret := make([]*ConnectionStats, 0, len(c.connMap))
-	// Only scan once for each pid
+	// Only scan once for each Pid
 	pidTcpStateMap := make(map[uint32]NetSocketStateMap)
 	waitForEventNano := int64(waitForEventSecond) * 1000000000
 	timeNow := time.Now().UnixNano()
 	for key, connStat := range c.connMap {
-		if connStat.pid == 0 {
+		if connStat.Pid == 0 {
 			continue
 		}
 		if timeNow-int64(connStat.InitialTimestamp) < waitForEventNano {
 			// Still waiting for other events
 			continue
 		}
-		tcpStateMap, ok := pidTcpStateMap[connStat.pid]
+		tcpStateMap, ok := pidTcpStateMap[connStat.Pid]
 		if !ok {
-			tcpState, err := NewPidTcpStat(c.hostProcPath, int(connStat.pid))
+			tcpState, err := NewPidTcpStat(c.hostProcPath, int(connStat.Pid))
 			if err != nil {
 				c.logger.Debug("error happened when scanning net/tcp",
-					zap.Uint32("pid", connStat.pid), zap.Error(err))
+					zap.Uint32("Pid", connStat.Pid), zap.Error(err))
 				// No such file or directory, which means the process has been purged.
 				// We consider the connection failed to be established.
 				stats, err := connStat.StateMachine.ReceiveEvent(expiredEvent, c.connMap)
@@ -241,7 +241,7 @@ func (c *ConnectMonitor) TrimConnectionsWithTcpStat(waitForEventSecond int) []*C
 				}
 				continue
 			}
-			pidTcpStateMap[connStat.pid] = tcpState
+			pidTcpStateMap[connStat.Pid] = tcpState
 			tcpStateMap = tcpState
 		}
 		state, ok := tcpStateMap[key.toSocketKey()]

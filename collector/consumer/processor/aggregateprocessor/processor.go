@@ -205,6 +205,7 @@ func newTcpLabelSelectors() *aggregator.LabelSelectors {
 
 func newTcpConnectLabelSelectors() *aggregator.LabelSelectors {
 	return aggregator.NewLabelSelectors(
+		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.SrcNodeIp, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.SrcNamespace, VType: aggregator.StringType},

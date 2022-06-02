@@ -27,7 +27,7 @@ const (
 )
 
 type ConnectionStats struct {
-	pid              uint32
+	Pid              uint32
 	ContainerId      string
 	ConnKey          ConnKey
 	StateMachine     *StateMachine

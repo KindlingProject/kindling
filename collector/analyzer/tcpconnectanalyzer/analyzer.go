@@ -197,6 +197,7 @@ func (a *TcpConnectAnalyzer) generateLabels(connectStats *internal.ConnectionSta
 	labels := model.NewAttributeMap()
 	// The connect events always come from the client-side
 	labels.AddBoolValue(constlabels.IsServer, false)
+	labels.AddIntValue(constlabels.Pid, int64(connectStats.Pid))
 	labels.AddStringValue(constlabels.ContainerId, connectStats.ContainerId)
 	labels.AddIntValue(constlabels.Errno, int64(connectStats.Code))
 	if connectStats.StateMachine.GetCurrentState() == internal.Success {
