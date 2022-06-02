@@ -207,6 +207,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
+| `pid` | 1024 | The client's process ID |
 | `src_node` | slave-node1 | Which node the source pod is on |
 | `src_namespace` | default | Namespace of the source pod |
 | `src_workload_kind` | deployment | Workload kind of the source pod |
