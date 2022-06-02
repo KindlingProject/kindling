@@ -214,6 +214,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | `src_service` | business1-svc | One of the services that target the source pod |
 | `src_pod` | business1-0 | The name of the source pod |
 | `src_container` | business-container | The name of the source container |
+| `src_container_id` | 1a2b3c4d5e6f | The shorten container id which contains 12 characters |
 | `src_ip` | 10.1.11.23 | Pod's IP by default. If the source is not a pod in Kubernetes, this is the IP address of an external entity |
 | `dst_node` | slave-node2 | Which node the destination pod is on |
 | `dst_namespace` | default | Namespace of the destination pod |
