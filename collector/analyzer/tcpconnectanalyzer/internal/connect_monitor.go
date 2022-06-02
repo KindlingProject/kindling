@@ -143,6 +143,7 @@ func (c *ConnectMonitor) ReadInTcpConnect(event *model.KindlingEvent) (*Connecti
 		c.connMap[connKey] = connStats
 	} else {
 		// Not possible to enter this branch
+		c.logger.Info("Receive another unexpected tcp_connect event", zap.String("connKey", connKey.String()))
 		connStats.EndTimestamp = event.Timestamp
 		connStats.Code = int(retValueInt)
 	}
