@@ -68,8 +68,41 @@ int sysdig_converter::add_user_attributes(kindling::KindlingEvent *kevt, sinsp_e
             }
             break;
         }
+        case PPME_TCP_CONNECT_X: {
+            auto pTuple = sevt->get_param_value_raw("tuple");
+            setTuple(kevt, pTuple);
+            auto pRetVal = sevt->get_param_value_raw("retval");
+            if (pRetVal != NULL) {
+                auto attr = kevt->add_user_attributes();
+                attr->set_key("retval");
+                attr->set_value(pRetVal->m_val, pRetVal->m_len);
+                attr->set_value_type(UINT64);
+            }
+            break;
+        }
         case PPME_TCP_DROP_E:
-        case PPME_TCP_RETRANCESMIT_SKB_E: {
+        case PPME_TCP_RETRANCESMIT_SKB_E:
+        case PPME_TCP_SET_STATE_E: {
+            auto pTuple = sevt->get_param_value_raw("tuple");
+            setTuple(kevt, pTuple);
+            auto old_state = sevt->get_param_value_raw("old_state");
+            if (old_state != NULL) {
+                auto attr = kevt->add_user_attributes();
+                attr->set_key("old_state");
+                attr->set_value(old_state->m_val, old_state->m_len);
+                attr->set_value_type(INT32);
+            }
+            auto new_state = sevt->get_param_value_raw("new_state");
+            if (new_state != NULL) {
+                auto attr = kevt->add_user_attributes();
+                attr->set_key("new_state");
+                attr->set_value(new_state->m_val, new_state->m_len);
+                attr->set_value_type(INT32);
+            }
+            break;
+        }
+        case PPME_TCP_SEND_RESET_E:
+        case PPME_TCP_RECEIVE_RESET_E: {
             auto pTuple = sevt->get_param_value_raw("tuple");
             setTuple(kevt, pTuple);
             break;
@@ -170,8 +203,11 @@ Source sysdig_converter::get_kindling_source(uint16_t etype) {
             case PPME_TCP_CLOSE_E:
             case PPME_TCP_DROP_E:
             case PPME_TCP_RETRANCESMIT_SKB_E:
+            case PPME_TCP_SET_STATE_E:
                 return KRPOBE;
-                // TODO add cases of tracepoint, kprobe, uprobe
+            case PPME_TCP_SEND_RESET_E:
+            case PPME_TCP_RECEIVE_RESET_E:
+                return TRACEPOINT;
             default:
                 return SYSCALL_ENTER;
         }
@@ -190,7 +226,8 @@ Source sysdig_converter::get_kindling_source(uint16_t etype) {
             case PPME_INFRASTRUCTURE_EVENT_X:
             case PPME_PAGE_FAULT_X:
                 return SOURCE_UNKNOWN;
-                // TODO add cases of tracepoint, kprobe, uprobe
+            case PPME_TCP_CONNECT_X:
+                return KRETPROBE;
             default:
                 return SYSCALL_EXIT;
         }

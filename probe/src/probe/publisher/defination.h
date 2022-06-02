@@ -287,6 +287,10 @@ const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
         {"kprobe-tcp_rcv_established",      PPME_TCP_RCV_ESTABLISHED_E},
         {"kprobe-tcp_drop",                 PPME_TCP_DROP_E},
         {"kprobe-tcp_retransmit_skb",       PPME_TCP_RETRANCESMIT_SKB_E},
+        {"kretprobe-tcp_connect",           PPME_TCP_CONNECT_X},
+        {"kprobe-tcp_set_state",            PPME_TCP_SET_STATE_E},
+        {"tracepoint-tcp_send_reset",       PPME_TCP_SEND_RESET_E},
+        {"tracepoint-tcp_receive_reset",    PPME_TCP_RECEIVE_RESET_E},
 };
 
 struct event_category {
