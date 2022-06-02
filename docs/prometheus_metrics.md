@@ -226,6 +226,8 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | `dst_container` | business-container | The name of the destination container |
 | `dst_ip` | 10.1.11.24 | Pod's IP by default. If the destination is not a pod in Kubernetes, this is the IP address of an external entity |
 | `dst_port` | 80 | The listening port of the destination container, if applicable |
+| `dnat_ip` | 192.168.12.3 | The IP address of the destination after DNAT if applicable |
+| `dnat_port` | 80 | The listening port of the destination container after DNAT if applicable |
 | `success` | true | Whether the TCP connection is successfully established |
 | `errno` | 0 | The error number of the TCP connection. 0 if no error. Note it could also be 0 even if there is an error. |
 
