@@ -196,7 +196,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | `dst_ip` | 10.1.11.24 | Pod's IP by default. If the destination is not a pod in Kubernetes, this is the IP address of an external entity |
 | `dst_port` | 80 | The listening port of the destination container, if applicable |
 
-## TCP Connection Establish Metrics
+## TCP Socket Connects Metrics
 
 ### Metrics List
 | **Metric Name** | **Type** | **Description** |
@@ -215,7 +215,6 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | `src_pod` | business1-0 | The name of the source pod |
 | `src_container` | business-container | The name of the source container |
 | `src_ip` | 10.1.11.23 | Pod's IP by default. If the source is not a pod in Kubernetes, this is the IP address of an external entity |
-| `src_port` | 80 | The listening port of the source container, if applicable  |
 | `dst_node` | slave-node2 | Which node the destination pod is on |
 | `dst_namespace` | default | Namespace of the destination pod |
 | `dst_workload_kind` | deployment | Workload kind of the destination pod |
