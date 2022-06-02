@@ -49,6 +49,8 @@ const (
 	Ip              = "ip"
 	Port            = "port"
 
+	Errno           = "errno"
+	Success         = "success"
 	RequestContent  = "request_content"
 	ResponseContent = "response_content"
 	StatusCode      = "status_code"

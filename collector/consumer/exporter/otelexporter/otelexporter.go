@@ -4,14 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
-
-	"os"
-	"time"
-
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -153,7 +151,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, customLabels),
+				adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
 			},
 		}
 		go func() {
@@ -220,7 +218,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, customLabels),
+				adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
 			},
 		}
 

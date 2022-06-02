@@ -27,7 +27,13 @@ receivers:
         - name: kprobe-tcp_rcv_established
         - name: kprobe-tcp_drop
         - name: kprobe-tcp_retransmit_skb
+        - name: syscall_exit-connect
+        - name: kretprobe-tcp_connect
+        - name: kprobe-tcp_set_state
 analyzers:
+  tcpconnectanalyzer:
+    channel_size: 10000
+    wait_event_second: 10
   tcpmetricanalyzer:
   networkanalyzer:
     connect_timeout: 100
@@ -95,6 +101,10 @@ processors:
         - kind: sum
       kindling_tcp_packet_loss_total:
         - kind: sum
+      kindling_tcp_connect_total:
+        - kind: sum
+      kindling_tcp_connect_duration_nanoseconds_total:
+        - kind: sum
     sampling_rate:
       normal_data: 0
       slow_data: 100
@@ -124,6 +134,8 @@ exporters:
       kindling_tcp_srtt_microseconds: gauge
       kindling_tcp_retransmit_total: counter
       kindling_tcp_packet_loss_total: counter
+      kindling_tcp_connect_total: counter
+      kindling_tcp_connect_duration_nanoseconds_total: counter
     # Export data in the following ways: ["prometheus", "otlp", "stdout"]
     # Note: configure the corresponding section to make everything ok
     export_kind: prometheus
