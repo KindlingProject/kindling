@@ -63,17 +63,7 @@ func (ctr *NetlinkConntracker) GetDNATTupleWithString(srcIP string, dstIP string
 		DPort:  dstPort,
 		Type:   internal.ConnectionType(isUdp),
 	}
-
-	ret := ctr.conntracker.GetTranslationForConn(conn)
-	if ret == nil {
-		return nil
-	}
-	return &IPTranslation{
-		ReplSrcIP:   ret.ReplSrcIP,
-		ReplDstIP:   ret.ReplDstIP,
-		ReplSrcPort: ret.ReplSrcPort,
-		ReplDstPort: ret.ReplDstPort,
-	}
+	return ctr.getDNATTuple(conn)
 }
 
 func (ctr *NetlinkConntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort uint16, dstPort uint16, isUdp uint32) *IPTranslation {
@@ -84,8 +74,18 @@ func (ctr *NetlinkConntracker) GetDNATTuple(srcIP uint32, dstIP uint32, srcPort 
 		DPort:  dstPort,
 		Type:   internal.ConnectionType(isUdp),
 	}
+	return ctr.getDNATTuple(conn)
+}
+
+// getDNATTuple is a helper function for public methods with private parameter.
+func (ctr *NetlinkConntracker) getDNATTuple(conn internal.ConnectionStats) *IPTranslation {
 	ret := ctr.conntracker.GetTranslationForConn(conn)
 	if ret == nil {
+		return nil
+	}
+	// Check whether the result is DNAT or SNAT.
+	if conn.Dest.Equal(ret.ReplSrcIP) && ret.ReplSrcPort == conn.DPort {
+		// Most likely is SNAT which is not needed
 		return nil
 	}
 	return &IPTranslation{

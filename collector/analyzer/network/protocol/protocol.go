@@ -6,17 +6,27 @@ const (
 	KAFKA     = "kafka"
 	MYSQL     = "mysql"
 	REDIS     = "redis"
+	DUBBO     = "dubbo"
 	NOSUPPORT = "NOSUPPORT"
 )
 
-var (
-	http_payLoad_length int = 80
-)
+var payloadLength map[string]int = map[string]int{}
 
-func SetHttpPayLoadLength(length int) {
-	http_payLoad_length = length
+func SetPayLoadLength(protocol string, length int) {
+	payloadLength[protocol] = length
+}
+
+func GetPayLoadLength(protocol string) int {
+	if length, ok := payloadLength[protocol]; ok {
+		return length
+	}
+	return 80
 }
 
 func GetHttpPayLoadLength() int {
-	return http_payLoad_length
+	return GetPayLoadLength(HTTP)
+}
+
+func GetDubboPayLoadLength() int {
+	return GetPayLoadLength(DUBBO)
 }

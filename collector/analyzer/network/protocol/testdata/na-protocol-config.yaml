@@ -7,9 +7,12 @@ analyzers:
     conntrack_max_state_size: 131072
     conntrack_rate_limit: 500
     proc_root: /proc
-    protocol_parser: [ http, mysql, dns, redis, kafka ]
-    http_payload_length: 80
+    protocol_parser: [ http, mysql, dns, redis, kafka, dubbo ]
     protocol_config:
+      - key: "http"
+        payload_length: 80
+      - key: "dubbo"
+        payload_length: 80
       - key: "mysql"
         slow_threshold: 100
       - key: "kafka"

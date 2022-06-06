@@ -1,41 +1,42 @@
 package network
 
 import (
+	"sync"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/model/constvalues"
-	"sync"
-	"time"
 )
 
-func createGaugeGroup() interface{} {
-	values := []*model.Gauge{
-		{Name: constvalues.ConnectTime, Value: 0},
-		{Name: constvalues.RequestSentTime, Value: 0},
-		{Name: constvalues.WaitingTtfbTime, Value: 0},
-		{Name: constvalues.ContentDownloadTime, Value: 0},
-		{Name: constvalues.RequestTotalTime, Value: 0},
-		{Name: constvalues.RequestIo, Value: 0},
-		{Name: constvalues.ResponseIo, Value: 0},
+func createDataGroup() interface{} {
+	values := []*model.Metric{
+		model.NewIntMetric(constvalues.ConnectTime, 0),
+		model.NewIntMetric(constvalues.RequestSentTime, 0),
+		model.NewIntMetric(constvalues.WaitingTtfbTime, 0),
+		model.NewIntMetric(constvalues.ContentDownloadTime, 0),
+		model.NewIntMetric(constvalues.RequestTotalTime, 0),
+		model.NewIntMetric(constvalues.RequestIo, 0),
+		model.NewIntMetric(constvalues.ResponseIo, 0),
 	}
-	gaugeGroup := model.NewGaugeGroup(constnames.NetRequestGaugeGroupName, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
-	return gaugeGroup
+	dataGroup := model.NewDataGroup(constnames.NetRequestMetricGroupName, model.NewAttributeMap(), uint64(time.Now().UnixNano()), values...)
+	return dataGroup
 }
 
-type GaugeGroupPool struct {
+type DataGroupPool struct {
 	pool *sync.Pool
 }
 
-func NewGaugePool() *GaugeGroupPool {
-	return &GaugeGroupPool{pool: &sync.Pool{New: createGaugeGroup}}
+func NewDataGroupPool() *DataGroupPool {
+	return &DataGroupPool{pool: &sync.Pool{New: createDataGroup}}
 }
 
-func (p *GaugeGroupPool) Get() *model.GaugeGroup {
-	return p.pool.Get().(*model.GaugeGroup)
+func (p *DataGroupPool) Get() *model.DataGroup {
+	return p.pool.Get().(*model.DataGroup)
 }
 
-func (p *GaugeGroupPool) Free(gaugeGroup *model.GaugeGroup) {
-	gaugeGroup.Reset()
-	gaugeGroup.Name = constnames.NetRequestGaugeGroupName
-	p.pool.Put(gaugeGroup)
+func (p *DataGroupPool) Free(dataGroup *model.DataGroup) {
+	dataGroup.Reset()
+	dataGroup.Name = constnames.NetRequestMetricGroupName
+	p.pool.Put(dataGroup)
 }

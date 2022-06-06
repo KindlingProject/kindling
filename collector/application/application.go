@@ -3,9 +3,11 @@ package application
 import (
 	"flag"
 	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/loganalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/network"
+	"github.com/Kindling-project/kindling/collector/analyzer/tcpconnectanalyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
@@ -24,7 +26,7 @@ type Application struct {
 	componentsFactory *ComponentsFactory
 	telemetry         *component.TelemetryManager
 	receiver          receiver.Receiver
-	analyzerManager   analyzer.Manager
+	analyzerManager   *analyzer.Manager
 }
 
 func New() (*Application, error) {
@@ -79,6 +81,7 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(loganalyzer.Type.String(), loganalyzer.New, &loganalyzer.Config{})
 	a.componentsFactory.RegisterProcessor(aggregateprocessor.Type, aggregateprocessor.New, aggregateprocessor.NewDefaultConfig())
+	a.componentsFactory.RegisterAnalyzer(tcpconnectanalyzer.Type.String(), tcpconnectanalyzer.New, tcpconnectanalyzer.NewDefaultConfig())
 }
 
 func (a *Application) readInConfig(path string) error {
@@ -102,7 +105,7 @@ func (a *Application) buildPipeline() error {
 	otelExporterFactory := a.componentsFactory.Exporters[otelexporter.Otel]
 	otelExporter := otelExporterFactory.NewFunc(otelExporterFactory.Config, a.telemetry.Telemetry)
 	// Initialize all processors
-	// 1. GaugeGroup Aggregator
+	// 1. DataGroup Aggregator
 	aggregateProcessorFactory := a.componentsFactory.Processors[aggregateprocessor.Type]
 	aggregateProcessor := aggregateProcessorFactory.NewFunc(aggregateProcessorFactory.Config, a.telemetry.Telemetry, otelExporter)
 	// 2. Kubernetes metadata processor
@@ -119,8 +122,10 @@ func (a *Application) buildPipeline() error {
 	k8sMetadataProcessor2 := k8sProcessorFactory.NewFunc(k8sProcessorFactory.Config, a.telemetry.Telemetry, aggregateProcessorForTcp)
 	tcpAnalyzerFactory := a.componentsFactory.Analyzers[tcpmetricanalyzer.TcpMetric.String()]
 	tcpAnalyzer := tcpAnalyzerFactory.NewFunc(tcpAnalyzerFactory.Config, a.telemetry.Telemetry, []consumer.Consumer{k8sMetadataProcessor2})
+	tcpConnectAnalyzerFactory := a.componentsFactory.Analyzers[tcpconnectanalyzer.Type.String()]
+	tcpConnectAnalyzer := tcpConnectAnalyzerFactory.NewFunc(tcpConnectAnalyzerFactory.Config, a.telemetry.Telemetry, []consumer.Consumer{k8sMetadataProcessor})
 	// Initialize receiver packaged with multiple analyzers
-	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer)
+	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer, tcpConnectAnalyzer)
 	if err != nil {
 		return fmt.Errorf("error happened while creating analyzer manager: %w", err)
 	}

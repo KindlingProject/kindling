@@ -28,4 +28,8 @@ const (
 	KafkaTopic         = "kafka_topic"
 	KafkaPartition     = "kafka_partition"
 	KafkaErrorCode     = "kafka_error_code"
+
+	DubboRequestPayload  = "request_payload"
+	DubboResponsePayload = "response_payload"
+	DubboErrorCode       = "dubbo_error_code"
 )

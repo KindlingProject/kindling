@@ -1,6 +1,8 @@
 package k8sprocessor
 
 import (
+	"strconv"
+
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
 	"github.com/Kindling-project/kindling/collector/consumer/processor"
@@ -55,44 +57,65 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	}
 }
 
-func (p *K8sMetadataProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
-	name := gaugeGroup.Name
+func (p *K8sMetadataProcessor) Consume(dataGroup *model.DataGroup) error {
+	name := dataGroup.Name
 	switch name {
-	case constnames.NetRequestGaugeGroupName:
-		p.processNetRequestMetric(gaugeGroup)
-	case constnames.TcpGaugeGroupName:
-		p.processTcpMetric(gaugeGroup)
+	case constnames.NetRequestMetricGroupName:
+		p.processNetRequestMetric(dataGroup)
+	case constnames.TcpMetricGroupName:
+		p.processTcpMetric(dataGroup)
 	default:
-		p.processNetRequestMetric(gaugeGroup)
+		p.processNetRequestMetric(dataGroup)
 	}
-	return p.nextConsumer.Consume(gaugeGroup)
+	return p.nextConsumer.Consume(dataGroup)
 }
 
-func (p *K8sMetadataProcessor) processNetRequestMetric(gaugeGroup *model.GaugeGroup) {
-	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
+func (p *K8sMetadataProcessor) processNetRequestMetric(dataGroup *model.DataGroup) {
+	isServer := dataGroup.Labels.GetBoolValue(constlabels.IsServer)
 	if isServer {
-		p.addK8sMetaDataForServerLabel(gaugeGroup.Labels)
+		p.addK8sMetaDataForServerLabel(dataGroup.Labels)
 	} else {
-		p.addK8sMetaDataForClientLabel(gaugeGroup.Labels)
+		p.addK8sMetaDataForClientLabel(dataGroup.Labels)
 	}
 }
 
-func (p *K8sMetadataProcessor) processTcpMetric(gaugeGroup *model.GaugeGroup) {
-	p.addK8sMetaDataViaIp(gaugeGroup.Labels)
+func (p *K8sMetadataProcessor) processTcpMetric(dataGroup *model.DataGroup) {
+	p.addK8sMetaDataViaIp(dataGroup.Labels)
 }
 
 func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.AttributeMap) {
 	// add metadata for src
 	containerId := labelMap.GetStringValue(constlabels.ContainerId)
-	labelMap.UpdateAddStringValue(constlabels.SrcContainerId, containerId)
-	resInfo, ok := p.metadata.GetByContainerId(containerId)
-	if ok {
-		addContainerMetaInfoLabelSRC(labelMap, resInfo)
+	if containerId != "" {
+		labelMap.UpdateAddStringValue(constlabels.SrcContainerId, containerId)
+		resInfo, ok := p.metadata.GetByContainerId(containerId)
+		if ok {
+			addContainerMetaInfoLabelSRC(labelMap, resInfo)
+		} else {
+			labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
+			labelMap.UpdateAddStringValue(constlabels.SrcNode, p.localNodeName)
+			labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+		}
 	} else {
-		labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
-		labelMap.UpdateAddStringValue(constlabels.SrcNode, p.localNodeName)
-		labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+		srcIp := labelMap.GetStringValue(constlabels.SrcIp)
+		if srcIp == loopbackIp {
+			labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, p.localNodeIp)
+			labelMap.UpdateAddStringValue(constlabels.SrcNode, p.localNodeName)
+		}
+		podInfo, ok := p.metadata.GetPodByIp(srcIp)
+		if ok {
+			addPodMetaInfoLabelSRC(labelMap, podInfo)
+		} else {
+			if nodeName, ok := p.metadata.GetNodeNameByIp(srcIp); ok {
+				labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, srcIp)
+				labelMap.UpdateAddStringValue(constlabels.SrcNode, nodeName)
+				labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.InternalClusterNamespace)
+			} else {
+				labelMap.UpdateAddStringValue(constlabels.SrcNamespace, constlabels.ExternalClusterNamespace)
+			}
+		}
 	}
+
 	// add metadata for dst
 	dstIp := labelMap.GetStringValue(constlabels.DstIp)
 	if dstIp == loopbackIp {
@@ -124,6 +147,11 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 	} else if resInfo, ok := p.metadata.GetContainerByIpPort(dstIp, uint32(dstPort)); ok {
 		// DstIp is IP of a container
 		addContainerMetaInfoLabelDST(labelMap, resInfo)
+	} else if resInfo, ok := p.metadata.GetContainerByHostIpPort(dstIp, uint32(dstPort)); ok {
+		addContainerMetaInfoLabelDST(labelMap, resInfo)
+		labelMap.UpdateAddStringValue(constlabels.DstIp, resInfo.RefPodInfo.Ip)
+		labelMap.UpdateAddIntValue(constlabels.DstPort, int64(resInfo.HostPortMap[int32(dstPort)]))
+		labelMap.UpdateAddStringValue(constlabels.DstService, dstIp+":"+strconv.Itoa(int(dstPort)))
 	} else {
 		// DstIp is a IP from external
 		if nodeName, ok := p.metadata.GetNodeNameByIp(dstIp); ok {
@@ -272,6 +300,14 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 	if ok {
 		addContainerMetaInfoLabelDST(labelMap, dstContainerInfo)
 		return
+	}
+
+	dstContainerInfo, ok = p.metadata.GetContainerByHostIpPort(dstIp, uint32(dstPort))
+	if ok {
+		addContainerMetaInfoLabelDST(labelMap, dstContainerInfo)
+		labelMap.UpdateAddStringValue(constlabels.DstIp, dstContainerInfo.RefPodInfo.Ip)
+		labelMap.UpdateAddIntValue(constlabels.DstPort, int64(dstContainerInfo.HostPortMap[int32(dstPort)]))
+		labelMap.UpdateAddStringValue(constlabels.DstService, dstIp+":"+strconv.Itoa(int(dstPort)))
 	}
 
 	dstPodInfo, ok := p.metadata.GetPodByIp(dstIp)

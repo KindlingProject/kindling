@@ -50,11 +50,16 @@ func TestKafkaProtocol(t *testing.T) {
 		"kafka/consumer-trace-fetch-multi-topics.yml")
 }
 
+func TestDubboProtocol(t *testing.T) {
+	testProtocol(t, "dubbo/server-event.yml",
+		"dubbo/server-trace-short.yml")
+}
+
 type NopProcessor struct {
 }
 
-func (n NopProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
-	// fmt.Printf("Consume %v\n", gaugeGroup)
+func (n NopProcessor) Consume(dataGroup *model.DataGroup) error {
+	// fmt.Printf("Consume %v\n", dataGroup)
 	return nil
 }
 
@@ -73,10 +78,10 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 		viper.UnmarshalKey("analyzers.networkanalyzer", config)
 
 		na = &NetworkAnalyzer{
-			cfg:            config,
-			gaugeGroupPool: NewGaugePool(),
-			nextConsumers:  []consumer.Consumer{&NopProcessor{}},
-			telemetry:      component.NewDefaultTelemetryTools(),
+			cfg:           config,
+			dataGroupPool: NewDataGroupPool(),
+			nextConsumers: []consumer.Consumer{&NopProcessor{}},
+			telemetry:     component.NewDefaultTelemetryTools(),
 		}
 		na.Start()
 	}
@@ -200,25 +205,25 @@ func (trace *Trace) PrepareMessagePairs(common *EventCommon) *messagePairs {
 	return mps
 }
 
-func (trace *Trace) Validate(t *testing.T, results []*model.GaugeGroup) {
+func (trace *Trace) Validate(t *testing.T, results []*model.DataGroup) {
 	checkSize(t, "Expect Size", len(trace.Expects), len(results))
 
 	for i, result := range results {
 		expect := trace.Expects[i]
 		checkUint64Equal(t, "Timestamp", expect.Timestamp, result.Timestamp)
 
-		// Validate Gauges Values
-		checkSize(t, "Values Size", len(expect.Values), len(result.Values))
-		for _, value := range result.Values {
+		// Validate Metrics Metrics
+		checkSize(t, "Metrics Size", len(expect.Values), len(result.Metrics))
+		for _, value := range result.Metrics {
 			expectValue, ok := expect.Values[value.Name]
 			if !ok {
-				t.Errorf("[Miss %s] want=nil, got=%d", value.Name, value.Value)
+				t.Errorf("[Miss %s] want=nil, got=%d", value.Name, value.GetInt().Value)
 			} else {
-				checkInt64Equal(t, value.Name, expectValue, value.Value)
+				checkInt64Equal(t, value.Name, expectValue, value.GetInt().Value)
 			}
 		}
 
-		// Validate Gauges Attributes
+		// Validate Metrics Attributes
 		checkSize(t, "Labels Size", len(expect.Labels), result.Labels.Size())
 		for labelKey, labelValue := range expect.Labels {
 			if reflect.TypeOf(labelValue).Name() == "int" {
@@ -380,6 +385,6 @@ func Int64ToBytes(value int64) []byte {
 
 type TraceExpect struct {
 	Timestamp uint64                 `mapstructure:"Timestamp"`
-	Values    map[string]int64       `mapstructure:"Values"`
+	Values    map[string]int64       `mapstructure:"Metrics"`
 	Labels    map[string]interface{} `mapstructure:"Labels"`
 }

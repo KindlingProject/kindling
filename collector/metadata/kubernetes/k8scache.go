@@ -9,6 +9,7 @@ import (
 type K8sContainerInfo struct {
 	ContainerId string
 	Name        string
+	HostPortMap map[int32]int32
 	RefPodInfo  *K8sPodInfo
 }
 
@@ -67,6 +68,8 @@ type K8sMetaDataCache struct {
 
 	sMut          sync.RWMutex
 	ipServiceInfo map[string]map[uint32]*K8sServiceInfo
+
+	hostPortInfo *HostPortMap
 }
 
 func New() *K8sMetaDataCache {
@@ -74,6 +77,7 @@ func New() *K8sMetaDataCache {
 		containerIdInfo: make(map[string]*K8sContainerInfo),
 		ipContainerInfo: make(map[string]map[uint32]*K8sContainerInfo),
 		ipServiceInfo:   make(map[string]map[uint32]*K8sServiceInfo),
+		hostPortInfo:    newHostPortMap(),
 	}
 
 	return c
@@ -194,6 +198,18 @@ func (c *K8sMetaDataCache) DeleteContainerByIpPort(ip string, port uint32) {
 		delete(c.ipContainerInfo, ip)
 	}
 	c.pMut.Unlock()
+}
+
+func (c *K8sMetaDataCache) AddContainerByHostIpPort(hostIp string, hostPort uint32, containerInfo *K8sContainerInfo) {
+	c.hostPortInfo.add(hostIp, hostPort, containerInfo)
+}
+
+func (c *K8sMetaDataCache) GetContainerByHostIpPort(hostIp string, hostPort uint32) (*K8sContainerInfo, bool) {
+	return c.hostPortInfo.get(hostIp, hostPort)
+}
+
+func (c *K8sMetaDataCache) DeleteContainerByHostIpPort(hostIp string, hostPort uint32) {
+	c.hostPortInfo.delete(hostIp, hostPort)
 }
 
 func (c *K8sMetaDataCache) AddServiceByIpPort(ip string, port uint32, resource *K8sServiceInfo) {

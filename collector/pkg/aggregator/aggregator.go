@@ -5,6 +5,6 @@ import (
 )
 
 type Aggregator interface {
-	Aggregate(g *model.GaugeGroup, s *LabelSelectors)
-	Dump() []*model.GaugeGroup
+	Aggregate(g *model.DataGroup, s *LabelSelectors)
+	Dump() []*model.DataGroup
 }

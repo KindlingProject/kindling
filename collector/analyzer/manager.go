@@ -2,29 +2,60 @@ package analyzer
 
 import (
 	"errors"
+
+	"github.com/hashicorp/go-multierror"
 	"go.uber.org/zap"
 )
 
-type Manager map[Type]Analyzer
+const ConsumeAllEvents = "consumeAllEvents"
 
-func NewManager(analyzers ...Analyzer) (Manager, error) {
+type Manager struct {
+	// allAnalyzers contains all the analyzers managed
+	allAnalyzers []Analyzer
+	// consumeAllEventsAnalyzers contains the analyzers that are able to consume all events
+	consumeAllEventsAnalyzers []Analyzer
+	// eventAnalyzersMap maps the event names and the analyzers
+	eventAnalyzersMap map[string][]Analyzer
+}
+
+func NewManager(analyzers ...Analyzer) (*Manager, error) {
 	if len(analyzers) == 0 {
 		return nil, errors.New("no analyzers found, but must provide at least one analyzer")
 	}
-	analyzerMap := make(map[Type]Analyzer)
-	for i := range analyzers {
-		analyzerMap[analyzers[i].Type()] = analyzers[i]
+	analyzerMap := make(map[string][]Analyzer)
+	consumeAllEventsAnalyzers := make([]Analyzer, 0)
+	for _, analyzer := range analyzers {
+		consumableEvents := analyzer.ConsumableEvents()
+		for _, event := range consumableEvents {
+			if event == ConsumeAllEvents {
+				consumeAllEventsAnalyzers = append(consumeAllEventsAnalyzers, analyzer)
+			} else {
+				analyzerSlice, ok := analyzerMap[event]
+				if !ok {
+					analyzerSlice = make([]Analyzer, 0)
+				}
+				analyzerSlice = append(analyzerSlice, analyzer)
+				analyzerMap[event] = analyzerSlice
+			}
+		}
 	}
-	return analyzerMap, nil
+	// Put all analyzers that are able to consume all events into the map
+	// to avoid appending new slice when getting analyzers from the map.
+	for key, value := range analyzerMap {
+		for _, analyzer := range consumeAllEventsAnalyzers {
+			analyzerMap[key] = append(value, analyzer)
+		}
+	}
+
+	return &Manager{
+		allAnalyzers:              analyzers,
+		eventAnalyzersMap:         analyzerMap,
+		consumeAllEventsAnalyzers: consumeAllEventsAnalyzers,
+	}, nil
 }
 
-func (manager Manager) GetAnalyzer(analyzerType Type) (Analyzer, bool) {
-	analyzer, ok := manager[analyzerType]
-	return analyzer, ok
-}
-
-func (manager Manager) StartAll(logger *zap.Logger) error {
-	for _, analyzer := range manager {
+func (m *Manager) StartAll(logger *zap.Logger) error {
+	for _, analyzer := range m.allAnalyzers {
 		logger.Sugar().Infof("Starting analyzer [%s]", analyzer.Type())
 		err := analyzer.Start()
 		if err != nil {
@@ -34,16 +65,28 @@ func (manager Manager) StartAll(logger *zap.Logger) error {
 	return nil
 }
 
-func (manager Manager) ShutdownAll(logger *zap.Logger) error {
-	// There is possible that multiple errors will be returned, but now we only return one.
-	// TODO: Combine multiple errors into one
-	var err error = nil
-	for _, analyzer := range manager {
+func (m *Manager) ShutdownAll(logger *zap.Logger) error {
+	var retErr error = nil
+	for _, analyzer := range m.allAnalyzers {
 		logger.Sugar().Infof("Shutdown analyzer [%s]", analyzer.Type())
-		err = analyzer.Shutdown()
+		err := analyzer.Shutdown()
 		if err != nil {
-			logger.Sugar().Infof("Error shutting down analyzer: %v", err)
+			retErr = multierror.Append(retErr, err)
 		}
 	}
-	return err
+	return retErr
+}
+
+// GetConsumableAnalyzers returns the analyzers according to the input eventName.
+// Note this method is called in very high frequency, so the performance is important.
+func (m *Manager) GetConsumableAnalyzers(eventName string) []Analyzer {
+	analyzers, ok := m.eventAnalyzersMap[eventName]
+	if ok {
+		// It's unnecessary to look up into consumeAllEventsAnalyzers since we have
+		// put this kind of analyzers into the map. This could avoid appending new
+		// slice.
+		return analyzers
+	} else {
+		return m.consumeAllEventsAnalyzers
+	}
 }

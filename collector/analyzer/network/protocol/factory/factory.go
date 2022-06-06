@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/dns"
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/dubbo"
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/generic"
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/http"
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/kafka"
@@ -21,6 +22,7 @@ var (
 	kafka_parser   *protocol.ProtocolParser = kafka.NewKafkaParser()
 	mysql_parser   *protocol.ProtocolParser = mysql.NewMysqlParser()
 	redis_parser   *protocol.ProtocolParser = redis.NewRedisParser()
+	dubbo_parser   *protocol.ProtocolParser = dubbo.NewDubboParser()
 	dns_parser     *protocol.ProtocolParser = dns.NewDnsParser()
 )
 
@@ -34,6 +36,8 @@ func GetParser(key string) *protocol.ProtocolParser {
 		return mysql_parser
 	case protocol.REDIS:
 		return redis_parser
+	case protocol.DUBBO:
+		return dubbo_parser
 	case protocol.DNS:
 		return dns_parser
 	default:
