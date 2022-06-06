@@ -1,7 +1,9 @@
 package kubernetes
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -191,4 +193,39 @@ func CreatePod(hasPort bool) *corev1.Pod {
 		}
 	}
 	return pod
+}
+
+func TestUpdateDelayDelete(t *testing.T) {
+	addObjJson := "{\"metadata\": {\"name\": \"testdemo2-5c86748464-26crb\",\"namespace\": \"test-ns\",\"resourceVersion\": \"44895976\"},\"spec\": {\"containers\": [{\"name\": \"testdemo2\",\"ports\": [{\"containerPort\": 9001,\"protocol\": \"TCP\"}]}]},\"status\": {\"phase\": \"Running\",\"podIP\": \"192.168.136.210\",\"containerStatuses\": [{\"name\": \"testdemo2\",\"state\": {\"running\": {\"startedAt\": \"2022-05-25T08:55:36Z\"}},\"lastState\": {},\"ready\": true,\"restartCount\": 5,\"image\": \"\",\"imageID\": \"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\": \"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\": true}]}}"
+	updateObjJson := "{\"metadata\": {\"name\": \"testdemo2-5c86748464-26crb\",\"namespace\": \"test-ns\",\"resourceVersion\": \"47374698\"},\"spec\": {\"containers\": [{\"name\": \"testdemo2\",\"ports\": [{\"containerPort\": 9001,\"protocol\": \"TCP\"}]}]},\"status\": {\"phase\": \"Running\",\"podIP\": \"192.168.136.210\",\"containerStatuses\": [{\"name\": \"testdemo2\",\"state\": {\"terminated\": {\"exitCode\": 143,\"reason\": \"Error\",\"startedAt\": \"2022-05-25T08:55:36Z\",\"finishedAt\": \"2022-06-06T09:04:12Z\",\"containerID\": \"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\"}},\"lastState\": {},\"ready\": false,\"restartCount\": 5,\"image\": \"\",\"imageID\": \"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\": \"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\": false}]}}"
+	addObj := new(corev1.Pod)
+	err := json.Unmarshal([]byte(addObjJson), addObj)
+	if err != nil {
+		t.Errorf("error unmarshalling %v", err)
+	}
+	updateObj := new(corev1.Pod)
+	err = json.Unmarshal([]byte(updateObjJson), updateObj)
+	if err != nil {
+		t.Fatalf("error unmarshalling %v", err)
+	}
+	podIp := addObj.Status.PodIP
+	port := addObj.Spec.Containers[0].Ports[0].ContainerPort
+	onAdd(addObj)
+	_, ok := MetaDataCache.GetContainerByIpPort(podIp, uint32(port))
+	if !ok {
+		t.Fatalf("Not found container [%s:%d]", podIp, port)
+	} else {
+		t.Logf("Found container [%s:%d]", podIp, port)
+	}
+	stopCh := make(chan struct{})
+	go podDeleteLoop(100*time.Millisecond, 500*time.Millisecond, stopCh)
+	OnUpdate(addObj, updateObj)
+	time.Sleep(600 * time.Millisecond)
+	_, ok = MetaDataCache.GetContainerByIpPort(podIp, uint32(port))
+	if !ok {
+		t.Errorf("Not found container [%s:%d]", podIp, port)
+	} else {
+		t.Logf("Found container [%s:%d]", podIp, port)
+	}
+	stopCh <- struct{}{}
 }
