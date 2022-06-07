@@ -52,7 +52,7 @@ Service metrics are generated from the server-side events, which are used to sho
 | **Label** | **Example** | **Notes** |
 | --- | --- | --- |
 | `request_content` | select employee | SQL of MySQL. SQL has been truncated to avoid high-cardinality. The format is ['operation' 'space' 'table']. |
-| `response_content` |  | Empty temporarily. |
+| `response_content` | 1064 | Error code of MySQL. Only applicable when the response is in error type. |
 
 - When protocol is `kafka`:
   
@@ -121,6 +121,7 @@ These two terms are composed of two parts.
 
 - **HTTP**: 'Status Code' of HTTP response. 
 - **DNS**: rcode of DNS response.
+- **MySQL**: Error code of the error response.
 - **DUBBO**: 'Error Code' of Dubbo request.
 - **others**: empty temporarily
 
