@@ -3,6 +3,7 @@ package application
 import (
 	"flag"
 	"fmt"
+	"sync"
 
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/analyzer/loganalyzer"
@@ -27,6 +28,7 @@ type Application struct {
 	telemetry         *component.TelemetryManager
 	receiver          receiver.Receiver
 	analyzerManager   *analyzer.Manager
+	shutdownWG        sync.WaitGroup
 }
 
 func New() (*Application, error) {
@@ -58,14 +60,18 @@ func (a *Application) Run() error {
 	}
 	// Wait until the receiver shutdowns
 	err = a.receiver.Start()
+	a.shutdownWG.Add(1)
 	if err != nil {
 		return fmt.Errorf("failed to start application: %v", err)
 	}
+	a.shutdownWG.Wait()
 	return nil
 }
 
 func (a *Application) Shutdown() error {
-	return multierr.Combine(a.receiver.Shutdown(), a.analyzerManager.ShutdownAll(a.telemetry.Telemetry.Logger))
+	err := a.receiver.Shutdown()
+	a.shutdownWG.Done()
+	return multierr.Combine(err, a.analyzerManager.ShutdownAll(a.telemetry.Telemetry.Logger))
 }
 
 func initFlags() error {
