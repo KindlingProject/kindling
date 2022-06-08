@@ -14,7 +14,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor"
 	"github.com/Kindling-project/kindling/collector/consumer/processor/k8sprocessor"
 	"github.com/Kindling-project/kindling/collector/receiver"
-	"github.com/Kindling-project/kindling/collector/receiver/udsreceiver"
+	"github.com/Kindling-project/kindling/collector/receiver/cgoreceiver"
 	"github.com/spf13/viper"
 	"go.uber.org/multierr"
 )
@@ -71,7 +71,8 @@ func initFlags() error {
 }
 
 func (a *Application) registerFactory() {
-	a.componentsFactory.RegisterReceiver(udsreceiver.Uds, udsreceiver.NewUdsReceiver, &udsreceiver.Config{})
+	//a.componentsFactory.RegisterReceiver(udsreceiver.Uds, udsreceiver.NewUdsReceiver, &udsreceiver.Config{})
+	a.componentsFactory.RegisterReceiver(cgoreceiver.Cgo, cgoreceiver.NewCgoReceiver, &cgoreceiver.Config{})
 	a.componentsFactory.RegisterAnalyzer(network.Network.String(), network.NewNetworkAnalyzer, &network.Config{})
 	a.componentsFactory.RegisterProcessor(k8sprocessor.K8sMetadata, k8sprocessor.NewKubernetesProcessor, &k8sprocessor.DefaultConfig)
 	a.componentsFactory.RegisterExporter(otelexporter.Otel, otelexporter.NewExporter, &otelexporter.Config{})
@@ -125,8 +126,11 @@ func (a *Application) buildPipeline() error {
 		return fmt.Errorf("error happened while creating analyzer manager: %w", err)
 	}
 	a.analyzerManager = analyzerManager
-	udsReceiverFactory := a.componentsFactory.Receivers[udsreceiver.Uds]
-	udsReceiver := udsReceiverFactory.NewFunc(udsReceiverFactory.Config, a.telemetry.Telemetry, analyzerManager)
-	a.receiver = udsReceiver
+	//udsReceiverFactory := a.componentsFactory.Receivers[udsreceiver.Uds]
+	//udsReceiver := udsReceiverFactory.NewFunc(udsReceiverFactory.Config, a.telemetry.Telemetry, analyzerManager)
+	cgoReceiverFactory := a.componentsFactory.Receivers[cgoreceiver.Cgo]
+	cgoReceiver := cgoReceiverFactory.NewFunc(cgoReceiverFactory.Config, a.telemetry.Telemetry, analyzerManager)
+	//a.receiver = udsReceiver
+	a.receiver = cgoReceiver
 	return nil
 }
