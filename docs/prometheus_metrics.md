@@ -52,7 +52,7 @@ Service metrics are generated from the server-side events, which are used to sho
 | **Label** | **Example** | **Notes** |
 | --- | --- | --- |
 | `request_content` | select employee | SQL of MySQL. SQL has been truncated to avoid high-cardinality. The format is ['operation' 'space' 'table']. |
-| `response_content` | 1064 | Error code of MySQL. Only applicable when the response is in error type. |
+| `response_content` | 1064 | Error code of MySQL. Only applicable when the response is in error type. See [codes introduction](https://dev.mysql.com/doc/mysql-errors/5.7/en/error-reference-introduction.html).|
 
 - When protocol is `kafka`:
   
@@ -66,7 +66,7 @@ Service metrics are generated from the server-side events, which are used to sho
 | **Label** | **Example**                   | **Notes**                           |
 | --- |-------------------------|--------------------------|
 | `request_content` | io.kindling.dubbo.api.service.OrderService#order | Service Info. The format of service is `package.class#method`                                                                                            |
-| `response_content` | 20                                               | "error_code" of Dubbo. 20 means OK, more details at `https://dubbo.apache.org/en/blog/2018/10/05/introduction-to-the-dubbo-protocol/#dubbo-protocol-details` |
+| `response_content` | 20 | "error_code" of Dubbo. 20 means OK, more details at the [docs](https://dubbo.apache.org/en/blog/2018/10/05/introduction-to-the-dubbo-protocol/#dubbo-protocol-details). |
 
 - For other cases, the `request_content` and `response_content` are both empty.
 
