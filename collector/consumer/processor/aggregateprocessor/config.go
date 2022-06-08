@@ -9,8 +9,9 @@ type Config struct {
 }
 
 type AggregatedKindConfig struct {
-	OutputName string `mapstructure:"output_name"`
-	Kind       string `mapstructure:"kind"`
+	OutputName         string  `mapstructure:"output_name"`
+	Kind               string  `mapstructure:"kind"`
+	ExplicitBoundaries []int64 `mapstructure:"explicit_boundaries"`
 }
 
 type SampleConfig struct {

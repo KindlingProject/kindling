@@ -222,6 +222,18 @@ func (x *KindlingEvent) IsUdp() uint32 {
 	return 0
 }
 
+func (x *KindlingEvent) IsTcp() bool {
+	context := x.GetCtx()
+	if context == nil {
+		return false
+	}
+	fd := context.GetFdInfo()
+	if fd == nil {
+		return false
+	}
+	return fd.GetProtocol() == L4Proto_TCP
+}
+
 func (x *KindlingEvent) IsConnect() bool {
 	return x.Name == "connect"
 }

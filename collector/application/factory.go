@@ -26,7 +26,7 @@ type ComponentsFactory struct {
 	Exporters  map[string]ExporterFactory
 }
 
-type NewReceiverFunc func(cfg interface{}, telemetry *component.TelemetryTools, analyzerManager analyzer.Manager) receiver.Receiver
+type NewReceiverFunc func(cfg interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzer.Manager) receiver.Receiver
 type NewAnalyzerFunc func(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer
 type NewProcessorFunc func(cfg interface{}, telemetry *component.TelemetryTools, consumer consumer.Consumer) processor.Processor
 type NewExporterFunc func(cfg interface{}, telemetry *component.TelemetryTools) exporter.Exporter

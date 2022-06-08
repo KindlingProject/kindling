@@ -2,8 +2,12 @@ package otelexporter
 
 import (
 	"context"
+	"math/rand"
+	"testing"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/component"
-	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter/defaultadapter"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/model/constnames"
@@ -13,9 +17,6 @@ import (
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"math/rand"
-	"testing"
-	"time"
 )
 
 func Test_instrumentFactory_recordLastValue(t *testing.T) {
@@ -75,9 +76,9 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 	}
 }
 
-func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
-	return model.NewGaugeGroup(
-		constnames.TcpGaugeGroupName,
+func makeTcpGroup(rttLatency int64) *model.DataGroup {
+	return model.NewDataGroup(
+		constnames.TcpMetricGroupName,
 		model.NewAttributeMapWithValues(
 			map[string]model.AttributeValue{
 				constlabels.SrcIp:           model.NewStringValue("src-ip"),
@@ -98,13 +99,13 @@ func makeTcpGroup(rttLatency int64) *model.GaugeGroup {
 				constlabels.DstNode:         model.NewStringValue("dst-node"),
 			}),
 		123,
-		[]*model.Gauge{
-			{constnames.TcpRttMetricName, rttLatency},
+		[]*model.Metric{
+			model.NewIntMetric(constnames.TcpRttMetricName, rttLatency),
 		}...)
 }
 
-func makeTraceAsMetricGroup(requestLatency int64, timestamp uint64, dstIp string) *model.GaugeGroup {
-	return model.NewGaugeGroup(
+func makeTraceAsMetricGroup(requestLatency int64, timestamp uint64, dstIp string) *model.DataGroup {
+	return model.NewDataGroup(
 		constnames.TraceAsMetric,
 		model.NewAttributeMapWithValues(
 			map[string]model.AttributeValue{
@@ -135,16 +136,16 @@ func makeTraceAsMetricGroup(requestLatency int64, timestamp uint64, dstIp string
 				constlabels.DnatPort:        model.NewIntValue(80),
 
 				constlabels.IsServer:                model.NewIntValue(0),
-				constlabels.RequestDurationStatus:   model.NewStringValue(defaultadapter.GreenStatus),
-				constlabels.RequestReqxferStatus:    model.NewStringValue(defaultadapter.GreenStatus),
-				constlabels.RequestProcessingStatus: model.NewStringValue(defaultadapter.GreenStatus),
-				constlabels.ResponseRspxferStatus:   model.NewStringValue(defaultadapter.GreenStatus),
+				constlabels.RequestDurationStatus:   model.NewStringValue(adapter.GreenStatus),
+				constlabels.RequestReqxferStatus:    model.NewStringValue(adapter.GreenStatus),
+				constlabels.RequestProcessingStatus: model.NewStringValue(adapter.GreenStatus),
+				constlabels.ResponseRspxferStatus:   model.NewStringValue(adapter.GreenStatus),
 
 				"const-labels1": model.NewStringValue("const-values1"),
 			}),
 		timestamp,
-		[]*model.Gauge{
-			{constnames.TraceAsMetric, requestLatency},
+		[]*model.Metric{
+			model.NewIntMetric(constnames.TraceAsMetric, requestLatency),
 		}...)
 }
 
@@ -163,15 +164,15 @@ func Test_instrumentFactory_recordTraceAsMetric(t *testing.T) {
 				t.Errorf("Labels Check failed,expected 2 groups , got %d", len(lastTraceAsMetric))
 			}
 
-			var t1 *model.GaugeGroup
+			var t1 *model.DataGroup
 
 			for i := 0; i < len(lastTraceAsMetric); i++ {
 				if lastTraceAsMetric[i].Labels.GetStringValue(constlabels.DstIp) == "1.1.1.1" {
 					t1 = lastTraceAsMetric[i]
 
 					// value check
-					if gauge, ok := t1.GetGauge(constnames.TraceAsMetric); ok {
-						if gauge.Value != randTime {
+					if metric, ok := t1.GetMetric(constnames.TraceAsMetric); ok {
+						if metric.GetInt().Value != randTime {
 							t.Errorf("Value check failed")
 						}
 					} else {
@@ -191,8 +192,8 @@ func Test_instrumentFactory_recordTraceAsMetric(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			randTime2 := rand.Int63n(1000)
 			timestamp2 := rand.Uint64()
-			singleGauge := makeTraceAsMetricGroup(randTime2, timestamp2, "2.2.2.2")
-			ins.aggregator.Aggregate(singleGauge, ins.getSelector(metricName))
+			singleMetric := makeTraceAsMetricGroup(randTime2, timestamp2, "2.2.2.2")
+			ins.aggregator.Aggregate(singleMetric, ins.getSelector(metricName))
 			time.Sleep(1 * time.Second)
 		}
 	}()
@@ -200,8 +201,8 @@ func Test_instrumentFactory_recordTraceAsMetric(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		randTime = rand.Int63n(1000)
 		timestamp = rand.Uint64()
-		singleGauge := makeTraceAsMetricGroup(randTime, timestamp, "1.1.1.1")
-		ins.aggregator.Aggregate(singleGauge, ins.getSelector(metricName))
+		singleMetric := makeTraceAsMetricGroup(randTime, timestamp, "1.1.1.1")
+		ins.aggregator.Aggregate(singleMetric, ins.getSelector(metricName))
 		time.Sleep(1 * time.Second)
 	}
 }

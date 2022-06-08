@@ -49,6 +49,8 @@ const (
 	Ip              = "ip"
 	Port            = "port"
 
+	Errno           = "errno"
+	Success         = "success"
 	RequestContent  = "request_content"
 	ResponseContent = "response_content"
 	StatusCode      = "status_code"
@@ -100,7 +102,7 @@ const (
 	SpanDubboRequestBody  = "dubbo.request_body"
 	SpanDubboResponseBody = "dubbo.response_body"
 
-	NetWorkAnalyzeGaugeGroup = "netAnalyzeGauges"
+	NetWorkAnalyzeMetricGroup = "netAnalyzeMetrics"
 )
 const (
 	STR_EMPTY = ""

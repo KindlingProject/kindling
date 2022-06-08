@@ -1,9 +1,11 @@
 package kubernetes
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestTruncateContainerId(t *testing.T) {
@@ -47,6 +49,49 @@ func TestOnAdd(t *testing.T) {
 	// Empty all the metadata
 	onDeleteService(CreateService())
 	t.Log(MetaDataCache)
+}
+
+// ISSUE https://github.com/CloudDectective-Harmonycloud/kindling/issues/229
+func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
+	globalPodInfo = &podMap{
+		Info: make(map[string]map[string]*PodInfo),
+	}
+	globalServiceInfo = &ServiceMap{
+		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
+	}
+	globalRsInfo = &ReplicaSetMap{
+		Info: make(map[string]Controller),
+	}
+	// Firstly deployment created and add old RS and old POD
+	controller := true
+	oldRs := CreateReplicaSet()
+	oldRs.SetResourceVersion("old")
+	newRs := CreateReplicaSet()
+	newRs.SetResourceVersion("new")
+	oldPOD := CreatePod(true)
+	oldPOD.SetResourceVersion("old")
+	oldPOD.OwnerReferences[0].Controller = &controller
+	newPOD := CreatePod(true)
+	newPOD.SetResourceVersion("new")
+	newPOD.OwnerReferences[0].Controller = &controller
+	onAddReplicaSet(oldRs)
+	onAdd(oldPOD)
+
+	// Secondly POD&RS were been updated
+
+	go func() {
+		for i := 0; i < 1000; i++ {
+			OnUpdateReplicaSet(oldRs, newRs)
+		}
+	}()
+
+	for i := 0; i < 100; i++ {
+		OnUpdate(oldPOD, newPOD)
+		// Thirdly check the pod's workload_kind
+		pod, ok := MetaDataCache.GetPodByContainerId(TruncateContainerId(newPOD.Status.ContainerStatuses[0].ContainerID))
+		require.True(t, ok, "failed to get target POD")
+		require.Equal(t, "deployment", pod.WorkloadKind, "failed to get the real workload_kind")
+	}
 }
 
 func TestOnAddLowercaseWorkload(t *testing.T) {

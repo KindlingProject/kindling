@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-var otelexporterGaugegroupsReceivedTotal = "kindling_telemetry_otelexporter_gaugegroups_received_total"
+var otelexporterMetricgroupsReceivedTotal = "kindling_telemetry_otelexporter_metricgroups_received_total"
 var otelexporterCardinalitySize = "kindling_telemetry_otelexporter_cardinality_size"
 
 var once sync.Once
@@ -14,12 +14,12 @@ var once sync.Once
 var labelsSet map[labelKey]bool
 var labelsSetMutex sync.RWMutex
 
-var gaugeGroupReceiverCounter metric.Int64Counter
+var dataGroupReceiverCounter metric.Int64Counter
 var metricExportedCardinalitySize metric.Int64UpDownCounterObserver
 
 func newSelfMetrics(meterProvider metric.MeterProvider) {
 	once.Do(func() {
-		gaugeGroupReceiverCounter = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(otelexporterGaugegroupsReceivedTotal)
+		dataGroupReceiverCounter = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(otelexporterMetricgroupsReceivedTotal)
 		metricExportedCardinalitySize = metric.Must(meterProvider.Meter("kindling")).NewInt64UpDownCounterObserver(
 			otelexporterCardinalitySize, func(ctx context.Context, result metric.Int64ObserverResult) {
 				labelsSetMutex.Lock()

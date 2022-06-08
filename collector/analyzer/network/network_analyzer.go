@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.uber.org/zap"
@@ -40,7 +41,7 @@ type NetworkAnalyzer struct {
 	protocolMap      map[string]*protocol.ProtocolParser
 	parsers          []*protocol.ProtocolParser
 
-	gaugeGroupPool     *GaugeGroupPool
+	dataGroupPool      *DataGroupPool
 	requestMonitor     sync.Map
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
@@ -50,10 +51,10 @@ type NetworkAnalyzer struct {
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
 	na := &NetworkAnalyzer{
-		cfg:            config,
-		gaugeGroupPool: NewGaugePool(),
-		nextConsumers:  consumers,
-		telemetry:      telemetry,
+		cfg:           config,
+		dataGroupPool: NewDataGroupPool(),
+		nextConsumers: consumers,
+		telemetry:     telemetry,
 	}
 	if config.EnableConntrack {
 		connConfig := &conntracker.Config{
@@ -68,6 +69,19 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 	}
 
 	return na
+}
+
+func (na *NetworkAnalyzer) ConsumableEvents() []string {
+	return []string{
+		constnames.ReadEvent,
+		constnames.WriteEvent,
+		constnames.ReadvEvent,
+		constnames.WritevEvent,
+		constnames.SendToEvent,
+		constnames.RecvFromEvent,
+		constnames.SendMsgEvent,
+		constnames.RecvMsgEvent,
+	}
 }
 
 func (na *NetworkAnalyzer) Start() error {
@@ -312,12 +326,12 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}
-		na.gaugeGroupPool.Free(record)
+		na.dataGroupPool.Free(record)
 	}
 	return nil
 }
 
-func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup {
+func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup {
 	// Step 1:  Static Config for port and protocol set in config file
 	port := mps.getPort()
 	staticProtocol, found := na.staticPortMap[port]
@@ -377,7 +391,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.GaugeGroup
 	return na.getRecords(mps, protocol.NOSUPPORT, nil)
 }
 
-func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.ProtocolParser) []*model.GaugeGroup {
+func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.ProtocolParser) []*model.DataGroup {
 	if parser.MultiRequests() {
 		// Not mergable requests
 		return na.parseMultipleRequests(mps, parser)
@@ -404,7 +418,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 
 // parseMultipleRequests parses the messagePairs when we know there could be multiple read requests.
 // This is used only when the protocol is DNS now.
-func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *protocol.ProtocolParser) []*model.GaugeGroup {
+func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *protocol.ProtocolParser) []*model.DataGroup {
 	// Match with key when disordering.
 	size := mps.requests.size()
 	parsedReqMsgs := make([]*protocol.PayloadMessage, size)
@@ -418,7 +432,7 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 		parsedReqMsgs[i] = requestMsg
 	}
 
-	records := make([]*model.GaugeGroup, 0)
+	records := make([]*model.DataGroup, 0)
 	if mps.responses == nil {
 		size := mps.requests.size()
 		for i := 0; i < size; i++ {
@@ -469,11 +483,11 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 	}
 }
 
-func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.GaugeGroup {
+func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.DataGroup {
 	evt := mps.connects.event
-	ret := na.gaugeGroupPool.Get()
-	ret.UpdateAddGauge(constvalues.ConnectTime, int64(mps.connects.getDuration()))
-	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mps.connects.getDuration()))
+	ret := na.dataGroupPool.Get()
+	ret.UpdateAddIntMetric(constvalues.ConnectTime, int64(mps.connects.getDuration()))
+	ret.UpdateAddIntMetric(constvalues.RequestTotalTime, int64(mps.connects.getDuration()))
 	ret.Labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
 	ret.Labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	ret.Labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
@@ -487,10 +501,10 @@ func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.Gau
 	ret.Labels.UpdateAddBoolValue(constlabels.IsSlow, false)
 	ret.Labels.UpdateAddBoolValue(constlabels.IsServer, evt.GetCtx().GetFdInfo().Role)
 	ret.Timestamp = evt.GetStartTime()
-	return []*model.GaugeGroup{ret}
+	return []*model.DataGroup{ret}
 }
 
-func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attributes *model.AttributeMap) []*model.GaugeGroup {
+func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attributes *model.AttributeMap) []*model.DataGroup {
 	evt := mps.requests.event
 
 	slow := false
@@ -498,7 +512,7 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 		slow = na.isSlow(mps.getDuration(), protocol)
 	}
 
-	ret := na.gaugeGroupPool.Get()
+	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
@@ -526,27 +540,27 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mps.natTuple.ReplSrcPort))
 	}
 
-	ret.UpdateAddGauge(constvalues.ConnectTime, int64(mps.getConnectDuration()))
-	ret.UpdateAddGauge(constvalues.RequestSentTime, mps.getSentTime())
-	ret.UpdateAddGauge(constvalues.WaitingTtfbTime, mps.getWaitingTime())
-	ret.UpdateAddGauge(constvalues.ContentDownloadTime, mps.getDownloadTime())
-	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mps.getConnectDuration()+mps.getDuration()))
-	ret.UpdateAddGauge(constvalues.RequestIo, int64(mps.getRquestSize()))
-	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mps.getResponseSize()))
+	ret.UpdateAddIntMetric(constvalues.ConnectTime, int64(mps.getConnectDuration()))
+	ret.UpdateAddIntMetric(constvalues.RequestSentTime, mps.getSentTime())
+	ret.UpdateAddIntMetric(constvalues.WaitingTtfbTime, mps.getWaitingTime())
+	ret.UpdateAddIntMetric(constvalues.ContentDownloadTime, mps.getDownloadTime())
+	ret.UpdateAddIntMetric(constvalues.RequestTotalTime, int64(mps.getConnectDuration()+mps.getDuration()))
+	ret.UpdateAddIntMetric(constvalues.RequestIo, int64(mps.getRquestSize()))
+	ret.UpdateAddIntMetric(constvalues.ResponseIo, int64(mps.getResponseSize()))
 
 	ret.Timestamp = evt.GetStartTime()
 
-	return []*model.GaugeGroup{ret}
+	return []*model.DataGroup{ret}
 }
 
 // getRecordWithSinglePair generates a record whose metrics are copied from the input messagePair,
 // instead of messagePairs. This is used only when there could be multiple real requests in messagePairs.
 // For now, only messagePairs with DNS protocol would run into this method.
-func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messagePair, protocol string, attributes *model.AttributeMap) *model.GaugeGroup {
+func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messagePair, protocol string, attributes *model.AttributeMap) *model.DataGroup {
 	evt := mp.request
 
 	slow := na.isSlow(mp.getDuration(), protocol)
-	ret := na.gaugeGroupPool.Get()
+	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
@@ -574,13 +588,13 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mps.natTuple.ReplSrcPort))
 	}
 
-	ret.UpdateAddGauge(constvalues.ConnectTime, 0)
-	ret.UpdateAddGauge(constvalues.RequestSentTime, mp.getSentTime())
-	ret.UpdateAddGauge(constvalues.WaitingTtfbTime, mp.getWaitingTime())
-	ret.UpdateAddGauge(constvalues.ContentDownloadTime, mp.getDownloadTime())
-	ret.UpdateAddGauge(constvalues.RequestTotalTime, int64(mp.getDuration()))
-	ret.UpdateAddGauge(constvalues.RequestIo, int64(mp.getRquestSize()))
-	ret.UpdateAddGauge(constvalues.ResponseIo, int64(mp.getResponseSize()))
+	ret.UpdateAddIntMetric(constvalues.ConnectTime, 0)
+	ret.UpdateAddIntMetric(constvalues.RequestSentTime, mp.getSentTime())
+	ret.UpdateAddIntMetric(constvalues.WaitingTtfbTime, mp.getWaitingTime())
+	ret.UpdateAddIntMetric(constvalues.ContentDownloadTime, mp.getDownloadTime())
+	ret.UpdateAddIntMetric(constvalues.RequestTotalTime, int64(mp.getDuration()))
+	ret.UpdateAddIntMetric(constvalues.RequestIo, int64(mp.getRquestSize()))
+	ret.UpdateAddIntMetric(constvalues.ResponseIo, int64(mp.getResponseSize()))
 
 	ret.Timestamp = evt.GetStartTime()
 	return ret

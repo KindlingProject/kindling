@@ -138,6 +138,7 @@ func onAdd(obj interface{}) {
 	workloadTypeTmp := ""
 	workloadNameTmp := ""
 
+	rsUpdateMutex.RLock()
 	for _, owner := range pod.OwnerReferences {
 		// only care about the controller
 		if owner.Controller == nil || *owner.Controller != true {
@@ -159,6 +160,7 @@ func onAdd(obj interface{}) {
 		workloadNameTmp = owner.Name
 		break
 	}
+	rsUpdateMutex.RUnlock()
 
 	serviceInfoSlice := globalServiceInfo.GetServiceMatchLabels(pI.Namespace, pI.Labels)
 	var serviceInfo *K8sServiceInfo

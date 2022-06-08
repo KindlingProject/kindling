@@ -1,20 +1,18 @@
 package udsreceiver
 
 import (
+	"os"
+	"sync"
+	"time"
+
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
-	"github.com/Kindling-project/kindling/collector/analyzer/network"
-	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/Kindling-project/kindling/collector/receiver"
 	"github.com/gogo/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"sync"
-	"time"
 )
 
 const (
@@ -27,11 +25,11 @@ type Socket struct {
 
 type UdsReceiver struct {
 	cfg             *Config
-	analyzerManager analyzerpackage.Manager
+	analyzerManager *analyzerpackage.Manager
 	zmqPullSocket   Socket
 	zmqReqSocket    Socket
 	shutdownWG      sync.WaitGroup
-	shutdwonState   bool
+	shutdownState   bool
 	telemetry       *component.TelemetryTools
 	stats           eventCounter
 }
@@ -64,7 +62,7 @@ func (r *UdsReceiver) newPullSocket(zss *ZeroMqPullSettings) Socket {
 	zmqContextServer, _ := zmq.NewContext()
 	ServerClient, _ := zmqContextServer.NewSocket(zmq.PULL)
 	if zss.hwm != 0 {
-		ServerClient.SetSndhwm(zss.hwm)
+		_ = ServerClient.SetRcvhwm(zss.hwm)
 	}
 	return Socket{ServerClient}
 }
@@ -73,7 +71,7 @@ func (r *UdsReceiver) newReqSocket(zss *ZeroMqReqSettings) Socket {
 	zmqContextServer, _ := zmq.NewContext()
 	ServerClient, _ := zmqContextServer.NewSocket(zmq.REQ)
 	if zss.hwm != 0 {
-		ServerClient.SetSndhwm(zss.hwm)
+		_ = ServerClient.SetSndhwm(zss.hwm)
 	}
 	return Socket{ServerClient}
 }
@@ -97,7 +95,7 @@ func (soc Socket) connect(endpoint string) error {
 	return err
 }
 
-func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager analyzerpackage.Manager) receiver.Receiver {
+func NewUdsReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
 	cfg, ok := config.(*Config)
 	if !ok {
 		telemetry.Logger.Sugar().Panicf("Cannot convert [%s] config", Uds)
@@ -124,12 +122,12 @@ func (r *UdsReceiver) startZeroMqPull() error {
 	go func() {
 		defer r.shutdownWG.Done()
 		for {
-			if r.shutdwonState == true {
+			if r.shutdownState == true {
 				err := pullSocket.Close()
 				if err != nil {
 					return
 				}
-				r.shutdwonState = false
+				r.shutdownState = false
 				break
 			}
 			req, _ := pullSocket.RecvMessage(0)
@@ -145,12 +143,9 @@ func (r *UdsReceiver) startZeroMqPull() error {
 					r.telemetry.Logger.Error("Error sending event to next consumer: %v", zap.Error(err))
 					continue
 				}
-				//r.logger.Info("name"+data.HcmineEvent[0].GetName())
 			}
-
 		}
 	}()
-	r.shutdownWG.Wait()
 	return nil
 }
 
@@ -214,46 +209,33 @@ func (r *UdsReceiver) Start() error {
 func (r *UdsReceiver) Shutdown() error {
 	var err error
 	if r.zmqPullSocket.Socket != nil {
-		r.shutdwonState = true
-		time.Sleep(1 * time.Second)
-		//err = r.zmqPullSocket.Close()
-		//r.shutdownWG.Done()
+		r.shutdownState = true
 	}
-
 	r.shutdownWG.Wait()
 	return err
 }
 
 func (r *UdsReceiver) SendToNextConsumer(events *model.KindlingEventList) error {
-	// TODO: Decouple dispatching logic from receiver and conduct it at analyzerManager via configuration
 	for _, evt := range events.KindlingEventList {
 		r.stats.add(evt.Name, 1)
-		var analyzer analyzerpackage.Analyzer
-		var isFound bool
-		switch evt.Name {
-		case constnames.TcpCloseEvent:
-			fallthrough
-		case constnames.TcpRcvEstablishedEvent:
-			fallthrough
-		case constnames.TcpDropEvent:
-			fallthrough
-		case constnames.TcpRetransmitSkbEvent:
-			analyzer, isFound = r.analyzerManager.GetAnalyzer(tcpmetricanalyzer.TcpMetric)
-		default:
-			analyzer, isFound = r.analyzerManager.GetAnalyzer(network.Network)
-		}
-		if !isFound {
-			r.telemetry.Logger.Info("analyzer not found for event %s", zap.String("eventName", evt.Name))
-			continue
-		}
 		if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, "Receive Event"); ce != nil {
 			ce.Write(
 				zap.String("event", evt.String()),
 			)
 		}
-		err := analyzer.ConsumeEvent(evt)
-		if err != nil {
-			return err
+		analyzers := r.analyzerManager.GetConsumableAnalyzers(evt.Name)
+		if analyzers == nil || len(analyzers) == 0 {
+			r.telemetry.Logger.Info("analyzer not found for event ", zap.String("eventName", evt.Name))
+			continue
+		}
+		for _, analyzer := range analyzers {
+			err := analyzer.ConsumeEvent(evt)
+			if err != nil {
+				return err
+			}
+			if err != nil {
+				r.telemetry.Logger.Warn("Error sending event to next consumer: ", zap.Error(err))
+			}
 		}
 	}
 	return nil
