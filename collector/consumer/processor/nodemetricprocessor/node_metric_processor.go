@@ -37,8 +37,8 @@ func New(config interface{}, telemetry *component.TelemetryTools, nextConsumer c
 	}
 }
 
-func (p *NodeMetricProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
-	labels := gaugeGroup.Labels
+func (p *NodeMetricProcessor) Consume(dataGroup *model.DataGroup) error {
+	labels := dataGroup.Labels
 	// Filter the data which labels is nil
 	if labels == nil {
 		return nil
@@ -50,17 +50,17 @@ func (p *NodeMetricProcessor) Consume(gaugeGroup *model.GaugeGroup) error {
 	} else {
 		role = "client"
 	}
-	return p.process(gaugeGroup, role)
+	return p.process(dataGroup, role)
 }
 
-func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string) error {
-	labels := gaugeGroup.Labels
+func (p *NodeMetricProcessor) process(dataGroup *model.DataGroup, role string) error {
+	labels := dataGroup.Labels
 	dstNodeIp := labels.GetStringValue(constlabels.DstNodeIp)
 	srcNodeIp := labels.GetStringValue(constlabels.SrcNodeIp)
 	if dstNodeIp == "" || srcNodeIp == "" {
 		if ce := p.telemetry.Logger.Check(zapcore.DebugLevel, "dstNodeIp or srcNodeIp is empty which is not expected, skip: "); ce != nil {
 			ce.Write(
-				zap.String("gaugeGroup", gaugeGroup.String()),
+				zap.String("dataGroup", dataGroup.String()),
 			)
 		}
 		return nil
@@ -71,7 +71,7 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 
 	var retError error
 	// For request, the transmit direction is SrcNode->DstNode
-	requestIo, ok := gaugeGroup.GetGauge(constvalues.RequestIo)
+	requestIo, ok := dataGroup.GetMetric(constvalues.RequestIo)
 	if ok {
 		newLabels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcNodeIp: model.NewStringValue(srcNodeIp),
@@ -80,23 +80,20 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 			constlabels.DstNode:   model.NewStringValue(dstNodeName),
 			"role":                model.NewStringValue(role),
 		})
-		newValue := &model.Gauge{
-			Name:  "kindling_node_transmit_bytes_total",
-			Value: requestIo.Value,
-		}
-		newGaugeGroup := model.NewGaugeGroup(
-			constnames.NodeGaugeGroupName,
+		newValue := model.NewIntMetric("kindling_node_transmit_bytes_total", requestIo.GetInt().Value)
+		newMetricGroup := model.NewDataGroup(
+			constnames.NodeMetricGroupName,
 			newLabels,
 			uint64(time.Now().UnixNano()),
 			newValue,
 		)
-		err := p.nextConsumer.Consume(newGaugeGroup)
+		err := p.nextConsumer.Consume(newMetricGroup)
 		if err != nil {
 			retError = multierror.Append(retError, err)
 		}
 	}
 	// For response, the transmit direction is DstNode->SrcNode
-	responseIo, ok := gaugeGroup.GetGauge(constvalues.ResponseIo)
+	responseIo, ok := dataGroup.GetMetric(constvalues.ResponseIo)
 	if ok {
 		newLabels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 			constlabels.SrcNodeIp: model.NewStringValue(dstNodeIp),
@@ -105,17 +102,14 @@ func (p *NodeMetricProcessor) process(gaugeGroup *model.GaugeGroup, role string)
 			constlabels.DstNode:   model.NewStringValue(srcNodeName),
 			"role":                model.NewStringValue(role),
 		})
-		newValue := &model.Gauge{
-			Name:  "kindling_node_transmit_bytes_total",
-			Value: responseIo.Value,
-		}
-		newGaugeGroup := model.NewGaugeGroup(
-			constnames.NodeGaugeGroupName,
+		newValue := model.NewIntMetric("kindling_node_transmit_bytes_total", responseIo.GetInt().Value)
+		newMetricGroup := model.NewDataGroup(
+			constnames.NodeMetricGroupName,
 			newLabels,
 			uint64(time.Now().UnixNano()),
 			newValue,
 		)
-		err := p.nextConsumer.Consume(newGaugeGroup)
+		err := p.nextConsumer.Consume(newMetricGroup)
 		if err != nil {
 			retError = multierror.Append(retError, err)
 		}

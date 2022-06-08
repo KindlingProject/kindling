@@ -1,4 +1,4 @@
-package defaultadapter
+package adapter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type NetGaugeGroupAdapter struct {
+type NetMetricGroupAdapter struct {
 	*NetAdapterManager
 	*NetAdapterConfig
 }
@@ -20,58 +20,43 @@ type NetAdapterConfig struct {
 	StoreExternalSrcIP bool
 }
 
-func (n *NetGaugeGroupAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	switch gaugeGroup.Name {
-	case constnames.AggregatedNetRequestGaugeGroup:
-		return n.dealWithPreAggGaugeGroups(gaugeGroup), nil
-	case constnames.SingleNetRequestGaugeGroup:
-		return n.dealWithSingleGaugeGroup(gaugeGroup), nil
+func (n *NetMetricGroupAdapter) Adapt(dataGroup *model.DataGroup, attrType AttrType) ([]*AdaptedResult, error) {
+	switch dataGroup.Name {
+	case constnames.AggregatedNetRequestMetricGroup:
+		return n.dealWithPreAggMetricGroups(dataGroup, attrType), nil
+	case constnames.SingleNetRequestMetricGroup:
+		return n.dealWithSingleMetricGroup(dataGroup, attrType), nil
 	default:
 		return nil, nil
 	}
 }
 
-func (n *NetGaugeGroupAdapter) dealWithSingleGaugeGroup(gaugeGroup *model.GaugeGroup) []*AdaptedResult {
-	requestTotalTime, ok := gaugeGroup.GetGauge(constvalues.RequestTotalTime)
+func (n *NetMetricGroupAdapter) dealWithSingleMetricGroup(dataGroup *model.DataGroup, attrType AttrType) []*AdaptedResult {
+	requestTotalTime, ok := dataGroup.GetMetric(constvalues.RequestTotalTime)
 	if !ok {
 		return nil
 	}
 	results := make([]*AdaptedResult, 0, 2)
-	if n.StoreTraceAsSpan {
-		attrs, free := n.traceToSpanAdapter.convert(gaugeGroup)
-		results = append(results, &AdaptedResult{
-			ResultType:    Trace,
-			AttrsList:     attrs,
-			Gauges:        []*model.Gauge{requestTotalTime},
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
-		})
-	}
 	if n.StoreTraceAsMetric {
-		labels, free := n.traceToMetricAdapter.transform(gaugeGroup)
-		results = append(results, &AdaptedResult{
-			ResultType: Metric,
-			AttrsList:  nil,
-			Gauges: []*model.Gauge{{
-				Name:  constnames.TraceAsMetric,
-				Value: requestTotalTime.Value,
-			}},
-			AttrsMap:     labels,
-			Timestamp:    gaugeGroup.Timestamp,
-			FreeAttrsMap: free,
-		})
+		// Since TraceAsMetric has to be aggregated again, the attrType of TraceAsMetric must be `AttributeMap`
+		results = append(results, createResult(
+			[]*model.Metric{model.NewMetric(constnames.TraceAsMetric, requestTotalTime.GetData())},
+			dataGroup, n.traceToMetricAdapter,
+			AttributeMap))
 	}
-
+	if n.StoreTraceAsSpan {
+		results = append(results, createResult([]*model.Metric{requestTotalTime}, dataGroup, n.traceToSpanAdapter, attrType))
+	}
 	return results
 }
 
-func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.GaugeGroup) []*AdaptedResult {
+func (n *NetMetricGroupAdapter) dealWithPreAggMetricGroups(dataGroup *model.DataGroup, attrType AttrType) []*AdaptedResult {
 	results := make([]*AdaptedResult, 0, 4)
-	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
-	srcNamespace := gaugeGroup.Labels.GetStringValue(constlabels.SrcNamespace)
+	isServer := dataGroup.Labels.GetBoolValue(constlabels.IsServer)
+	srcNamespace := dataGroup.Labels.GetStringValue(constlabels.SrcNamespace)
 	if n.StoreExternalSrcIP && srcNamespace == constlabels.ExternalClusterNamespace && isServer {
 		externalAdapterCache := n.detailTopologyAdapter
-		externalTopology := n.createNetMetricResults(gaugeGroup, externalAdapterCache)
+		externalTopology := n.createNetMetricResults(dataGroup, externalAdapterCache, attrType)
 		results = append(results, externalTopology...)
 	}
 
@@ -89,51 +74,54 @@ func (n *NetGaugeGroupAdapter) dealWithPreAggGaugeGroups(gaugeGroup *model.Gauge
 			metricAdapterCache = n.aggTopologyAdapter
 		}
 	}
-	metrics := n.createNetMetricResults(gaugeGroup, metricAdapterCache)
+	metrics := n.createNetMetricResults(dataGroup, metricAdapterCache, attrType)
 	return append(results, metrics...)
 }
 
-func (n *NetGaugeGroupAdapter) createNetMetricResults(gaugeGroup *model.GaugeGroup, adapter [2]*LabelConverter) (tmpResults []*AdaptedResult) {
-	values := gaugeGroup.Values
-	isServer := gaugeGroup.Labels.GetBoolValue(constlabels.IsServer)
-	gaugesExceptRequestCount := make([]*model.Gauge, 0, len(values))
-	requestCount := make([]*model.Gauge, 0, 1)
-	for _, gauge := range gaugeGroup.Values {
-		if gauge.Name != constvalues.RequestCount {
-			gaugesExceptRequestCount = append(gaugesExceptRequestCount, &model.Gauge{
-				Name:  constnames.ToKindlingNetMetricName(gauge.Name, isServer),
-				Value: gauge.Value,
-			})
+func (n *NetMetricGroupAdapter) createNetMetricResults(dataGroup *model.DataGroup, adapter [2]*LabelConverter, attrType AttrType) (tmpResults []*AdaptedResult) {
+	values := dataGroup.Metrics
+	isServer := dataGroup.Labels.GetBoolValue(constlabels.IsServer)
+	metricsExceptRequestCount := make([]*model.Metric, 0, len(values))
+	requestCount := make([]*model.Metric, 0, 1)
+	for _, metric := range dataGroup.Metrics {
+		if metric.Name != constvalues.RequestCount {
+			metricsExceptRequestCount = append(metricsExceptRequestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer), metric.GetData()))
 		} else {
-			requestCount = append(requestCount, &model.Gauge{
-				Name:  constnames.ToKindlingNetMetricName(gauge.Name, isServer),
-				Value: gauge.Value,
-			})
+			requestCount = append(requestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer), metric.GetData()))
 		}
 	}
-	attrsCommon, free := adapter[0].convert(gaugeGroup)
 	tmpResults = make([]*AdaptedResult, 0, 2)
-	if len(gaugesExceptRequestCount) > 0 {
-		// for request count
-		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType:    Metric,
-			AttrsList:     attrsCommon,
-			Gauges:        gaugesExceptRequestCount,
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
-		})
+	if len(metricsExceptRequestCount) > 0 {
+		tmpResults = append(tmpResults, createResult(metricsExceptRequestCount, dataGroup, adapter[0], attrType))
 	}
 	if len(requestCount) > 0 {
-		attrsWithSlow, free := adapter[1].convert(gaugeGroup)
-		tmpResults = append(tmpResults, &AdaptedResult{
-			ResultType:    Metric,
-			AttrsList:     attrsWithSlow,
-			Gauges:        requestCount,
-			Timestamp:     gaugeGroup.Timestamp,
-			FreeAttrsList: free,
-		})
+		tmpResults = append(tmpResults, createResult(requestCount, dataGroup, adapter[1], attrType))
 	}
 	return
+}
+
+func createResult(metrics []*model.Metric, dataGroup *model.DataGroup, adapter *LabelConverter, addrType AttrType) *AdaptedResult {
+	switch addrType {
+	case AttributeMap:
+		attrs, free := adapter.transform(dataGroup)
+		return &AdaptedResult{
+			ResultType:   Metric,
+			AttrsMap:     attrs,
+			Metrics:      metrics,
+			Timestamp:    dataGroup.Timestamp,
+			FreeAttrsMap: free,
+		}
+	case AttributeList:
+		attrs, free := adapter.convert(dataGroup)
+		return &AdaptedResult{
+			ResultType:    Metric,
+			AttrsList:     attrs,
+			Metrics:       metrics,
+			Timestamp:     dataGroup.Timestamp,
+			FreeAttrsList: free,
+		}
+	}
+	return nil
 }
 
 type NetAdapterManager struct {
@@ -226,8 +214,8 @@ func createNetAdapterManager(constLabels []attribute.KeyValue) *NetAdapterManage
 func NewNetAdapter(
 	customLabels []attribute.KeyValue,
 	config *NetAdapterConfig,
-) *NetGaugeGroupAdapter {
-	return &NetGaugeGroupAdapter{
+) *NetMetricGroupAdapter {
+	return &NetMetricGroupAdapter{
 		NetAdapterManager: createNetAdapterManager(customLabels),
 		NetAdapterConfig:  config,
 	}

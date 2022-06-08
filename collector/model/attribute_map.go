@@ -5,6 +5,14 @@ import (
 	"strconv"
 )
 
+type AttributeValueType int
+
+const (
+	StringAttributeValueType AttributeValueType = iota
+	IntAttributeValueType
+	BooleanAttributeValueType
+)
+
 type AttributeMap struct {
 	values map[string]AttributeValue
 }
@@ -154,12 +162,17 @@ func (attributes *AttributeMap) String() string {
 }
 
 type AttributeValue interface {
+	Type() AttributeValueType
 	ToString() string
 	Reset()
 }
 
 type stringValue struct {
 	value string
+}
+
+func (v *stringValue) Type() AttributeValueType {
+	return StringAttributeValueType
 }
 
 func (v *stringValue) ToString() string {
@@ -174,6 +187,10 @@ type intValue struct {
 	value int64
 }
 
+func (v *intValue) Type() AttributeValueType {
+	return IntAttributeValueType
+}
+
 func (v *intValue) ToString() string {
 	return strconv.FormatInt(v.value, 10)
 }
@@ -184,6 +201,10 @@ func (v *intValue) Reset() {
 
 type boolValue struct {
 	value bool
+}
+
+func (v *boolValue) Type() AttributeValueType {
+	return BooleanAttributeValueType
 }
 
 func (v *boolValue) ToString() string {

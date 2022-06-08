@@ -1,4 +1,4 @@
-package defaultadapter
+package adapter
 
 import (
 	"github.com/Kindling-project/kindling/collector/model"
@@ -6,36 +6,37 @@ import (
 )
 
 type SimpleAdapter struct {
-	acceptGaugeGroupNames map[string]struct{}
-	constLabels           []attribute.KeyValue
+	acceptMetricGroupNames map[string]struct{}
+	constLabels            []attribute.KeyValue
 }
 
-func (d *SimpleAdapter) Adapt(gaugeGroup *model.GaugeGroup) ([]*AdaptedResult, error) {
-	if _, accept := d.acceptGaugeGroupNames[gaugeGroup.Name]; !accept {
+func (d *SimpleAdapter) Adapt(dataGroup *model.DataGroup, attrType AttrType) ([]*AdaptedResult, error) {
+	if _, accept := d.acceptMetricGroupNames[dataGroup.Name]; !accept {
 		return nil, nil
 	}
 	return []*AdaptedResult{
 		{
 			ResultType: Metric,
-			AttrsMap:   gaugeGroup.Labels,
-			AttrsList:  GetLabels(gaugeGroup.Labels, d.constLabels),
-			Gauges:     gaugeGroup.Values,
-			Timestamp:  gaugeGroup.Timestamp,
+			AttrsList:  GetLabels(dataGroup.Labels, d.constLabels),
+			// TODO add const labels
+			AttrsMap:  dataGroup.Labels,
+			Metrics:   dataGroup.Metrics,
+			Timestamp: dataGroup.Timestamp,
 		},
 	}, nil
 }
 
 func NewSimpleAdapter(
-	acceptGaugeGroupNames []string,
+	acceptMetricGroupNames []string,
 	customLabels []attribute.KeyValue,
 ) *SimpleAdapter {
-	acceptMap := make(map[string]struct{}, len(acceptGaugeGroupNames))
-	for i := 0; i < len(acceptGaugeGroupNames); i++ {
-		acceptMap[acceptGaugeGroupNames[i]] = struct{}{}
+	acceptMap := make(map[string]struct{}, len(acceptMetricGroupNames))
+	for i := 0; i < len(acceptMetricGroupNames); i++ {
+		acceptMap[acceptMetricGroupNames[i]] = struct{}{}
 	}
 	return &SimpleAdapter{
-		constLabels:           customLabels,
-		acceptGaugeGroupNames: acceptMap,
+		constLabels:            customLabels,
+		acceptMetricGroupNames: acceptMap,
 	}
 }
 
