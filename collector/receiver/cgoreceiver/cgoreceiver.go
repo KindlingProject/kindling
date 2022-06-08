@@ -37,6 +37,7 @@ type CgoReceiver struct {
 	analyzerManager *analyzerpackage.Manager
 	shutdownWG      sync.WaitGroup
 	telemetry       *component.TelemetryTools
+	eventChannel    chan *model.KindlingEvent
 	eventCount      int
 	stopCh          chan interface{}
 }
@@ -50,6 +51,7 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 		cfg:             cfg,
 		analyzerManager: analyzerManager,
 		telemetry:       telemetry,
+		eventChannel:    make(chan *model.KindlingEvent, 3e5),
 		stopCh:          make(chan interface{}, 1),
 	}
 	return cgoReceiver
@@ -61,6 +63,7 @@ func (r *CgoReceiver) Start() error {
 	go r.printMetrics()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
+	go r.consumeEvents()
 	go r.startGetEvent()
 	return nil
 }
@@ -74,6 +77,7 @@ func (r *CgoReceiver) printMetrics() {
 		case <-timer.C:
 			r.telemetry.Logger.Info("Total number events received: ", zap.Int("events", r.eventCount))
 			r.eventCount = 0
+			r.telemetry.Logger.Info("Current channel size: ", zap.Int("channel size", len(r.eventChannel)))
 		}
 	}
 }
@@ -88,12 +92,22 @@ func (r *CgoReceiver) startGetEvent() {
 			res := int(C.getKindlingEvent(&pKindlingEvent))
 			if res != 0 {
 				r.eventCount++
-				ev := convertEvent(*CKindlingEventForGo(pKindlingEvent))
-				eventList := &model.KindlingEventList{KindlingEventList: []*model.KindlingEvent{ev}}
-				err := r.sendToNextConsumer(eventList)
-				if err != nil {
-					r.telemetry.Logger.Info("Failed to send KindlingEvent: ", zap.Error(err))
-				}
+				r.eventChannel <- convertEvent(*CKindlingEventForGo(pKindlingEvent))
+			}
+		}
+	}
+}
+
+func (r *CgoReceiver) consumeEvents() {
+	for {
+		select {
+		case <-r.stopCh:
+			return
+		case ev := <-r.eventChannel:
+			eventList := &model.KindlingEventList{KindlingEventList: []*model.KindlingEvent{ev}}
+			err := r.sendToNextConsumer(eventList)
+			if err != nil {
+				r.telemetry.Logger.Info("Failed to send KindlingEvent: ", zap.Error(err))
 			}
 		}
 	}
