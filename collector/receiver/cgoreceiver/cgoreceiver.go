@@ -10,49 +10,38 @@ package cgoreceiver
 */
 import "C"
 import (
-	"fmt"
+	"sync"
+	"time"
+	"unsafe"
+
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
-	"time"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
-	//"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/receiver"
-	"sync"
-	"unsafe"
 )
 
 type Config struct {
 }
+
 const (
 	Cgo = "cgoreceiver"
 )
-var cnt int
+
 type CKindlingEventForGo C.struct_kindling_event_t_for_go
 
 type CgoReceiver struct {
 	cfg             *Config
-	analyzerManager analyzerpackage.Manager
+	analyzerManager *analyzerpackage.Manager
 	shutdownWG      sync.WaitGroup
-	shutdwonState   bool
 	telemetry       *component.TelemetryTools
-}
-func (r *CgoReceiver) Start() error {
-	var err error
-	cnt = 0
-	r.telemetry.Logger.Info("startCgoReceiver")
-	go C.runForGo()
-	go static()
-	time.Sleep(2 * time.Second)
-	r.startGetEvent()
-	time.Sleep(1000*time.Second)
-	if err != nil {
-		return err
-	}
-	return err
+	eventCount      int
+	stopCh          chan interface{}
 }
 
-func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager analyzerpackage.Manager) receiver.Receiver {
+func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
 	cfg, ok := config.(*Config)
 	if !ok {
 		telemetry.Logger.Sugar().Panicf("Cannot convert [%s] config", Cgo)
@@ -61,69 +50,132 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 		cfg:             cfg,
 		analyzerManager: analyzerManager,
 		telemetry:       telemetry,
+		stopCh:          make(chan interface{}, 1),
 	}
 	return cgoReceiver
 }
 
-func static() {
+func (r *CgoReceiver) Start() error {
+	r.telemetry.Logger.Info("Start CgoReceiver")
+	go C.runForGo()
+	go r.printMetrics()
+	// Wait for the C routine running
+	time.Sleep(2 * time.Second)
+	go r.startGetEvent()
+	return nil
+}
 
+func (r *CgoReceiver) printMetrics() {
 	timer := time.NewTicker(1 * time.Second)
 	for {
 		select {
+		case <-r.stopCh:
+			return
 		case <-timer.C:
-			fmt.Println("cnt:")
-			fmt.Println(cnt)
-			cnt = 0
+			r.telemetry.Logger.Info("Total number events received: ", zap.Int("events", r.eventCount))
+			r.eventCount = 0
 		}
 	}
-
 }
 
-func(r *CgoReceiver) startGetEvent() {
-
+func (r *CgoReceiver) startGetEvent() {
 	var pKindlingEvent unsafe.Pointer
 	for {
-		res := int(C.getKindlingEvent(&pKindlingEvent))
-		if res != 0 {
-			cnt++
-			ev := new(model.CgoKindlingEvent)
-			ev.Timestamp = uint64((*CKindlingEventForGo)(pKindlingEvent).timestamp)
-			ev.Name = C.GoString((*CKindlingEventForGo)(pKindlingEvent).name)
-			ev.Category = uint32((*CKindlingEventForGo)(pKindlingEvent).category)
-			ev.Context.ThreadInfo.Pid = uint32((*CKindlingEventForGo)(pKindlingEvent).context.tinfo.pid)
-			ev.Context.ThreadInfo.Tid = uint32((*CKindlingEventForGo)(pKindlingEvent).context.tinfo.tid)
-			ev.Context.ThreadInfo.Uid = uint32((*CKindlingEventForGo)(pKindlingEvent).context.tinfo.uid)
-			ev.Context.ThreadInfo.Gid = uint32((*CKindlingEventForGo)(pKindlingEvent).context.tinfo.gid)
-			ev.Context.ThreadInfo.Comm = C.GoString((*CKindlingEventForGo)(pKindlingEvent).context.tinfo.comm)
-			ev.Context.ThreadInfo.ContainerId = C.GoString((*CKindlingEventForGo)(pKindlingEvent).context.tinfo.containerId)
-			ev.Context.FdInfo.Protocol = uint32((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.protocol)
-			ev.Context.FdInfo.Num = uint32((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.num)
-			ev.Context.FdInfo.FdType = uint32((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.fdType)
-			ev.Context.FdInfo.Filename = C.GoString((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.filename)
-			ev.Context.FdInfo.Directory = C.GoString((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.directory)
-			ev.Context.FdInfo.Role = uint8((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.role)
-			ev.Context.FdInfo.Sip = uint32((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.sip)
-			ev.Context.FdInfo.Dip = uint32((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.dip)
-			ev.Context.FdInfo.Sport = uint32((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.sport)
-			ev.Context.FdInfo.Dport = uint32((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.dport)
-			ev.Context.FdInfo.Source = uint64((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.source)
-			ev.Context.FdInfo.Destination = uint64((*CKindlingEventForGo)(pKindlingEvent).context.fdInfo.destination)
-			for i := 0; i < 8; i++ {
-				ev.UserAttributes[i].Key = C.GoString((*CKindlingEventForGo)(pKindlingEvent).userAttributes[i].key)
-				if len(ev.UserAttributes[i].Key) == 0 {
-					break
+		select {
+		case <-r.stopCh:
+			return
+		default:
+			res := int(C.getKindlingEvent(&pKindlingEvent))
+			if res != 0 {
+				r.eventCount++
+				ev := convertEvent(*CKindlingEventForGo(pKindlingEvent))
+				eventList := &model.KindlingEventList{KindlingEventList: []*model.KindlingEvent{ev}}
+				err := r.sendToNextConsumer(eventList)
+				if err != nil {
+					r.telemetry.Logger.Info("Failed to send KindlingEvent: ", zap.Error(err))
 				}
-				ev.UserAttributes[i].Value = C.GoString((*CKindlingEventForGo)(pKindlingEvent).userAttributes[i].value)
-				ev.UserAttributes[i].ValueType = uint32((*CKindlingEventForGo)(pKindlingEvent).userAttributes[i].valueType)
 			}
 		}
 	}
-
 }
 
 func (r *CgoReceiver) Shutdown() error {
-	var err error
-	r.shutdownWG.Wait()
-	return err
+	// TODO stop the C routine
+	r.stopCh <- nil
+	return nil
 }
 
+func convertEvent(cgoEvent *CKindlingEventForGo) *model.KindlingEvent {
+	ev := new(model.KindlingEvent)
+	ev.Timestamp = uint64(cgoEvent.timestamp)
+	ev.Name = C.GoString(cgoEvent.name)
+	ev.Category = model.Category(cgoEvent.category)
+	ev.Ctx = new(model.Context)
+	ev.Ctx.ThreadInfo = new(model.Thread)
+	ev.Ctx.ThreadInfo.Pid = uint32(cgoEvent.context.tinfo.pid)
+	ev.Ctx.ThreadInfo.Tid = uint32(cgoEvent.context.tinfo.tid)
+	ev.Ctx.ThreadInfo.Uid = uint32(cgoEvent.context.tinfo.uid)
+	ev.Ctx.ThreadInfo.Gid = uint32(cgoEvent.context.tinfo.gid)
+	ev.Ctx.ThreadInfo.Comm = C.GoString(cgoEvent.context.tinfo.comm)
+	ev.Ctx.ThreadInfo.ContainerId = C.GoString(cgoEvent.context.tinfo.containerId)
+
+	ev.Ctx.FdInfo = new(model.Fd)
+	ev.Ctx.FdInfo.Protocol = model.L4Proto(cgoEvent.context.fdInfo.protocol)
+	ev.Ctx.FdInfo.Num = int32(cgoEvent.context.fdInfo.num)
+	ev.Ctx.FdInfo.TypeFd = model.FDType(cgoEvent.context.fdInfo.fdType)
+	ev.Ctx.FdInfo.Filename = C.GoString(cgoEvent.context.fdInfo.filename)
+	ev.Ctx.FdInfo.Directory = C.GoString(cgoEvent.context.fdInfo.directory)
+	ev.Ctx.FdInfo.Role = If(cgoEvent.context.fdInfo.role != 0, true, false).(bool)
+	ev.Ctx.FdInfo.Sip = []uint32{cgoEvent.context.fdInfo.sip}
+	ev.Ctx.FdInfo.Dip = []uint32{cgoEvent.context.fdInfo.dip}
+	ev.Ctx.FdInfo.Sport = uint32(cgoEvent.context.fdInfo.sport)
+	ev.Ctx.FdInfo.Dport = uint32(cgoEvent.context.fdInfo.dport)
+	ev.Ctx.FdInfo.Source = uint64(cgoEvent.context.fdInfo.source)
+	ev.Ctx.FdInfo.Destination = uint64(cgoEvent.context.fdInfo.destination)
+
+	ev.NativeAttributes = new(model.Property)
+	ev.UserAttributes = make([]*model.KeyValue, 0, 8)
+	for i := 0; i < 8; i++ {
+		keyValue := new(model.KeyValue)
+		keyValue.Key = C.GoString(cgoEvent.userAttributes[i].key)
+		if len(keyValue.Key) == 0 {
+			break
+		}
+		keyValue.Value = C.GoBytes(cgoEvent.userAttributes[i].value)
+		keyValue.ValueType = model.ValueType(cgoEvent.userAttributes[i].valueType)
+		ev.UserAttributes[i] = keyValue
+	}
+	return ev
+}
+
+func If(condition bool, trueVal, falseVal interface{}) interface{} {
+	if condition {
+		return trueVal
+	}
+	return falseVal
+}
+
+func (r *CgoReceiver) sendToNextConsumer(events *model.KindlingEventList) error {
+	for _, evt := range events.KindlingEventList {
+		if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, "Receive Event"); ce != nil {
+			ce.Write(
+				zap.String("event", evt.String()),
+			)
+		}
+		analyzers := r.analyzerManager.GetConsumableAnalyzers(evt.Name)
+		if analyzers == nil || len(analyzers) == 0 {
+			r.telemetry.Logger.Info("analyzer not found for event ", zap.String("eventName", evt.Name))
+			continue
+		}
+		for _, analyzer := range analyzers {
+			err := analyzer.ConsumeEvent(evt)
+			if err != nil {
+				return err
+			}
+			if err != nil {
+				r.telemetry.Logger.Warn("Error sending event to next consumer: ", zap.Error(err))
+			}
+		}
+	}
+	return nil
+}
