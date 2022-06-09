@@ -17,6 +17,7 @@ type K8sPodInfo struct {
 	Ip           string
 	PodName      string
 	Ports        []int32
+	HostPorts    []int32
 	ContainerIds []string
 	Labels       map[string]string
 	// TODO: There may be multiple kinds of workload or services for the same pod
