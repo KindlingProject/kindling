@@ -213,9 +213,16 @@ func onAdd(obj interface{}) {
 				HostPortMap: make(map[int32]int32),
 				RefPodInfo:  kpi,
 			}
+			// Not specifying a port DOES NOT prevent that port from being exposed.
+			// So Ports could be empty, if so we only record its IP address.
 			if len(tmpContainer.Ports) == 0 {
-				// When there are many pods in one pod and only some of them have ports,
-				// the containers at the back will overwrite the one at the front here.
+				// If there is more than one container that doesn't specify a port,
+				// we would rather get an empty name than get an incorrect one.
+				if len(pod.Spec.Containers) > 0 {
+					containerInfo.Name = ""
+				}
+				// When there are many containers in one pod and only part of them have ports,
+				// the containers at the back will overwrite the ones at the front here.
 				MetaDataCache.AddContainerByIpPort(pod.Status.PodIP, 0, containerInfo)
 				continue
 			}

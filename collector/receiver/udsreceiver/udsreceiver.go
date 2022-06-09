@@ -29,7 +29,7 @@ type UdsReceiver struct {
 	zmqPullSocket   Socket
 	zmqReqSocket    Socket
 	shutdownWG      sync.WaitGroup
-	shutdwonState   bool
+	shutdownState   bool
 	telemetry       *component.TelemetryTools
 	stats           eventCounter
 }
@@ -62,7 +62,7 @@ func (r *UdsReceiver) newPullSocket(zss *ZeroMqPullSettings) Socket {
 	zmqContextServer, _ := zmq.NewContext()
 	ServerClient, _ := zmqContextServer.NewSocket(zmq.PULL)
 	if zss.hwm != 0 {
-		ServerClient.SetSndhwm(zss.hwm)
+		_ = ServerClient.SetRcvhwm(zss.hwm)
 	}
 	return Socket{ServerClient}
 }
@@ -71,7 +71,7 @@ func (r *UdsReceiver) newReqSocket(zss *ZeroMqReqSettings) Socket {
 	zmqContextServer, _ := zmq.NewContext()
 	ServerClient, _ := zmqContextServer.NewSocket(zmq.REQ)
 	if zss.hwm != 0 {
-		ServerClient.SetSndhwm(zss.hwm)
+		_ = ServerClient.SetSndhwm(zss.hwm)
 	}
 	return Socket{ServerClient}
 }
@@ -122,12 +122,12 @@ func (r *UdsReceiver) startZeroMqPull() error {
 	go func() {
 		defer r.shutdownWG.Done()
 		for {
-			if r.shutdwonState == true {
+			if r.shutdownState == true {
 				err := pullSocket.Close()
 				if err != nil {
 					return
 				}
-				r.shutdwonState = false
+				r.shutdownState = false
 				break
 			}
 			req, _ := pullSocket.RecvMessage(0)
@@ -143,12 +143,9 @@ func (r *UdsReceiver) startZeroMqPull() error {
 					r.telemetry.Logger.Error("Error sending event to next consumer: %v", zap.Error(err))
 					continue
 				}
-				//r.logger.Info("name"+data.HcmineEvent[0].GetName())
 			}
-
 		}
 	}()
-	r.shutdownWG.Wait()
 	return nil
 }
 
@@ -212,12 +209,8 @@ func (r *UdsReceiver) Start() error {
 func (r *UdsReceiver) Shutdown() error {
 	var err error
 	if r.zmqPullSocket.Socket != nil {
-		r.shutdwonState = true
-		time.Sleep(1 * time.Second)
-		//err = r.zmqPullSocket.Close()
-		//r.shutdownWG.Done()
+		r.shutdownState = true
 	}
-
 	r.shutdownWG.Wait()
 	return err
 }
