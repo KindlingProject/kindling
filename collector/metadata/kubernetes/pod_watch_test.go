@@ -32,7 +32,7 @@ func TestTruncateContainerId(t *testing.T) {
 
 func TestOnAdd(t *testing.T) {
 	globalPodInfo = &podMap{
-		Info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*K8sPodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
@@ -56,7 +56,7 @@ func TestOnAdd(t *testing.T) {
 // ISSUE https://github.com/CloudDectective-Harmonycloud/kindling/issues/229
 func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
 	globalPodInfo = &podMap{
-		Info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*K8sPodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
@@ -98,7 +98,7 @@ func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
 
 func TestOnAddLowercaseWorkload(t *testing.T) {
 	globalPodInfo = &podMap{
-		Info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*K8sPodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),

@@ -17,19 +17,10 @@ import (
 	_ "k8s.io/client-go/util/homedir"
 )
 
-type PodInfo struct {
-	Ip           string
-	Ports        []int32
-	Name         string
-	Labels       map[string]string
-	Namespace    string
-	ContainerIds []string
-}
-
 type podMap struct {
 	// namespace:
 	//   podName: podInfo{}
-	Info  map[string]map[string]*PodInfo
+	Info  map[string]map[string]*K8sPodInfo
 	mutex sync.RWMutex
 }
 
@@ -38,18 +29,18 @@ var podUpdateMutex sync.Mutex
 
 func newPodMap() *podMap {
 	return &podMap{
-		Info:  make(map[string]map[string]*PodInfo),
+		Info:  make(map[string]map[string]*K8sPodInfo),
 		mutex: sync.RWMutex{},
 	}
 }
 
-func (m *podMap) add(info *PodInfo) {
+func (m *podMap) add(info *K8sPodInfo) {
 	m.mutex.Lock()
 	podInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
-		podInfoMap = make(map[string]*PodInfo)
+		podInfoMap = make(map[string]*K8sPodInfo)
 	}
-	podInfoMap[info.Name] = info
+	podInfoMap[info.PodName] = info
 	m.Info[info.Namespace] = podInfoMap
 	m.mutex.Unlock()
 }
@@ -63,7 +54,7 @@ func (m *podMap) delete(namespace string, name string) {
 	m.mutex.Unlock()
 }
 
-func (m *podMap) get(namespace string, name string) (*PodInfo, bool) {
+func (m *podMap) get(namespace string, name string) (*K8sPodInfo, bool) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	podInfoMap, ok := m.Info[namespace]
@@ -77,10 +68,10 @@ func (m *podMap) get(namespace string, name string) (*PodInfo, bool) {
 	return podInfo, true
 }
 
-// getPodsMatchSelectors gets PodInfo(s) whose labels match with selectors in such namespace.
+// getPodsMatchSelectors gets K8sPodInfo(s) whose labels match with selectors in such namespace.
 // Return empty slice if not found. Note there may be multiple match.
-func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]string) []*PodInfo {
-	retPodInfoSlice := make([]*PodInfo, 0)
+func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]string) []*K8sPodInfo {
+	retPodInfoSlice := make([]*K8sPodInfo, 0)
 	if len(selectors) == 0 {
 		return retPodInfoSlice
 	}
@@ -126,18 +117,12 @@ func PodWatch(clientSet *kubernetes.Clientset, graceDeletePeriod time.Duration) 
 
 func onAdd(obj interface{}) {
 	pod := obj.(*corev1.Pod)
-	pI := PodInfo{
-		Ip:           pod.Status.PodIP,
-		Ports:        make([]int32, 0, 1),
-		Name:         pod.Name,
-		Labels:       pod.Labels,
-		Namespace:    pod.Namespace,
-		ContainerIds: make([]string, 0, 2),
-	}
 
-	workloadTypeTmp := ""
-	workloadNameTmp := ""
-
+	// Find the controller workload of the pod
+	var (
+		workloadTypeTmp string
+		workloadNameTmp string
+	)
 	rsUpdateMutex.RLock()
 	for _, owner := range pod.OwnerReferences {
 		// only care about the controller
@@ -162,7 +147,8 @@ func onAdd(obj interface{}) {
 	}
 	rsUpdateMutex.RUnlock()
 
-	serviceInfoSlice := globalServiceInfo.GetServiceMatchLabels(pI.Namespace, pI.Labels)
+	// Find one of the services of the pod
+	serviceInfoSlice := globalServiceInfo.GetServiceMatchLabels(pod.Namespace, pod.Labels)
 	var serviceInfo *K8sServiceInfo
 	if len(serviceInfoSlice) == 0 {
 		serviceInfo = nil
@@ -177,10 +163,14 @@ func onAdd(obj interface{}) {
 		// Only one of the matched services is cared, here we get the first one
 		serviceInfo = serviceInfoSlice[0]
 	}
-	var kpi = &K8sPodInfo{
+
+	var cachePodInfo = &K8sPodInfo{
 		Ip:            pod.Status.PodIP,
 		Namespace:     pod.Namespace,
 		PodName:       pod.Name,
+		Ports:         make([]int32, 0, 1),
+		ContainerIds:  make([]string, 0, 2),
+		Labels:        pod.Labels,
 		WorkloadKind:  workloadTypeTmp,
 		WorkloadName:  workloadNameTmp,
 		NodeName:      pod.Spec.NodeName,
@@ -191,18 +181,17 @@ func onAdd(obj interface{}) {
 
 	// Add containerId map
 	for _, containerStatus := range pod.Status.ContainerStatuses {
-		containerId := containerStatus.ContainerID
-		realContainerId := TruncateContainerId(containerId)
-		if realContainerId == "" {
+		shortenContainerId := TruncateContainerId(containerStatus.ContainerID)
+		if shortenContainerId == "" {
 			continue
 		}
-		pI.ContainerIds = append(pI.ContainerIds, realContainerId)
+		cachePodInfo.ContainerIds = append(cachePodInfo.ContainerIds, shortenContainerId)
 		containerInfo := &K8sContainerInfo{
-			ContainerId: realContainerId,
+			ContainerId: shortenContainerId,
 			Name:        containerStatus.Name,
-			RefPodInfo:  kpi,
+			RefPodInfo:  cachePodInfo,
 		}
-		MetaDataCache.AddByContainerId(realContainerId, containerInfo)
+		MetaDataCache.AddByContainerId(shortenContainerId, containerInfo)
 	}
 
 	// Add pod IP and port map
@@ -211,7 +200,7 @@ func onAdd(obj interface{}) {
 			containerInfo := &K8sContainerInfo{
 				Name:        tmpContainer.Name,
 				HostPortMap: make(map[int32]int32),
-				RefPodInfo:  kpi,
+				RefPodInfo:  cachePodInfo,
 			}
 			// Not specifying a port DOES NOT prevent that port from being exposed.
 			// So Ports could be empty, if so we only record its IP address.
@@ -227,7 +216,7 @@ func onAdd(obj interface{}) {
 				continue
 			}
 			for _, port := range tmpContainer.Ports {
-				pI.Ports = append(pI.Ports, port.ContainerPort)
+				cachePodInfo.Ports = append(cachePodInfo.Ports, port.ContainerPort)
 				// If hostPort is specified, add the container using HostIP and HostPort
 				if port.HostPort != 0 {
 					containerInfo.HostPortMap[port.HostPort] = port.ContainerPort
@@ -237,7 +226,7 @@ func onAdd(obj interface{}) {
 			}
 		}
 	}
-	globalPodInfo.add(&pI)
+	globalPodInfo.add(cachePodInfo)
 }
 
 func OnUpdate(objOld interface{}, objNew interface{}) {

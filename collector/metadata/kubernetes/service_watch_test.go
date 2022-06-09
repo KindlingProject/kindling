@@ -1,10 +1,11 @@
 package kubernetes
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestSelectorsMatchLabels(t *testing.T) {
@@ -116,7 +117,7 @@ func TestServiceMap_GetServiceMatchLabels(t *testing.T) {
 
 func TestOnAddService(t *testing.T) {
 	globalPodInfo = &podMap{
-		Info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*K8sPodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
@@ -139,7 +140,7 @@ func TestOnAddService(t *testing.T) {
 
 func TestServiceMap_Delete(t *testing.T) {
 	globalPodInfo = &podMap{
-		Info: make(map[string]map[string]*PodInfo),
+		Info: make(map[string]map[string]*K8sPodInfo),
 	}
 	globalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
