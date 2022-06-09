@@ -4,7 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/shirou/gopsutil/process"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
@@ -17,9 +24,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
-	"time"
 )
 
 const (
@@ -32,12 +36,47 @@ const (
 	PrometheusKindExporter    = "prometheus"
 )
 
+var (
+	selfTelemetryOnce   sync.Once
+	agentCPUTimeSeconds metric.Float64CounterObserver
+	agentMemUsedBytes   metric.Float64GaugeObserver
+)
+
+const (
+	agentCPUTimeSecondsMetric  = "kindling_telemetry_agent_cpu_time_seconds"
+	agentMemoryUsedBytesMetric = "kindling_telemetry_agent_memory_used_bytes"
+)
+
 type otelLoggerHandler struct {
 	logger *zap.Logger
 }
 
 func (h *otelLoggerHandler) Handle(err error) {
 	h.logger.Warn("Opentelemetry-go encountered an error: ", zap.Error(err))
+}
+
+func RegsiterAgentPerformanceMetrics(mp metric.MeterProvider) (err error) {
+	proc, _ := process.NewProcess(int32(os.Getpid()))
+	meter := mp.Meter("kindling")
+	selfTelemetryOnce.Do(func() {
+		agentCPUTimeSeconds, err = meter.NewFloat64CounterObserver(agentCPUTimeSecondsMetric, func(ctx context.Context, result metric.Float64ObserverResult) {
+			cpuTime, _ := proc.Times()
+			result.Observe(cpuTime.User, attribute.String("type", "user"))
+			result.Observe(cpuTime.System, attribute.String("type", "system"))
+		})
+		if err != nil {
+			return
+		}
+		agentMemUsedBytes, err = meter.NewFloat64GaugeObserver(agentMemoryUsedBytesMetric, func(ctx context.Context, result metric.Float64ObserverResult) {
+			mem, _ := proc.MemoryInfo()
+			result.Observe(float64(mem.RSS), attribute.String("type", "rss"))
+			result.Observe(float64(mem.VMS), attribute.String("type", "vms"))
+		})
+		if err != nil {
+			return
+		}
+	})
+	return nil
 }
 
 func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, error) {
@@ -86,7 +125,10 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 				logger.Warn("error starting self-telemetry server: ", zap.Error(err))
 			}
 		}()
-		return exp.MeterProvider(), nil
+
+		mp := exp.MeterProvider()
+		RegsiterAgentPerformanceMetrics(mp)
+		return mp, nil
 	} else {
 		var collectPeriod time.Duration
 
