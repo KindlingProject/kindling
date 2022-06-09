@@ -60,6 +60,10 @@ func deletePod(pod *corev1.Pod) {
 	}
 
 	for _, container := range pod.Spec.Containers {
+		if len(container.Ports) == 0 {
+			MetaDataCache.DeleteContainerByIpPort(pod.Status.PodIP, 0)
+			continue
+		}
 		for _, port := range container.Ports {
 			// Assume that PodIP:Port can't be reused in a few seconds
 			MetaDataCache.DeleteContainerByIpPort(pod.Status.PodIP, uint32(port.ContainerPort))
