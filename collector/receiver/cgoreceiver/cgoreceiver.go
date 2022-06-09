@@ -23,9 +23,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/receiver"
 )
 
-type Config struct {
-}
-
 const (
 	Cgo = "cgoreceiver"
 )
@@ -40,6 +37,15 @@ type CgoReceiver struct {
 	eventChannel    chan *model.KindlingEvent
 	eventCount      int
 	stopCh          chan interface{}
+}
+
+type Config struct {
+	SubcribeInfo []SubEvent `mapstructure:"subscribe"`
+}
+
+type SubEvent struct {
+	Category string `mapstructure:"category"`
+	Name     string `mapstructure:"name"`
 }
 
 func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
@@ -61,6 +67,8 @@ func (r *CgoReceiver) Start() error {
 	r.telemetry.Logger.Info("Start CgoReceiver")
 	go C.runForGo()
 	go r.printMetrics()
+	time.Sleep(2 * time.Second)
+	r.subEvent()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
@@ -90,9 +98,9 @@ func (r *CgoReceiver) startGetEvent() {
 			return
 		default:
 			res := int(C.getKindlingEvent(&pKindlingEvent))
-			if res != 0 {
+			if res == 1 {
 				r.eventCount++
-				r.eventChannel <- convertEvent(*CKindlingEventForGo(pKindlingEvent))
+				r.eventChannel <- convertEvent((*CKindlingEventForGo)(pKindlingEvent))
 			}
 		}
 	}
@@ -103,12 +111,12 @@ func (r *CgoReceiver) consumeEvents() {
 		select {
 		case <-r.stopCh:
 			return
-		case ev := <-r.eventChannel:
-			eventList := &model.KindlingEventList{KindlingEventList: []*model.KindlingEvent{ev}}
-			err := r.sendToNextConsumer(eventList)
-			if err != nil {
-				r.telemetry.Logger.Info("Failed to send KindlingEvent: ", zap.Error(err))
-			}
+		case _ = <-r.eventChannel:
+			//eventList := &model.KindlingEventList{KindlingEventList: []*model.KindlingEvent{ev}}
+			//err := r.sendToNextConsumer(eventList)
+			//if err != nil {
+			//	r.telemetry.Logger.Info("Failed to send KindlingEvent: ", zap.Error(err))
+			//}
 		}
 	}
 }
@@ -140,22 +148,24 @@ func convertEvent(cgoEvent *CKindlingEventForGo) *model.KindlingEvent {
 	ev.Ctx.FdInfo.Filename = C.GoString(cgoEvent.context.fdInfo.filename)
 	ev.Ctx.FdInfo.Directory = C.GoString(cgoEvent.context.fdInfo.directory)
 	ev.Ctx.FdInfo.Role = If(cgoEvent.context.fdInfo.role != 0, true, false).(bool)
-	ev.Ctx.FdInfo.Sip = []uint32{cgoEvent.context.fdInfo.sip}
-	ev.Ctx.FdInfo.Dip = []uint32{cgoEvent.context.fdInfo.dip}
+	ev.Ctx.FdInfo.Sip = []uint32{uint32(cgoEvent.context.fdInfo.sip)}
+	ev.Ctx.FdInfo.Dip = []uint32{uint32(cgoEvent.context.fdInfo.dip)}
 	ev.Ctx.FdInfo.Sport = uint32(cgoEvent.context.fdInfo.sport)
 	ev.Ctx.FdInfo.Dport = uint32(cgoEvent.context.fdInfo.dport)
 	ev.Ctx.FdInfo.Source = uint64(cgoEvent.context.fdInfo.source)
 	ev.Ctx.FdInfo.Destination = uint64(cgoEvent.context.fdInfo.destination)
 
 	ev.NativeAttributes = new(model.Property)
-	ev.UserAttributes = make([]*model.KeyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	paramsNumber := uint16(cgoEvent.paramsNumber)
+	ev.UserAttributes = make([]*model.KeyValue, paramsNumber, paramsNumber)
+	for i := 0; i < int(paramsNumber); i++ {
 		keyValue := new(model.KeyValue)
 		keyValue.Key = C.GoString(cgoEvent.userAttributes[i].key)
 		if len(keyValue.Key) == 0 {
 			break
 		}
-		keyValue.Value = C.GoBytes(cgoEvent.userAttributes[i].value)
+		userAttributesLen := cgoEvent.userAttributes[i].len
+		keyValue.Value = C.GoBytes(unsafe.Pointer(cgoEvent.userAttributes[i].value), C.int(userAttributesLen))
 		keyValue.ValueType = model.ValueType(cgoEvent.userAttributes[i].valueType)
 		ev.UserAttributes[i] = keyValue
 	}
@@ -184,12 +194,16 @@ func (r *CgoReceiver) sendToNextConsumer(events *model.KindlingEventList) error 
 		for _, analyzer := range analyzers {
 			err := analyzer.ConsumeEvent(evt)
 			if err != nil {
-				return err
-			}
-			if err != nil {
 				r.telemetry.Logger.Warn("Error sending event to next consumer: ", zap.Error(err))
 			}
 		}
 	}
 	return nil
+}
+
+func (r *CgoReceiver) subEvent() {
+	for _, value := range r.cfg.SubcribeInfo {
+		C.subEventForGo(C.CString(value.Name), C.CString(value.Category))
+	}
+
 }
