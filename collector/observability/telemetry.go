@@ -102,12 +102,18 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 	)
 
 	if config.ExportKind == PrometheusKindExporter {
+		var collectorPeriod time.Duration = 15 * time.Second
+		if config.PromCfg.RealTime {
+			collectorPeriod = 0
+		}
+
 		// Create controller
 		c := controller.New(
 			otelprocessor.NewFactory(
 				selector.NewWithInexpensiveDistribution(),
 				aggregation.CumulativeTemporalitySelector(),
 			),
+			controller.WithCollectPeriod(collectorPeriod),
 			controller.WithResource(rs),
 		)
 
@@ -127,7 +133,9 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 		}()
 
 		mp := exp.MeterProvider()
-		RegsiterAgentPerformanceMetrics(mp)
+		if config.PromCfg.RealTime {
+			RegsiterAgentPerformanceMetrics(mp)
+		}
 		return mp, nil
 	} else {
 		var collectPeriod time.Duration
