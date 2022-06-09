@@ -1,12 +1,12 @@
 // Copyright 2020 OpenTelemetry Authors
 // Source: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/internal/kube/client.go
+// Modification: Use deletedPodInfo as deleted elements and delete our cache map as needed.
+
 package kubernetes
 
 import (
 	"sync"
 	"time"
-
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -15,8 +15,18 @@ var (
 )
 
 type deleteRequest struct {
-	pod *corev1.Pod
-	ts  time.Time
+	podInfo *deletedPodInfo
+	ts      time.Time
+}
+
+type deletedPodInfo struct {
+	name         string
+	namespace    string
+	containerIds []string
+	ip           string
+	ports        []int32
+	hostIp       string
+	hostPorts    []int32
 }
 
 // deleteLoop deletes pods from cache periodically.
@@ -40,7 +50,7 @@ func podDeleteLoop(interval time.Duration, gracePeriod time.Duration, stopCh cha
 			podDeleteQueue = podDeleteQueue[cutoff:]
 			podDeleteQueueMut.Unlock()
 			for _, d := range toDelete {
-				deletePod(d.pod)
+				deletePodInfo(d.podInfo)
 			}
 
 		case <-stopCh:
@@ -49,28 +59,24 @@ func podDeleteLoop(interval time.Duration, gracePeriod time.Duration, stopCh cha
 	}
 }
 
-func deletePod(pod *corev1.Pod) {
-	for i := 0; i < len(pod.Status.ContainerStatuses); i++ {
-		containerId := pod.Status.ContainerStatuses[i].ContainerID
-		realContainerId := TruncateContainerId(containerId)
-		if realContainerId == "" {
-			continue
-		}
-		MetaDataCache.DeleteByContainerId(realContainerId)
+func deletePodInfo(podInfo *deletedPodInfo) {
+	if podInfo.name != "" {
+		globalPodInfo.delete(podInfo.namespace, podInfo.name)
 	}
-
-	for _, container := range pod.Spec.Containers {
-		if len(container.Ports) == 0 {
-			MetaDataCache.DeleteContainerByIpPort(pod.Status.PodIP, 0)
-			continue
+	if len(podInfo.containerIds) != 0 {
+		for i := 0; i < len(podInfo.containerIds); i++ {
+			MetaDataCache.DeleteByContainerId(podInfo.containerIds[i])
 		}
-		for _, port := range container.Ports {
+	}
+	if podInfo.ip != "" && len(podInfo.ports) != 0 {
+		for _, port := range podInfo.ports {
 			// Assume that PodIP:Port can't be reused in a few seconds
-			MetaDataCache.DeleteContainerByIpPort(pod.Status.PodIP, uint32(port.ContainerPort))
-			// If hostPort is specified, add the container using HostIP and HostPort
-			if port.HostPort != 0 {
-				MetaDataCache.DeleteContainerByHostIpPort(pod.Status.HostIP, uint32(port.HostPort))
-			}
+			MetaDataCache.DeleteContainerByIpPort(podInfo.ip, uint32(port))
+		}
+	}
+	if podInfo.hostIp != "" && len(podInfo.hostPorts) != 0 {
+		for _, port := range podInfo.hostPorts {
+			MetaDataCache.DeleteContainerByHostIpPort(podInfo.hostIp, uint32(port))
 		}
 	}
 }

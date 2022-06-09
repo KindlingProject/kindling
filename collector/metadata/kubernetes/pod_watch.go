@@ -207,7 +207,7 @@ func onAdd(obj interface{}) {
 			if len(tmpContainer.Ports) == 0 {
 				// If there is more than one container that doesn't specify a port,
 				// we would rather get an empty name than get an incorrect one.
-				if len(pod.Spec.Containers) > 0 {
+				if len(pod.Spec.Containers) > 1 {
 					containerInfo.Name = ""
 				}
 				// When there are many containers in one pod and only part of them have ports,
@@ -246,13 +246,42 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 
 func onDelete(obj interface{}) {
 	pod := obj.(*corev1.Pod)
-	// Delete the intermediate data first
-	globalPodInfo.delete(pod.Namespace, pod.Name)
+	podInfo := &deletedPodInfo{
+		name:         pod.Name,
+		namespace:    pod.Namespace,
+		containerIds: make([]string, 0),
+		ip:           pod.Status.PodIP,
+		ports:        make([]int32, 0),
+		hostIp:       pod.Status.HostIP,
+		hostPorts:    make([]int32, 0),
+	}
+
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		shortenContainerId := TruncateContainerId(containerStatus.ContainerID)
+		if shortenContainerId == "" {
+			continue
+		}
+		podInfo.containerIds = append(podInfo.containerIds, shortenContainerId)
+	}
+
+	for _, container := range pod.Spec.Containers {
+		if len(container.Ports) == 0 {
+			podInfo.ports = append(podInfo.ports, 0)
+			continue
+		}
+		for _, port := range container.Ports {
+			podInfo.ports = append(podInfo.ports, port.ContainerPort)
+			// If hostPort is specified, add the container using HostIP and HostPort
+			if port.HostPort != 0 {
+				podInfo.hostPorts = append(podInfo.hostPorts, port.HostPort)
+			}
+		}
+	}
 	// Wait for a few seconds to remove the cache data
 	podDeleteQueueMut.Lock()
 	podDeleteQueue = append(podDeleteQueue, deleteRequest{
-		pod: pod,
-		ts:  time.Now(),
+		podInfo: podInfo,
+		ts:      time.Now(),
 	})
 	podDeleteQueueMut.Unlock()
 }
