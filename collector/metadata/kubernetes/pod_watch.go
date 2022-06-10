@@ -294,13 +294,21 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 		}
 	}
 
-	portsCompare := compare.NewInt32Slice(oldCachePod.Ports, newPorts)
-	portsCompare.Compare()
-	deletedPodInfo.ports = portsCompare.GetRemovedElements()
+	if oldPod.Status.PodIP != newPod.Status.PodIP {
+		deletedPodInfo.ports = oldCachePod.Ports
+	} else {
+		portsCompare := compare.NewInt32Slice(oldCachePod.Ports, newPorts)
+		portsCompare.Compare()
+		deletedPodInfo.ports = portsCompare.GetRemovedElements()
+	}
 
-	hostPortsCompare := compare.NewInt32Slice(oldCachePod.HostPorts, newHostPorts)
-	hostPortsCompare.Compare()
-	deletedPodInfo.hostPorts = hostPortsCompare.GetRemovedElements()
+	if oldPod.Status.HostIP != newPod.Status.HostIP {
+		deletedPodInfo.hostPorts = oldCachePod.Ports
+	} else {
+		hostPortsCompare := compare.NewInt32Slice(oldCachePod.HostPorts, newHostPorts)
+		hostPortsCompare.Compare()
+		deletedPodInfo.hostPorts = hostPortsCompare.GetRemovedElements()
+	}
 
 	// Wait for a few seconds to remove the cache data
 	podDeleteQueueMut.Lock()
