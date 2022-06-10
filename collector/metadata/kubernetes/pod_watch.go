@@ -266,7 +266,7 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 
 	// Check the containers' ID
 	newContainerIds := make([]string, 0)
-	for _, containerStatus := range oldPod.Status.ContainerStatuses {
+	for _, containerStatus := range newPod.Status.ContainerStatuses {
 		shortenContainerId := TruncateContainerId(containerStatus.ContainerID)
 		if shortenContainerId == "" {
 			continue
