@@ -59,7 +59,7 @@ func (h *otelLoggerHandler) Handle(err error) {
 	h.logger.Warn("Opentelemetry-go encountered an error: ", zap.Error(err))
 }
 
-func RegisterExternalMetrics(selectors []string, mp metric.MeterProvider) {
+func RegisterExterMetrics(selectors []string, mp metric.MeterProvider) {
 	for _, selector := range selectors {
 		switch selector {
 		case resourcePerformance:
@@ -141,7 +141,7 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 		}()
 
 		mp := exp.MeterProvider()
-		RegisterExternalMetrics(config.PromCfg.Selector, mp)
+		RegisterExterMetrics(config.PromCfg.ExtraMetrics, mp)
 		return mp, nil
 	} else {
 		var collectPeriod time.Duration

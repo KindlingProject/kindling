@@ -10,8 +10,8 @@ type Config struct {
 }
 
 type PrometheusConfig struct {
-	Port     string   `mapstructure:"port,omitempty"`
-	Selector []string `mapstructure:"selector"`
+	Port         string   `mapstructure:"port,omitempty"`
+	ExtraMetrics []string `mapstructure:"extra_metrics"`
 }
 
 type OtlpGrpcConfig struct {
