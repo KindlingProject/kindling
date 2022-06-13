@@ -6,7 +6,7 @@ const (
 	KAFKA     = "kafka"
 	MYSQL     = "mysql"
 	REDIS     = "redis"
-	DUBBO     = "dubbo"
+	DUBBO2    = "dubbo"
 	NOSUPPORT = "NOSUPPORT"
 )
 
@@ -27,6 +27,6 @@ func GetHttpPayLoadLength() int {
 	return GetPayLoadLength(HTTP)
 }
 
-func GetDubboPayLoadLength() int {
-	return GetPayLoadLength(DUBBO)
+func GetDubbo2PayLoadLength() int {
+	return GetPayLoadLength(DUBBO2)
 }

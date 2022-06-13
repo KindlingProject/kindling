@@ -1,17 +1,17 @@
-package dubbo
+package dubbo2
 
 import (
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
 )
 
-func fastfailDubboRequest() protocol.FastFailFn {
+func fastfailDubbo2Request() protocol.FastFailFn {
 	return func(message *protocol.PayloadMessage) bool {
 		return len(message.Data) < 16 || message.Data[0] != MagicHigh || message.Data[1] != MagicLow
 	}
 }
 
-func parseDubboRequest() protocol.ParsePkgFn {
+func parseDubbo2Request() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		contentKey := getContentKey(message.Data)
 		if contentKey == "" {
@@ -19,7 +19,7 @@ func parseDubboRequest() protocol.ParsePkgFn {
 		}
 
 		message.AddStringAttribute(constlabels.ContentKey, contentKey)
-		message.AddStringAttribute(constlabels.DubboRequestPayload, getAsciiString(message.GetData(16, protocol.GetDubboPayLoadLength())))
+		message.AddStringAttribute(constlabels.Dubbo2RequestPayload, getAsciiString(message.GetData(16, protocol.GetDubbo2PayLoadLength())))
 		return true, true
 	}
 }

@@ -1,4 +1,4 @@
-package dubbo
+package dubbo2
 
 import "github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 
@@ -21,10 +21,10 @@ const (
 	AsciiReplace = byte(0x2e) // .
 )
 
-func NewDubboParser() *protocol.ProtocolParser {
-	requestParser := protocol.CreatePkgParser(fastfailDubboRequest(), parseDubboRequest())
-	responseParser := protocol.CreatePkgParser(fastfailDubboResponse(), parseDubboResponse())
-	return protocol.NewProtocolParser(protocol.DUBBO, requestParser, responseParser, nil)
+func NewDubbo2Parser() *protocol.ProtocolParser {
+	requestParser := protocol.CreatePkgParser(fastfailDubbo2Request(), parseDubbo2Request())
+	responseParser := protocol.CreatePkgParser(fastfailDubbo2Response(), parseDubbo2Response())
+	return protocol.NewProtocolParser(protocol.DUBBO2, requestParser, responseParser, nil)
 }
 
 /**

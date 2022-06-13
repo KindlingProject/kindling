@@ -200,7 +200,7 @@ var entityProtocol = []extraLabelsParam{
 	}, extraLabelsKey{DNS}},
 	{[]dictionary{
 		{constlabels.RequestContent, constlabels.ContentKey, String},
-		{constlabels.ResponseContent, constlabels.DubboErrorCode, FromInt64ToString},
+		{constlabels.ResponseContent, constlabels.Dubbo2ErrorCode, FromInt64ToString},
 	}, extraLabelsKey{DUBBO}},
 	{[]dictionary{
 		{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
@@ -230,9 +230,9 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanDnsRCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{[]dictionary{
-		{constlabels.SpanDubboRequestBody, constlabels.DubboRequestPayload, String},
-		{constlabels.SpanDubboResponseBody, constlabels.DubboResponsePayload, String},
-		{constlabels.SpanDubboErrorCode, constlabels.DubboErrorCode, Int64},
+		{constlabels.SpanDubboRequestBody, constlabels.Dubbo2RequestPayload, String},
+		{constlabels.SpanDubboResponseBody, constlabels.Dubbo2ResponsePayload, String},
+		{constlabels.SpanDubboErrorCode, constlabels.Dubbo2ErrorCode, Int64},
 	}, extraLabelsKey{DUBBO}},
 	{
 		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
@@ -257,7 +257,7 @@ var topologyProtocol = []extraLabelsParam{
 		{constlabels.StatusCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{[]dictionary{
-		{constlabels.StatusCode, constlabels.DubboErrorCode, FromInt64ToString},
+		{constlabels.StatusCode, constlabels.Dubbo2ErrorCode, FromInt64ToString},
 	}, extraLabelsKey{DUBBO}},
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.STR_EMPTY, StrEmpty},

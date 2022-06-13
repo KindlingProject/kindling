@@ -1,4 +1,4 @@
-package dubbo
+package dubbo2
 
 const (
 	JsonNextLine = byte(0x0a)
@@ -9,7 +9,7 @@ const (
 	SerialFastjson = byte(0x06)
 )
 
-type dubboSerializer interface {
+type dubbo2Serializer interface {
 	eatString(data []byte, offset int) int
 
 	getStringValue(data []byte, offset int) (int, string)
@@ -18,12 +18,12 @@ type dubboSerializer interface {
 }
 
 var (
-	serialHessian2  = &dubboHessian{}
-	serialFastjson  = &dubboFastJson{}
-	serialUnsupport = &dubboUnsupport{}
+	serialHessian2  = &dubbo2Hessian{}
+	serialFastjson  = &dubbo2FastJson{}
+	serialUnsupport = &dubbo2Unsupport{}
 )
 
-func GetSerializer(serialID byte) dubboSerializer {
+func GetSerializer(serialID byte) dubbo2Serializer {
 	switch serialID {
 	case SerialHessian2:
 		return serialHessian2
@@ -34,9 +34,9 @@ func GetSerializer(serialID byte) dubboSerializer {
 	}
 }
 
-type dubboHessian struct{}
+type dubbo2Hessian struct{}
 
-func (dh *dubboHessian) eatString(data []byte, offset int) int {
+func (dh *dubbo2Hessian) eatString(data []byte, offset int) int {
 	dataLength := len(data)
 	if offset >= dataLength {
 		return dataLength
@@ -54,7 +54,7 @@ func (dh *dubboHessian) eatString(data []byte, offset int) int {
 	}
 }
 
-func (dh *dubboHessian) getStringValue(data []byte, offset int) (int, string) {
+func (dh *dubbo2Hessian) getStringValue(data []byte, offset int) (int, string) {
 	dataLength := len(data)
 	if offset >= dataLength {
 		return dataLength, ""
@@ -80,7 +80,7 @@ func (dh *dubboHessian) getStringValue(data []byte, offset int) (int, string) {
 	return offset + stringValueLength, string(data[offset : offset+stringValueLength])
 }
 
-func (dh *dubboHessian) getStringValueByKey(data []byte, from int, key string) string {
+func (dh *dubbo2Hessian) getStringValueByKey(data []byte, from int, key string) string {
 	keyLength := len(key)
 	dataLength := len(data)
 	firstKeyword := byte(key[0])
@@ -97,7 +97,7 @@ func (dh *dubboHessian) getStringValueByKey(data []byte, from int, key string) s
 	return ""
 }
 
-func (dh *dubboHessian) getStrValue(data []byte, dataLength int, index int, length int) string {
+func (dh *dubbo2Hessian) getStrValue(data []byte, dataLength int, index int, length int) string {
 	if index >= dataLength {
 		return ""
 	}
@@ -108,9 +108,9 @@ func (dh *dubboHessian) getStrValue(data []byte, dataLength int, index int, leng
 	return string(data[index : index+length])
 }
 
-type dubboFastJson struct{}
+type dubbo2FastJson struct{}
 
-func (json *dubboFastJson) eatString(data []byte, offset int) int {
+func (json *dubbo2FastJson) eatString(data []byte, offset int) int {
 	dataLength := len(data)
 	if offset >= dataLength {
 		return dataLength
@@ -129,7 +129,7 @@ func (json *dubboFastJson) eatString(data []byte, offset int) int {
 	return dataLength
 }
 
-func (json *dubboFastJson) getStringValue(data []byte, offset int) (int, string) {
+func (json *dubbo2FastJson) getStringValue(data []byte, offset int) (int, string) {
 	dataLength := len(data)
 	if offset >= dataLength {
 		return dataLength, ""
@@ -148,7 +148,7 @@ func (json *dubboFastJson) getStringValue(data []byte, offset int) (int, string)
 	return dataLength, ""
 }
 
-func (json *dubboFastJson) getStringValueByKey(data []byte, from int, key string) string {
+func (json *dubbo2FastJson) getStringValueByKey(data []byte, from int, key string) string {
 	keyLength := len(key)
 	dataLength := len(data)
 
@@ -178,7 +178,7 @@ func (json *dubboFastJson) getStringValueByKey(data []byte, from int, key string
 	return ""
 }
 
-func (json *dubboFastJson) getNextString(data []byte, dataLength int, offset int) string {
+func (json *dubbo2FastJson) getNextString(data []byte, dataLength int, offset int) string {
 	if offset >= dataLength {
 		return ""
 	}
@@ -197,16 +197,16 @@ func (json *dubboFastJson) getNextString(data []byte, dataLength int, offset int
 	return ""
 }
 
-type dubboUnsupport struct{}
+type dubbo2Unsupport struct{}
 
-func (unsupport *dubboUnsupport) eatString(data []byte, offset int) int {
+func (unsupport *dubbo2Unsupport) eatString(data []byte, offset int) int {
 	return 0
 }
 
-func (unsupport *dubboUnsupport) getStringValue(data []byte, offset int) (int, string) {
+func (unsupport *dubbo2Unsupport) getStringValue(data []byte, offset int) (int, string) {
 	return 0, ""
 }
 
-func (unsupport *dubboUnsupport) getStringValueByKey(data []byte, offset int, key string) string {
+func (unsupport *dubbo2Unsupport) getStringValueByKey(data []byte, offset int, key string) string {
 	return ""
 }
