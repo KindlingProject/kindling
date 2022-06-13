@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kindling-project/kindling/collector/pkg/compare"
 	corev1 "k8s.io/api/core/v1"
 	_ "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -17,39 +18,29 @@ import (
 	_ "k8s.io/client-go/util/homedir"
 )
 
-type PodInfo struct {
-	Ip           string
-	Ports        []int32
-	Name         string
-	Labels       map[string]string
-	Namespace    string
-	ContainerIds []string
-}
-
 type podMap struct {
 	// namespace:
 	//   podName: podInfo{}
-	Info  map[string]map[string]*PodInfo
+	Info  map[string]map[string]*K8sPodInfo
 	mutex sync.RWMutex
 }
 
 var globalPodInfo = newPodMap()
-var podUpdateMutex sync.Mutex
 
 func newPodMap() *podMap {
 	return &podMap{
-		Info:  make(map[string]map[string]*PodInfo),
+		Info:  make(map[string]map[string]*K8sPodInfo),
 		mutex: sync.RWMutex{},
 	}
 }
 
-func (m *podMap) add(info *PodInfo) {
+func (m *podMap) add(info *K8sPodInfo) {
 	m.mutex.Lock()
 	podInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
-		podInfoMap = make(map[string]*PodInfo)
+		podInfoMap = make(map[string]*K8sPodInfo)
 	}
-	podInfoMap[info.Name] = info
+	podInfoMap[info.PodName] = info
 	m.Info[info.Namespace] = podInfoMap
 	m.mutex.Unlock()
 }
@@ -63,7 +54,7 @@ func (m *podMap) delete(namespace string, name string) {
 	m.mutex.Unlock()
 }
 
-func (m *podMap) get(namespace string, name string) (*PodInfo, bool) {
+func (m *podMap) get(namespace string, name string) (*K8sPodInfo, bool) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	podInfoMap, ok := m.Info[namespace]
@@ -77,10 +68,10 @@ func (m *podMap) get(namespace string, name string) (*PodInfo, bool) {
 	return podInfo, true
 }
 
-// getPodsMatchSelectors gets PodInfo(s) whose labels match with selectors in such namespace.
+// getPodsMatchSelectors gets K8sPodInfo(s) whose labels match with selectors in such namespace.
 // Return empty slice if not found. Note there may be multiple match.
-func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]string) []*PodInfo {
-	retPodInfoSlice := make([]*PodInfo, 0)
+func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]string) []*K8sPodInfo {
+	retPodInfoSlice := make([]*K8sPodInfo, 0)
 	if len(selectors) == 0 {
 		return retPodInfoSlice
 	}
@@ -126,43 +117,14 @@ func PodWatch(clientSet *kubernetes.Clientset, graceDeletePeriod time.Duration) 
 
 func onAdd(obj interface{}) {
 	pod := obj.(*corev1.Pod)
-	pI := PodInfo{
-		Ip:           pod.Status.PodIP,
-		Ports:        make([]int32, 0, 1),
-		Name:         pod.Name,
-		Labels:       pod.Labels,
-		Namespace:    pod.Namespace,
-		ContainerIds: make([]string, 0, 2),
-	}
 
-	workloadTypeTmp := ""
-	workloadNameTmp := ""
-
+	// Find the controller workload of the pod
 	rsUpdateMutex.RLock()
-	for _, owner := range pod.OwnerReferences {
-		// only care about the controller
-		if owner.Controller == nil || *owner.Controller != true {
-			continue
-		}
-		// TODO: recursion method to find the controller
-		if owner.Kind == ReplicaSetKind {
-			// The owner of Pod is ReplicaSet, and it is Workload such as Deployment for ReplicaSet.
-			// Therefore, find ReplicaSet's name in 'globalRsInfo' to find which kind of workload
-			// the Pod belongs to.
-			if workload, ok := globalRsInfo.GetOwnerReference(mapKey(pod.Namespace, owner.Name)); ok {
-				workloadTypeTmp = CompleteGVK(workload.APIVersion, strings.ToLower(workload.Kind))
-				workloadNameTmp = workload.Name
-				break
-			}
-		}
-		// If the owner of pod is not ReplicaSet or the replicaset has no controller
-		workloadTypeTmp = CompleteGVK(owner.APIVersion, strings.ToLower(owner.Kind))
-		workloadNameTmp = owner.Name
-		break
-	}
+	workloadTypeTmp, workloadNameTmp := getControllerKindName(pod)
 	rsUpdateMutex.RUnlock()
 
-	serviceInfoSlice := globalServiceInfo.GetServiceMatchLabels(pI.Namespace, pI.Labels)
+	// Find one of the services of the pod
+	serviceInfoSlice := globalServiceInfo.GetServiceMatchLabels(pod.Namespace, pod.Labels)
 	var serviceInfo *K8sServiceInfo
 	if len(serviceInfoSlice) == 0 {
 		serviceInfo = nil
@@ -177,10 +139,15 @@ func onAdd(obj interface{}) {
 		// Only one of the matched services is cared, here we get the first one
 		serviceInfo = serviceInfoSlice[0]
 	}
-	var kpi = &K8sPodInfo{
+
+	var cachePodInfo = &K8sPodInfo{
 		Ip:            pod.Status.PodIP,
 		Namespace:     pod.Namespace,
 		PodName:       pod.Name,
+		Ports:         make([]int32, 0),
+		HostPorts:     make([]int32, 0),
+		ContainerIds:  make([]string, 0, 2),
+		Labels:        pod.Labels,
 		WorkloadKind:  workloadTypeTmp,
 		WorkloadName:  workloadNameTmp,
 		NodeName:      pod.Spec.NodeName,
@@ -191,18 +158,17 @@ func onAdd(obj interface{}) {
 
 	// Add containerId map
 	for _, containerStatus := range pod.Status.ContainerStatuses {
-		containerId := containerStatus.ContainerID
-		realContainerId := TruncateContainerId(containerId)
-		if realContainerId == "" {
+		shortenContainerId := TruncateContainerId(containerStatus.ContainerID)
+		if shortenContainerId == "" {
 			continue
 		}
-		pI.ContainerIds = append(pI.ContainerIds, realContainerId)
+		cachePodInfo.ContainerIds = append(cachePodInfo.ContainerIds, shortenContainerId)
 		containerInfo := &K8sContainerInfo{
-			ContainerId: realContainerId,
+			ContainerId: shortenContainerId,
 			Name:        containerStatus.Name,
-			RefPodInfo:  kpi,
+			RefPodInfo:  cachePodInfo,
 		}
-		MetaDataCache.AddByContainerId(realContainerId, containerInfo)
+		MetaDataCache.AddByContainerId(shortenContainerId, containerInfo)
 	}
 
 	// Add pod IP and port map
@@ -211,33 +177,59 @@ func onAdd(obj interface{}) {
 			containerInfo := &K8sContainerInfo{
 				Name:        tmpContainer.Name,
 				HostPortMap: make(map[int32]int32),
-				RefPodInfo:  kpi,
+				RefPodInfo:  cachePodInfo,
 			}
 			// Not specifying a port DOES NOT prevent that port from being exposed.
 			// So Ports could be empty, if so we only record its IP address.
 			if len(tmpContainer.Ports) == 0 {
 				// If there is more than one container that doesn't specify a port,
 				// we would rather get an empty name than get an incorrect one.
-				if len(pod.Spec.Containers) > 0 {
+				if len(pod.Spec.Containers) > 1 {
 					containerInfo.Name = ""
 				}
 				// When there are many containers in one pod and only part of them have ports,
 				// the containers at the back will overwrite the ones at the front here.
 				MetaDataCache.AddContainerByIpPort(pod.Status.PodIP, 0, containerInfo)
+				cachePodInfo.Ports = append(cachePodInfo.Ports, 0)
 				continue
 			}
 			for _, port := range tmpContainer.Ports {
-				pI.Ports = append(pI.Ports, port.ContainerPort)
+				cachePodInfo.Ports = append(cachePodInfo.Ports, port.ContainerPort)
 				// If hostPort is specified, add the container using HostIP and HostPort
 				if port.HostPort != 0 {
 					containerInfo.HostPortMap[port.HostPort] = port.ContainerPort
+					cachePodInfo.HostPorts = append(cachePodInfo.HostPorts, port.HostPort)
 					MetaDataCache.AddContainerByHostIpPort(pod.Status.HostIP, uint32(port.HostPort), containerInfo)
 				}
 				MetaDataCache.AddContainerByIpPort(pod.Status.PodIP, uint32(port.ContainerPort), containerInfo)
 			}
 		}
 	}
-	globalPodInfo.add(&pI)
+	globalPodInfo.add(cachePodInfo)
+}
+
+func getControllerKindName(pod *corev1.Pod) (workloadKind string, workloadName string) {
+	for _, owner := range pod.OwnerReferences {
+		// only care about the controller
+		if owner.Controller == nil || *owner.Controller != true {
+			continue
+		}
+		if owner.Kind == ReplicaSetKind {
+			// The owner of Pod is ReplicaSet, and it is Workload such as Deployment for ReplicaSet.
+			// Therefore, find ReplicaSet's name in 'globalRsInfo' to find which kind of workload
+			// the Pod belongs to.
+			if workload, ok := globalRsInfo.GetOwnerReference(mapKey(pod.Namespace, owner.Name)); ok {
+				workloadKind = CompleteGVK(workload.APIVersion, strings.ToLower(workload.Kind))
+				workloadName = workload.Name
+				return
+			}
+		}
+		// If the owner of pod is not ReplicaSet or the replicaset has no controller
+		workloadKind = CompleteGVK(owner.APIVersion, strings.ToLower(owner.Kind))
+		workloadName = owner.Name
+		return
+	}
+	return
 }
 
 func OnUpdate(objOld interface{}, objNew interface{}) {
@@ -248,22 +240,123 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 		// Two different versions of the same pod will always have different RVs.
 		return
 	}
-	podUpdateMutex.Lock()
-	// TODO: re-implement the updated logic to reduce computation
-	onDelete(objOld)
+
+	oldCachePod, ok := globalPodInfo.get(oldPod.Namespace, oldPod.Name)
+	if !ok {
+		onAdd(objNew)
+		return
+	}
+	// Always override the old pod in the cache
 	onAdd(objNew)
-	podUpdateMutex.Unlock()
+
+	// Delay delete the pod using the difference between the old pod and the new one
+	deletedPodInfo := &deletedPodInfo{
+		name:         "",
+		namespace:    oldPod.Namespace,
+		containerIds: nil,
+		ip:           oldPod.Status.PodIP,
+		ports:        nil,
+		hostIp:       oldPod.Status.HostIP,
+		hostPorts:    nil,
+	}
+
+	if oldPod.Name != newPod.Name {
+		deletedPodInfo.name = oldPod.Name
+	}
+
+	// Check the containers' ID
+	newContainerIds := make([]string, 0)
+	for _, containerStatus := range newPod.Status.ContainerStatuses {
+		shortenContainerId := TruncateContainerId(containerStatus.ContainerID)
+		if shortenContainerId == "" {
+			continue
+		}
+		newContainerIds = append(newContainerIds, shortenContainerId)
+	}
+	containerIdCompare := compare.NewStringSlice(oldCachePod.ContainerIds, newContainerIds)
+	containerIdCompare.Compare()
+	deletedPodInfo.containerIds = containerIdCompare.GetRemovedElements()
+
+	// Check the ports specified.
+	newPorts := make([]int32, 0)
+	newHostPorts := make([]int32, 0)
+	for _, container := range newPod.Spec.Containers {
+		if len(container.Ports) == 0 {
+			newPorts = append(newPorts, 0)
+			continue
+		}
+		for _, port := range container.Ports {
+			newPorts = append(newPorts, port.ContainerPort)
+			// If hostPort is specified, add the container using HostIP and HostPort
+			if port.HostPort != 0 {
+				newHostPorts = append(newHostPorts, port.HostPort)
+			}
+		}
+	}
+
+	if oldPod.Status.PodIP != newPod.Status.PodIP {
+		deletedPodInfo.ports = oldCachePod.Ports
+	} else {
+		portsCompare := compare.NewInt32Slice(oldCachePod.Ports, newPorts)
+		portsCompare.Compare()
+		deletedPodInfo.ports = portsCompare.GetRemovedElements()
+	}
+
+	if oldPod.Status.HostIP != newPod.Status.HostIP {
+		deletedPodInfo.hostPorts = oldCachePod.HostPorts
+	} else {
+		hostPortsCompare := compare.NewInt32Slice(oldCachePod.HostPorts, newHostPorts)
+		hostPortsCompare.Compare()
+		deletedPodInfo.hostPorts = hostPortsCompare.GetRemovedElements()
+	}
+
+	// Wait for a few seconds to remove the cache data
+	podDeleteQueueMut.Lock()
+	podDeleteQueue = append(podDeleteQueue, deleteRequest{
+		podInfo: deletedPodInfo,
+		ts:      time.Now(),
+	})
+	podDeleteQueueMut.Unlock()
 }
 
 func onDelete(obj interface{}) {
 	pod := obj.(*corev1.Pod)
-	// Delete the intermediate data first
-	globalPodInfo.delete(pod.Namespace, pod.Name)
+	podInfo := &deletedPodInfo{
+		name:         pod.Name,
+		namespace:    pod.Namespace,
+		containerIds: make([]string, 0),
+		ip:           pod.Status.PodIP,
+		ports:        make([]int32, 0),
+		hostIp:       pod.Status.HostIP,
+		hostPorts:    make([]int32, 0),
+	}
+
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		shortenContainerId := TruncateContainerId(containerStatus.ContainerID)
+		if shortenContainerId == "" {
+			continue
+		}
+		podInfo.containerIds = append(podInfo.containerIds, shortenContainerId)
+	}
+
+	for _, container := range pod.Spec.Containers {
+		if len(container.Ports) == 0 {
+			podInfo.ports = append(podInfo.ports, 0)
+			continue
+		}
+		for _, port := range container.Ports {
+			podInfo.ports = append(podInfo.ports, port.ContainerPort)
+			// If hostPort is specified, add the container using HostIP and HostPort
+			if port.HostPort != 0 {
+				podInfo.hostPorts = append(podInfo.hostPorts, port.HostPort)
+			}
+		}
+	}
 	// Wait for a few seconds to remove the cache data
 	podDeleteQueueMut.Lock()
 	podDeleteQueue = append(podDeleteQueue, deleteRequest{
-		pod: pod,
-		ts:  time.Now(),
+		podInfo: podInfo,
+		ts:      time.Now(),
 	})
 	podDeleteQueueMut.Unlock()
 }
