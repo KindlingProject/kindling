@@ -10,8 +10,8 @@ type Config struct {
 }
 
 type PrometheusConfig struct {
-	Port     string `mapstructure:"port,omitempty"`
-	RealTime bool   `mapstructure:"realtime"`
+	Port     string   `mapstructure:"port,omitempty"`
+	Selector []string `mapstructure:"selector"`
 }
 
 type OtlpGrpcConfig struct {

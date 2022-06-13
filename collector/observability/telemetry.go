@@ -43,6 +43,10 @@ var (
 )
 
 const (
+	resourcePerformance = "resource"
+)
+
+const (
 	agentCPUTimeSecondsMetric  = "kindling_telemetry_agent_cpu_time_seconds"
 	agentMemoryUsedBytesMetric = "kindling_telemetry_agent_memory_used_bytes"
 )
@@ -55,7 +59,16 @@ func (h *otelLoggerHandler) Handle(err error) {
 	h.logger.Warn("Opentelemetry-go encountered an error: ", zap.Error(err))
 }
 
-func RegsiterAgentPerformanceMetrics(mp metric.MeterProvider) (err error) {
+func RegisterExternalMetrics(selectors []string, mp metric.MeterProvider) {
+	for _, selector := range selectors {
+		switch selector {
+		case resourcePerformance:
+			regsiterAgentResourcePerformanceMetrics(mp)
+		}
+	}
+}
+
+func regsiterAgentResourcePerformanceMetrics(mp metric.MeterProvider) (err error) {
 	proc, _ := process.NewProcess(int32(os.Getpid()))
 	meter := mp.Meter("kindling")
 	selfTelemetryOnce.Do(func() {
@@ -94,7 +107,7 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 	}
 
 	serviceName := KindlingServiceNamePrefix + "-" + clusterId
-	rs, err := resource.New(context.Background(),
+	rs, _ := resource.New(context.Background(),
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(serviceName),
 			semconv.ServiceInstanceIDKey.String(hostName),
@@ -102,18 +115,13 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 	)
 
 	if config.ExportKind == PrometheusKindExporter {
-		var collectorPeriod time.Duration = 15 * time.Second
-		if config.PromCfg.RealTime {
-			collectorPeriod = 0
-		}
-
 		// Create controller
 		c := controller.New(
 			otelprocessor.NewFactory(
 				selector.NewWithInexpensiveDistribution(),
 				aggregation.CumulativeTemporalitySelector(),
 			),
-			controller.WithCollectPeriod(collectorPeriod),
+			controller.WithCollectPeriod(0), // In pull mode, make prometheu deceide the collect Period
 			controller.WithResource(rs),
 		)
 
@@ -133,9 +141,7 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 		}()
 
 		mp := exp.MeterProvider()
-		if config.PromCfg.RealTime {
-			RegsiterAgentPerformanceMetrics(mp)
-		}
+		RegisterExternalMetrics(config.PromCfg.Selector, mp)
 		return mp, nil
 	} else {
 		var collectPeriod time.Duration
