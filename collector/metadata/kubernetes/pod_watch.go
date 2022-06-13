@@ -303,7 +303,7 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 	}
 
 	if oldPod.Status.HostIP != newPod.Status.HostIP {
-		deletedPodInfo.hostPorts = oldCachePod.Ports
+		deletedPodInfo.hostPorts = oldCachePod.HostPorts
 	} else {
 		hostPortsCompare := compare.NewInt32Slice(oldCachePod.HostPorts, newHostPorts)
 		hostPortsCompare.Compare()
