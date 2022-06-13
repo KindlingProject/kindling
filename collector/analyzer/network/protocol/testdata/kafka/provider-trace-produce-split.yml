@@ -35,7 +35,7 @@ trace:
   expects:
     -
       Timestamp: 99920000
-      Values:
+      Metrics:
         request_total_time: 110000
         connect_time: 0
         request_sent_time: 80000

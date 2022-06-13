@@ -50,9 +50,9 @@ func TestKafkaProtocol(t *testing.T) {
 		"kafka/consumer-trace-fetch-multi-topics.yml")
 }
 
-func TestDubboProtocol(t *testing.T) {
-	testProtocol(t, "dubbo/server-event.yml",
-		"dubbo/server-trace-short.yml")
+func TestDubbo2Protocol(t *testing.T) {
+	testProtocol(t, "dubbo2/server-event.yml",
+		"dubbo2/server-trace-short.yml")
 }
 
 type NopProcessor struct {
@@ -212,18 +212,18 @@ func (trace *Trace) Validate(t *testing.T, results []*model.DataGroup) {
 		expect := trace.Expects[i]
 		checkUint64Equal(t, "Timestamp", expect.Timestamp, result.Timestamp)
 
-		// Validate Metrics Metrics
-		checkSize(t, "Metrics Size", len(expect.Values), len(result.Metrics))
-		for _, value := range result.Metrics {
-			expectValue, ok := expect.Values[value.Name]
+		// Validate Metrics
+		checkSize(t, "Metrics Size", len(expect.Metrics), len(result.Metrics))
+		for _, metricValue := range result.Metrics {
+			expectValue, ok := expect.Metrics[metricValue.Name]
 			if !ok {
-				t.Errorf("[Miss %s] want=nil, got=%d", value.Name, value.GetInt().Value)
+				t.Errorf("[Miss %s] want=nil, got=%d", metricValue.Name, metricValue.GetInt().Value)
 			} else {
-				checkInt64Equal(t, value.Name, expectValue, value.GetInt().Value)
+				checkInt64Equal(t, metricValue.Name, expectValue, metricValue.GetInt().Value)
 			}
 		}
 
-		// Validate Metrics Attributes
+		// Validate Labels
 		checkSize(t, "Labels Size", len(expect.Labels), result.Labels.Size())
 		for labelKey, labelValue := range expect.Labels {
 			if reflect.TypeOf(labelValue).Name() == "int" {
@@ -385,6 +385,6 @@ func Int64ToBytes(value int64) []byte {
 
 type TraceExpect struct {
 	Timestamp uint64                 `mapstructure:"Timestamp"`
-	Values    map[string]int64       `mapstructure:"Metrics"`
+	Metrics   map[string]int64       `mapstructure:"Metrics"`
 	Labels    map[string]interface{} `mapstructure:"Labels"`
 }

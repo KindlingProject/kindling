@@ -59,7 +59,7 @@ trace:
   expects:
     -
       Timestamp: 99995000
-      Values:
+      Metrics:
         request_total_time: 1005000
         connect_time: 0
         request_sent_time: 5000
@@ -87,7 +87,7 @@ trace:
         error_type: 0
     -
       Timestamp: 100396000
-      Values:
+      Metrics:
         request_total_time: 1104000
         connect_time: 0
         request_sent_time: 4000
