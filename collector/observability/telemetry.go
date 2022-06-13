@@ -59,16 +59,16 @@ func (h *otelLoggerHandler) Handle(err error) {
 	h.logger.Warn("Opentelemetry-go encountered an error: ", zap.Error(err))
 }
 
-func RegisterExterMetrics(selectors []string, mp metric.MeterProvider) {
+func RegisterExtraMetrics(selectors []string, mp metric.MeterProvider) {
 	for _, selector := range selectors {
 		switch selector {
 		case resourcePerformance:
-			regsiterAgentResourcePerformanceMetrics(mp)
+			registerAgentResourcePerformanceMetrics(mp)
 		}
 	}
 }
 
-func regsiterAgentResourcePerformanceMetrics(mp metric.MeterProvider) (err error) {
+func registerAgentResourcePerformanceMetrics(mp metric.MeterProvider) (err error) {
 	proc, _ := process.NewProcess(int32(os.Getpid()))
 	meter := mp.Meter("kindling")
 	selfTelemetryOnce.Do(func() {
@@ -141,7 +141,7 @@ func InitTelemetry(logger *zap.Logger, config *Config) (metric.MeterProvider, er
 		}()
 
 		mp := exp.MeterProvider()
-		RegisterExterMetrics(config.PromCfg.ExtraMetrics, mp)
+		RegisterExtraMetrics(config.PromCfg.ExtraMetrics, mp)
 		return mp, nil
 	} else {
 		var collectPeriod time.Duration
