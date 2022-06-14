@@ -32,7 +32,7 @@ The first step to getting starting contribute to kindling is to find something t
 
 + How to find documents improving issues? Kindling has doc improvement label for issues that you can improve kinding docs.
 
-If you are ready to contribute code changes, review the [developer guide](https://github.com/Kindling-project/kindling/DEVELOPER_GUIDE) for how to set up local environment.
+If you are ready to contribute code changes, review the [developer guide](http://www.kindling.space:33215/project-1/doc-10/) for how to set up local environment.
 When you want to submit your local changes , read about [create pull request](contribute/create_pull_request.md).
 
 ## Sign your commits
