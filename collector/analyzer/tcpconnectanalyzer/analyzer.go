@@ -182,6 +182,8 @@ func (a *TcpConnectAnalyzer) generateDataGroup(connectStats *internal.Connection
 	// Only record the connection's duration when it is successfully established
 	if connectStats.StateMachine.GetCurrentState() == internal.Success {
 		metrics = append(metrics, model.NewIntMetric(constnames.TcpConnectDurationMetric, connectStats.GetConnectDuration()))
+	} else {
+		metrics = append(metrics, model.NewIntMetric(constnames.TcpConnectDurationMetric, 0))
 	}
 
 	retDataGroup := model.NewDataGroup(
