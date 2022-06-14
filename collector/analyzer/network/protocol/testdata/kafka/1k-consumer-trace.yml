@@ -1,6 +1,6 @@
 trace:
   key: consumer-1k
-  requests:
+  events:
     -
       name: "sendmsg"
       timestamp: 100000000
@@ -13,8 +13,6 @@ trace:
           - "ffffffff000001f400000001000fa0000100000000ffffffff00000001"
           - "0011|container-monitor"
           - "0000000100000000ffffff"
-
-  responses:
     -
       name: "recvmsg"
       timestamp: 100010000

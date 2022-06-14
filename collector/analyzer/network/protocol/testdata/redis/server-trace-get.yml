@@ -1,6 +1,6 @@
 trace:
   key: get
-  requests:
+  events:
     -
       name: "recvfrom"
       timestamp: 100000000
@@ -9,7 +9,6 @@ trace:
         res: 22
         data:
           - "*2\r\n$3\r\nget\r\n$3\r\nkey\r\n"
-  responses:
     -
       name: "sendto"
       timestamp: 100100000

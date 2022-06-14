@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/metadata/conntracker"
 	"github.com/Kindling-project/kindling/collector/model"
 )
@@ -127,12 +128,13 @@ func (evts *events) getDuration() uint64 {
 }
 
 type messagePairs struct {
-	connects  *events
-	requests  *events
-	responses *events
-	natTuple  *conntracker.IPTranslation
-
-	mutex sync.RWMutex // only for update latency and resval now
+	connects        *events
+	requests        *events
+	responses       *events
+	noMatchRequests []*model.KindlingEvent
+	parsedMessages  []*protocol.PayloadMessage
+	natTuple        *conntracker.IPTranslation
+	mutex           sync.RWMutex // only for update latency and resval now
 }
 
 func (mps *messagePairs) getKey() messagePairKey {
@@ -173,6 +175,27 @@ func (mps *messagePairs) mergeResponse(evt *model.KindlingEvent) {
 	} else {
 		mps.responses.mergeEvent(evt)
 	}
+	mps.mutex.Unlock()
+}
+
+func (mps *messagePairs) mergeUnPairRequest(evt *model.KindlingEvent, message *protocol.PayloadMessage) {
+	mps.mutex.Lock()
+	if mps.noMatchRequests == nil {
+		mps.noMatchRequests = []*model.KindlingEvent{}
+		mps.parsedMessages = []*protocol.PayloadMessage{}
+	}
+	mps.noMatchRequests = append(mps.noMatchRequests, evt)
+	mps.parsedMessages = append(mps.parsedMessages, message)
+	mps.mutex.Unlock()
+}
+
+func (mps *messagePairs) clearPairRequest(index int) {
+	if mps.noMatchRequests == nil {
+		return
+	}
+	mps.mutex.Lock()
+	mps.noMatchRequests = append(mps.noMatchRequests[:index], mps.noMatchRequests[(index+1):]...)
+	mps.parsedMessages = append(mps.parsedMessages[:index], mps.parsedMessages[(index+1):]...)
 	mps.mutex.Unlock()
 }
 

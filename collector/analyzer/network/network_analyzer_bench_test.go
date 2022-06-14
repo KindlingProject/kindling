@@ -94,12 +94,9 @@ func testProtocolBench(b *testing.B, tps int, mpSize int, caseKey string) {
 
 func prepareEvents(mpSize int, eventCommon *EventCommon, trace *Trace) []*model.KindlingEvent {
 	baseEvents := make([]*model.KindlingEvent, 0)
-	for _, request := range trace.Requests {
-		baseEvents = append(baseEvents, request.exchange(eventCommon))
+	for _, event := range trace.Events {
+		baseEvents = append(baseEvents, event.exchange(eventCommon))
 
-	}
-	for _, response := range trace.Responses {
-		baseEvents = append(baseEvents, response.exchange(eventCommon))
 	}
 
 	size := len(baseEvents)

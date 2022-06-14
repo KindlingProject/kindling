@@ -1,6 +1,6 @@
 trace:
   key: query
-  requests:
+  events:
     -
       name: "recvfrom"
       timestamp: 100000000
@@ -10,7 +10,6 @@ trace:
         data:
           - "14000000"
           - "03|SELECT * FROM dummy"
-  responses:
     -
       name: "sendto"
       timestamp: 100020000

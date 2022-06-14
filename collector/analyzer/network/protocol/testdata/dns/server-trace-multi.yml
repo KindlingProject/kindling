@@ -1,6 +1,7 @@
 trace:
+  # Req1 -> Req2 -> Resp2 -> Resp1
   key: multi
-  requests:
+  events:
     -
       name: "recvmsg"
       timestamp: 100000000
@@ -25,7 +26,6 @@ trace:
           - "05|baidu"
           - "03|com"
           - "00001c000100002904b0000000000000"
-  responses:
     -
       name: "sendmsg"
       timestamp: 101000000

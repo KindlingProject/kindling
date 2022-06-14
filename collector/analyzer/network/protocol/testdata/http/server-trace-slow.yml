@@ -2,7 +2,7 @@ trace:
   # 0--100--------------601 
   #     READ              WRITE
   key: slowData
-  requests:
+  events:
     -
       name: "read"
       timestamp: 100000000
@@ -12,7 +12,6 @@ trace:
         data:
           - "POST /test?sleep=500&respbyte=10&statusCode=200 HTTP/1.1\r\n"
           - "Host: localhost:9001\r\n"
-  responses:
     -
       name: "write"
       timestamp: 601000000

@@ -2,7 +2,7 @@ trace:
   # 0--100--------------101 
   #     READ              WRITE
   key: split
-  requests:
+  events:
     -
       name: "read"
       timestamp: 100000000
@@ -13,7 +13,6 @@ trace:
           - "ET /test?sleep=0&respbyte=10&statusCode=200 HTTP/1.1\r\n"
           - "Host: localhost:9001\r\n"
           - "Us"
-  responses:
     -
       name: "write"
       timestamp: 101000000

@@ -19,6 +19,7 @@ func parseDubbo2Response() protocol.ParsePkgFn {
 		}
 
 		message.AddIntAttribute(constlabels.Dubbo2ErrorCode, errorCode)
+		message.AddIntAttribute(constlabels.Dubbo2RpcRequestId, getRcpRequestId(message.Data))
 		if errorCode > 20 {
 			message.AddBoolAttribute(constlabels.IsError, true)
 			message.AddIntAttribute(constlabels.ErrorType, int64(constlabels.ProtocolError))

@@ -315,7 +315,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	// Case 1 ConnectFail    Connect
 	// Case 2 Request 498   Connect/Request                         Request
 	// Case 3 Normal             Connect/Request/Response   Request/Response
-	records := na.parseProtocols(oldPairs)
+	records := na.parseProtocols(oldPairs, newPairs)
 	for _, record := range records {
 		if ce := na.telemetry.Logger.Check(zapcore.DebugLevel, "NetworkAnalyzer To NextProcess: "); ce != nil {
 			ce.Write(
@@ -331,7 +331,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	return nil
 }
 
-func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup {
+func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs, newPairs *messagePairs) []*model.DataGroup {
 	// Step 1:  Static Config for port and protocol set in config file
 	port := mps.getPort()
 	staticProtocol, found := na.staticPortMap[port]
@@ -342,7 +342,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup 
 		}
 
 		if parser, exist := na.protocolMap[staticProtocol]; exist {
-			records := na.parseProtocol(mps, parser)
+			records := na.parseProtocol(mps, newPairs, parser)
 			if records != nil {
 				return records
 			}
@@ -363,7 +363,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup 
 	cacheParsers, ok := factory.GetCachedParsersByPort(port)
 	if ok {
 		for _, parser := range cacheParsers {
-			records := na.parseProtocol(mps, parser)
+			records := na.parseProtocol(mps, newPairs, parser)
 			if records != nil {
 				if protocol.NOSUPPORT == parser.GetProtocol() {
 					// Reset mapping for  generic and port when exceed threshold so as to parsed by other protcols.
@@ -379,7 +379,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup 
 
 	// Step3 Loop all protocols
 	for _, parser := range na.parsers {
-		records := na.parseProtocol(mps, parser)
+		records := na.parseProtocol(mps, newPairs, parser)
 		if records != nil {
 			// Add mapping for port and protocol when exceed threshold
 			if parser.AddPortCount(port) == CACHE_ADD_THRESHOLD {
@@ -391,10 +391,10 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup 
 	return na.getRecords(mps, protocol.NOSUPPORT, nil)
 }
 
-func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.ProtocolParser) []*model.DataGroup {
+func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, newPairs *messagePairs, parser *protocol.ProtocolParser) []*model.DataGroup {
 	if parser.MultiRequests() {
 		// Not mergable requests
-		return na.parseMultipleRequests(mps, parser)
+		return na.parseMultipleRequests(mps, newPairs, parser)
 	}
 
 	// Mergable Data
@@ -417,12 +417,12 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 }
 
 // parseMultipleRequests parses the messagePairs when we know there could be multiple read requests.
-// This is used only when the protocol is DNS now.
-func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *protocol.ProtocolParser) []*model.DataGroup {
+// This is used only when the protocol is DNS / Dubbo2 now.
+func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, newPairs *messagePairs, parser *protocol.ProtocolParser) []*model.DataGroup {
 	// Match with key when disordering.
-	size := mps.requests.size()
-	parsedReqMsgs := make([]*protocol.PayloadMessage, size)
-	for i := 0; i < size; i++ {
+	reqSize := mps.requests.size()
+	parsedReqMsgs := make([]*protocol.PayloadMessage, reqSize)
+	for i := 0; i < reqSize; i++ {
 		req := mps.requests.getEvent(i)
 		requestMsg := protocol.NewRequestMessage(req.GetData())
 		if !parser.ParseRequest(requestMsg) {
@@ -434,8 +434,7 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 
 	records := make([]*model.DataGroup, 0)
 	if mps.responses == nil {
-		size := mps.requests.size()
-		for i := 0; i < size; i++ {
+		for i := 0; i < reqSize; i++ {
 			req := mps.requests.getEvent(i)
 			mp := &messagePair{
 				request:  req,
@@ -446,8 +445,8 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 		return records
 	} else {
 		matchedRequestIdx := make(map[int]bool)
-		size := mps.responses.size()
-		for i := 0; i < size; i++ {
+		respSize := mps.responses.size()
+		for i := 0; i < respSize; i++ {
 			resp := mps.responses.getEvent(i)
 			responseMsg := protocol.NewResponseMessage(resp.GetData(), model.NewAttributeMap())
 			if !parser.ParseResponse(responseMsg) {
@@ -456,27 +455,68 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 			}
 			// Match Request with repsone
 			matchIdx := parser.PairMatch(parsedReqMsgs, responseMsg)
-			if matchIdx == -1 {
-				return nil
-			}
-			matchedRequestIdx[matchIdx] = true
+			if matchIdx > -1 {
+				matchedRequestIdx[matchIdx] = true
 
-			mp := &messagePair{
-				request:  mps.requests.getEvent(matchIdx),
-				response: resp,
+				mp := &messagePair{
+					request:  mps.requests.getEvent(matchIdx),
+					response: resp,
+				}
+				// Merge Request Attributes.
+				responseMsg.GetAttributes().Merge(parsedReqMsgs[matchIdx].GetAttributes())
+				records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), responseMsg.GetAttributes()))
+			} else if mps.parsedMessages != nil {
+				matchIdx = parser.PairMatch(mps.parsedMessages, responseMsg)
+				if matchIdx > -1 {
+					mp := &messagePair{
+						request:  mps.noMatchRequests[matchIdx],
+						response: resp,
+					}
+					responseMsg.GetAttributes().Merge(mps.parsedMessages[matchIdx].GetAttributes())
+					records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), responseMsg.GetAttributes()))
+					mps.clearPairRequest(matchIdx)
+				} else {
+					// Skip Unmatched response by bad capture time.
+					// A -> B -> C -> B' -> C' -> A'
+					// When got B/C/B'/C'/A', we will match B/B' and C/C', but A' can't match any one.
+					continue
+				}
 			}
-			records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), responseMsg.GetAttributes()))
 		}
-		// 498 Case
-		reqSize := mps.requests.size()
+		if len(records) == 0 {
+			return nil
+		}
+
 		for i := 0; i < reqSize; i++ {
 			req := mps.requests.getEvent(i)
 			if _, matched := matchedRequestIdx[i]; !matched {
-				mp := &messagePair{
-					request:  req,
-					response: nil,
+				if newPairs == nil {
+					// 498 Case
+					mp := &messagePair{
+						request:  req,
+						response: nil,
+					}
+					records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
+				} else {
+					// Store NoMatched case
+					newPairs.mergeUnPairRequest(req, parsedReqMsgs[i])
 				}
-				records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
+			}
+		}
+		if mps.parsedMessages != nil && len(mps.parsedMessages) > 0 {
+			parsedReqSize := len(mps.parsedMessages)
+			for i := 0; i < parsedReqSize; i++ {
+				if newPairs == nil {
+					// 498 Case
+					mp := &messagePair{
+						request:  mps.noMatchRequests[i],
+						response: nil,
+					}
+					records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), mps.parsedMessages[i].GetAttributes()))
+				} else {
+					// Store NoMatched case
+					newPairs.mergeUnPairRequest(mps.noMatchRequests[i], mps.parsedMessages[i])
+				}
 			}
 		}
 		return records

@@ -1,6 +1,9 @@
 package dubbo2
 
-import "github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+import (
+	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/model/constlabels"
+)
 
 const (
 	// Zero : byte zero
@@ -24,7 +27,23 @@ const (
 func NewDubbo2Parser() *protocol.ProtocolParser {
 	requestParser := protocol.CreatePkgParser(fastfailDubbo2Request(), parseDubbo2Request())
 	responseParser := protocol.CreatePkgParser(fastfailDubbo2Response(), parseDubbo2Response())
-	return protocol.NewProtocolParser(protocol.DUBBO2, requestParser, responseParser, nil)
+	return protocol.NewProtocolParser(protocol.DUBBO2, requestParser, responseParser, dubbo2Pair())
+}
+
+func dubbo2Pair() protocol.PairMatch {
+	return func(requests []*protocol.PayloadMessage, response *protocol.PayloadMessage) int {
+		for i, request := range requests {
+			if request.GetIntAttribute(constlabels.Dubbo2RpcRequestId) == response.GetIntAttribute(constlabels.Dubbo2RpcRequestId) {
+				return i
+			}
+		}
+		return -1
+	}
+}
+
+func getRcpRequestId(data []byte) int64 {
+	return int64(uint64(data[4])<<56 | uint64(data[5])<<48 | uint64(data[6])<<40 | uint64(data[7])<<32 |
+		uint64(data[8])<<24 | uint64(data[9])<<16 | uint64(data[10])<<8 | uint64(data[11]))
 }
 
 /**

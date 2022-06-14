@@ -53,6 +53,12 @@ func TestKafkaProtocol(t *testing.T) {
 func TestDubbo2Protocol(t *testing.T) {
 	testProtocol(t, "dubbo2/server-event.yml",
 		"dubbo2/server-trace-short.yml")
+
+	testProtocol(t, "dubbo2/server-event.yml",
+		"dubbo2/server-trace-reuse-port.yml")
+
+	testProtocol(t, "dubbo2/server-event.yml",
+		"dubbo2/server-trace-reuse-port-notend.yml")
 }
 
 type NopProcessor struct {
@@ -108,9 +114,20 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 		}
 
 		t.Run(trace.Key, func(t *testing.T) {
-			mps := trace.PrepareMessagePairs(eventCommon)
-			result := na.parseProtocols(mps)
-			trace.Validate(t, result)
+			mpsArray := trace.PrepareMessagePairs(eventCommon)
+			results := []*model.DataGroup{}
+
+			size := len(mpsArray)
+			var nextMps *messagePairs
+			for i := 0; i < size; i++ {
+				if i == size-1 {
+					nextMps = nil
+				} else {
+					nextMps = mpsArray[i+1]
+				}
+				results = append(results, na.parseProtocols(mpsArray[i], nextMps)...)
+			}
+			trace.Validate(t, results)
 		})
 	}
 }
@@ -173,36 +190,48 @@ type FdInfo struct {
 }
 
 type Trace struct {
-	Key       string        `mapstructure:"key"`
-	Connects  []TraceEvent  `mapstructure:"connects"`
-	Requests  []TraceEvent  `mapstructure:"requests"`
-	Responses []TraceEvent  `mapstructure:"responses"`
-	Expects   []TraceExpect `mapstructure:"expects"`
+	Key     string        `mapstructure:"key"`
+	Events  []TraceEvent  `mapstructure:"events"`
+	Expects []TraceExpect `mapstructure:"expects"`
 }
 
-func (trace *Trace) PrepareMessagePairs(common *EventCommon) *messagePairs {
+func (trace *Trace) PrepareMessagePairs(common *EventCommon) []*messagePairs {
+	mpsArray := []*messagePairs{}
 	mps := &messagePairs{
 		connects:  nil,
 		requests:  nil,
 		responses: nil,
 		mutex:     sync.RWMutex{},
 	}
-	if trace.Connects != nil {
-		for _, connect := range trace.Connects {
-			mps.mergeConnect(connect.exchange(common))
+	for _, event := range trace.Events {
+		evt := event.exchange(common)
+		if evt.IsConnect() || evt.GetDataLen() <= 0 || evt.GetResVal() < 0 {
+			continue
+		}
+		isRequest, err := evt.IsRequest()
+		if err != nil {
+			continue
+		}
+		if isRequest {
+			if mps.responses != nil {
+				mpsArray = append(mpsArray, mps)
+				mps = &messagePairs{
+					connects:  nil,
+					requests:  newEvents(evt),
+					responses: nil,
+					mutex:     sync.RWMutex{},
+				}
+			} else {
+				mps.mergeRequest(evt)
+			}
+		} else {
+			mps.mergeResponse(evt)
 		}
 	}
-	if trace.Requests != nil {
-		for _, request := range trace.Requests {
-			mps.mergeRequest(request.exchange(common))
-		}
+	if mps.requests != nil || mps.responses != nil {
+		mpsArray = append(mpsArray, mps)
 	}
-	if trace.Responses != nil {
-		for _, response := range trace.Responses {
-			mps.mergeResponse(response.exchange(common))
-		}
-	}
-	return mps
+	return mpsArray
 }
 
 func (trace *Trace) Validate(t *testing.T, results []*model.DataGroup) {

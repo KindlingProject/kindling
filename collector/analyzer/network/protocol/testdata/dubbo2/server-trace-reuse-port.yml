@@ -1,0 +1,212 @@
+trace:
+  key: reusePort
+  # A ----------------A'
+  #      B---B'
+  #              C-------------C'
+  #                       D----------------D'
+  events:
+    -
+      name: "write"
+      timestamp: 44291974659
+      user_attributes:
+        latency: 72516
+        res: 1140
+        data:
+          - "dabbc20000000000000003fc0000022a"
+          - "05|2.6.2"
+          - "302a|io.kindling.dubbo.api.service.OrderService"
+          - "05|0.0.0"
+          - "05|order"
+          - "3022|Ljava/l"
+    -
+      name: "write"
+      timestamp: 45413604749
+      user_attributes:
+        latency: 98652
+        res: 1138
+        data:
+          - "dabbc20000000000000003fd00000229"
+          - "05|2.6.2"
+          - "302a|io.kindling.dubbo.api.service.OrderService"
+          - "05|0.0.0"
+          - "05|order"
+          - "3022|Ljava/l"
+    -
+      name: "read"
+      timestamp: 46416132042
+      user_attributes:
+        latency: 15646
+        res: 35
+        data:
+          - "dabb021400000000000003fd00000013"
+          - "9111|Thisisaresult."
+    -
+      name: "write"
+      timestamp: 48293116522
+      user_attributes:
+        latency: 57294
+        res: 1134
+        data:
+          - "dabbc20000000000000003fe00000227"
+          - "05|2.6.2"
+          - "302a|io.kindling.dubbo.api.service.OrderService"
+          - "05|0.0.0"
+          - "05|order"
+          - "3022|Ljava/l"
+    -
+      name: "read"
+      timestamp: 49294517217
+      user_attributes:
+        latency: 14998
+        res: 35
+        data:
+          - "dabb021400000000000003fc00000013"
+          - "9111|Thisisaresult."
+    -
+      name: "write"
+      timestamp: 51079724263
+      user_attributes:
+        latency: 75150
+        res: 1140
+        data:
+          - "dabbc20000000000000003ff0000022a"
+          - "05|2.6.2"
+          - "302a|io.kindling.dubbo.api.service.OrderService"
+          - "05|0.0.0"
+          - "05|order"
+          - "3022|Ljava/l"
+    -
+      name: "read"
+      timestamp: 52295661413
+      user_attributes:
+        latency: 25944
+        res: 35
+        data:
+          - "dabb021400000000000003fe00000013"
+          - "9111|Thisisaresult."
+    -
+      name: "read"
+      timestamp: 56082493744
+      user_attributes:
+        latency: 23492
+        res: 35
+        data:
+          - "dabb021400000000000003ff00000013"
+          - "9111|Thisisaresult."
+  expects:
+    -
+      Timestamp: 45413506097
+      Metrics:
+        request_total_time: 1002625945
+        connect_time: 0
+        request_sent_time: 98652
+        waiting_ttfb_time: 1002511647
+        content_download_time: 15646
+        request_io: 1138
+        response_io: 35
+      Labels:
+        pid: 942
+        src_ip: "127.0.0.1"
+        src_port: 41458
+        dst_ip: "127.0.0.1"
+        dst_port: 30002
+        dnat_ip: ""
+        dnat_port: -1
+        container_id: ""
+        is_slow: true
+        is_server: false
+        protocol: "dubbo"
+        is_error: false
+        error_type: 0
+        content_key: "io.kindling.dubbo.api.service.OrderService#order"
+        rpc_request_id: 1021
+        dubbo_error_code: 20
+        request_payload: ".2.6.20*io.kindling.dubbo.api.service.OrderService.0.0.0.order0\"Ljava/l"
+        response_payload: "..Thisisaresult."
+    -
+      Timestamp: 44291902143
+      Metrics:
+        request_total_time: 5002615074
+        connect_time: 0
+        request_sent_time: 72516
+        waiting_ttfb_time: 5002527560
+        content_download_time: 14998
+        request_io: 1140
+        response_io: 35
+      Labels:
+        pid: 942
+        src_ip: "127.0.0.1"
+        src_port: 41458
+        dst_ip: "127.0.0.1"
+        dst_port: 30002
+        dnat_ip: ""
+        dnat_port: -1
+        container_id: ""
+        is_slow: true
+        is_server: false
+        protocol: "dubbo"
+        is_error: false
+        error_type: 0
+        content_key: "io.kindling.dubbo.api.service.OrderService#order"
+        rpc_request_id: 1020
+        dubbo_error_code: 20
+        request_payload: ".2.6.20*io.kindling.dubbo.api.service.OrderService.0.0.0.order0\"Ljava/l"
+        response_payload: "..Thisisaresult."
+    -
+      Timestamp: 48293059228
+      Metrics:
+        request_total_time: 4002602185
+        connect_time: 0
+        request_sent_time: 57294
+        waiting_ttfb_time: 4002518947
+        content_download_time: 25944
+        request_io: 1134
+        response_io: 35
+      Labels:
+        pid: 942
+        src_ip: "127.0.0.1"
+        src_port: 41458
+        dst_ip: "127.0.0.1"
+        dst_port: 30002
+        dnat_ip: ""
+        dnat_port: -1
+        container_id: ""
+        is_slow: true
+        is_server: false
+        protocol: "dubbo"
+        is_error: false
+        error_type: 0
+        content_key: "io.kindling.dubbo.api.service.OrderService#order"
+        rpc_request_id: 1022
+        dubbo_error_code: 20
+        request_payload: ".2.6.20*io.kindling.dubbo.api.service.OrderService.0.0.0.order0\"Ljava/l"
+        response_payload: "..Thisisaresult."
+    -
+      Timestamp: 51079649113
+      Metrics:
+        request_total_time: 5002844631
+        connect_time: 0
+        request_sent_time: 75150
+        waiting_ttfb_time: 5002745989
+        content_download_time: 23492
+        request_io: 1140
+        response_io: 35
+      Labels:
+        pid: 942
+        src_ip: "127.0.0.1"
+        src_port: 41458
+        dst_ip: "127.0.0.1"
+        dst_port: 30002
+        dnat_ip: ""
+        dnat_port: -1
+        container_id: ""
+        is_slow: true
+        is_server: false
+        protocol: "dubbo"
+        is_error: false
+        error_type: 0
+        content_key: "io.kindling.dubbo.api.service.OrderService#order"
+        rpc_request_id: 1023
+        dubbo_error_code: 20
+        request_payload: ".2.6.20*io.kindling.dubbo.api.service.OrderService.0.0.0.order0\"Ljava/l"
+        response_payload: "..Thisisaresult."

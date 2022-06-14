@@ -1,6 +1,6 @@
 trace:
   key: dns-1k
-  requests:
+  events:
     -
       name: "recvmsg"
       timestamp: 100000000
@@ -13,7 +13,6 @@ trace:
           - "05|baidu"
           - "03|com"
           - "000001000100002904b0000000000000"
-  responses:
     -
       name: "sendmsg"
       timestamp: 101000000

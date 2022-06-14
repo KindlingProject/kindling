@@ -1,8 +1,8 @@
 trace:
   key: shortData
-  requests:
+  events:
     -
-      name: "read"
+      name: "write"
       timestamp: 100000000
       user_attributes:
         latency: 5000
@@ -14,9 +14,8 @@ trace:
           - "05|0.0.0"
           - "05|order"
           - "3022|Ljava/l"
-  responses:
     -
-      name: "write"
+      name: "read"
       timestamp: 101000000
       user_attributes:
         latency: 40000
@@ -50,6 +49,7 @@ trace:
         is_error: false
         error_type: 0
         content_key: "io.kindling.dubbo.api.service.OrderService#order"
+        rpc_request_id: 466
         dubbo_error_code: 20
         request_payload: ".2.6.20*io.kindling.dubbo.api.service.OrderService.0.0.0.order0\"Ljava/l"
         response_payload: "..Thisisaresult."

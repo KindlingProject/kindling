@@ -1,6 +1,6 @@
 trace:
   key: query-split
-  requests:
+  events:
     -
       name: "recvfrom"
       timestamp: 100000000
@@ -17,7 +17,6 @@ trace:
         res: 20
         data:
           - "03|SELECT * FROM dummy"
-  responses:
     -
       name: "sendto"
       timestamp: 100020000

@@ -1,6 +1,6 @@
 trace:
   key: produce-split
-  requests:
+  events:
     -
       name: "sendmsg"
       timestamp: 100000000
@@ -13,7 +13,6 @@ trace:
           - "ffff00010000753000000001"
           - "0011|container-monitor"
           - "00000001000000000000004f00000000000000000000004300000000"
-  responses:
     -
       name: "recvmsg"
       timestamp: 100020000

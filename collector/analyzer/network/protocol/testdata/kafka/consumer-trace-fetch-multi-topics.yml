@@ -1,6 +1,6 @@
 trace:
   key: fetch-one-topic-two-patitions
-  requests:
+  events:
     -
       name: "writev"
       timestamp: 100000000
@@ -17,7 +17,6 @@ trace:
           - "0000000100000001000000100000000000fd2e3affffffffffffffff00100000"
           - "001b|npm_detail_topology_connect"
           - "000000020000000200000010000000000051527effffffffffffffff001000000000000500000010000000000108c878ffffffffffffffff00100000000000000000"
-  responses:
     -
       name: "read"
       timestamp: 100020000
