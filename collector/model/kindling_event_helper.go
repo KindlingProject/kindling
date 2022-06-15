@@ -104,12 +104,15 @@ func (x *KindlingEvent) GetStartTime() uint64 {
 }
 
 func (x *KindlingEvent) GetUserAttribute(key string) *KeyValue {
-	if x.UserAttributes == nil {
+	if x.ParamsNumber == 0 {
 		return nil
 	}
-	for _, keyValue := range x.UserAttributes {
+	for index, keyValue := range x.UserAttributes {
+		if index+1 > int(x.ParamsNumber) {
+			break
+		}
 		if keyValue.Key == key {
-			return keyValue
+			return &keyValue
 		}
 	}
 	return nil

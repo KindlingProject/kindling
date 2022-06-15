@@ -1,11 +1,18 @@
-#pragma once
-#ifndef SYSDIG_KINDLING_H
-#define SYSDIG_KINDLING_H
-#include "sinsp.h"
-#include "kindling_event.h"
+//
+// Created by jundi zhou on 2022/6/1.
+//
 
-void init_probe();
-void do_inspect();
-int getEvent(void **kindlingEvent);
+#ifndef SYSDIG_CGO_FUNC_H
+#define SYSDIG_CGO_FUNC_H
 
-#endif //SYSDIG_KINDLING_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+void runForGo();
+int getKindlingEvent(void **kindlingEvent);
+void subEventForGo(char* eventName, char* category);
+#ifdef __cplusplus
+}
+#endif
+
+#endif //SYSDIG_CGO_FUNC_H

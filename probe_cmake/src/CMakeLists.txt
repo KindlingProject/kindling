@@ -4,11 +4,11 @@ include(libsinsp)
 
 include_directories(.)
 include_directories("${LIBSINSP_INCLUDE_DIRS}")
-include_directories("../util")
+include_directories("../cgo")
 
 set(SOURCE_FILES
 		cgo/cgo_func.cpp
-		util/util.cpp)
+		cgo/kindling.cpp)
 
 add_library(kindling SHARED ${SOURCE_FILES})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
