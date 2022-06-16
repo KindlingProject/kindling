@@ -5,7 +5,6 @@
 #include "cpu_converter.h"
 #include <vector>
 using namespace std;
-using namespace kindling;
 
 cpu_converter::cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log) : m_inspector(inspector), m_profiler(prof), m_log(log) {
     file_cache = new event_cache(1);
@@ -107,17 +106,15 @@ bool cpu_converter::Cache(sinsp_evt *sevt) {
     }
 }
 
-void cpu_converter::convert(void *evt)
+int cpu_converter::convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *cpu_evt)
 {
-    sinsp_evt *cpu_evt = static_cast<sinsp_evt*> (evt);
     uint64_t start_time = *reinterpret_cast<uint64_t*> (cpu_evt->get_param_value_raw("start_ts")->m_val);
     uint64_t end_time = *reinterpret_cast<uint64_t*> (cpu_evt->get_param_value_raw("end_ts")->m_val);
     
     // convert
-    auto kevt = get_kindlingEventList()->add_kindling_event_list();
-    init_kindling_event(kevt, cpu_evt);
-    add_threadinfo(kevt, cpu_evt);
-    add_cpu_data(kevt, cpu_evt);
+    init_kindling_event(p_kindling_event, cpu_evt);
+    add_threadinfo(p_kindling_event, cpu_evt);
+    add_cpu_data(p_kindling_event, cpu_evt);
 }
 
 void merge()
@@ -129,29 +126,28 @@ void split()
     return;
 }
 
-int cpu_converter::init_kindling_event(kindling::KindlingEvent* kevt, sinsp_evt *sevt)
+int cpu_converter::init_kindling_event(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt)
 {
-    kevt->set_source(TRACEPOINT);
-    kevt->set_name("cpu_event");
+    strcpy(p_kindling_event->name, "cpu_event");
 
     return 0;
 }
 
-int cpu_converter::add_threadinfo(kindling::KindlingEvent* kevt, sinsp_evt *sevt)
+int cpu_converter::add_threadinfo(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt)
 {
-    auto s_tinfo = sevt->get_thread_info();
-    if (!s_tinfo) {
+    auto threadInfo = evt->get_thread_info();
+    if (!threadInfo) {
         return -1;
     }
-    auto k_tinfo = kevt->mutable_ctx()->mutable_thread_info();
-    k_tinfo->set_pid(s_tinfo->m_pid);
-    k_tinfo->set_tid(s_tinfo->m_tid);
-    k_tinfo->set_comm(s_tinfo->m_comm);
-    // k_tinfo->set_container_id(s_tinfo->m_container_id);
+	p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
+	p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
+	strcpy(p_kindling_event->context.tinfo.comm, (char *)threadInfo->m_comm.data());
+	strcpy(p_kindling_event->context.tinfo.containerId, (char *)threadInfo->m_container_id.data());
+
     return 0;
 }
 
-int cpu_converter::add_cpu_data(KindlingEvent* kevt, sinsp_evt *sevt)
+int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt)
 {
     uint64_t start_time = *reinterpret_cast<uint64_t*> (sevt->get_param_value_raw("start_ts")->m_val);
     uint64_t end_time = *reinterpret_cast<uint64_t*> (sevt->get_param_value_raw("end_ts")->m_val);
@@ -177,66 +173,75 @@ int cpu_converter::add_cpu_data(KindlingEvent* kevt, sinsp_evt *sevt)
         c_data.time_specs += (to_string(time_specs[i]) + ",");
         c_data.time_type += (to_string(time_type[i]) +  ",");
     }
+
+    uint16_t userAttNumber = 0;
     // on_total_time
-    auto off_attr = kevt->add_user_attributes();
-    off_attr->set_key("on_total_time");
-    off_attr->set_value(&c_data.on_total_time, 8);
-    off_attr->set_value_type(UINT64);
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "on_total_time");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.on_total_time, 8);
+    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+    p_kindling_event->userAttributes[userAttNumber].len = 8;
+    userAttNumber++;
 
     // off_total_time
-    off_attr = kevt->add_user_attributes();
-    off_attr->set_key("off_total_time");
-    off_attr->set_value(&c_data.off_total_time, 8);
-    off_attr->set_value_type(UINT64);
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "off_total_time");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.off_total_time, 8);
+    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+    p_kindling_event->userAttributes[userAttNumber].len = 8;
+    userAttNumber++;
 
     // start_time
-    off_attr = kevt->add_user_attributes();
-    off_attr->set_key("start_time");
-    off_attr->set_value(&c_data.start_time, 8);
-    off_attr->set_value_type(UINT64);
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "start_time");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.start_time, 8);
+    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+    p_kindling_event->userAttributes[userAttNumber].len = 8;
+    userAttNumber++;
 
     // end_time
-    off_attr = kevt->add_user_attributes();
-    off_attr->set_key("end_time");
-    off_attr->set_value(&c_data.end_time, 8);
-    off_attr->set_value_type(UINT64);
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.end_time, 8);
+    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+    p_kindling_event->userAttributes[userAttNumber].len = 8;
+    userAttNumber++;
 
     // time_specs
-    off_attr = kevt->add_user_attributes();
-    off_attr->set_key("type_specs");
-    off_attr->set_value(c_data.time_specs);
-    off_attr->set_value_type(CHARBUF);
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "type_specs");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_specs, sizeof(c_data.time_specs));
+    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+    p_kindling_event->userAttributes[userAttNumber].len = sizeof(c_data.time_specs);
+    userAttNumber++;
 
     // runq_latency
-    off_attr = kevt->add_user_attributes();
-    off_attr->set_key("runq_latency");
-    off_attr->set_value(c_data.runq_latency);
-    off_attr->set_value_type(CHARBUF);
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "runq_latency");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.runq_latency, sizeof(c_data.runq_latency));
+    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+    p_kindling_event->userAttributes[userAttNumber].len = sizeof(c_data.runq_latency);
+    userAttNumber++;
 
     // time_type
-    off_attr = kevt->add_user_attributes();
-    off_attr->set_key("time_type");
-    off_attr->set_value(c_data.time_type);
-    off_attr->set_value_type(CHARBUF);
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "time_type");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_type, sizeof(c_data.time_type));
+    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+    p_kindling_event->userAttributes[userAttNumber].len = sizeof(c_data.time_type);
+    userAttNumber++;
 
-    // on_stack
-    auto s_tinfo = sevt->get_thread_info();
-    string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
-    if (data != "") {
-        // LOG(INFO) << "related stack: " << data;
-        auto on_attr = kevt->add_user_attributes();
-        on_attr->set_key("stack");
-        on_attr->set_value(data);
-        on_attr->set_value_type(CHARBUF);
-    }
-    auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
-    if (log_msg != "") {
-        // LOG(INFO) << "related log: " << log_msg;
-        auto log_attr = kevt->add_user_attributes();
-        log_attr->set_key("log");
-        log_attr->set_value(log_msg);
-        log_attr->set_value_type(CHARBUF);
-    }
+//    // on_stack
+//    auto s_tinfo = sevt->get_thread_info();
+//    string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
+//    if (data != "") {
+//        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "stack");
+//        memcpy(p_kindling_event->userAttributes[userAttNumber].value, data.data(), data.length());
+//        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+//        p_kindling_event->userAttributes[userAttNumber].len = data.length();
+//        userAttNumber++;
+//    }
+//    auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
+//    if (log_msg != "") {
+//        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "log");
+//        memcpy(p_kindling_event->userAttributes[userAttNumber].value, log_msg.data(), log_msg.length());
+//        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+//        p_kindling_event->userAttributes[userAttNumber].len = log_msg.length();
+//        userAttNumber++;
+//    }
 
     string info = "";
     for (int i = 0; i < off_time.size(); i++) {
@@ -257,11 +262,11 @@ int cpu_converter::add_cpu_data(KindlingEvent* kevt, sinsp_evt *sevt)
         info.append("|");
     }
     if (info.length() != off_time.size()) {
-        LOG(INFO) << "related off info: " << info;
-        auto file_attr = kevt->add_user_attributes();
-        file_attr->set_key("off info");
-        file_attr->set_value(info);
-        file_attr->set_value_type(CHARBUF);
+        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "off_info");
+        memcpy(p_kindling_event->userAttributes[userAttNumber].value, info.data(), info.length());
+        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+        p_kindling_event->userAttributes[userAttNumber].len = info.length();
+        userAttNumber++;
     }
     // merge();
     // analyse()

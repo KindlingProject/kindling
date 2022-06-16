@@ -1,7 +1,7 @@
 #ifndef CPU_CONVERTER_H
 #define CPU_CONVERTER_H
-#include "profiler.h"
-#include "log_info.h"
+#include "profile/profiler.h"
+#include "log/log_info.h"
 #include "event_cache.h"
 #include <string>
 #include <map>
@@ -23,12 +23,12 @@ class cpu_converter
 public:
     cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log);
     ~cpu_converter();
-    void convert(void *evt);
+    int convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt);
     bool Cache(sinsp_evt *evt);
 private:
-    int init_kindling_event(kindling::KindlingEvent* kevt, sinsp_evt *sevt);
-    int add_threadinfo(kindling::KindlingEvent* kevt, sinsp_evt *sevt);
-    int add_cpu_data(kindling::KindlingEvent* kevt, sinsp_evt *sevt);
+    int init_kindling_event(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt);
+    int add_threadinfo(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt);
+    int add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt);
 
     int32_t set_boot_time(uint64_t *boot_time);
 

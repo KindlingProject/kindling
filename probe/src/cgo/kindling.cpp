@@ -7,9 +7,14 @@
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
 #include <cstdlib>
+#include "converter/cpu_converter.h"
+#include "profile/profiler.h"
+#include "log/log_info.h"
 
 static sinsp *inspector = nullptr;
-
+LogCache *logCache;
+Profiler *prof;
+cpu_converter *cpuConverter;
 int cnt = 0;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
@@ -120,6 +125,10 @@ void init_probe()
 
 			inspector->open("");
 		}
+		logCache = new LogCache(10000, 5);
+        prof = new Profiler(5000, 10);
+        cpuConverter = new cpu_converter(inspector, prof, logCache);
+//		thread profile(start_profiler, prof);
 	}
 	catch(const exception &e)
 	{
@@ -161,6 +170,8 @@ int getEvent(void **pp_kindling_event)
 		}
 	}
 
+	cpuConverter->Cache(ev);
+
 	uint16_t kindling_category = get_kindling_category(ev);
 	uint16_t ev_type = ev->get_type();
 	if(event_filters[ev_type][kindling_category] == 0)
@@ -187,6 +198,10 @@ int getEvent(void **pp_kindling_event)
 		}
 	}
 	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
+	if (ev_type == 1) {
+	    return cpuConverter->convert(p_kindling_event, ev);
+	}
+
 	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
 	p_kindling_event->timestamp = ev->get_ts();
 	p_kindling_event->category = kindling_category;
