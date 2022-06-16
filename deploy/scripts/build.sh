@@ -1,6 +1,6 @@
 cd ../../
-mkdir -p probe_cmake/build
-cd probe_cmake/build
+mkdir -p probe/build
+cd probe/build
 cmake -DBUILD_DRIVER=OFF ..
 make
 libKindlingPath="./src/libkindling.so"
