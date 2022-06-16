@@ -88,9 +88,9 @@ func (e *OtelExporter) exportMetric(result *adapter.AdaptedResult) {
 		} else if ok && metric.DataType() == model.IntMetricType {
 			measurements = append(measurements, e.instrumentFactory.getInstrument(metric.Name, metricKind).Measurement(metric.GetInt().Value))
 		} else if metric.DataType() == model.HistogramMetricType {
-			e.telemetry.Logger.Error("Failed to exporter Metric: can not use otlp-exporter to export histogram Data", zap.String("MetricName", metric.Name))
+			e.telemetry.Logger.Warn("Failed to exporter Metric: can not use otlp-exporter to export histogram Data", zap.String("MetricName", metric.Name))
 		} else {
-			e.telemetry.Logger.Warn("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
+			e.telemetry.Logger.Debug("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
 		}
 	}
 	if len(measurements) > 0 {

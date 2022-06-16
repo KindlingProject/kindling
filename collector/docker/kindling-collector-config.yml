@@ -122,12 +122,10 @@ exporters:
     metric_aggregation_map:
       kindling_entity_request_total: counter
       kindling_entity_request_duration_nanoseconds_total: counter
-      kindling_entity_request_average_duration_nanoseconds: histogram
       kindling_entity_request_send_bytes_total: counter
       kindling_entity_request_receive_bytes_total: counter
       kindling_topology_request_total: counter
       kindling_topology_request_duration_nanoseconds_total: counter
-      kindling_topology_request_average_duration_nanoseconds: histogram
       kindling_topology_request_request_bytes_total: counter
       kindling_topology_request_response_bytes_total: counter
       kindling_trace_request_duration_nanoseconds: gauge
