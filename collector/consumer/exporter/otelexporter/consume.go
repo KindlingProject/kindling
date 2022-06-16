@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	apitrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func (e *OtelExporter) Consume(dataGroup *model.DataGroup) error {
@@ -90,7 +91,9 @@ func (e *OtelExporter) exportMetric(result *adapter.AdaptedResult) {
 		} else if metric.DataType() == model.HistogramMetricType {
 			e.telemetry.Logger.Warn("Failed to exporter Metric: can not use otlp-exporter to export histogram Data", zap.String("MetricName", metric.Name))
 		} else {
-			e.telemetry.Logger.Debug("Undefined metricKind for this Metric", zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
+			if ce := e.telemetry.Logger.Check(zapcore.DebugLevel, "Undefined metricKind for this Metric"); ce != nil {
+				ce.Write(zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
+			}
 		}
 	}
 	if len(measurements) > 0 {
