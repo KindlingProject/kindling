@@ -8,9 +8,9 @@ Service metrics are generated from the server-side events, which are used to sho
 | `kindling_entity_request_duration_nanoseconds_total` | Counter | Total duration of requests |
 | `kindling_entity_request_send_bytes_total` | Counter | Total size of payload sent |
 | `kindling_entity_request_receive_bytes_total` | Counter | Total size of payload received |
-| `kindling_entity_request_average_duration_nanoseconds_count`  | Histogram | Count of average duration of requests |
-| `kindling_entity_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests |
-| `kindling_entity_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests |
+| `kindling_entity_request_average_duration_nanoseconds_count` | Histogram | Count of average duration of requests <br> **Disabled by default. See Note 3 for how to enable it.**|
+| `kindling_entity_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests <br> **Disabled by default. See Note 3 for how to enable it.**|
+| `kindling_entity_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests <br> **Disabled by default. See Note 3 for how to enable it.**|
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
@@ -70,6 +70,15 @@ Service metrics are generated from the server-side events, which are used to sho
 
 - For other cases, the `request_content` and `response_content` are both empty.
 
+**Note 3**: The histogram metric `kindling_entity_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
+```yaml
+exporters:
+  otelexporter:
+    metric_aggregation_map:
+      # add the following line
+      kindling_entity_request_average_duration_nanoseconds: histogram 
+```
+
 ## Topology Metrics
 
 Topology metrics are typically generated from the client-side events, which are used to show the service dependencies map, so the metrics are called "topology". Some timeseries may be generated from the server-side events, which contain a non-empty label `dst_container_id`. These timeseries are generated only when the source IP is not the pod's IP inside the Kubernetes cluster, which are useful when there is no agent installed on the client-side. 
@@ -81,9 +90,9 @@ Topology metrics are typically generated from the client-side events, which are 
 | `kindling_topology_request_duration_nanoseconds_total` | Counter |  Total duration of requests |
 | `kindling_topology_request_request_bytes_total` | Counter | Total size of payload sent |
 | `kindling_topology_request_response_bytes_total` | Counter | Total size of payload received |
-| `kindling_topology_request_average_duration_nanoseconds_count` | Histogram | Count of average duration of requests |​
-| `kindling_topology_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests  |
-| `kindling_topology_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests |
+| `kindling_topology_request_average_duration_nanoseconds_count` | Histogram | Count of average duration of requests<br> **Disabled by default. See Note 3 for how to enable it.** |​
+| `kindling_topology_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests<br> **Disabled by default. See Note 3 for how to enable it.** |
+| `kindling_topology_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests<br> **Disabled by default. See Note 3 for how to enable it.** |
 
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
@@ -125,6 +134,14 @@ These two terms are composed of two parts.
 - **DUBBO**: 'Error Code' of Dubbo request.
 - **others**: empty temporarily
 
+**Note 3**: The histogram metric `kindling_topology_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
+```yaml
+exporters:
+  otelexporter:
+    metric_aggregation_map:
+      # add the following line
+      kindling_topology_request_average_duration_nanoseconds: histogram 
+```
 ## Trace As Metric
 We made some rules for considering whether a request is abnormal. For the abnormal request, the detail request information is considered as useful for debugging or profiling. We name this kind of data "trace". It is not a good practice to store such data in Prometheus as some labels are high-cardinality, so we picked up some labels from the original ones to generate a new kind of metric, which is called "Trace As Metric". The following table shows what labels this metric contains.  
 
