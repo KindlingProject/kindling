@@ -121,6 +121,8 @@ func (p *K8sMetadataProcessor) addK8sMetaDataForClientLabel(labelMap *model.Attr
 	if dstIp == loopbackIp {
 		labelMap.UpdateAddStringValue(constlabels.DstNodeIp, p.localNodeIp)
 		labelMap.UpdateAddStringValue(constlabels.DstNode, p.localNodeName)
+		// If the dst IP is a loopback address, we use its src IP for further searching.
+		dstIp = labelMap.GetStringValue(constlabels.SrcIp)
 	}
 	dstPort := labelMap.GetIntValue(constlabels.DstPort)
 	// DstIp is IP of a service
