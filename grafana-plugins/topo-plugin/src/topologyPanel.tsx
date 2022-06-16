@@ -107,7 +107,10 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     });
     graph.data(data);
     graph.render();
-    // 关闭局部渲染，解决部分浏览器拖拽节点的残影问题
+    /**
+     * Close local rendering to solve the lingering problem of some browser drag nodes
+     * 关闭局部渲染，解决部分浏览器拖拽节点的残影问题
+     */
     graph.get('canvas').set('localRefresh', false);
 
     SGraph = graph;
@@ -154,9 +157,9 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodes: nodes,
       edges: edges
     }
-    // console.log(gdata);
     connFailTopo = _.cloneDeep(connFailResult);
-    console.log('connFailTopo', connFailTopo);
+    // console.log('topo', gdata);
+    // console.log('connFailTopo', connFailTopo);
     setGraphData(gdata);
     if (lineMetric === 'connFail') {
       const data = topoMerge(gdata, connFailTopo);
@@ -196,10 +199,10 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodeSendVolumeData,
       nodeReceiveVolumeData
     };
-    console.log('edgeData', edgeData);
-    console.log('nodeData', nodeData);
+    // console.log('edgeData', edgeData);
+    // console.log('nodeData', nodeData);
 
-    filterOpts = new FilterList(topoData);
+    filterOpts = new FilterList(topoData, namespace);
     setNamespaceList(filterOpts.namespaceList);
     setWorkloadList(filterOpts.workloadList);
 
