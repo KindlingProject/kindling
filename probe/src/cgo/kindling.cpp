@@ -7,7 +7,6 @@
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
 #include <cstdlib>
-#include "kindling_util.h"
 
 static sinsp *inspector = nullptr;
 
@@ -188,7 +187,6 @@ int getEvent(void **pp_kindling_event)
 		}
 	}
 	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
-
 	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
 	p_kindling_event->timestamp = ev->get_ts();
 	p_kindling_event->category = kindling_category;
