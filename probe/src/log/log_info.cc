@@ -1,7 +1,7 @@
 #include "log_info.h"
 #include "sinsp.h"
 #include "log_info.h"
-#include "ring_buffer.h"
+#include "utils/ring_buffer.h"
 #include <cstdio>
 
 LogData::LogData() {}

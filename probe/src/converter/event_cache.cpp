@@ -18,6 +18,9 @@ bool epoll_event_cache::SetLastEpollCache(uint32_t tid, int64_t fd, info_base *i
             if (fd == efd) {
                 // 匹配fd，更新epoll 事件中的relate id信息为net.ts
                 epoll_pair->relate_id = to_string(fd) + "-" + to_string(info->start_time);
+                epoll_pair->name = info->name;
+                epoll_pair->size = info->size;
+                epoll_pair->operation_type = info->operation_type;
 //                std::cout << "[epoll relate]" << epoll_pair->relate_id << " " << info->toStringTs() << std::endl;
 //                std::cout << "current size: " << cache[tid]->size() << std::endl;
             }
@@ -62,7 +65,6 @@ bool epoll_event_cache::setInfo(sinsp_evt *evt) {
     epoll_pair->exit = true;
     epoll_pair->end_time = evt->get_ts();
     epoll_pair->start_time = epoll_pair->end_time - s_tinfo->m_latency;
-
     auto it = cache.find(s_tinfo->m_tid);
     if (it == cache.end()) {
         list = new std::list<info_base *>();

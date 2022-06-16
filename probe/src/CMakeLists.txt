@@ -11,7 +11,10 @@ include_directories("../profile")
 include_directories("../util")
 set(SOURCE_FILES
 		cgo/cgo_func.cpp
-		cgo/kindling.cpp)
+		cgo/kindling.cpp
+		converter/cpu_converter.cpp
+		converter/event_cache.cpp
+		log/log_info.cc)
 
 add_library(kindling SHARED ${SOURCE_FILES})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

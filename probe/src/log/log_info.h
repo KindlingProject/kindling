@@ -1,6 +1,6 @@
 #ifndef KINDLING_PROBE_LOG_INFO_H
 #define KINDLING_PROBE_LOG_INFO_H
-#include "ring_buffer.h"
+#include "utils/ring_buffer.h"
 #include <string>
 #include <list>
 #include <vector>

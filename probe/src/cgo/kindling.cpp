@@ -8,12 +8,12 @@
 #include <iostream>
 #include <cstdlib>
 #include "converter/cpu_converter.h"
-#include "profile/profiler.h"
+//#include "profile/profiler.h"
 #include "log/log_info.h"
 
 static sinsp *inspector = nullptr;
 LogCache *logCache;
-Profiler *prof;
+//Profiler *prof;
 cpu_converter *cpuConverter;
 int cnt = 0;
 map<string, ppm_event_type> m_events;
@@ -125,9 +125,10 @@ void init_probe()
 
 			inspector->open("");
 		}
-		logCache = new LogCache(10000, 5);
-        prof = new Profiler(5000, 10);
-        cpuConverter = new cpu_converter(inspector, prof, logCache);
+//		logCache = new LogCache(10000, 5);
+//        prof = new Profiler(5000, 10);
+        cpuConverter = new cpu_converter(inspector);
+//        cpuConverter = new cpu_converter(inspector, prof, logCache);
 //		thread profile(start_profiler, prof);
 	}
 	catch(const exception &e)

@@ -1,11 +1,12 @@
 #ifndef CPU_CONVERTER_H
 #define CPU_CONVERTER_H
-#include "profile/profiler.h"
+//#include "profile/profiler.h"
 #include "log/log_info.h"
 #include "event_cache.h"
 #include <string>
 #include <map>
 #include "sinsp.h"
+#include "cgo/kindling.h"
 class cpu_data {
 public:
     uint64_t start_time;
@@ -21,7 +22,8 @@ public:
 class cpu_converter
 {
 public:
-    cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log);
+    cpu_converter(sinsp *inspector);
+//    cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log);
     ~cpu_converter();
     int convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt);
     bool Cache(sinsp_evt *evt);
@@ -33,7 +35,7 @@ private:
     int32_t set_boot_time(uint64_t *boot_time);
 
     sinsp *m_inspector;
-    Profiler *m_profiler;
+//    Profiler *m_profiler;
     LogCache *m_log;
     uint64_t sample_interval;
     event_cache *file_cache;

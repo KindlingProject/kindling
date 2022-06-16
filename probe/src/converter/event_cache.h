@@ -38,7 +38,7 @@ public:
     file_info() {}
     ~file_info() {}
     string toString() {
-        return operation_type + "#" + name + "#" + to_string(size);
+        return "file" + operation_type + "#" + name + "#" + to_string(size);
     }
 };
 
@@ -47,7 +47,7 @@ public:
     net_info() {}
     ~net_info() {}
     string toString() {
-        return operation_type + "#" + name + "#" + to_string(size);
+        return "net" + operation_type + "#" + name + "#" + to_string(size);
     }
 };
 class epoll_info : public info_base {
@@ -56,7 +56,7 @@ public:
     ~epoll_info() {}
     vector<int> fds;
     string toString() {
-        return relate_id;
+        return "net" + operation_type + "#" + name + "#" + to_string(size) + "#" + relate_id;
     }
 };
 class event_cache {

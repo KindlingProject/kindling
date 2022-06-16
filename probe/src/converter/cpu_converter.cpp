@@ -6,11 +6,16 @@
 #include <vector>
 using namespace std;
 
-cpu_converter::cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log) : m_inspector(inspector), m_profiler(prof), m_log(log) {
+cpu_converter::cpu_converter(sinsp *inspector) : m_inspector(inspector) {
     file_cache = new event_cache(1);
     net_cache = new event_cache(2);
     epoll_cache = new epoll_event_cache(4);
 }
+//cpu_converter::cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log) : m_inspector(inspector), m_profiler(prof), m_log(log) {
+//    file_cache = new event_cache(1);
+//    net_cache = new event_cache(2);
+//    epoll_cache = new epoll_event_cache(4);
+//}
 
 cpu_converter::~cpu_converter() {
     delete file_cache;
@@ -205,27 +210,27 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 
     // time_specs
     strcpy(p_kindling_event->userAttributes[userAttNumber].key, "type_specs");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_specs, sizeof(c_data.time_specs));
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_specs.data(), c_data.time_specs.length());
     p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-    p_kindling_event->userAttributes[userAttNumber].len = sizeof(c_data.time_specs);
+    p_kindling_event->userAttributes[userAttNumber].len = c_data.time_specs.length();
     userAttNumber++;
 
     // runq_latency
     strcpy(p_kindling_event->userAttributes[userAttNumber].key, "runq_latency");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.runq_latency, sizeof(c_data.runq_latency));
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.runq_latency.data(), c_data.runq_latency.length());
     p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-    p_kindling_event->userAttributes[userAttNumber].len = sizeof(c_data.runq_latency);
+    p_kindling_event->userAttributes[userAttNumber].len = c_data.runq_latency.length();
     userAttNumber++;
 
     // time_type
     strcpy(p_kindling_event->userAttributes[userAttNumber].key, "time_type");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_type, sizeof(c_data.time_type));
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_type.data(), c_data.time_type.length());
     p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-    p_kindling_event->userAttributes[userAttNumber].len = sizeof(c_data.time_type);
+    p_kindling_event->userAttributes[userAttNumber].len = c_data.time_type.length();
     userAttNumber++;
 
 //    // on_stack
-//    auto s_tinfo = sevt->get_thread_info();
+    auto s_tinfo = sevt->get_thread_info();
 //    string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
 //    if (data != "") {
 //        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "stack");
