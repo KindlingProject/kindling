@@ -6,7 +6,7 @@ import './topology/edge';
 import { nodeTooltip } from './topology/tooltip';
 import TopoLegend from './topology/legend';
 import { metricList, layoutOptions, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, 
-  transformData, getNodeTypes, nsRelationHandle, workloadRelationHandle } from './topology/services'; 
+  transformData, getNodeTypes, nsRelationHandle, connFailNSRelationHandle, workloadRelationHandle, connFailWorkloadRelationHandle, TopologyProps, topoMerge } from './topology/services'; 
 import { buildLayout, serviceLineUpdate, updateLinesAndNodes } from './topology/topology'
 import FilterList, { SelectOption } from './topology/filter';
 import { PanelProps } from '@grafana/data';
@@ -23,7 +23,8 @@ interface VolumeProps {
 
 let SGraph: any;
 let filterOpts: any;
-let topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps;
+let topoData: any, connFailTopoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps;
+let connFailTopo: TopologyProps;
 interface Props extends PanelProps<SimpleOptions> {}
 export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, replaceVariables }) => {
   let graphRef: any = useRef();
@@ -49,9 +50,10 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const [nodeTypesList, setNodeTypesList] = useState<any[]>([]);
 
   // console.log(options, namespace, workload, width, height);
+  // console.log(data);
 
   // draw topology
-  const draw = (gdata: any, serviceLine = showService) => {
+  const draw = (gdata: any, metric = lineMetric, serviceLine = showService) => {
     const inner: any = document.getElementById('kindling_topo');
     inner.innerHTML = '';
     let data = _.cloneDeep(gdata);
@@ -105,10 +107,12 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     });
     graph.data(data);
     graph.render();
+    // 关闭局部渲染，解决部分浏览器拖拽节点的残影问题
+    graph.get('canvas').set('localRefresh', false);
 
     SGraph = graph;
     serviceLineUpdate(SGraph, direction);
-    updateLinesAndNodes(SGraph, options, volumes, lineMetric, serviceLine);
+    updateLinesAndNodes(SGraph, options, volumes, metric, serviceLine);
   };
  
   /**
@@ -128,14 +132,20 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   }
   const buildtopoData = () => {
     let nodes: any[] = [], edges: any[] = [];
+    let connFailResult: TopologyProps = {
+      nodes: [],
+      edges: []
+    };
     if (namespace === 'all') {
       let result: any = nsRelationHandle(topoData, nodeData, edgeData);
+      connFailResult = connFailNSRelationHandle(connFailTopoData);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     } else {
       let showPod = workload !== 'all';
       setView(showPod ? 'pod_view' : 'workload_view');
       let result: any = workloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, topoData, nodeData, edgeData, showPod, showService);
+      connFailResult = connFailWorkloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, connFailTopoData, showPod, showService);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     }
@@ -144,14 +154,22 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodes: nodes,
       edges: edges
     }
-    console.log(gdata);
+    // console.log(gdata);
+    connFailTopo = _.cloneDeep(connFailResult);
+    console.log('connFailTopo', connFailTopo);
     setGraphData(gdata);
-    draw(gdata);
+    if (lineMetric === 'connFail') {
+      const data = topoMerge(gdata, connFailTopo);
+      draw(data);
+    } else {
+      draw(gdata);
+    }
     handleResult(gdata);
   }
   // Initial data processing: Generates topology data
   const initData = () => {
     topoData = transformData(_.filter(data.series, (item: any) => item.refId === 'A'));
+    connFailTopoData = transformData(_.filter(data.series, (item: any) => item.refId === 'L'));
     let edgeTimeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'I'));
     let edgeSendVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'B'));
     let edgeReceiveVolumeData: any = transformData(_.filter(data.series, (item: any) => item.refId === 'C'));
@@ -237,7 +255,16 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   // When the segment indicator is switched, the corresponding segment style is updated
   const lineMetricChange = (opt: any) => {
     setLineMetric(opt.value);
-    updateLinesAndNodes(SGraph, options, volumes, opt.value, showService);
+    if (opt.value === 'connFail') {
+      const data = topoMerge(graphData, connFailTopo);
+      draw(data, opt.value);
+    } else {
+      if (lineMetric === 'connFail') {
+        draw(graphData, opt.value);
+      } else {
+        updateLinesAndNodes(SGraph, options, volumes, opt.value, showService);
+      }
+    }    
   }
   const changeLayout = (opt: any) => {
     if (opt.value === layout) {
@@ -266,7 +293,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodes: nodes,
       edges: edges
     }
-    draw(gdata, show);
+    draw(gdata, lineMetric, show);
     setGraphData(gdata);
     handleResult(gdata);
   }
