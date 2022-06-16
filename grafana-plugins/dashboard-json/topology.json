@@ -116,6 +116,13 @@
           "interval": "",
           "legendFormat": "",
           "refId": "F"
+        },
+        {
+          "expr": "increase(kindling_tcp_connect_total[$__range])",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "L"
         }
       ],
       "timeFrom": null,

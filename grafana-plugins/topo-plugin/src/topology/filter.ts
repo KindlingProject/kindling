@@ -9,15 +9,15 @@ class FilterList {
     workloadList: SelectOption[];
     workloadListByNamespace: any;
 
-    constructor(data: any) {
+    constructor(data: any, namespace: string) {
         this.namespaceList = [];
         this.workloadList = [];
         this.workloadListByNamespace = {};
 
-        this.init(data);
+        this.init(data, namespace);
     }
 
-    init(data: any[]) {
+    init(data: any[], namespace: string) {
         let namespaces = _.uniq(_.concat(_.map(data, 'src_namespace'), _.map(data, 'dst_namespace')));
         this.namespaceList.push({
             label: 'All', 
@@ -49,6 +49,9 @@ class FilterList {
                 }
             });
         });
+        if (namespace !== 'all') {
+            this.changeNamespace(namespace);
+        }
     }
 
     changeNamespace(namespace: string) {
