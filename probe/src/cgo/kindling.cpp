@@ -7,7 +7,6 @@
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
 #include <cstdlib>
-#include "kindling_util.h"
 
 static sinsp *inspector = nullptr;
 
