@@ -8,7 +8,8 @@ export const metricList: Array<{label: string; value: any; description?: string}
     { label: 'Receive Volume', value: 'receiveVolume' },
     { label: 'SRTT', value: 'rtt' },
     { label: 'Retransmit', value: 'retransmit' },
-    { label: 'Package Lost', value: 'packageLost' }
+    { label: 'Package Lost', value: 'packageLost' },
+    { label: 'Connection Failure', value: 'connFail' }
 ];
 export const layoutOptions = [
     { label: 'Hierarchy Chart', value: 'dagre' },
@@ -63,6 +64,7 @@ export interface EdgeProps {
     rtt?: number;
     retransmit?: number;
     packageLost?: number;
+    connFail?: number;
 }
 export interface NodeDataProps {
     nodeCallsData: any[];
@@ -77,7 +79,7 @@ export interface EdgeDataProps {
     edgeReceiveVolumeData: any[];
     edgeRetransmitData: any[];
     edgeRTTData: any[];
-    edgePackageLostData: any[]
+    edgePackageLostData: any[];
 }
 
 
@@ -220,6 +222,117 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
         edge.packageLost = packageLostList.length > 0 ? _.chain(packageLostList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
     });
     return { nodes, edges };
+}
+export const connFailNSRelationHandle = (topoData: any) => {
+    let nodes: NodeProps[] = [], edges: EdgeProps[] = [];
+    _.forEach(topoData, tdata => {
+        let target: string;
+        if (tdata.src_namespace && tdata.dst_namespace) {
+            if (tdata.protocol === 'dns') {
+                target = tdata.dst_ip;
+                if (_.findIndex(nodes, {id: tdata.dst_ip}) === -1) {
+                    nodes.push({
+                        id: tdata.dst_ip,
+                        name: tdata.dst_ip,
+                        nodeType: 'dns',
+                        showNamespace: false
+                    });
+                }
+            } else {
+                target = tdata.dst_namespace;
+                if (_.findIndex(nodes, {id: tdata.dst_namespace}) === -1) {
+                    nodes.push({
+                        id: tdata.dst_namespace,
+                        name: tdata.dst_namespace,
+                        nodeType: externalTypes.indexOf(tdata.dst_namespace) > -1 ? 'external' : 'namespace',
+                        showNamespace: false
+                    });
+                }
+            }
+            if (_.findIndex(nodes, {id: tdata.src_namespace}) === -1) {
+                nodes.push({
+                    id: tdata.src_namespace,
+                    name: tdata.src_namespace,
+                    nodeType: externalTypes.indexOf(tdata.src_namespace) > -1 ? 'external' : 'namespace',
+                    showNamespace: false
+                });
+            }
+            if (_.findIndex(edges, {source: tdata.src_namespace, target: target}) === -1) {
+                let opposite: boolean = _.findIndex(edges, {source: target, target: tdata.src_namespace}) > -1 ? true : false;
+                edges.push({
+                    source: tdata.src_namespace,
+                    target: target,
+                    opposite,
+                    dnsEdge: tdata.protocol === 'dns'
+                });
+            }
+        }
+    });
+    _.remove(edges, edge => edge.source === edge.target);
+    edges.forEach((edge: EdgeProps) => {
+        let connectData = _.filter(topoData, item => edgeFilter(item, edge));
+        let connectFailData = _.filter(connectData, item => item.success === 'false');
+        edge.connFail = connectFailData.length > 0 ? _.chain(connectFailData).map(item => _.compact(item.values.buffer).pop()).sum().value() / _.chain(connectData).map(item => _.compact(item.values.buffer).pop()).sum().value() * 100 : 0;
+    });
+    return { nodes, edges };
+}
+export const connFailWorkloadRelationHandle = (workload: string, namespace: string, topoData: any, showPod: boolean, serviceLine: boolean) => {
+    let nodes: any[] = [], edges: any[] = [];
+    let result: any[] = [];
+    if (workload.split(',').length > 1) {
+        // 当workload为all的时候，筛选对应namespace下所有workload的调用关系
+        result = _.filter(topoData, (item: any) => item.dst_namespace === namespace || item.src_namespace === namespace);
+    } else {
+        // filter Topology data when namespace and workload is specific
+        result = _.filter(topoData, (item: any) => (item.dst_namespace === namespace && item.dst_workload_name === workload) || (item.src_namespace === namespace && item.src_workload_name === workload));
+    }
+    // console.log('topology data', result);
+    _.forEach(result, tdata => {
+        let { node: targetNode, target, service } = detailRelationHandle(nodes, edges, namespace, tdata, 'dst', showPod, serviceLine);
+        let { node: sourceNode, source } = detailRelationHandle(nodes, edges, namespace, tdata, 'src', showPod, serviceLine);
+        sourceNode && nodes.push(sourceNode);
+        targetNode && nodes.push(targetNode);
+        let edgeId = `edge_${source}_${target}${service ? '_' + service : ''}`
+        if (_.findIndex(edges, {id: edgeId}) === -1) {
+            let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
+            edges.push({
+                id: edgeId,
+                source: source,
+                target: target,
+                service: service || '',
+                opposite
+            });
+        }
+    });
+    edges = connFailDetailEdgesHandle(nodes, edges, topoData, serviceLine);
+    return { nodes, edges };
+}
+
+export const topoMerge = (topo: TopologyProps, connTopo: TopologyProps) => {
+    let result = _.cloneDeep(topo);
+    let mergeNodes: NodeProps[] = [], mergeEdges: EdgeProps[] = [];
+    _.forEach(connTopo.edges, edge => {
+        if (_.findIndex(result.edges, {source: edge.source, target: edge.target}) === -1) {
+            if (_.findIndex(mergeEdges, {source: edge.source, target: edge.target}) === -1) {
+                mergeEdges.push(edge);
+            }
+            if (_.findIndex(result.nodes, {id: edge.source}) === -1) {
+                let node = _.find(connTopo.nodes, {id: edge.source}) as NodeProps;
+                mergeNodes.push(node);
+            }
+            if (_.findIndex(result.nodes, {id: edge.target}) === -1) {
+                let node = _.find(connTopo.nodes, {id: edge.target}) as NodeProps;
+                mergeNodes.push(node);
+            }
+        } else {
+            let edgeItem: EdgeProps = _.find(result.edges, {source: edge.source, target: edge.target}) as EdgeProps;
+            edgeItem.connFail = edge.connFail;
+        }
+    });
+    result.nodes = result.nodes.concat(mergeNodes);
+    result.edges = result.edges.concat(mergeEdges);
+    console.log(result);
+    return result;
 }
 
 /**
@@ -518,6 +631,44 @@ export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any, sho
         edge.retransmit = retransmitList.length > 0 ? _.chain(retransmitList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
         edge.packageLost = packageLostList.length > 0 ? _.chain(packageLostList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
         // console.log(edge);
+    });
+    return edgelist;
+}
+
+export const connFailDetailEdgesHandle = (nodes: any[], edges: any[], edgeData: any, showService: boolean) => {
+    let edgelist = _.cloneDeep(edges);
+    edgelist.forEach((edge: EdgeProps) => {
+        let sourceNode = _.find(nodes, {id: edge.source});
+        let targteNode = _.find(nodes, {id: edge.target});
+
+        let connectData = [];
+        if (externalTypes.indexOf(sourceNode.nodeType) > -1) {
+            let ip = sourceNode.id.substring(sourceNode.id.lastIndexOf('_') + 1, sourceNode.id.indexOf(':') > -1 ? sourceNode.id.indexOf(':') : sourceNode.id.length);
+            connectData = _.filter(edgeData, item => item.src_namespace === sourceNode.namespace && item.src_ip === ip);
+        } else if (sourceNode.nodeType === 'pod') {
+            connectData = _.filter(edgeData, item => item.src_namespace === sourceNode.namespace && item.src_pod === sourceNode.name);
+        } else if (sourceNode.nodeType === 'unknow') {
+            connectData = _.filter(edgeData, item => item.src_namespace === sourceNode.namespace && item.src_workload_name === sourceNode.name && !item.src_pod);
+        } else if (workloadTypes.indexOf(sourceNode.nodeType) > -1) {
+            connectData = _.filter(edgeData, item => item.src_namespace === sourceNode.namespace && item.src_workload_name === sourceNode.name);
+        }
+
+        if (externalTypes.indexOf(targteNode.nodeType) > -1) {
+            let ip = targteNode.id.substring(targteNode.id.lastIndexOf('_') + 1, targteNode.id.indexOf(':') > -1 ? targteNode.id.indexOf(':') : targteNode.id.length);
+            connectData = _.filter(connectData, item => item.dst_namespace === targteNode.namespace && item.dst_ip === ip);
+        } else if (targteNode.nodeType === 'pod') {
+            connectData = _.filter(connectData, item => item.dst_namespace === targteNode.namespace && item.dst_pod === targteNode.name);
+        } else if (targteNode.nodeType === 'unknow') {
+            connectData = _.filter(connectData, item => item.dst_namespace === targteNode.namespace && item.dst_workload_name === targteNode.name && !item.dst_pod);
+        } else if (workloadTypes.indexOf(targteNode.nodeType) > -1)  {
+            connectData = _.filter(connectData, item => item.dst_namespace === targteNode.namespace && item.dst_workload_name === targteNode.name);
+        }
+
+        if (showService && edge.service) {
+            connectData = _.filter(connectData, item => item.dst_service === edge.service);
+        }
+        let connectFailData = _.filter(connectData, item => item.success === 'false');
+        edge.connFail = connectFailData.length > 0 ? _.chain(connectFailData).map(item => _.compact(item.values.buffer).pop()).sum().value() / _.chain(connectData).map(item => _.compact(item.values.buffer).pop()).sum().value() * 100 : 0;
     });
     return edgelist;
 }
