@@ -271,6 +271,7 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
         p_kindling_event->userAttributes[userAttNumber].len = info.length();
         userAttNumber++;
     }
+    p_kindling_event->paramsNumber = userAttNumber;
     // merge();
     // analyse()
     return 0;

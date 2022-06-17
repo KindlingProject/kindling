@@ -252,7 +252,7 @@ type KindlingEvent struct {
 	// Number of UserAttributes
 	ParamsNumber uint16
 	// User-defined Attributions of Kindling Event, now including latency for syscall.
-	UserAttributes [8]KeyValue
+	UserAttributes [16]KeyValue
 	// Context includes Thread information and Fd information.
 	Ctx Context
 }
@@ -290,7 +290,7 @@ func (m *KindlingEvent) GetCategory() Category {
 	return Category_CAT_NONE
 }
 
-func (m *KindlingEvent) GetUserAttributes() *[8]KeyValue {
+func (m *KindlingEvent) GetUserAttributes() *[16]KeyValue {
 	return &m.UserAttributes
 }
 

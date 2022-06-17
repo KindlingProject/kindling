@@ -27,7 +27,7 @@ struct kindling_event_t_for_go{
 	char* value;
 	uint32_t len;
 	uint32_t valueType;
-    }userAttributes[8];
+    }userAttributes[16];
     struct event_context {
         struct thread_info {
             uint32_t pid;
