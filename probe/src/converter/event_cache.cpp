@@ -159,7 +159,7 @@ bool event_cache::clearList(uint32_t tid) {
         if (it->second) {
             delete it->second;
         }
-        std::cout << "Clear tid " << tid << "current map size: " << cache.size() <<endl;
+//        std::cout << "Clear tid " << tid << "current map size: " << cache.size() <<endl;
         cache.erase(it);
     }
     return true;

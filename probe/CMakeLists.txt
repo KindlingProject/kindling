@@ -65,6 +65,8 @@ else ()
 	set(CMD_MAKE make)
 endif ()
 
+include(bcc)
+include(perf)
 include(agent-libs)
 add_subdirectory(src)
 

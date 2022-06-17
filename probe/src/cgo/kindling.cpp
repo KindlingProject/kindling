@@ -8,12 +8,13 @@
 #include <iostream>
 #include <cstdlib>
 #include "converter/cpu_converter.h"
-//#include "profile/profiler.h"
+#include "profile/profiler.h"
 #include "log/log_info.h"
 
 static sinsp *inspector = nullptr;
+sinsp_evt_formatter *formatter = nullptr;
 LogCache *logCache;
-//Profiler *prof;
+Profiler *prof;
 cpu_converter *cpuConverter;
 int cnt = 0;
 map<string, ppm_event_type> m_events;
@@ -63,14 +64,18 @@ void sub_event(char *eventName, char *category)
 	}
 }
 
+void start_profiler(Profiler *prof) {
+    prof->Start();
+}
+
 void init_probe()
 {
 	bool bpf = false;
 	string bpf_probe;
 	inspector = new sinsp();
 	init_sub_label();
-	string output_format;
-	output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
+	string output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
+	formatter = new sinsp_evt_formatter(inspector, output_format);
 	try
 	{
 		inspector = new sinsp();
@@ -125,10 +130,9 @@ void init_probe()
 
 			inspector->open("");
 		}
-//		logCache = new LogCache(10000, 5);
-//        prof = new Profiler(5000, 10);
-        cpuConverter = new cpu_converter(inspector);
-//        cpuConverter = new cpu_converter(inspector, prof, logCache);
+		logCache = new LogCache(10000, 5);
+        prof = new Profiler(5000, 10);
+        cpuConverter = new cpu_converter(inspector, prof, logCache);
 //		thread profile(start_profiler, prof);
 	}
 	catch(const exception &e)
@@ -170,7 +174,10 @@ int getEvent(void **pp_kindling_event)
 			return -1;
 		}
 	}
-
+//	string line;
+//	if (formatter->tostring(ev, &line)) {
+//	    cout<< line << endl;
+//	}
 	cpuConverter->Cache(ev);
 
 	uint16_t kindling_category = get_kindling_category(ev);
@@ -199,7 +206,8 @@ int getEvent(void **pp_kindling_event)
 		}
 	}
 	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
-	if (ev_type == 1) {
+	if (ev_type == PPME_CPU_ANALYSIS_E) {
+	    std::cout << "convert" << std::endl;
 	    return cpuConverter->convert(p_kindling_event, ev);
 	}
 

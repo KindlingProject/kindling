@@ -14,12 +14,18 @@ set(SOURCE_FILES
 		cgo/kindling.cpp
 		converter/cpu_converter.cpp
 		converter/event_cache.cpp
-		log/log_info.cc)
+		log/log_info.cc
+		profile/bcc/symbol.cc
+		profile/perf/perf.c
+		profile/flame_graph.cc
+		profile/profiler.cc)
 
 add_library(kindling SHARED ${SOURCE_FILES})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(kindling
-		sinsp)
+		sinsp
+		${PERF_LIB}
+		${BCC_LIB})
 install(TARGETS kindling
 		DESTINATION bin)

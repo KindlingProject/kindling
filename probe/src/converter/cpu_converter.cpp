@@ -11,11 +11,11 @@ cpu_converter::cpu_converter(sinsp *inspector) : m_inspector(inspector) {
     net_cache = new event_cache(2);
     epoll_cache = new epoll_event_cache(4);
 }
-//cpu_converter::cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log) : m_inspector(inspector), m_profiler(prof), m_log(log) {
-//    file_cache = new event_cache(1);
-//    net_cache = new event_cache(2);
-//    epoll_cache = new epoll_event_cache(4);
-//}
+cpu_converter::cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log) : m_inspector(inspector), m_profiler(prof), m_log(log) {
+    file_cache = new event_cache(1);
+    net_cache = new event_cache(2);
+    epoll_cache = new epoll_event_cache(4);
+}
 
 cpu_converter::~cpu_converter() {
     delete file_cache;
@@ -113,13 +113,11 @@ bool cpu_converter::Cache(sinsp_evt *sevt) {
 
 int cpu_converter::convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *cpu_evt)
 {
-    uint64_t start_time = *reinterpret_cast<uint64_t*> (cpu_evt->get_param_value_raw("start_ts")->m_val);
-    uint64_t end_time = *reinterpret_cast<uint64_t*> (cpu_evt->get_param_value_raw("end_ts")->m_val);
-    
     // convert
     init_kindling_event(p_kindling_event, cpu_evt);
     add_threadinfo(p_kindling_event, cpu_evt);
     add_cpu_data(p_kindling_event, cpu_evt);
+    return 1;
 }
 
 void merge()
@@ -229,24 +227,24 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
     p_kindling_event->userAttributes[userAttNumber].len = c_data.time_type.length();
     userAttNumber++;
 
-//    // on_stack
+    // on_stack
     auto s_tinfo = sevt->get_thread_info();
-//    string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
-//    if (data != "") {
-//        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "stack");
-//        memcpy(p_kindling_event->userAttributes[userAttNumber].value, data.data(), data.length());
-//        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-//        p_kindling_event->userAttributes[userAttNumber].len = data.length();
-//        userAttNumber++;
-//    }
-//    auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
-//    if (log_msg != "") {
-//        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "log");
-//        memcpy(p_kindling_event->userAttributes[userAttNumber].value, log_msg.data(), log_msg.length());
-//        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-//        p_kindling_event->userAttributes[userAttNumber].len = log_msg.length();
-//        userAttNumber++;
-//    }
+    string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
+    if (data != "") {
+        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "stack");
+        memcpy(p_kindling_event->userAttributes[userAttNumber].value, data.data(), data.length());
+        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+        p_kindling_event->userAttributes[userAttNumber].len = data.length();
+        userAttNumber++;
+    }
+    auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
+    if (log_msg != "") {
+        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "log");
+        memcpy(p_kindling_event->userAttributes[userAttNumber].value, log_msg.data(), log_msg.length());
+        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+        p_kindling_event->userAttributes[userAttNumber].len = log_msg.length();
+        userAttNumber++;
+    }
 
     string info = "";
     for (int i = 0; i < off_time.size(); i++) {
