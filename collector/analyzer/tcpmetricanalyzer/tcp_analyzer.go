@@ -57,6 +57,7 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	var err error
 	switch event.Name {
 	case constnames.TcpCloseEvent:
+		fallthrough
 	case constnames.TcpRcvEstablishedEvent:
 		dataGroup, err = a.generateRtt(event)
 	case constnames.TcpDropEvent:
