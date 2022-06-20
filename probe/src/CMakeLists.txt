@@ -26,6 +26,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(kindling
 		sinsp
 		${PERF_LIB}
+		${PERF_API_LIB}
 		${BCC_LIB})
 install(TARGETS kindling
 		DESTINATION bin)

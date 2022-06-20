@@ -1,9 +1,9 @@
 include(ExternalProject)
-project(. NONE)
 
 set(PERF_SRC "${PROJECT_BINARY_DIR}/perf-prefix/src/perf")
 message(STATUS "Using bundled perf in '${PERF_SRC}'")
-set(PERF_LIB "${PERF_SRC}/tools/lib/perf/libperf.so")
+set(PERF_LIB "${PERF_SRC}/tools/lib/perf/libperf.a")
+set(PERF_API_LIB "${PERF_SRC}/tools/lib/api/libapi.a")
 set(PERF_INCLUDE_DIR "${PERF_SRC}/tools/lib/perf/include")
 ExternalProject_Add(perf
         PREFIX "${PROJECT_BINARY_DIR}/perf-prefix"
@@ -14,5 +14,6 @@ ExternalProject_Add(perf
         BUILD_BYPRODUCTS ${PERF_LIB}
         BUILD_IN_SOURCE 1
         INSTALL_COMMAND "")
-
 include_directories(${PERF_INCLUDE_DIR})
+#include_directories("${PERF_SRC}/tools/include/uapi")
+#include_directories("${PERF_SRC}/tools/include")

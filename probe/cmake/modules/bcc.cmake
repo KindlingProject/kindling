@@ -1,5 +1,4 @@
 include(ExternalProject)
-project(. NONE)
 
 set(BCC_SRC "${PROJECT_BINARY_DIR}/bcc-prefix/src/bcc")
 message(STATUS "Using bundled bcc in '${BCC_SRC}'")
