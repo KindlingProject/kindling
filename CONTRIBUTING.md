@@ -3,9 +3,9 @@ Thank you for you interest in contributing to kindling! We welcome all people wh
 ​
 
 ## **Become a contributor**
-you can contribute to Kindling in serveral ways,like:
+you can contribute to Kindling in several ways,like:
 l Contribute to the codebase
-l Report and traige bugs
+l Report and triage bugs
 l Write technical documentation and blog posts, for users and contributors
 l Help others by answering questions about Kindling
 For more ways to contribute, check out the [Open Source Guides](https://opensource.guide/how-to-contribute/)
@@ -22,22 +22,22 @@ If you don't have the knowledge or time to code, consider helping with issue tri
 Read more about the ways you can [Triage issues](contribute/triage_issues.md).
 
 ## **Answering questions**
-It's important to us to help these users who has problem about kindlings, and we’d love you help. Go to [disscussions](https://github.com/Kindling-project/kindling/discussions), you can find unanswered questions and you can answer thoes questions.
+It's important to us to help these users who has problem about kindling, and we’d love you help. Go to [disscussions](https://github.com/Kindling-project/kindling/discussions), you can find unanswered questions, and you can answer those questions.
 
 
 ## **You first contribution**
-The first step to getting starting contribute to kindling is to find something to work on. You can start by fixing biginner-fridendly issues or improving kindling documents ,no contribution is too small!
+The first step to getting starting contribute to kindling is to find something to work on. You can start by fixing beginner-friendly issues or improving kindling documents ,no contribution is too small!
 
-+ How to find biginner-friendly issues？Kindling has good first issue label for issues that don’t need high-level knowledge to contribute to. You can browser issues labeled good first time. 
++ How to find beginner-friendly issues？Kindling has good first issue label for issues that don’t need high-level knowledge to contribute to. You can browse issues labeled good first time. 
 
-+ How to find documents improving issues? Kindling has doc improvement label for issues that you can improve kinding docs.
++ How to find documents improving issues? Kindling has doc improvement label for issues that you can improve kindling docs.
 
 If you are ready to contribute code changes, review the [developer guide](http://www.kindling.space:33215/project-1/doc-10/) for how to set up local environment.
 When you want to submit your local changes , read about [create pull request](contribute/create_pull_request.md).
 
 ## Sign your commits
 
-The sign-off is a simple line at the end of the explanation for a commit. All commits needs to be signed. Your signature certifies that you wrote the patch or otherwise have the right to contribute the material. The rules are pretty simple, if you can certify the rules (from [developercertificate.org](https://developercertificate.org/)),then you just need add a line to every git commit message, like:
+The sign-off is a simple line at the end of the explanation for a commit. All commits need to be signed. Your signature certifies that you wrote the patch or otherwise have the right to contribute the material. The rules are pretty simple, if you can certify the rules (from [developercertificate.org](https://developercertificate.org/)),then you just need add a line to every git commit message, like:
 
 ```
 Signed-off-by: lina <lina@example.cn>

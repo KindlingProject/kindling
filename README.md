@@ -46,7 +46,7 @@ Libpcap way of analyzing the flows in the kubernetes environment is too expensiv
 
 Kindling provides two versions which has different feature but with the same agent. The lightweight is integrated into Prometheus, and it uses PromQL to query the data from Prometheus, so it should be adopted easily. But due to the cardinality constraint of Prometheus, we group the detailed data into buckets which throw away the detailed information. For the standard version, we provide much more detailed information because we use ElasticSearch as the back-end to store the original information. 
 
-The lightweight version will be open sourced first and the standard version is under ative devlopment and will open sourced in next few months. 
+The lightweight version will be open sourced first and the standard version is under active development and will open sourced in next few months. 
 
 | Feature                                          | Lightweight | Standard |
 | ------------------------------------------------ | ----------- | -------- |
