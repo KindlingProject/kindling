@@ -34,6 +34,8 @@ analyzers:
   tcpconnectanalyzer:
     channel_size: 10000
     wait_event_second: 10
+    # Whether add pid and command info in tcp-connect-metrics's labels
+    need_process_info: false
   tcpmetricanalyzer:
   networkanalyzer:
     connect_timeout: 100
