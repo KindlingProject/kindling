@@ -3,6 +3,7 @@
 #include "profile/profiler.h"
 #include "log/log_info.h"
 #include "event_cache.h"
+#include "epoll_event_cache.h"
 #include <string>
 #include <map>
 #include "sinsp.h"

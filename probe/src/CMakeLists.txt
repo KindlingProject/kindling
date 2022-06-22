@@ -14,6 +14,7 @@ set(SOURCE_FILES
 		cgo/kindling.cpp
 		converter/cpu_converter.cpp
 		converter/event_cache.cpp
+		converter/epoll_event_cache.cpp
 		log/log_info.cc
 		profile/bcc/symbol.cc
 		profile/perf/perf.c

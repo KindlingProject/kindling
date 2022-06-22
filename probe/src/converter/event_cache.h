@@ -29,7 +29,7 @@ public:
     string relate_id;
     virtual string toString() = 0;
     string toStringTs() {
-        return to_string(start_time) + "#" + to_string(end_time) + "#" + operation_type + "#" + name + "#" + to_string(size) + "#" + (exit==true ? "true" : "false");
+        return to_string(start_time) + "-" + to_string(end_time) + "-" + operation_type + "-" + name + "-" + to_string(size) + "-" + (exit==true ? "true" : "false");
     }
 };
 
@@ -38,7 +38,7 @@ public:
     file_info() {}
     ~file_info() {}
     string toString() {
-        return "file" + operation_type + "#" + name + "#" + to_string(size);
+        return "file@" + operation_type + "@" + name + "@" + to_string(size);
     }
 };
 
@@ -47,24 +47,17 @@ public:
     net_info() {}
     ~net_info() {}
     string toString() {
-        return "net" + operation_type + "#" + name + "#" + to_string(size);
+        return "net@" + operation_type + "@" + name + "@" + to_string(size);
     }
 };
-class epoll_info : public info_base {
-public:
-    epoll_info() {}
-    ~epoll_info() {}
-    vector<int> fds;
-    string toString() {
-        return "net" + operation_type + "#" + name + "#" + to_string(size) + "#" + relate_id;
-    }
-};
+
 class event_cache {
 public:
     event_cache(uint8_t type) : event_type(type) {
-        threshold = 100000; // 100us
+        threshold = 0; // 100us
     }
     string GetInfo(uint32_t tid, pair<uint64_t, uint64_t> &period, uint8_t off_type);
+    string GetOnInfo(uint32_t tid, pair<uint64_t, uint64_t> &period);
     bool setThreshold(uint64_t thres);
     bool setInfo(uint32_t tid, info_base *info);
     bool send();
@@ -75,11 +68,5 @@ public:
     uint8_t event_type;
     std::atomic_ullong threshold;
     uint32_t list_max_size = 16;
-};
-class epoll_event_cache : public event_cache {
-public:
-    epoll_event_cache(uint8_t type) : event_cache(type) {}
-    bool setInfo(sinsp_evt *evt);
-    bool SetLastEpollCache(uint32_t tid, int64_t fd, info_base *info);
 };
 #endif //KINDLING_EVENT_CACHE_H
