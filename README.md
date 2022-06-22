@@ -71,7 +71,7 @@ The Kindling documentation is available at [kindling website]( http://www.kindli
 
 ## Contributing 
 
-Contributions are welcome, you can contribute in many ways: report issues, help us reproduce issues, fix bugs, add features, or give us advice on Github discussions and so on. If you are interested in joining us to unveil the eBPF in the Kubernetes area, you can start by reading the [Contributing Guide](https://github.com/Kindling-project/kindling/blob/main/CONTRIBUTING.md).
+Contributions are welcome, you can contribute in many ways: report issues, help us reproduce issues, fix bugs, add features, or give us advice on GitHub discussions and so on. If you are interested in joining us to unveil the eBPF in the Kubernetes area, you can start by reading the [Contributing Guide](https://github.com/Kindling-project/kindling/blob/main/CONTRIBUTING.md).
 
 ## Contact
 
