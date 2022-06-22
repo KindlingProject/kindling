@@ -244,7 +244,6 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
     }
     auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
     if (log_msg != "") {
-        cout << log_msg << endl;
         strcpy(p_kindling_event->userAttributes[userAttNumber].key, "log");
         memcpy(p_kindling_event->userAttributes[userAttNumber].value, log_msg.data(), log_msg.length());
         p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
