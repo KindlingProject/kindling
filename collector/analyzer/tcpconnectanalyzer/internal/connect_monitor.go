@@ -98,6 +98,7 @@ func (c *ConnectMonitor) ReadSendRequestSyscall(event *model.KindlingEvent) (*Co
 		return nil, nil
 	}
 	connStats.Pid = event.GetPid()
+	connStats.Comm = event.GetComm()
 	connStats.ContainerId = event.GetContainerId()
 	return connStats.StateMachine.ReceiveEvent(sendRequestSyscall, c.connMap)
 }
