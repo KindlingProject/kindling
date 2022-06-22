@@ -138,6 +138,7 @@ func (p *AggregateProcessor) Consume(dataGroup *model.DataGroup) error {
 func newNetRequestLabelSelectors() *aggregator.LabelSelectors {
 	return aggregator.NewLabelSelectors(
 		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.Comm, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.Protocol, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.IsServer, VType: aggregator.BooleanType},
 		aggregator.LabelSelector{Name: constlabels.ContainerId, VType: aggregator.StringType},
@@ -208,6 +209,7 @@ func newTcpLabelSelectors() *aggregator.LabelSelectors {
 func newTcpConnectLabelSelectors() *aggregator.LabelSelectors {
 	return aggregator.NewLabelSelectors(
 		aggregator.LabelSelector{Name: constlabels.Pid, VType: aggregator.IntType},
+		aggregator.LabelSelector{Name: constlabels.Comm, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.SrcNode, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.SrcNodeIp, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.SrcNamespace, VType: aggregator.StringType},
