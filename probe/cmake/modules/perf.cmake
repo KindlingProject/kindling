@@ -15,5 +15,5 @@ ExternalProject_Add(perf
         BUILD_IN_SOURCE 1
         INSTALL_COMMAND "")
 include_directories(${PERF_INCLUDE_DIR})
-execute_process(COMMAND mkdir "${PERF_INCLUDE_DIR}/linux")
-execute_process(COMMAND cp "${PERF_SRC}/tools/include/uapi/linux/perf_event.h" "${PERF_INCLUDE_DIR}/linux")
+#include_directories("${PERF_SRC}/tools/include/uapi")
+#include_directories("${PERF_SRC}/tools/include")

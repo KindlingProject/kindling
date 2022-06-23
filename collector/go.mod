@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/DataDog/ebpf v0.0.0-20220301203322-3fc9ab3b8daf
+	github.com/elastic/go-elasticsearch/v8 v8.0.0-20220603155612-47706b4dde8e // indirect
 	github.com/florianl/go-conntrack v0.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
@@ -13,7 +14,7 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
 	github.com/pebbe/zmq4 v1.2.7
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0 // indirect
+	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74
