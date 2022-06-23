@@ -489,6 +489,7 @@ func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.Dat
 	ret.UpdateAddIntMetric(constvalues.ConnectTime, int64(mps.connects.getDuration()))
 	ret.UpdateAddIntMetric(constvalues.RequestTotalTime, int64(mps.connects.getDuration()))
 	ret.Labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
+	ret.Labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	ret.Labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	ret.Labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
 	ret.Labels.UpdateAddIntValue(constlabels.SrcPort, int64(evt.GetSport()))
@@ -515,6 +516,7 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
+	labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
 	labels.UpdateAddIntValue(constlabels.SrcPort, int64(evt.GetSport()))
@@ -563,6 +565,7 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
+	labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
 	labels.UpdateAddIntValue(constlabels.SrcPort, int64(evt.GetSport()))

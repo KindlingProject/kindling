@@ -64,6 +64,7 @@ func (c *ConnectMonitor) ReadInConnectExitSyscall(event *model.KindlingEvent) (*
 	// "connect_exit" comes to analyzer after "tcp_connect"
 	connStats.EndTimestamp = event.Timestamp
 	connStats.Pid = event.GetPid()
+	connStats.Comm = event.GetComm()
 	connStats.ContainerId = event.GetContainerId()
 	var eventType EventType
 	if retValueInt == 0 {
@@ -97,6 +98,7 @@ func (c *ConnectMonitor) ReadSendRequestSyscall(event *model.KindlingEvent) (*Co
 		return nil, nil
 	}
 	connStats.Pid = event.GetPid()
+	connStats.Comm = event.GetComm()
 	connStats.ContainerId = event.GetContainerId()
 	return connStats.StateMachine.ReceiveEvent(sendRequestSyscall, c.connMap)
 }

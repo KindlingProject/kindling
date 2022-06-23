@@ -8,6 +8,7 @@ const (
 )
 
 const (
+	Comm            = "comm"
 	Pid             = "pid"
 	Protocol        = "protocol"
 	IsError         = "is_error"

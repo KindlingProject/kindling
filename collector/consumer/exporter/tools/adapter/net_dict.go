@@ -100,6 +100,8 @@ var SpanDicList = []dictionary{
 	//{constlabels.DstPod, constlabels.DstPod, String},
 	{constlabels.SrcNode, constlabels.SrcNode, String},
 	{constlabels.SrcPod, constlabels.SrcPod, String},
+	{constlabels.Pid, constlabels.Pid, Int64},
+	{constlabels.Comm, constlabels.Comm, String},
 }
 
 var topologyMetricDicList = []dictionary{

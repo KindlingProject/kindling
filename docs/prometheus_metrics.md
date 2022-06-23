@@ -225,7 +225,8 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
-| `pid` | 1024 | The client's process ID |
+| `pid` | 1024 | The client's process ID|
+| `comm` | java | The client's process command|
 | `src_node` | slave-node1 | Which node the source pod is on |
 | `src_namespace` | default | Namespace of the source pod |
 | `src_workload_kind` | deployment | Workload kind of the source pod |
@@ -254,6 +255,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 
 **Note 2**: The field `errno` is not `0` only if the TCP socket is blocking and there is an error happened. There are multiple possible values it could contain. See the `ERRORS` section of the [connect(2) manual](https://man7.org/linux/man-pages/man2/connect.2.html) for more details.
 
+**Note 3**: The field `pid` and `comm` will not exist if you set `need_process_info` to `false` (default is false), that will reduce the pressure of Prometheus.
 
 ## PromQL Example
 Here are some examples of how to use these metrics in Prometheus, which can help you understand them faster.

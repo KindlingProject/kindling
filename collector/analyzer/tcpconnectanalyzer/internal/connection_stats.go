@@ -28,6 +28,7 @@ const (
 
 type ConnectionStats struct {
 	Pid              uint32
+	Comm             string
 	ContainerId      string
 	ConnKey          ConnKey
 	StateMachine     *StateMachine
