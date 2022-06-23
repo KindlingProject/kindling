@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/Kindling-project/kindling/collector/analyzer/tools"
+	"github.com/Kindling-project/kindling/collector/pkg/urlclustering"
 
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
@@ -55,7 +56,7 @@ func parseHttpRequest() protocol.ParsePkgFn {
 		message.AddByteArrayUtf8Attribute(constlabels.HttpUrl, url)
 		message.AddByteArrayUtf8Attribute(constlabels.HttpRequestPayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 
-		contentKey := getContentKey(string(url))
+		contentKey := urlclustering.AlphabeticClustering(string(url))
 		if len(contentKey) == 0 {
 			contentKey = "*"
 		}
