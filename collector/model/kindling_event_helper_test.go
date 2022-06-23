@@ -26,7 +26,7 @@ func TestGetUintUserAttribute(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.key, func(t *testing.T) {
 			event := &KindlingEvent{
-				UserAttributes: []*KeyValue{
+				UserAttributes: [8]KeyValue{
 					{Key: test.key, ValueType: test.valueType, Value: test.value},
 				},
 			}
@@ -55,7 +55,8 @@ func TestGetIntUserAttribute(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.key, func(t *testing.T) {
 			event := &KindlingEvent{
-				UserAttributes: []*KeyValue{
+				ParamsNumber: 1,
+				UserAttributes: [8]KeyValue{
 					{Key: test.key, ValueType: test.valueType, Value: test.value},
 				},
 			}
@@ -78,7 +79,7 @@ func TestGetFloatUserAttribute(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.key, func(t *testing.T) {
 			event := &KindlingEvent{
-				UserAttributes: []*KeyValue{
+				UserAttributes: [8]KeyValue{
 					{Key: test.key, ValueType: ValueType_FLOAT, Value: test.value},
 				},
 			}
@@ -101,7 +102,7 @@ func TestGetDoubleUserAttribute(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.key, func(t *testing.T) {
 			event := &KindlingEvent{
-				UserAttributes: []*KeyValue{
+				UserAttributes: [8]KeyValue{
 					{Key: test.key, ValueType: ValueType_FLOAT, Value: test.value},
 				},
 			}
