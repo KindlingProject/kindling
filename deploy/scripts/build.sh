@@ -1,7 +1,7 @@
 cd ../../
 mkdir -p probe/build
 cd probe/build
-cmake -DBUILD_DRIVER=OFF ..
+cmake -DBUILD_DRIVER=OFF -DPROBE_VERSION=0.1.1dev ..
 make
 libKindlingPath="./src/libkindling.so"
 if [ ! -f "$libKindlingPath" ]; then

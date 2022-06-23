@@ -23,6 +23,7 @@ docker run --rm -it \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "${workspace_root}/../:/kindling" \
   -w "/kindling" \
+  --privileged=true \
   "${RUN_DOCKER_EXTRA_ARGS[@]}" \
   "${docker_image_with_tag}" \
   "${exec_cmd[@]}"
