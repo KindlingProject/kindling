@@ -16,6 +16,7 @@ func (m *NoParamClusteringMethod) Clustering(endpoint string) string {
 	if endpoint == "" {
 		return ""
 	}
+	endpoint = strings.TrimSpace(endpoint)
 	// Remove the parameters first
 	index := strings.Index(endpoint, "?")
 	if index != -1 {
