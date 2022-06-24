@@ -18,6 +18,8 @@ func NewAlphabeticalClusteringMethod() *AlphabeticClusteringMethod {
 	}
 }
 
+// ClusteringBaseline is a more readable version of Clustering() but with a poor performance.
+// Don't use this function at anytime.
 func (m *AlphabeticClusteringMethod) ClusteringBaseline(endpoint string) string {
 	if endpoint == "" {
 		return ""
@@ -32,8 +34,12 @@ func (m *AlphabeticClusteringMethod) ClusteringBaseline(endpoint string) string 
 	segments := strings.Split(endpoint, "/")
 	// Iterate over all parts and execute the regular expression.
 	resultSegments := make([]string, 0, len(segments))
-	// Skip the first segment because it is supposed to be always empty.
-	for i := 1; i < len(segments); i++ {
+	for i := 0; i < len(segments); i++ {
+		// If the current segment is too long, we consider it as a high-cardinality variable.
+		if len(segments[i]) > 25 {
+			resultSegments = append(resultSegments, "*")
+			continue
+		}
 		if segments[i] == "" || m.regexp.MatchString(segments[i]) {
 			resultSegments = append(resultSegments, segments[i])
 		} else {
@@ -43,8 +49,11 @@ func (m *AlphabeticClusteringMethod) ClusteringBaseline(endpoint string) string 
 	}
 	// Re-combine all parts together
 	var resultEndpoint string
-	for _, seg := range resultSegments {
-		resultEndpoint = resultEndpoint + "/" + seg
+	for i, seg := range resultSegments {
+		resultEndpoint = resultEndpoint + seg
+		if i != len(resultSegments)-1 {
+			resultEndpoint += "/"
+		}
 	}
 
 	return resultEndpoint
@@ -87,6 +96,10 @@ func (m *AlphabeticClusteringMethod) Clustering(endpoint string) string {
 		}
 		if isAlphabetical(b) {
 			currentSegment = append(currentSegment, b)
+			// If the current segment is too long, we consider it as a high-cardinality variable.
+			if len(currentSegment) > 25 {
+				currentSegmentIsStar = true
+			}
 		} else {
 			currentSegmentIsStar = true
 		}

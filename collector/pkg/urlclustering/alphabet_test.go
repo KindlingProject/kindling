@@ -13,13 +13,17 @@ type testCase struct {
 
 func newTestcases() []testCase {
 	return []testCase{
+		{"", ""},
 		{"/", "/"},
-		{"/A/b/20000/", "/A/b/*/"},
-		{" /test/22?v=a", "/test/*"},
-		{"/a12?a=1132", "/*"},
+		{"/A/b/_20000/", "/A/b/*/"},
+		{" /test_a/22?v=a", "/test_a/*"},
+		{"/a-12?a=1132", "/*"},
 		{"/abcd/1234a/efg/b&*", "/abcd/*/efg/*"},
 		// Double slashes is valid but not recommended
 		{"/a//b/c?d=2&e=3", "/a//b/c"},
+		// Although this is not a valid endpoint, we still accept it.
+		{"noslash/and/1234", "noslash/and/*"},
+		{"/a/b/it-is-a-long-segment-like-uuid-or-document-name-or-something-wired?v=1&b=3", "/a/b/*"},
 	}
 }
 
