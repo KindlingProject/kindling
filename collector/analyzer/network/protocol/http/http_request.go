@@ -27,7 +27,7 @@ Request line
 Request header
 Request body
 */
-func parseHttpRequest() protocol.ParsePkgFn {
+func parseHttpRequest(urlClusteringMethod urlclustering.ClusteringMethod) protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		offset, method := message.ReadUntilBlankWithLength(message.Offset, 8)
 
@@ -56,7 +56,7 @@ func parseHttpRequest() protocol.ParsePkgFn {
 		message.AddByteArrayUtf8Attribute(constlabels.HttpUrl, url)
 		message.AddByteArrayUtf8Attribute(constlabels.HttpRequestPayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 
-		contentKey := urlclustering.AlphabeticClustering(string(url))
+		contentKey := urlClusteringMethod.Clustering(string(url))
 		if len(contentKey) == 0 {
 			contentKey = "*"
 		}

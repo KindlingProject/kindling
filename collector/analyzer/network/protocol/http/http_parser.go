@@ -4,10 +4,20 @@ import (
 	"strings"
 
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/pkg/urlclustering"
 )
 
-func NewHttpParser() *protocol.ProtocolParser {
-	requestParser := protocol.CreatePkgParser(fastfailHttpRequest(), parseHttpRequest())
+func NewHttpParser(urlClusteringMethod string) *protocol.ProtocolParser {
+	var method urlclustering.ClusteringMethod
+	switch urlClusteringMethod {
+	case "alphabet":
+		method = urlclustering.NewAlphabeticalClusteringMethod()
+	case "noparam":
+		method = urlclustering.NewNoParamClusteringMethod()
+	default:
+		method = urlclustering.NewAlphabeticalClusteringMethod()
+	}
+	requestParser := protocol.CreatePkgParser(fastfailHttpRequest(), parseHttpRequest(method))
 	responseParser := protocol.CreatePkgParser(fastfailHttpResponse(), parseHttpResponse())
 
 	return protocol.NewProtocolParser(protocol.HTTP, requestParser, responseParser, nil)

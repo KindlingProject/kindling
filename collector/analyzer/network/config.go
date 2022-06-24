@@ -17,8 +17,58 @@ type Config struct {
 	ConntrackRateLimit    int    `mapstructure:"conntrack_rate_limit"`
 	ProcRoot              string `mapstructure:"proc_root"`
 
-	ProtocolParser  []string         `mapstructure:"protocol_parser"`
-	ProtocolConfigs []ProtocolConfig `mapstructure:"protocol_config,omitempty"`
+	ProtocolParser      []string         `mapstructure:"protocol_parser"`
+	ProtocolConfigs     []ProtocolConfig `mapstructure:"protocol_config,omitempty"`
+	UrlClusteringMethod string           `mapstructure:"url_clustering_method"`
+}
+
+func NewDefaultConfig() *Config {
+	return &Config{
+		ConnectTimeout:        100,
+		RequestTimeout:        60,
+		ResponseSlowThreshold: 500,
+		EnableConntrack:       true,
+		ConntrackMaxStateSize: 131072,
+		ConntrackRateLimit:    500,
+		ProcRoot:              "/proc",
+		ProtocolParser:        []string{"http", "mysql", "dns", "redis", "kafka", "dubbo"},
+		ProtocolConfigs: []ProtocolConfig{
+			{
+				Key:           "http",
+				PayloadLength: 200,
+			},
+			{
+				Key:           "dubbo",
+				PayloadLength: 200,
+			},
+			{
+				Key:       "mysql",
+				Ports:     []uint32{3306},
+				Threshold: 100,
+			},
+			{
+				Key:       "kafka",
+				Ports:     []uint32{9092},
+				Threshold: 100,
+			},
+			{
+				Key:       "dns",
+				Ports:     []uint32{53},
+				Threshold: 100,
+			},
+			{
+				Key:       "cassandra",
+				Ports:     []uint32{9042},
+				Threshold: 100,
+			},
+			{
+				Key:       "s3",
+				Ports:     []uint32{9190},
+				Threshold: 100,
+			},
+		},
+		UrlClusteringMethod: "alphabet",
+	}
 }
 
 type ProtocolConfig struct {
