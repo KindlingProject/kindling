@@ -13,56 +13,56 @@ import (
 	"github.com/Kindling-project/kindling/collector/analyzer/network/protocol/redis"
 )
 
-var (
-	cache_port_parsers_map = make(map[uint32][]*protocol.ProtocolParser)
-	mutex                  = sync.Mutex{}
+type ParserFactory struct {
+	cachePortParsersMap map[uint32][]*protocol.ProtocolParser
+	mutex               sync.Mutex
+	protocolParsers     map[string]*protocol.ProtocolParser
 
-	generic_parser *protocol.ProtocolParser = generic.NewGenericParser()
-	http_parser    *protocol.ProtocolParser = http.NewHttpParser()
-	kafka_parser   *protocol.ProtocolParser = kafka.NewKafkaParser()
-	mysql_parser   *protocol.ProtocolParser = mysql.NewMysqlParser()
-	redis_parser   *protocol.ProtocolParser = redis.NewRedisParser()
-	dubbo_parser   *protocol.ProtocolParser = dubbo.NewDubboParser()
-	dns_parser     *protocol.ProtocolParser = dns.NewDnsParser()
-)
+	config *config
+}
 
-func GetParser(key string) *protocol.ProtocolParser {
-	switch key {
-	case protocol.HTTP:
-		return http_parser
-	case protocol.KAFKA:
-		return kafka_parser
-	case protocol.MYSQL:
-		return mysql_parser
-	case protocol.REDIS:
-		return redis_parser
-	case protocol.DUBBO:
-		return dubbo_parser
-	case protocol.DNS:
-		return dns_parser
-	default:
-		return nil
+func NewParserFactory(options ...Option) *ParserFactory {
+	factory := &ParserFactory{
+		cachePortParsersMap: make(map[uint32][]*protocol.ProtocolParser),
+		protocolParsers:     make(map[string]*protocol.ProtocolParser),
+		config:              newDefaultConfig(),
 	}
+	for _, option := range options {
+		option(factory.config)
+	}
+	factory.protocolParsers[protocol.HTTP] = http.NewHttpParser(factory.config.urlClusteringMethod)
+	factory.protocolParsers[protocol.KAFKA] = kafka.NewKafkaParser()
+	factory.protocolParsers[protocol.MYSQL] = mysql.NewMysqlParser()
+	factory.protocolParsers[protocol.REDIS] = redis.NewRedisParser()
+	factory.protocolParsers[protocol.DUBBO] = dubbo.NewDubboParser()
+	factory.protocolParsers[protocol.DNS] = dns.NewDnsParser()
+	factory.protocolParsers[protocol.NOSUPPORT] = generic.NewGenericParser()
+
+	return factory
 }
 
-func GetGenericParser() *protocol.ProtocolParser {
-	return generic_parser
+func (f *ParserFactory) GetParser(key string) *protocol.ProtocolParser {
+	return f.protocolParsers[key]
 }
 
-func GetCachedParsersByPort(port uint32) ([]*protocol.ProtocolParser, bool) {
-	mutex.Lock()
-	parser, ok := cache_port_parsers_map[port]
-	mutex.Unlock()
+func (f *ParserFactory) GetGenericParser() *protocol.ProtocolParser {
+	return f.protocolParsers[protocol.NOSUPPORT]
+}
+
+func (f *ParserFactory) GetCachedParsersByPort(port uint32) ([]*protocol.ProtocolParser, bool) {
+	f.mutex.Lock()
+	parser, ok := f.cachePortParsersMap[port]
+	f.mutex.Unlock()
 
 	return parser, ok
 }
 
-func AddCachedParser(port uint32, parser *protocol.ProtocolParser) {
-	mutex.Lock()
-	if val := cache_port_parsers_map[port]; val == nil {
+func (f *ParserFactory) AddCachedParser(port uint32, parser *protocol.ProtocolParser) {
+	f.mutex.Lock()
+	if val := f.cachePortParsersMap[port]; val == nil {
 		parsers := make([]*protocol.ProtocolParser, 0)
 		parsers = append(parsers, parser)
-		cache_port_parsers_map[port] = parsers
+		f.cachePortParsersMap[port] = parsers
 	} else {
 		exist := false
 		for _, value := range val {
@@ -71,31 +71,31 @@ func AddCachedParser(port uint32, parser *protocol.ProtocolParser) {
 				break
 			}
 		}
-
+		genericParser := f.GetGenericParser()
 		if !exist {
 			// Make sure Generic is last
-			if len(val) > 0 && val[len(val)-1] == generic_parser {
+			if len(val) > 0 && val[len(val)-1] == genericParser {
 				parsers := append(val[0:len(val)-1], parser)
-				parsers = append(parsers, generic_parser)
-				cache_port_parsers_map[port] = parsers
+				parsers = append(parsers, genericParser)
+				f.cachePortParsersMap[port] = parsers
 			} else {
 				parsers := append(val, parser)
-				cache_port_parsers_map[port] = parsers
+				f.cachePortParsersMap[port] = parsers
 			}
 		}
 	}
-	mutex.Unlock()
+	f.mutex.Unlock()
 }
 
-func RemoveCachedParser(port uint32, parser *protocol.ProtocolParser) {
-	mutex.Lock()
-	if val, ok := cache_port_parsers_map[port]; ok {
+func (f *ParserFactory) RemoveCachedParser(port uint32, parser *protocol.ProtocolParser) {
+	f.mutex.Lock()
+	if val, ok := f.cachePortParsersMap[port]; ok {
 		for i, value := range val {
 			if value == parser {
 				val = append(val[:i], val[i+1:]...)
-				cache_port_parsers_map[port] = val
+				f.cachePortParsersMap[port] = val
 			}
 		}
 	}
-	mutex.Unlock()
+	f.mutex.Unlock()
 }

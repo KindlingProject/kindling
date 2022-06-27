@@ -51,6 +51,13 @@ analyzers:
     # The protocol parsers which is enabled
     # When dissectors are enabled, agent will analyze the payload and enrich metric/trace with its content.
     protocol_parser: [ http, mysql, dns, redis, kafka, dubbo ]
+    # Which URL clustering method should be used to shorten the URL of HTTP request.
+    # This is useful for decrease the cardinality of URLs.
+    # Valid values: ["noparam", "alphabet"]
+    # - noparam: Only trim the trailing parameters behind the character '?'
+    # - alphabet: Trim the trailing parameters and Convert the segments
+    #             containing non-alphabetical characters to star(*)
+    url_clustering_method: alphabet
     # If the destination port of data is one of the followings, the protocol of such network request
     # is set to the corresponding one. Note the program will try to identify the protocol automatically
     # for the ports that are not in the lists, in which case the cpu usage will be increased much inevitably.

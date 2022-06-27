@@ -39,6 +39,7 @@ type NetworkAnalyzer struct {
 	staticPortMap    map[uint32]string
 	slowThresholdMap map[string]int
 	protocolMap      map[string]*protocol.ProtocolParser
+	parserFactory    *factory.ParserFactory
 	parsers          []*protocol.ProtocolParser
 
 	dataGroupPool      *DataGroupPool
@@ -68,6 +69,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		na.conntracker, _ = conntracker.NewConntracker(connConfig)
 	}
 
+	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 	return na
 }
 
@@ -108,7 +110,7 @@ func (na *NetworkAnalyzer) Start() error {
 	na.protocolMap = map[string]*protocol.ProtocolParser{}
 	parsers := make([]*protocol.ProtocolParser, 0)
 	for _, protocol := range na.cfg.ProtocolParser {
-		protocolparser := factory.GetParser(protocol)
+		protocolparser := na.parserFactory.GetParser(protocol)
 		if protocolparser != nil {
 			na.protocolMap[protocol] = protocolparser
 			disableDisern, ok := disableDisernProtocols[protocol]
@@ -118,7 +120,7 @@ func (na *NetworkAnalyzer) Start() error {
 		}
 	}
 	// Add Generic Last
-	parsers = append(parsers, factory.GetGenericParser())
+	parsers = append(parsers, na.parserFactory.GetGenericParser())
 	na.parsers = parsers
 
 	rand.Seed(time.Now().UnixNano())
@@ -360,7 +362,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup 
 
 	// Step2 Cache protocol and port
 	// TODO There is concurrent modify case when looping. Considering threadsafe.
-	cacheParsers, ok := factory.GetCachedParsersByPort(port)
+	cacheParsers, ok := na.parserFactory.GetCachedParsersByPort(port)
 	if ok {
 		for _, parser := range cacheParsers {
 			records := na.parseProtocol(mps, parser)
@@ -369,7 +371,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup 
 					// Reset mapping for  generic and port when exceed threshold so as to parsed by other protcols.
 					if parser.AddPortCount(port) == CACHE_RESET_THRESHOLD {
 						parser.ResetPort(port)
-						factory.RemoveCachedParser(port, parser)
+						na.parserFactory.RemoveCachedParser(port, parser)
 					}
 				}
 				return records
@@ -383,7 +385,7 @@ func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup 
 		if records != nil {
 			// Add mapping for port and protocol when exceed threshold
 			if parser.AddPortCount(port) == CACHE_ADD_THRESHOLD {
-				factory.AddCachedParser(port, parser)
+				na.parserFactory.AddCachedParser(port, parser)
 			}
 			return records
 		}
