@@ -16,20 +16,14 @@ spec:
     spec:
       serviceAccount: kindling-agent
       containers:
-      - name: kindling-probe
-        image: kindlingproject/kindling-probe:latest
+      - name: kindling-agent
+        image: kindlingproject/kindling-agent:latest
         imagePullPolicy: Always
-        lifecycle:
-          postStart:
-            exec:
-              command:
-                - sh
-                - /pl/post_start.sh
-        command:
-        - /pl/docker-entrypoint.sh
+        securityContext:
+          privileged: true
         resources:
           limits:
-            memory: 300Mi
+            memory: 1Gi
           requests:
             memory: 300Mi
         env:
@@ -39,8 +33,16 @@ spec:
           value: /host
         - name: SYSDIG_HOST_ROOT
           value: /host
-        securityContext:
-          privileged: true
+        - name: GOGC
+          value: "400"
+        - name: MY_NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         readinessProbe:
           exec:
             command:
@@ -49,11 +51,8 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
         volumeMounts:
-        - name: shared-volume-kindling
-          mountPath: /home/kindling
-          readOnly: false
-        - name: shared-volume-subpub
-          mountPath: /home/kindling-sub
+        - mountPath: /etc/kindling/config
+          name: kindlingcfg
         - mountPath: /sys
           name: sys-vol
         - mountPath: /etc/modprobe.d
@@ -82,36 +81,6 @@ spec:
           name: varrun-vol
         - mountPath: /dev/shm
           name: dshm
-      - name: kindling-collector
-        image: kindlingproject/kindling-collector:latest
-        imagePullPolicy: Always
-        securityContext:
-          privileged: true
-        resources:
-          limits:
-            memory: 800Mi
-          requests:
-            memory: 300Mi
-        env:
-        - name: GOGC
-          value: "400"
-        - name: MY_NODE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
-        - name: MY_NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        volumeMounts:
-        - mountPath: /etc/kindling/config
-          name: kindlingcfg
-        - name: shared-volume-kindling
-          mountPath: /home/kindling
-          readOnly: false
-        - name: shared-volume-subpub
-          mountPath: /home/kindling-sub
-          readOnly: false
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       hostPID: true
@@ -126,10 +95,6 @@ spec:
       - hostPath:
           path: /etc/modprobe.d
         name: modprobe-d
-      - hostPath:
-          path: /etc/os-release
-          type: FileOrCreate
-        name: osrel
       - emptyDir:
           medium: Memory
         name: dshm
@@ -160,7 +125,3 @@ spec:
       - hostPath:
           path: /sys
         name: sys-vol
-      - name: shared-volume-kindling
-        emptyDir: {}
-      - name: shared-volume-subpub
-        emptyDir: {}
