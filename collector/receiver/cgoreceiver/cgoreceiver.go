@@ -10,14 +10,15 @@ package cgoreceiver
 */
 import "C"
 import (
+	"sync"
+	"time"
+	"unsafe"
+
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"sync"
-	"time"
-	"unsafe"
 
 	"github.com/Kindling-project/kindling/collector/receiver"
 )
@@ -75,11 +76,14 @@ func (r *CgoReceiver) Start() error {
 	return nil
 }
 
+// TODO finish it using opentelemetry
 func (r *CgoReceiver) printMetrics() {
 	timer := time.NewTicker(1 * time.Second)
+	r.shutdownWG.Add(1)
 	for {
 		select {
 		case <-r.stopCh:
+			r.shutdownWG.Done()
 			return
 		case <-timer.C:
 			r.telemetry.Logger.Info("Total number events received: ", zap.Int("events", r.eventCount))
@@ -91,9 +95,11 @@ func (r *CgoReceiver) printMetrics() {
 
 func (r *CgoReceiver) startGetEvent() {
 	var pKindlingEvent unsafe.Pointer
+	r.shutdownWG.Add(1)
 	for {
 		select {
 		case <-r.stopCh:
+			r.shutdownWG.Done()
 			return
 		default:
 			res := int(C.getKindlingEvent(&pKindlingEvent))
@@ -106,9 +112,11 @@ func (r *CgoReceiver) startGetEvent() {
 }
 
 func (r *CgoReceiver) consumeEvents() {
+	r.shutdownWG.Add(1)
 	for {
 		select {
 		case <-r.stopCh:
+			r.shutdownWG.Done()
 			return
 		case ev := <-r.eventChannel:
 			err := r.sendToNextConsumer(ev)
@@ -121,7 +129,8 @@ func (r *CgoReceiver) consumeEvents() {
 
 func (r *CgoReceiver) Shutdown() error {
 	// TODO stop the C routine
-	r.stopCh <- nil
+	close(r.stopCh)
+	r.shutdownWG.Wait()
 	return nil
 }
 
