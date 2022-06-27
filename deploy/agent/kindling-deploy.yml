@@ -48,6 +48,8 @@ spec:
             command:
               - cat
               - /opt/kernel-support
+          initialDelaySeconds: 5
+          periodSeconds: 5
         volumeMounts:
         - mountPath: /etc/kindling/config
           name: kindlingcfg
