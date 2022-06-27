@@ -16,14 +16,14 @@ spec:
     spec:
       serviceAccount: kindling-agent
       containers:
-      - name: kindling-collector
-        image: registry.cn-hangzhou.aliyuncs.com/zjd-kindling/zjdkindling:new1
+      - name: kindling-agent
+        image: kindlingproject/kindling-agent:latest
         imagePullPolicy: Always
         securityContext:
           privileged: true
         resources:
           limits:
-            memory: 800Mi
+            memory: 1Gi
           requests:
             memory: 300Mi
         env:
@@ -46,8 +46,8 @@ spec:
         readinessProbe:
           exec:
             command:
-              - cat
-              - /opt/kernel-support
+            - cat
+            - /opt/kernel-support
           initialDelaySeconds: 5
           periodSeconds: 5
         volumeMounts:
@@ -95,10 +95,6 @@ spec:
       - hostPath:
           path: /etc/modprobe.d
         name: modprobe-d
-      - hostPath:
-          path: /etc/os-release
-          type: FileOrCreate
-        name: osrel
       - emptyDir:
           medium: Memory
         name: dshm

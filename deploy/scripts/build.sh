@@ -11,7 +11,7 @@ else
   cp -rf ./src/libkindling.so ../../collector/docker/libso
   cp -rf ./src/libkindling.so /usr/lib64/
   cd ../../collector/
-  go build
+  sh collector-version-build.sh
   collectorPath="./collector"
   if [ ! -f "$collectorPath" ]; then
     echo "compiler collector failed! exit!"
