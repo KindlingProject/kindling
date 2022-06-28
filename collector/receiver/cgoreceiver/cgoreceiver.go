@@ -37,15 +37,7 @@ type CgoReceiver struct {
 	eventChannel    chan *model.KindlingEvent
 	eventCount      int
 	stopCh          chan interface{}
-}
-
-type Config struct {
-	SubcribeInfo []SubEvent `mapstructure:"subscribe"`
-}
-
-type SubEvent struct {
-	Category string `mapstructure:"category"`
-	Name     string `mapstructure:"name"`
+	stats           eventCounter
 }
 
 func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
@@ -60,6 +52,8 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 		eventChannel:    make(chan *model.KindlingEvent, 3e5),
 		stopCh:          make(chan interface{}, 1),
 	}
+	cgoReceiver.stats = newDynamicStats(cfg.SubscribeInfo)
+	newSelfMetrics(telemetry.MeterProvider, cgoReceiver.stats)
 	return cgoReceiver
 }
 
@@ -197,7 +191,7 @@ func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
 }
 
 func (r *CgoReceiver) subEvent() {
-	for _, value := range r.cfg.SubcribeInfo {
+	for _, value := range r.cfg.SubscribeInfo {
 		C.subEventForGo(C.CString(value.Name), C.CString(value.Category))
 	}
 
