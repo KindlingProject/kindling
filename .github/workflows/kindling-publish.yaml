@@ -1,0 +1,46 @@
+name: KINDLING-PUBLISH
+
+on:
+  push:
+    tags:
+    - 'release-*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Set RELEASE
+        run: echo "RELEASE=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: build-by-builder-container
+        uses: addnab/docker-run-action@v3
+        with:
+          image: kindlingproject/agent-builder:latest
+          options: -v ${{ github.workspace }}:/kindling -w /kindling
+          run: make
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.REGISTERY_USERNAME }}
+          password: ${{ secrets.REGISTERY_PWD }}
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: ${{ github.workspace }}/collector/docker
+          push: false
+          tags: kindlingproject/kindling-agent:${{ env.RELEASE }}
+      - name: Prepare Deploy
+        run: |
+          sed -i 's#kindlingproject/kindling-agent:latest#kindlingproject/kindling-agent:${{ env.RELEASE }}#g' deploy/agent/kindling-deploy.yml
+          tar -czvf kindling-agent-${{ env.RELEASE }}-install.tar.gz deploy
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "kindling-agent-${{ env.RELEASE }}-install.tar.gz"
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          branch: ${{ env.RELEASE }}
