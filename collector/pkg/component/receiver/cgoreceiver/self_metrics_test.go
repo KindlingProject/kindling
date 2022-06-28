@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Kindling-project/kindling/collector/model/constnames"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/metric"
