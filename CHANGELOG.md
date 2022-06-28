@@ -16,6 +16,7 @@
 - Implement self-metrics using opentelemetry for cgoreceiver ([#269](https://github.com/CloudDectective-Harmonycloud/kindling/pull/269))
 - Use cgo to replace UDS for transferring data from the probe to the collector to improve the performance ([#264](https://github.com/CloudDectective-Harmonycloud/kindling/pull/264))
 - Add command labels in tcp connect metrics and span attributes ([#260](https://github.com/CloudDectective-Harmonycloud/kindling/pull/260))
+- Use the tcp_close events to generate the srtt metric ([#256](https://github.com/CloudDectective-Harmonycloud/kindling/pull/256))
 - Remove the histogram metrics by default to reduce the number of metrics ([#253](https://github.com/CloudDectective-Harmonycloud/kindling/pull/253)) 
 - k8sprocessor: use src IP for further searching if the dst IP is a loopback address ([#251](https://github.com/CloudDectective-Harmonycloud/kindling/pull/251))
 - docs:update developer links ([#247](https://github.com/CloudDectective-Harmonycloud/kindling/pull/247)) 
@@ -25,13 +26,12 @@
 - Decouple the logic of dispatching events from receivers ([#232](https://github.com/CloudDectective-Harmonycloud/kindling/pull/232)) 
 - Search for k8s metadata using `src_ip` when no containerid found ([#233](https://github.com/CloudDectective-Harmonycloud/kindling/pull/233))
 - Record the containers with `hostport` mode and fill the pod information of them in k8sprocessor ([#219](https://github.com/CloudDectective-Harmonycloud/kindling/pull/219))
-- Support building Frafana-plugin by using Actions ([#218](https://github.com/CloudDectective-Harmonycloud/kindling/pull/218))
+- Support building Grafana-plugin by using Actions ([#218](https://github.com/CloudDectective-Harmonycloud/kindling/pull/218))
 - Improve metrics description doc ([#216](https://github.com/CloudDectective-Harmonycloud/kindling/pull/216)) 
 - Update deployment files needed for releasing ([#215](https://github.com/CloudDectective-Harmonycloud/kindling/pull/215)) 
 
 ### Bug fixes 
 - docs: fix language issues in documents ([#258](https://github.com/CloudDectective-Harmonycloud/kindling/pull/258))
-- Fix the bug that we forgot to use the tcp_close events to generate the srtt metric ([#256](https://github.com/CloudDectective-Harmonycloud/kindling/pull/256))
 - Fix the bug where the pod information is missed after it is restarted ([#245](https://github.com/CloudDectective-Harmonycloud/kindling/pull/245))
 - Grafana-plugin: delete yarn.lock to remove unnecessary dependencies ([#244](https://github.com/CloudDectective-Harmonycloud/kindling/pull/244)) 
 - Fix the bug that the container name is incorrect when multiple containers in the pod don't specify ports by setting it empty. ([#238](https://github.com/CloudDectective-Harmonycloud/kindling/pull/238))
