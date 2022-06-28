@@ -34,7 +34,7 @@ analyzers:
   networkanalyzer:
     connect_timeout: 100
     # How many seconds to wait until we consider a request as no response.
-    request_timeout: 1
+    request_timeout: 60
     # How many milliseconds to wait until we consider a request-response as slow.
     response_slow_threshold: 500
     # Whether enable conntrack module to find pod's ip when calling service
@@ -44,7 +44,7 @@ analyzers:
     proc_root: /proc
     # The protocol parsers which is enabled
     # When dissectors are enabled, agent will analyze the payload and enrich metric/trace with its content.
-    protocol_parser: [ http, mysql, dns, redis, kafka, dubbo ]
+    protocol_parser: [ http, mysql, dns, redis, kafka ]
     # Which URL clustering method should be used to shorten the URL of HTTP request.
     # This is useful for decrease the cardinality of URLs.
     # Valid values: ["noparam", "alphabet"]
@@ -57,9 +57,13 @@ analyzers:
     # for the ports that are not in the lists, in which case the cpu usage will be increased much inevitably.
     protocol_config:
       - key: "http"
+        ports: [ 80 ]
         # payload_length indicates the maximum size that payload can be fetched for target protocol
         # The trace data sent may contain such payload, so the higher this value, the larger network traffic.
         payload_length: 200
+        slow_threshold: 500
+      # The Dubbo parser is experimental now, so it is disabled by default. You could enable it by adding it
+      # to the "protocol_parser" array.
       - key: "dubbo"
         payload_length: 200
       - key: "mysql"
@@ -69,11 +73,8 @@ analyzers:
       - key: "kafka"
         ports: [ 9092 ]
         slow_threshold: 100
-      - key: "cassandra"
-        ports: [ 9042 ]
-        slow_threshold: 100
-      - key: "s3"
-        ports: [ 9190 ]
+      - key: "redis"
+        ports: [ 6379 ]
         slow_threshold: 100
       - key: "dns"
         ports: [ 53 ]
