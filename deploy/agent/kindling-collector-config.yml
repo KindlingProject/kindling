@@ -1,35 +1,29 @@
 receivers:
-  udsreceiver:
-    zeromqpull:
-      # Address for pulling events from probe
-      endpoint: ipc:///home/kindling-sub/0
-    zeromqreq:
-      # Address for sending subscribe messages to probe
-      endpoint: ipc:///home/kindling/0
-      subscribe:
-        - name: syscall_exit-writev
-          category: net
-        - name: syscall_exit-readv
-          category: net
-        - name: syscall_exit-write
-          category: net
-        - name: syscall_exit-read
-          category: net
-        - name: syscall_exit-sendto
-          category: net
-        - name: syscall_exit-recvfrom
-          category: net
-        - name: syscall_exit-sendmsg
-          category: net
-        - name: syscall_exit-recvmsg
-          category: net
-        - name: kprobe-tcp_close
-        - name: kprobe-tcp_rcv_established
-        - name: kprobe-tcp_drop
-        - name: kprobe-tcp_retransmit_skb
-        - name: syscall_exit-connect
-        - name: kretprobe-tcp_connect
-        - name: kprobe-tcp_set_state
+  cgoreceiver:
+    subscribe:
+      - name: syscall_exit-writev
+        category: net
+      - name: syscall_exit-readv
+        category: net
+      - name: syscall_exit-write
+        category: net
+      - name: syscall_exit-read
+        category: net
+      - name: syscall_exit-sendto
+        category: net
+      - name: syscall_exit-recvfrom
+        category: net
+      - name: syscall_exit-sendmsg
+        category: net
+      - name: syscall_exit-recvmsg
+        category: net
+      - name: kprobe-tcp_close
+      - name: kprobe-tcp_rcv_established
+      - name: kprobe-tcp_drop
+      - name: kprobe-tcp_retransmit_skb
+      - name: syscall_exit-connect
+      - name: kretprobe-tcp_connect
+      - name: kprobe-tcp_set_state
 analyzers:
   tcpconnectanalyzer:
     channel_size: 10000
@@ -50,7 +44,7 @@ analyzers:
     proc_root: /proc
     # The protocol parsers which is enabled
     # When dissectors are enabled, agent will analyze the payload and enrich metric/trace with its content.
-    protocol_parser: [ http, mysql, dns, redis, kafka, dubbo ]
+    protocol_parser: [ http, mysql, dns, redis, kafka ]
     # Which URL clustering method should be used to shorten the URL of HTTP request.
     # This is useful for decrease the cardinality of URLs.
     # Valid values: ["noparam", "alphabet"]
@@ -63,9 +57,13 @@ analyzers:
     # for the ports that are not in the lists, in which case the cpu usage will be increased much inevitably.
     protocol_config:
       - key: "http"
+        ports: [ 80 ]
         # payload_length indicates the maximum size that payload can be fetched for target protocol
         # The trace data sent may contain such payload, so the higher this value, the larger network traffic.
         payload_length: 200
+        slow_threshold: 500
+      # The Dubbo parser is experimental now, so it is disabled by default. You could enable it by adding it
+      # to the "protocol_parser" array.
       - key: "dubbo"
         payload_length: 200
       - key: "mysql"
@@ -75,11 +73,8 @@ analyzers:
       - key: "kafka"
         ports: [ 9092 ]
         slow_threshold: 100
-      - key: "cassandra"
-        ports: [ 9042 ]
-        slow_threshold: 100
-      - key: "s3"
-        ports: [ 9190 ]
+      - key: "redis"
+        ports: [ 6379 ]
         slow_threshold: 100
       - key: "dns"
         ports: [ 53 ]
