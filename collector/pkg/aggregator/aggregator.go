@@ -1,7 +1,7 @@
 package aggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/model"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 type Aggregator interface {
