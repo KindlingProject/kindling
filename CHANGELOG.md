@@ -1,6 +1,6 @@
 # Changelog
 ### Notes
-1. Records in this document are not identical to the title of their Pull Requests. The detailed description is necessary for understanding what changes are and why they are made.
+1. Records in this document are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased
 ### New features
@@ -35,8 +35,8 @@
 - Grafana-plugin: delete yarn.lock to remove unnecessary dependencies ([#244](https://github.com/CloudDectective-Harmonycloud/kindling/pull/244)) 
 - Fix the bug that the container name is incorrect when multiple containers in the pod don't specify ports by setting it empty. ([#238](https://github.com/CloudDectective-Harmonycloud/kindling/pull/238))
 - Fix the bug that sometimes the workload kind is `ReplicaSet` ([#230](https://github.com/CloudDectective-Harmonycloud/kindling/pull/230)) 
-- Fix "no such file or directory" when using kubeconfig file. [#225](https://github.com/CloudDectective-Harmonycloud/kindling/pull/225)
-- Fix several bugs of the Grafana plugin. ([#220](https://github.com/CloudDectective-Harmonycloud/kindling/pull/220))
+- Fix "no such file or directory" when using the kubeconfig file. [#225](https://github.com/CloudDectective-Harmonycloud/kindling/pull/225)
+- Fix several bugs in the Grafana plugin. ([#220](https://github.com/CloudDectective-Harmonycloud/kindling/pull/220))
 
 ## v0.2.0
 ### Features
