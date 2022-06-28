@@ -17,6 +17,9 @@ const (
 	TcpRetransmitSkbEvent  = "tcp_retransmit_skb"
 	TcpConnectEvent        = "tcp_connect"
 	TcpSetStateEvent       = "tcp_set_state"
+
+	CpuEvent = "cpu_event"
+
 	OtherEvent             = "other"
 
 	GrpcUprobeEvent = "grpc_uprobe"

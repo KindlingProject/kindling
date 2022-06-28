@@ -4,13 +4,14 @@ go 1.16
 
 require (
 	github.com/DataDog/ebpf v0.0.0-20220301203322-3fc9ab3b8daf
-	github.com/elastic/go-elasticsearch/v8 v8.0.0-20220603155612-47706b4dde8e // indirect
 	github.com/florianl/go-conntrack v0.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mdlayher/netlink v1.6.0
+	github.com/olivere/elastic v6.2.37+incompatible // indirect
+	github.com/olivere/elastic/v6 v6.2.1
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
 	github.com/pebbe/zmq4 v1.2.7
 	github.com/pkg/errors v0.9.1

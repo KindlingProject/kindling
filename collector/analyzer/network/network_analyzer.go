@@ -2,6 +2,8 @@ package network
 
 import (
 	"context"
+	"fmt"
+	"github.com/Kindling-project/kindling/collector/analyzer/cpuanalyzer"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -323,6 +325,21 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 			)
 		}
 		netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
+
+		metric, exist := record.GetMetric(constvalues.RequestTotalTime)
+		if exist {
+			record.Labels.GetIntValue("pid")
+			me:=metric.GetInt().Value
+			if me/1000000000>3{
+				sc:=&cpuanalyzer.SendContent{
+					Pid:       uint32(record.Labels.GetIntValue("pid")),
+					StartTime: record.Timestamp,
+					SpendTime: uint64(me),
+				}
+				fmt.Println("find metirc")
+				cpuanalyzer.SendChannel <- *sc
+			}
+		}
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}
