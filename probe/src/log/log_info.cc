@@ -120,7 +120,9 @@ static bool isLogFile(sinsp_evt *sEvt) {
 bool LogCache::addLog(void *evt) {
     sinsp_evt *sEvt = (sinsp_evt *) evt;
     // Check is write log.
-    if (strcmp(sEvt->get_name(), "write") != 0) {
+    auto type = sEvt->get_type();
+    if (type != PPME_SYSCALL_WRITE_X && type != PPME_SYSCALL_WRITEV_X
+            && type != PPME_SYSCALL_PWRITE_X && type != PPME_SYSCALL_PWRITEV_X ) {
         return false;
     }
     if (isLogFile(sEvt) ==  false) {

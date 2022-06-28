@@ -180,6 +180,7 @@ int getEvent(void **pp_kindling_event)
 //	if (formatter->tostring(ev, &line)) {
 //	    cout<< line << endl;
 //	}
+    logCache->addLog(ev);
 	cpuConverter->Cache(ev);
 
 	uint16_t kindling_category = get_kindling_category(ev);
