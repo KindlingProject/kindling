@@ -39,6 +39,7 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "kindling-agent-${{ env.RELEASE }}-install.tar.gz"
+          bodyFile: "CHANGELOG.md"
           token: ${{ secrets.GITHUB_TOKEN }}
       - uses: peterjgrainger/action-create-branch@v2.2.0
         env:
