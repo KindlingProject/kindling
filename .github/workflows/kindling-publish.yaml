@@ -34,7 +34,8 @@ jobs:
       - name: Prepare Deploy
         run: |
           sed -i 's#kindlingproject/kindling-agent:latest#kindlingproject/kindling-agent:${{ env.RELEASE }}#g' deploy/agent/kindling-deploy.yml
-          tar -czvf kindling-agent-${{ env.RELEASE }}-install.tar.gz deploy
+          mv deploy kindling-agent-${{ env.RELEASE }}-install
+          tar -czvf kindling-agent-${{ env.RELEASE }}-install.tar.gz mv deploy kindling-agent-${{ env.RELEASE }}-install
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "kindling-agent-${{ env.RELEASE }}-install.tar.gz"
