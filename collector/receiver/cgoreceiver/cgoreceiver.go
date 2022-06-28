@@ -35,7 +35,6 @@ type CgoReceiver struct {
 	shutdownWG      sync.WaitGroup
 	telemetry       *component.TelemetryTools
 	eventChannel    chan *model.KindlingEvent
-	eventCount      int
 	stopCh          chan interface{}
 	stats           eventCounter
 }
@@ -53,14 +52,13 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 		stopCh:          make(chan interface{}, 1),
 	}
 	cgoReceiver.stats = newDynamicStats(cfg.SubscribeInfo)
-	newSelfMetrics(telemetry.MeterProvider, cgoReceiver.stats)
+	newSelfMetrics(telemetry.MeterProvider, cgoReceiver)
 	return cgoReceiver
 }
 
 func (r *CgoReceiver) Start() error {
 	r.telemetry.Logger.Info("Start CgoReceiver")
 	C.runForGo()
-	go r.printMetrics()
 	time.Sleep(2 * time.Second)
 	r.subEvent()
 	// Wait for the C routine running
@@ -68,23 +66,6 @@ func (r *CgoReceiver) Start() error {
 	go r.consumeEvents()
 	go r.startGetEvent()
 	return nil
-}
-
-// TODO finish it using opentelemetry
-func (r *CgoReceiver) printMetrics() {
-	timer := time.NewTicker(1 * time.Second)
-	r.shutdownWG.Add(1)
-	for {
-		select {
-		case <-r.stopCh:
-			r.shutdownWG.Done()
-			return
-		case <-timer.C:
-			r.telemetry.Logger.Info("Total number events received: ", zap.Int("events", r.eventCount))
-			r.eventCount = 0
-			r.telemetry.Logger.Info("Current channel size: ", zap.Int("channel size", len(r.eventChannel)))
-		}
-	}
 }
 
 func (r *CgoReceiver) startGetEvent() {
@@ -98,8 +79,9 @@ func (r *CgoReceiver) startGetEvent() {
 		default:
 			res := int(C.getKindlingEvent(&pKindlingEvent))
 			if res == 1 {
-				r.eventCount++
-				r.eventChannel <- convertEvent((*CKindlingEventForGo)(pKindlingEvent))
+				event := convertEvent((*CKindlingEventForGo)(pKindlingEvent))
+				r.eventChannel <- event
+				r.stats.add(event.Name, 1)
 			}
 		}
 	}
@@ -170,7 +152,6 @@ func If(condition bool, trueVal, falseVal interface{}) interface{} {
 }
 
 func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
-
 	if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, "Receive Event"); ce != nil {
 		ce.Write(
 			zap.String("event", evt.String()),
@@ -194,5 +175,4 @@ func (r *CgoReceiver) subEvent() {
 	for _, value := range r.cfg.SubscribeInfo {
 		C.subEventForGo(C.CString(value.Name), C.CString(value.Category))
 	}
-
 }

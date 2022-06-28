@@ -13,16 +13,23 @@ import (
 
 var once sync.Once
 
-const eventReceivedMetric = "kindling_telemetry_cgoreceiver_events_total"
+const (
+	eventReceivedMetric = "kindling_telemetry_cgoreceiver_events_total"
+	channelSizeMetric   = "kindling_telemetry_cgoreceiver_channel_size"
+)
 
-func newSelfMetrics(meterProvider metric.MeterProvider, counter eventCounter) {
+func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 	once.Do(func() {
 		meter := metric.Must(meterProvider.Meter("kindling"))
 		meter.NewInt64CounterObserver(eventReceivedMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
-				for name, value := range counter.getStats() {
+				for name, value := range receiver.stats.getStats() {
 					result.Observe(value, attribute.String("name", name))
 				}
+			})
+		meter.NewInt64GaugeObserver(channelSizeMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				result.Observe(int64(len(receiver.eventChannel)))
 			})
 	})
 }
