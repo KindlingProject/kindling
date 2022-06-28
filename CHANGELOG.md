@@ -1,6 +1,7 @@
 # Changelog
 ### Notes
-1. Records in this document are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
+1. All notable changes to this project will be documented in this file.
+2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased
 ### New features
@@ -38,7 +39,7 @@
 - Fix "no such file or directory" when using the kubeconfig file. [#225](https://github.com/CloudDectective-Harmonycloud/kindling/pull/225)
 - Fix several bugs in the Grafana plugin. ([#220](https://github.com/CloudDectective-Harmonycloud/kindling/pull/220))
 
-## v0.2.0
+## v0.2.0 - 2022-05-07
 ### Features
 - Provide a kindling Prometheus exporter that can support integration with Prometheus easily. See kindling's metrics from the kindling website[http://www.kindling.space:33215/project-1/doc-15/]
 - Support network performance, DNS performance, service network maps, and workload performance analysis.
