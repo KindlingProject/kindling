@@ -1,0 +1,33 @@
+name: KINDLING-CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Set TAG
+        run: echo "TAG=latest" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: build-by-builder-container
+        uses: addnab/docker-run-action@v3
+        with:
+          image: kindlingproject/agent-builder:latest
+          options: -v ${{ github.workspace }}:/kindling -w /kindling
+          run: make
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.REGISTERY_USERNAME }}
+          password: ${{ secrets.REGISTERY_PWD }}
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: ${{ github.workspace }}/collector/docker
+          push: true
+          tags: kindlingproject/kindling-agent-ci:${{ env.TAG }}
