@@ -2,9 +2,10 @@ package defaultaggregator
 
 import (
 	"errors"
-	"github.com/Kindling-project/kindling/collector/model"
 	"sync"
 	"sync/atomic"
+
+	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 type AggregatorKind int

@@ -12,6 +12,7 @@
 - (Experimental) Support Protocol Dubbo2 ([#184](https://github.com/CloudDectective-Harmonycloud/kindling/pull/184)) 
 
 ### Enhancements
+- Improve the go project layout ([#273](https://github.com/CloudDectective-Harmonycloud/kindling/pull/273))
 - Correct the configurations and disable the `dubbo` protocol parser by default since it is still experimental now. ([#270](https://github.com/CloudDectective-Harmonycloud/kindling/pull/270))
 - Implement self-metrics using opentelemetry for cgoreceiver ([#269](https://github.com/CloudDectective-Harmonycloud/kindling/pull/269))
 - Use cgo to replace UDS for transferring data from the probe to the collector to improve the performance ([#264](https://github.com/CloudDectective-Harmonycloud/kindling/pull/264))
