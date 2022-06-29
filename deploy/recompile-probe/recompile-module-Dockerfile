@@ -1,2 +1,2 @@
 FROM kindlingproject/kindling-probe:latest
-COPY ./agent-libs-2b4b2a107c05bd16a03c12841c6cce1d6404efac/kindling-falcolib-probe/* /opt/kindling-extra-probe/
+COPY ./agent-libs-66fe2a5d4cfd2566108e2519b46a70fb4a247741/kindling-falcolib-probe/* /opt/kindling-extra-probe/

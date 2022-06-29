@@ -11,9 +11,8 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mdlayher/netlink v1.6.0
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
-	github.com/pebbe/zmq4 v1.2.7
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0 // indirect
+	github.com/prometheus/client_golang v1.11.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1

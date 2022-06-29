@@ -1,10 +1,11 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"sync/atomic"
 	"time"
+
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 // DataGroup

@@ -1,11 +1,12 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/Kindling-project/kindling/collector/pkg/model"
+	"github.com/stretchr/testify/assert"
 )
 
 func startTask(workerNum int, task func(wg *sync.WaitGroup)) {

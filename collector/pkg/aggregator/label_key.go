@@ -1,9 +1,10 @@
 package aggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/model"
 	"sort"
 	"strconv"
+
+	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 type vType string
