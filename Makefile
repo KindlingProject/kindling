@@ -8,7 +8,7 @@ endef
 collector: libkindling
 	@echo Build Env:
 	@echo Agent is build based on commit: ${GitCommit}
-	cd collector && go build -o docker/kindling-collector -ldflags="-X 'github.com/Kindling-project/kindling/collector/version.CodeVersion=$GitCommit'" ./cmd/kindling-collector/
+	cd collector && go build -o docker/kindling-collector -ldflags="-X 'github.com/Kindling-project/kindling/collector/version.CodeVersion=${GitCommit}'" ./cmd/kindling-collector/
 
 .PHONY: libkindling
 libkindling:
