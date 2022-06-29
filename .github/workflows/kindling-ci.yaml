@@ -30,4 +30,4 @@ jobs:
         with:
           context: ${{ github.workspace }}/collector/docker
           push: true
-          tags: kindlingproject/kindling-agent-ci:${{ env.TAG }}
+          tags: kindlingproject/kindling-agent:${{ env.TAG }}
