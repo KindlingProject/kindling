@@ -8,7 +8,7 @@ if [ ! -f "$libKindlingPath" ]; then
   echo "compiler libkindling failed! exit!"
 
 else
-  cp -rf ./src/libkindling.so ../../collector/docker/libso
+  mkdir -p ../../collector/docker/libso &&  cp -rf ./src/libkindling.so ../../collector/docker/libso/
   cp -rf ./src/libkindling.so /usr/lib64/
   cd ../../collector/
   sh collector-version-build.sh
