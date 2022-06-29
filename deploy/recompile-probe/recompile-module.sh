@@ -10,6 +10,6 @@ docker run -it -v /usr:/host/usr -v /lib/modules:/host/lib/modules -v $PWD:/sour
 cd ..
 cat <<EOF > Dockerfile
 FROM kindlingproject/kindling-agent:latest
-COPY ./agent-libs-66fe2a5d4cfd2566108e2519b46a70fb4a247741/kindling-falcolib-probe/* /opt/kindling-extra-probe/
+COPY ./agent-libs-${AGENT_LIBS_COMMIT_ID}/kindling-falcolib-probe/* /opt/kindling-extra-probe/
 EOF
 docker build -t kindlingproject/kindling-probe:latest-bymyself .
