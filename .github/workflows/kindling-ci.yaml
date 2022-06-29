@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish:
+  build-latest-test:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Set TAG
-        run: echo "TAG=latest" >> $GITHUB_ENV
+        run: echo "TAG=latesttest" >> $GITHUB_ENV
       - uses: actions/checkout@v3
       - name: build-by-builder-container
         uses: addnab/docker-run-action@v3
