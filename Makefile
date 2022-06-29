@@ -1,10 +1,14 @@
+GitCommit=${shell git rev-parse --short HEAD || echo unknow}
+
 define exec-command
 $(1)
 endef
 
 .PHONY: collector
 collector: libkindling
-	cd collector/ && ./collector-version-build.sh
+	@echo Build Env:
+	@echo Agent is build based on commit: ${GitCommit}
+	cd collector && go build -o docker/kindling-collector -ldflags="-X 'github.com/Kindling-project/kindling/collector/version.CodeVersion=$GitCommit'" ./cmd/kindling-collector/
 
 .PHONY: libkindling
 libkindling:
