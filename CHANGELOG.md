@@ -5,7 +5,7 @@
 
 ## Unreleased 
 ### Enhancements
-- Add print event use env
+- New environment variable: IS_PRINT_Event, when the value is true, sinsp event can be printed ([#283](https://github.com/CloudDectective-Harmonycloud/kindling/pull/283))
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
 
 ## v0.3.0 - 2022-06-29
