@@ -82,6 +82,7 @@ analyzers:
 
 processors:
   k8smetadataprocessor:
+    disable: false
     kube_auth_type: kubeConfig
     kube_config_dir: /root/.kube/config
     grace_delete_period: 60

@@ -12,7 +12,7 @@ type Config struct {
 	// Should not be lower than 30 seconds.
 	GraceDeletePeriod int `mapstructure:"grace_delete_period"`
 	// Disable is used when the agent runs at the non-Kubernetes environment.
-	Disable bool
+	Disable bool `mapstructure:"disable"`
 }
 
 var DefaultConfig Config = Config{
