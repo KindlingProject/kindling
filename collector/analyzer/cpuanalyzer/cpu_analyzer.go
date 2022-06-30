@@ -51,6 +51,7 @@ type TimeSegments struct {
 }
 
 type Segment struct {
+	Pid      uint32    `json:"pid"`
 	StartTime uint64     `json:"startTime"`
 	EndTime   uint64     `json:"endTime"`
 	CpuEvents []CpuEvent `json:"cpuEvents"`
@@ -165,11 +166,6 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 				timeSegments.Segments.UpdateByIndex(i, segment)
 			}
 		}
-		if ev.StartTime/1000000000-timeSegments.BaseTime > 20 {
-			fmt.Println("-----------")
-			fmt.Println(ev.StartTime/1000000000)
-			fmt.Println(timeSegments.BaseTime)
-		}
 
 		if int(ev.StartTime/1000000000 - timeSegments.BaseTime) < 0 {
 			return nil
@@ -210,6 +206,7 @@ func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) error {
 		for i := 0; i < 20; i++ {
 			val,_ := timeSegments.Segments.GetByIndex(i)
 			segment := val.(Segment)
+			segment.Pid = pid
 			data, _ := json.Marshal(segment)
 			fmt.Println(string(data))
 			fmt.Println("--------------------------------")
@@ -226,18 +223,43 @@ func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) error {
 func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint64) error {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
+	if pid == 29289 {
+		ca.telemetry.Logger.Info("time",zap.Uint64("start_time",startTime))
+		ca.telemetry.Logger.Info("time",zap.Uint64("end_time",spendTime))
+	}
 	timeSegments, exist := ca.cpuPidEvents[pid]
 	if exist {
-		if timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize()) < startTime/1000000000 || timeSegments.BaseTime > startTime/1000000000 {
+
+
+		//if pid == 29289 {
+		//	for i := 0; i < 20; i++ {
+		//		val,_ := timeSegments.Segments.GetByIndex(i)
+		//		if val !=nil {
+		//			segment := val.(Segment)
+		//			segment.Pid = pid
+		//			data, _ := json.Marshal(segment)
+		//			ca.telemetry.Logger.Info("data",zap.String("data",string(data)))
+		//			//log.Println(string(data))
+		//			log.Println("---------------send "+string(i)+"-----------------")
+		//		}
+		//	}
+		//}
+
+
+		if timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize()) < startTime/1000000000 || timeSegments.BaseTime > startTime/1000000000  || pid != 7795{
 			return nil
 		}
 
 		for i := 0; i < int(spendTime/1000000000) + 1; i++ {
 			val,_ := timeSegments.Segments.GetByIndex(int(startTime/1000000000 - timeSegments.BaseTime))
+			if val == nil {
+				continue
+			}
 			segment := val.(Segment)
-			data, _ := json.Marshal(segment)
-			fmt.Println(string(data))
-			fmt.Println("---------------send "+string(i)+"-----------------")
+			segment.Pid = pid
+			//data, _ := json.Marshal(segment)
+			//fmt.Println(string(data))
+			//fmt.Println("---------------send "+string(i)+"-----------------")
 			if segment.IsSend != 1 {
 				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 			}
@@ -253,7 +275,6 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 func (ca *CpuAnalyzer) SendCircle() {
 	for {
 		sendContent := <- SendChannel
-		fmt.Println("find sendcontect")
 		ca.SendCpuEvent(sendContent.Pid, sendContent.StartTime, sendContent.SpendTime)
 	}
 

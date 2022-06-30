@@ -134,8 +134,8 @@ void init_probe()
 		logCache = new LogCache(10000, 5);
         prof = new Profiler(5000, 10);
         cpuConverter = new cpu_converter(inspector, prof, logCache);
-		thread profile(start_profiler, prof);
-		profile.detach();
+//		thread profile(start_profiler, prof);
+//		profile.detach();
 	}
 	catch(const exception &e)
 	{
@@ -202,10 +202,10 @@ int getEvent(void **pp_kindling_event)
 		p_kindling_event->context.fdInfo.filename = (char *)malloc(sizeof(char) * 1024);
 		p_kindling_event->context.fdInfo.directory = (char *)malloc(sizeof(char) * 1024);
 
-		for(int i = 0; i < sizeof(p_kindling_event->userAttributes); i++)
+		for(int i = 0; i < 16; i++)
 		{
 			p_kindling_event->userAttributes[i].key = (char *)malloc(sizeof(char) * 128);
-			p_kindling_event->userAttributes[i].value = (char *)malloc(sizeof(char) * 1024);
+			p_kindling_event->userAttributes[i].value = (char *)malloc(sizeof(char) * 8096);
 		}
 	}
 	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;

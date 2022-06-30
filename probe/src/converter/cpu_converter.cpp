@@ -170,13 +170,18 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
     for (int i = 0; i < cnt; i++) {
         if (time_type[i] == 0) {
             c_data.on_total_time += time_specs[i];
-           // on_time.push_back({start, start + time_specs[i] * 1000});
+            //on_time.emplace_back(make_pair(start, start + time_specs[i] * 1000));
+            on_time.emplace_back(start, start + time_specs[i] * 1000);
+
+            //on_time.push_back({start, start + time_specs[i] * 1000});
         } else {
             c_data.off_total_time += time_specs[i];
             c_data.runq_latency += (to_string(runq_latency[i/2]) + ",");
+            off_time.emplace_back(start, start + time_specs[i] * 1000);
             //off_time.push_back({start, start + time_specs[i] * 1000});
             //cout<<time_type[i]<<endl;
-            off_type.push_back(time_type[i]);
+            off_type.emplace_back(time_type[i]);
+            //off_type.push_back(time_type[i]);
         }
         start = start + time_specs[i] * 1000;
         c_data.time_specs += (to_string(time_specs[i]) + ",");
