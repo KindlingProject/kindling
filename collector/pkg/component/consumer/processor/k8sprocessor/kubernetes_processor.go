@@ -19,6 +19,7 @@ const (
 )
 
 type K8sMetadataProcessor struct {
+	config        *Config
 	metadata      *kubernetes.K8sMetaDataCache
 	nextConsumer  consumer.Consumer
 	localNodeIp   string
@@ -30,6 +31,15 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	config, ok := cfg.(*Config)
 	if !ok {
 		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", K8sMetadata))
+	}
+	if config.Disable {
+		telemetry.Logger.Info("The kubernetes processor is disabled by the configuration. Won't connect to the API-server and no Kubernetes metadata will be fetched.")
+		return &K8sMetadataProcessor{
+			config:       config,
+			metadata:     kubernetes.MetaDataCache,
+			nextConsumer: nextConsumer,
+			telemetry:    telemetry,
+		}
 	}
 	var options []kubernetes.Option
 	options = append(options, kubernetes.WithAuthType(config.KubeAuthType))
@@ -49,6 +59,7 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 		telemetry.Logger.Warn("Local NodeName can not found", zap.Error(err))
 	}
 	return &K8sMetadataProcessor{
+		config:        config,
 		metadata:      kubernetes.MetaDataCache,
 		nextConsumer:  nextConsumer,
 		localNodeIp:   localNodeIp,
@@ -58,6 +69,9 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 }
 
 func (p *K8sMetadataProcessor) Consume(dataGroup *model.DataGroup) error {
+	if p.config.Disable {
+		return p.nextConsumer.Consume(dataGroup)
+	}
 	name := dataGroup.Name
 	switch name {
 	case constnames.NetRequestMetricGroupName:
