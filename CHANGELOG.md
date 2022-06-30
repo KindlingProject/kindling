@@ -5,6 +5,7 @@
 
 ## Unreleased 
 ### Enhancements
+- Fix the bug where the table name of SQL is missed. ([#284](https://github.com/CloudDectective-Harmonycloud/kindling/pull/284))
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
 
 ## v0.3.0 - 2022-06-29
