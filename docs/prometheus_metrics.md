@@ -51,7 +51,7 @@ Service metrics are generated from the server-side events, which are used to sho
   
 | **Label** | **Example** | **Notes** |
 | --- | --- | --- |
-| `request_content` | select employee | SQL of MySQL. SQL has been truncated to avoid high-cardinality. The format is ['operation' 'space' 'table']. |
+| `request_content` | select employee | SQL of MySQL. SQL has been truncated to avoid high-cardinality. The format is ['operation' 'space' 'table' '*']. |
 | `response_content` | 1064 | Error code of MySQL. Only applicable when the response is in error type. See [codes introduction](https://dev.mysql.com/doc/mysql-errors/5.7/en/error-reference-introduction.html).|
 
 - When protocol is `kafka`:
