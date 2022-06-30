@@ -28,8 +28,6 @@ spec:
             memory: 300Mi
         ports:
         - containerPort: 9500
-          hostPort: 9500
-          name: http
           protocol: TCP
         env:
         - name: HOST_PROC
