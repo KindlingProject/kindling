@@ -12,4 +12,4 @@ cat <<EOF > Dockerfile
 FROM kindlingproject/kindling-agent:latest
 COPY ./agent-libs-${AGENT_LIBS_COMMIT_ID}/kindling-falcolib-probe/* /opt/kindling-extra-probe/
 EOF
-docker build -t kindlingproject/kindling-probe:latest-bymyself .
+docker build -t kindlingproject/kindling-agent:latest-bymyself .
