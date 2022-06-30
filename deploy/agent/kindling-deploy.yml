@@ -26,6 +26,9 @@ spec:
             memory: 1Gi
           requests:
             memory: 300Mi
+        ports:
+        - containerPort: 9500
+          protocol: TCP
         env:
         - name: HOST_PROC
           value: /host/proc

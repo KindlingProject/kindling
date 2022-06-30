@@ -3,6 +3,10 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
+## Unreleased 
+### Enhancements
+- Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
+
 ## v0.3.0 - 2022-06-29
 ### New features
 - Add a URL clustering method to reduce the cardinality of the entity metrics. Configuration options are provided to choose which method to use. ([#268](https://github.com/CloudDectective-Harmonycloud/kindling/pull/268)) 
