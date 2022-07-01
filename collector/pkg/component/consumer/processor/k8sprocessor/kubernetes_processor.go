@@ -32,7 +32,7 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	if !ok {
 		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", K8sMetadata))
 	}
-	if config.Disable {
+	if !config.Enable {
 		telemetry.Logger.Info("The kubernetes processor is disabled by the configuration. Won't connect to the API-server and no Kubernetes metadata will be fetched.")
 		return &K8sMetadataProcessor{
 			config:       config,
@@ -47,7 +47,7 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	options = append(options, kubernetes.WithGraceDeletePeriod(config.GraceDeletePeriod))
 	err := kubernetes.InitK8sHandler(options...)
 	if err != nil {
-		telemetry.Logger.Sugar().Panicf("Failed to initialize [%s]: %v", K8sMetadata, err)
+		telemetry.Logger.Sugar().Panicf("Failed to initialize [%s]: %v. Set the option 'enable' false if you want to run the agent in the non-Kubernetes environment.", K8sMetadata, err)
 		return nil
 	}
 
@@ -69,7 +69,7 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 }
 
 func (p *K8sMetadataProcessor) Consume(dataGroup *model.DataGroup) error {
-	if p.config.Disable {
+	if !p.config.Enable {
 		return p.nextConsumer.Consume(dataGroup)
 	}
 	name := dataGroup.Name

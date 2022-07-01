@@ -5,7 +5,7 @@
 
 ## Unreleased 
 ### Enhancements
-- Allow the collector run in the non-Kubernetes environment by setting the option `disable` true under the `k8smetadataprocessor` section. ([#285](https://github.com/CloudDectective-Harmonycloud/kindling/pull/285))
+- Allow the collector run in the non-Kubernetes environment by setting the option `enable` `false` under the `k8smetadataprocessor` section. ([#285](https://github.com/CloudDectective-Harmonycloud/kindling/pull/285))
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
 ### Bug fixes 
 - Fix the bug where the table name of SQL is missed if there is no trailing character at the end of the table name. ([#284](https://github.com/CloudDectective-Harmonycloud/kindling/pull/284))

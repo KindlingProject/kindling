@@ -11,14 +11,14 @@ type Config struct {
 	// The unit is seconds, and the default value is 60 seconds.
 	// Should not be lower than 30 seconds.
 	GraceDeletePeriod int `mapstructure:"grace_delete_period"`
-	// Set "Disable" true if you want to run the agent in the non-Kubernetes environment.
+	// Set "Enable" false if you want to run the agent in the non-Kubernetes environment.
 	// Otherwise, the agent will panic if it can't connect to the API-server.
-	Disable bool `mapstructure:"disable"`
+	Enable bool `mapstructure:"enable"`
 }
 
 var DefaultConfig Config = Config{
 	KubeAuthType:      "serviceAccount",
 	KubeConfigDir:     "~/.kube/config",
 	GraceDeletePeriod: 60,
-	Disable:           false,
+	Enable:            true,
 }
