@@ -13,6 +13,8 @@ void init_sub_label();
 void sub_event(char* eventName, char* category);
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
+uint16_t get_kindling_source(uint16_t etype);
+
 struct event {
     string event_name;
     ppm_event_type event_type;
@@ -73,6 +75,18 @@ enum Category {
     CAT_SYSTEM = 13, // System-related operations (e.g. reboot)
     Category_MAX = 14
 };
+
+enum Source {
+	SOURCE_UNKNOWN = 0,
+	SYSCALL_ENTER = 1,
+	SYSCALL_EXIT = 2,
+	TRACEPOINT = 3,
+	KRPOBE = 4,
+	KRETPROBE = 5,
+	UPROBE = 6,
+	URETPROBE = 7
+};
+
 const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
 	{"syscall_enter-open",              PPME_SYSCALL_OPEN_E},
 	{"syscall_exit-open",               PPME_SYSCALL_OPEN_X},
