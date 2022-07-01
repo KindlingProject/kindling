@@ -82,6 +82,9 @@ analyzers:
 
 processors:
   k8smetadataprocessor:
+    # Set "enable" false if you want to run the agent in the non-Kubernetes environment.
+    # Otherwise, the agent will panic if it can't connect to the API-server.
+    enable: true
     kube_auth_type: serviceAccount
     kube_config_dir: /root/.kube/config
     grace_delete_period: 60

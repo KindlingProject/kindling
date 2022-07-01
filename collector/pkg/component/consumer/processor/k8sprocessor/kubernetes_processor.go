@@ -6,7 +6,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor"
-	kubernetes2 "github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
+	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
@@ -19,7 +19,8 @@ const (
 )
 
 type K8sMetadataProcessor struct {
-	metadata      *kubernetes2.K8sMetaDataCache
+	config        *Config
+	metadata      *kubernetes.K8sMetaDataCache
 	nextConsumer  consumer.Consumer
 	localNodeIp   string
 	localNodeName string
@@ -31,13 +32,22 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	if !ok {
 		telemetry.Logger.Panic("Cannot convert Component config", zap.String("componentType", K8sMetadata))
 	}
-	var options []kubernetes2.Option
-	options = append(options, kubernetes2.WithAuthType(config.KubeAuthType))
-	options = append(options, kubernetes2.WithKubeConfigDir(config.KubeConfigDir))
-	options = append(options, kubernetes2.WithGraceDeletePeriod(config.GraceDeletePeriod))
-	err := kubernetes2.InitK8sHandler(options...)
+	if !config.Enable {
+		telemetry.Logger.Info("The kubernetes processor is disabled by the configuration. Won't connect to the API-server and no Kubernetes metadata will be fetched.")
+		return &K8sMetadataProcessor{
+			config:       config,
+			metadata:     kubernetes.MetaDataCache,
+			nextConsumer: nextConsumer,
+			telemetry:    telemetry,
+		}
+	}
+	var options []kubernetes.Option
+	options = append(options, kubernetes.WithAuthType(config.KubeAuthType))
+	options = append(options, kubernetes.WithKubeConfigDir(config.KubeConfigDir))
+	options = append(options, kubernetes.WithGraceDeletePeriod(config.GraceDeletePeriod))
+	err := kubernetes.InitK8sHandler(options...)
 	if err != nil {
-		telemetry.Logger.Sugar().Panicf("Failed to initialize [%s]: %v", K8sMetadata, err)
+		telemetry.Logger.Sugar().Panicf("Failed to initialize [%s]: %v. Set the option 'enable' false if you want to run the agent in the non-Kubernetes environment.", K8sMetadata, err)
 		return nil
 	}
 
@@ -49,7 +59,8 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 		telemetry.Logger.Warn("Local NodeName can not found", zap.Error(err))
 	}
 	return &K8sMetadataProcessor{
-		metadata:      kubernetes2.MetaDataCache,
+		config:        config,
+		metadata:      kubernetes.MetaDataCache,
 		nextConsumer:  nextConsumer,
 		localNodeIp:   localNodeIp,
 		localNodeName: localNodeName,
@@ -58,6 +69,9 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 }
 
 func (p *K8sMetadataProcessor) Consume(dataGroup *model.DataGroup) error {
+	if !p.config.Enable {
+		return p.nextConsumer.Consume(dataGroup)
+	}
 	name := dataGroup.Name
 	switch name {
 	case constnames.NetRequestMetricGroupName:
@@ -324,13 +338,13 @@ func (p *K8sMetadataProcessor) addK8sMetaDataViaIpDST(labelMap *model.AttributeM
 	}
 }
 
-func addContainerMetaInfoLabelSRC(labelMap *model.AttributeMap, containerInfo *kubernetes2.K8sContainerInfo) {
+func addContainerMetaInfoLabelSRC(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {
 	labelMap.UpdateAddStringValue(constlabels.SrcContainer, containerInfo.Name)
 	labelMap.UpdateAddStringValue(constlabels.SrcContainerId, containerInfo.ContainerId)
 	addPodMetaInfoLabelSRC(labelMap, containerInfo.RefPodInfo)
 }
 
-func addPodMetaInfoLabelSRC(labelMap *model.AttributeMap, podInfo *kubernetes2.K8sPodInfo) {
+func addPodMetaInfoLabelSRC(labelMap *model.AttributeMap, podInfo *kubernetes.K8sPodInfo) {
 	labelMap.UpdateAddStringValue(constlabels.SrcNode, podInfo.NodeName)
 	labelMap.UpdateAddStringValue(constlabels.SrcNodeIp, podInfo.NodeAddress)
 	labelMap.UpdateAddStringValue(constlabels.SrcNamespace, podInfo.Namespace)
@@ -343,13 +357,13 @@ func addPodMetaInfoLabelSRC(labelMap *model.AttributeMap, podInfo *kubernetes2.K
 	}
 }
 
-func addContainerMetaInfoLabelDST(labelMap *model.AttributeMap, containerInfo *kubernetes2.K8sContainerInfo) {
+func addContainerMetaInfoLabelDST(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {
 	labelMap.UpdateAddStringValue(constlabels.DstContainer, containerInfo.Name)
 	labelMap.UpdateAddStringValue(constlabels.DstContainerId, containerInfo.ContainerId)
 	addPodMetaInfoLabelDST(labelMap, containerInfo.RefPodInfo)
 }
 
-func addPodMetaInfoLabelDST(labelMap *model.AttributeMap, podInfo *kubernetes2.K8sPodInfo) {
+func addPodMetaInfoLabelDST(labelMap *model.AttributeMap, podInfo *kubernetes.K8sPodInfo) {
 	labelMap.UpdateAddStringValue(constlabels.DstNode, podInfo.NodeName)
 	labelMap.UpdateAddStringValue(constlabels.DstNodeIp, podInfo.NodeAddress)
 	labelMap.UpdateAddStringValue(constlabels.DstNamespace, podInfo.Namespace)
