@@ -259,6 +259,14 @@ int getEvent(void **pp_kindling_event)
 	}
 
 	uint16_t userAttNumber = 0;
+	uint16_t source = get_kindling_source(ev->get_type());
+	if(source == SYSCALL_EXIT) {
+		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "latency");
+		memcpy(p_kindling_event->userAttributes[userAttNumber].value, to_string(threadInfo->m_latency).data(), 8);
+		p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+		p_kindling_event->userAttributes[userAttNumber].len = 8;
+	}
+	userAttNumber++;
 	switch(ev->get_type())
 	{
 	case PPME_TCP_RCV_ESTABLISHED_E:
@@ -504,5 +512,56 @@ uint16_t get_kindling_category(sinsp_evt *sEvt)
 	}
 	default:
 		return CAT_OTHER;
+	}
+}
+
+uint16_t get_kindling_source(uint16_t etype) {
+	if (PPME_IS_ENTER(etype)) {
+		switch (etype) {
+			case PPME_PROCEXIT_E:
+			case PPME_SCHEDSWITCH_6_E:
+			case PPME_SYSDIGEVENT_E:
+			case PPME_CONTAINER_E:
+			case PPME_PROCINFO_E:
+			case PPME_SCHEDSWITCH_1_E:
+			case PPME_DROP_E:
+			case PPME_PROCEXIT_1_E:
+			case PPME_CPU_HOTPLUG_E:
+			case PPME_K8S_E:
+			case PPME_TRACER_E:
+			case PPME_MESOS_E:
+			case PPME_CONTAINER_JSON_E:
+			case PPME_NOTIFICATION_E:
+			case PPME_INFRASTRUCTURE_EVENT_E:
+			case PPME_PAGE_FAULT_E:
+				return SOURCE_UNKNOWN;
+			case PPME_TCP_RCV_ESTABLISHED_E:
+			case PPME_TCP_CLOSE_E:
+			case PPME_TCP_DROP_E:
+			case PPME_TCP_RETRANCESMIT_SKB_E:
+				return KRPOBE;
+				// TODO add cases of tracepoint, kprobe, uprobe
+			default:
+				return SYSCALL_ENTER;
+		}
+	} else {
+		switch (etype) {
+			case PPME_CONTAINER_X:
+			case PPME_PROCINFO_X:
+			case PPME_SCHEDSWITCH_1_X:
+			case PPME_DROP_X:
+			case PPME_CPU_HOTPLUG_X:
+			case PPME_K8S_X:
+			case PPME_TRACER_X:
+			case PPME_MESOS_X:
+			case PPME_CONTAINER_JSON_X:
+			case PPME_NOTIFICATION_X:
+			case PPME_INFRASTRUCTURE_EVENT_X:
+			case PPME_PAGE_FAULT_X:
+				return SOURCE_UNKNOWN;
+				// TODO add cases of tracepoint, kprobe, uprobe
+			default:
+				return SYSCALL_EXIT;
+		}
 	}
 }
