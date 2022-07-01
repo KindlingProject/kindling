@@ -15,6 +15,7 @@ on:
 jobs:
   # This workflow contains a single job called "build"
   buildgrafana:
+    if: github.repository == 'CloudDectective-Harmonycloud/kindling'
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
