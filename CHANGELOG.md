@@ -5,6 +5,7 @@
 
 ## Unreleased 
 ### Enhancements
+- New environment variable: IS_PRINT_EVENT, when the value is true, sinsp event can be printed ([#283](https://github.com/CloudDectective-Harmonycloud/kindling/pull/283))
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
 ### Bug fixes 
 - Fix the bug where the table name of SQL is missed if there is no trailing character at the end of the table name. ([#284](https://github.com/CloudDectective-Harmonycloud/kindling/pull/284))

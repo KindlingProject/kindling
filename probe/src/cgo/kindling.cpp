@@ -7,9 +7,11 @@
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
 #include <cstdlib>
+#include <stdlib.h>
 
 static sinsp *inspector = nullptr;
-
+sinsp_evt_formatter *formatter = nullptr;
+bool printEvent = false;
 int cnt = 0;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
@@ -61,11 +63,15 @@ void sub_event(char *eventName, char *category)
 void init_probe()
 {
 	bool bpf = false;
+	char* isPrintEvent = getenv("IS_PRINT_EVENT");
+	if (isPrintEvent != nullptr && strncmp("true", isPrintEvent, sizeof (isPrintEvent))==0){
+		printEvent = true;
+	}
 	string bpf_probe;
 	inspector = new sinsp();
 	init_sub_label();
-	string output_format;
-	output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
+	string output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
+	formatter = new sinsp_evt_formatter(inspector, output_format);
 	try
 	{
 		inspector = new sinsp();
@@ -167,7 +173,12 @@ int getEvent(void **pp_kindling_event)
 	{
 		return -1;
 	}
-
+	if(printEvent){
+		string line;
+		if (formatter->tostring(ev, &line)) {
+			cout<< line << endl;
+		}
+	}
 	kindling_event_t_for_go *p_kindling_event;
 	if(nullptr == *pp_kindling_event)
 	{
