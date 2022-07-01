@@ -11,7 +11,8 @@ type Config struct {
 	// The unit is seconds, and the default value is 60 seconds.
 	// Should not be lower than 30 seconds.
 	GraceDeletePeriod int `mapstructure:"grace_delete_period"`
-	// Disable is used when the agent runs at the non-Kubernetes environment.
+	// Set "Disable" true if you want to run the agent in the non-Kubernetes environment.
+	// Otherwise, the agent will panic if it can't connect to the API-server.
 	Disable bool `mapstructure:"disable"`
 }
 
