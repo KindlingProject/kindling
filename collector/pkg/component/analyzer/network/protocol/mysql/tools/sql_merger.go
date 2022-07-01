@@ -52,7 +52,7 @@ func (merger SqlMerger) ParseStatement(statement string) string {
 
 func newSqlParser(sqlType string, sqlKey string) SqlParser {
 	patternType := `(?i)(^\s*)` + sqlType + `(.*)`
-	patternKey := `(?i)(?m)` + "(" + sqlKey + ")" + `(\s+(\S*)\s|\n)`
+	patternKey := `(?i)(?m)` + "(" + sqlKey + ")" + `(\s+(\S*)\s*|\n)`
 
 	return SqlParser{
 		regexType: regexp.MustCompile(patternType),

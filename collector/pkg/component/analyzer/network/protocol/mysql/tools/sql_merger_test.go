@@ -45,6 +45,8 @@ func TestSqlMerger_InsertSql(t *testing.T) {
 			operator: "select",
 			datas: map[string][]string{
 				"select table *": {
+					"select * from table",
+					"select * from table ",
 					"select * from table where id = 1",
 				},
 				"select person *": {
