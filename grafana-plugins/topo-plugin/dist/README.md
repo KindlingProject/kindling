@@ -9,3 +9,29 @@ After the integration plugin, configure the corresponding Prometheus data source
 
 ## What does this plugin do？
 Topology call relationships are generated based on data queried in Prometheus and can be aggregated based on namespace and workload. The topology call relationship displays indicators such as Latency、calls、error rate and Volume. You can also view indicator data of nodes。
+
+## Getting started
+
+1. Install dependencies
+
+   ```bash
+   yarn install
+   ```
+
+2. Build plugin in development mode or run in watch mode
+
+   ```bash
+   yarn dev
+   ```
+
+   or
+
+   ```bash
+   yarn watch
+   ```
+
+3. Build plugin in production mode
+
+   ```bash
+   yarn build
+   ```
