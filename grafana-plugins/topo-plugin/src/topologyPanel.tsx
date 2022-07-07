@@ -211,7 +211,12 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
 
   useEffect(() => {
     if (SGraph) {
-      draw(graphData);
+      if (lineMetric === 'connFail') {
+        const data = topoMerge(graphData, connFailTopo);
+        draw(data);
+      } else {
+        draw(graphData);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout]);
