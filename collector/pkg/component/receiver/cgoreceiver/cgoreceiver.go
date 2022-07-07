@@ -171,6 +171,11 @@ func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
 }
 
 func (r *CgoReceiver) subEvent() {
+	if len(r.cfg.SubscribeInfo) == 0 {
+		r.telemetry.Logger.Warn("No events are subscribed by cgoreceiver. Please check your configuration.")
+	} else {
+		r.telemetry.Logger.Sugar().Infof("The subscribed events are: %v", r.cfg.SubscribeInfo)
+	}
 	for _, value := range r.cfg.SubscribeInfo {
 		C.subEventForGo(C.CString(value.Name), C.CString(value.Category))
 	}
