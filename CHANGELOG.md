@@ -5,6 +5,7 @@
 
 ## Unreleased 
 ### Enhancements
+- Print logs when subscribing to events. Print a warning message if there is no event the agent subscribes to. ([#290](https://github.com/CloudDectective-Harmonycloud/kindling/pull/290))
 - Allow the collector run in the non-Kubernetes environment by setting the option `enable` `false` under the `k8smetadataprocessor` section. ([#285](https://github.com/CloudDectective-Harmonycloud/kindling/pull/285))
 - Add a new environment variable: IS_PRINT_EVENT. When the value is true, sinsp events can be printed to the stdout. ([#283](https://github.com/CloudDectective-Harmonycloud/kindling/pull/283))
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
