@@ -234,7 +234,8 @@ class BucketRingBuffers {
                     }
                     m_bucket_cache->returnBucket(bucket);
                 } else {
-                    it++;
+                    //it++;
+					return;
                 }
             }
         }

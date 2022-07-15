@@ -27,6 +27,7 @@ public:
     uint32_t size;
     string operation_type;
     string relate_id;
+    string value;
     virtual string toString() = 0;
     string toStringTs() {
         return to_string(start_time) + "-" + to_string(end_time) + "-" + operation_type + "-" + name + "-" + to_string(size) + "-" + (exit==true ? "true" : "false");
@@ -51,9 +52,28 @@ public:
     }
 };
 
+class futex_info : public info_base {
+public:
+	futex_info() {}
+	~futex_info() {}
+	string toString() {
+		return "futex@addr" + operation_type;
+	}
+};
+
+class java_futex_info : public info_base {
+public:
+	java_futex_info() {}
+	~java_futex_info() {}
+	string toString() {
+		return "java_futex@" + value;
+	}
+};
+
 class event_cache {
 public:
     event_cache(uint8_t type) : event_type(type) {
+    	event_type = type;
         threshold = 0; // 100us
     }
     string GetInfo(uint32_t tid, pair<uint64_t, uint64_t> &period, uint8_t off_type);
@@ -67,6 +87,6 @@ public:
     unordered_map<uint32_t, list<info_base* >* > cache;
     uint8_t event_type;
     std::atomic_ullong threshold;
-    uint32_t list_max_size = 16;
+    uint32_t list_max_size = 32;
 };
 #endif //KINDLING_EVENT_CACHE_H

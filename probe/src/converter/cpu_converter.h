@@ -42,6 +42,8 @@ private:
     event_cache *file_cache;
     event_cache *net_cache;
     epoll_event_cache *epoll_cache;
+	event_cache *futex_cache;
+	event_cache *java_futex_cache;
 };
 
 #endif //CPU_CONVERTER_H

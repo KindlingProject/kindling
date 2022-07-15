@@ -53,12 +53,20 @@ string event_cache::GetInfo(uint32_t tid, pair<uint64_t, uint64_t> &period, uint
         return result;
     }
     auto list = it->second;
+	if(tid == 18160){
+		cout<<"off_type:"<<off_type<<endl;
+		cout<<"event_type:"<<event_type<<endl;
+	}
+//	cout<<"count"<<list->size()<<endl;
+//	cout<<"threshold"<<threshold<<endl;
     if (off_type != event_type) {
         return result;
     }
     auto f = list->begin();
+    int count=0;
     // clear: end_time  <  off.start
     while (f != list->end() && (*f)->end_time < period.first) {
+    	count++;
         auto tmp = *f;
         f = list->erase(f);
         delete tmp;
@@ -66,6 +74,11 @@ string event_cache::GetInfo(uint32_t tid, pair<uint64_t, uint64_t> &period, uint
     // 搜索 start_time < off.start < end_time
     // 判断 if off.end < end_time && off.end - start_time > threshold -> result.append()
     if (f != list->end()) {
+		if(tid == 18160){
+			cout<<"aaaaaa"<<endl;
+			cout<<"syscall_start:"<<(*f)->start_time<<"syscall_end:"<<(*f)->end_time<<endl;
+			cout<<"off_first:"<<period.first<<"off_end:"<<period.second<<endl;
+		}
         if ((*f)->start_time < period.first && period.second < (*f)->end_time && period.second - (*f)->start_time > threshold) {
             result.append((*f)->toString());
         }

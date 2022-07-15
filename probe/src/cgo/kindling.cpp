@@ -81,7 +81,7 @@ void init_probe()
 	{
 		inspector = new sinsp();
 		inspector->set_hostname_and_port_resolution_mode(false);
-		inspector->set_snaplen(80);
+		inspector->set_snaplen(200);
 
 		inspector->suppress_events_comm("containerd");
 		inspector->suppress_events_comm("dockerd");
@@ -108,6 +108,8 @@ void init_probe()
 			inspector->set_eventmask(PPME_SYSCALL_WRITE_E);
 			inspector->set_eventmask(PPME_SYSCALL_READ_X);
 			inspector->set_eventmask(PPME_SYSCALL_READ_E);
+			inspector->set_eventmask(PPME_SYSCALL_FUTEX_E);
+			inspector->set_eventmask(PPME_SYSCALL_FUTEX_X);
 		}
 		catch(const sinsp_exception &e)
 		{
@@ -176,14 +178,25 @@ int getEvent(void **pp_kindling_event)
 			return -1;
 		}
 	}
-//	string line;
-//	if (formatter->tostring(ev, &line)) {
-//	    cout<< line << endl;
+
+	//string line;
+//	if(ev->get_type() == PPME_SYSCALL_FUTEX_X && threadInfo->m_tid == 7814) {
+//		cout<<"X:" <<ev->get_ts() << endl;
 //	}
+	string line;
+	if ((ev->get_type() == PPME_SYSCALL_WRITE_X) && formatter->tostring(ev, &line) && threadInfo->m_pid == 18135) {
+	    cout<< line << endl;
+	}
     logCache->addLog(ev);
 	cpuConverter->Cache(ev);
 
 	uint16_t kindling_category = get_kindling_category(ev);
+
+	if(ev->get_type() == PPME_SYSCALL_READ_E && kindling_category== CAT_NET&& threadInfo->m_pid == 8395) {
+		if (formatter->tostring(ev, &line)) {
+			cout<< line << endl;
+		}
+	}
 	uint16_t ev_type = ev->get_type();
 	if(event_filters[ev_type][kindling_category] == 0)
 	{

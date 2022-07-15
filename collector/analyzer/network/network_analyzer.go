@@ -91,7 +91,7 @@ func (na *NetworkAnalyzer) Start() error {
 	newSelfMetrics(na.telemetry.MeterProvider, na)
 
 	go na.consumerFdNoReusingTrace()
-
+	go na.consumerUnFinishTrace()
 	na.staticPortMap = map[uint32]string{}
 	for _, config := range na.cfg.ProtocolConfigs {
 		for _, port := range config.Ports {
@@ -193,6 +193,34 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 				if timeoutTs != 0 && (time.Now().UnixNano()/1000000000-int64(timeoutTs)/1000000000) >= 15 {
 					na.distributeTraceMetric(mps, nil)
 				}
+				return true
+			})
+		}
+	}
+}
+
+
+func (na *NetworkAnalyzer) consumerUnFinishTrace() {
+	timer := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-timer.C:
+			na.requestMonitor.Range(func(k, v interface{}) bool {
+				mps := v.(*messagePairs)
+				if mps.requests.event.Ctx.ThreadInfo.Pid == 7795 {
+					var timeoutTs = mps.getTimeoutTs()
+					if timeoutTs != 0 && (time.Now().UnixNano()/1000000000-int64(mps.requests.getFirstTimestamp())/1000000000) >= 2 {
+						sc:=&cpuanalyzer.SendContent{
+							Pid:       mps.requests.event.Ctx.ThreadInfo.Pid,
+							StartTime: mps.requests.getFirstTimestamp(),
+							SpendTime: uint64(4000000000),
+							Sport: int64(mps.requests.event.GetSport()),
+						}
+						fmt.Println("find metirc")
+						cpuanalyzer.SendChannel <- *sc
+					}
+				}
+
 				return true
 			})
 		}
@@ -330,11 +358,12 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		if exist {
 			record.Labels.GetIntValue("pid")
 			me:=metric.GetInt().Value
-			if me/1000000000>3{
+			if me/1000000000>2{
 				sc:=&cpuanalyzer.SendContent{
 					Pid:       uint32(record.Labels.GetIntValue("pid")),
 					StartTime: record.Timestamp,
 					SpendTime: uint64(me),
+					Sport: record.Labels.GetIntValue("src_port"),
 				}
 				fmt.Println("find metirc")
 				cpuanalyzer.SendChannel <- *sc

@@ -4,302 +4,390 @@
 
 #include "cpu_converter.h"
 #include <vector>
+
 using namespace std;
 
 cpu_converter::cpu_converter(sinsp *inspector) : m_inspector(inspector) {
-    file_cache = new event_cache(1);
-    net_cache = new event_cache(2);
-    epoll_cache = new epoll_event_cache(4);
+	file_cache = new event_cache(1);
+	net_cache = new event_cache(2);
+	futex_cache = new event_cache(3);
+	epoll_cache = new epoll_event_cache(4);
+	java_futex_cache = new event_cache(3);
 }
-cpu_converter::cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log) : m_inspector(inspector), m_profiler(prof), m_log(log) {
-    file_cache = new event_cache(1);
-    net_cache = new event_cache(2);
-    epoll_cache = new epoll_event_cache(4);
+
+cpu_converter::cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log) : m_inspector(inspector),
+																				m_profiler(prof), m_log(log) {
+	file_cache = new event_cache(1);
+	net_cache = new event_cache(2);
+	futex_cache = new event_cache(3);
+	epoll_cache = new epoll_event_cache(4);
+	java_futex_cache = new event_cache(3);
 }
 
 cpu_converter::~cpu_converter() {
-    delete file_cache;
-    delete net_cache;
-    delete epoll_cache;
+	delete file_cache;
+	delete net_cache;
+	delete epoll_cache;
 }
 
 bool cpu_converter::Cache(sinsp_evt *sevt) {
-    info_base *info = nullptr;
-    auto type = sevt->get_type();
-    if (type == PPME_SYSCALL_EPOLLWAIT_X) {
-        return epoll_cache->setInfo(sevt);
-    }
-    sinsp_evt::category cat;
-    sevt->get_category(&cat);
-    auto s_tinfo = sevt->get_thread_info();
-    if (type == PPME_PROCEXIT_1_E || type == PPME_PROCEXIT_E) {
-        net_cache->clearList(s_tinfo->m_tid);
-        file_cache->clearList(s_tinfo->m_tid);
-        epoll_cache->clearList(s_tinfo->m_tid);
-    }
-    if (!(cat.m_category == EC_IO_WRITE || cat.m_category == EC_IO_READ)) {
-        return false;
-    }
-    auto s_fdinfo = sevt->get_fd_info();
-    if (s_fdinfo == nullptr) {
-        return false;
-    }
-    if (PPME_IS_ENTER(type)) {
-        switch (s_fdinfo->m_type) {
-            case SCAP_FD_FILE:
-            case SCAP_FD_FILE_V2: {
-                info = new file_info();
-                info->start_time = sevt->get_ts();
-                info->name = s_fdinfo->m_name;
-                auto psize = sevt->get_param_value_raw("size");
-                if (!psize || *(uint32_t *) psize->m_val <= 0) {
-                    return false;
-                }
-                info->size = *(uint32_t *) psize->m_val;
-                info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
-                break;
-            }
-            case SCAP_FD_IPV4_SOCK:
-            case SCAP_FD_IPV4_SERVSOCK: {
-                info = new net_info();
-                info->start_time = sevt->get_ts();
-                info->name = s_fdinfo->m_name;
-                auto psize = sevt->get_param_value_raw("size");
-                if (!psize || *(uint32_t *) psize->m_val <= 0) {
-                    return false;
-                }
-                info->size = *(uint32_t *) psize->m_val;
-                info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
+	info_base *info = nullptr;
+	auto type = sevt->get_type();
+	if (type == PPME_SYSCALL_EPOLLWAIT_X) {
+		return epoll_cache->setInfo(sevt);
+	}
+	sinsp_evt::category cat;
+	sevt->get_category(&cat);
+	auto s_tinfo = sevt->get_thread_info();
+	if (type == PPME_PROCEXIT_1_E || type == PPME_PROCEXIT_E) {
+		net_cache->clearList(s_tinfo->m_tid);
+		file_cache->clearList(s_tinfo->m_tid);
+		epoll_cache->clearList(s_tinfo->m_tid);
+		futex_cache->clearList(s_tinfo->m_tid);
+	}
+	if (!(cat.m_category == EC_IO_WRITE || cat.m_category == EC_IO_READ || type == PPME_SYSCALL_FUTEX_E ||
+		  type == PPME_SYSCALL_FUTEX_X)) {
+		return false;
+	}
+	auto s_fdinfo = sevt->get_fd_info();
+	if (s_fdinfo == nullptr && type != PPME_SYSCALL_FUTEX_E && type != PPME_SYSCALL_FUTEX_X) {
+		return false;
+	}
 
-                epoll_cache->SetLastEpollCache(s_tinfo->m_tid, sevt->get_fd_num(), info);
-                break;
-            }
-            default:
-                return false;
-        }
-    } else {
-        switch (s_fdinfo->m_type) {
-            case SCAP_FD_FILE:
-            case SCAP_FD_FILE_V2: {
-                info = new file_info();
-                break;
-            }
-            case SCAP_FD_IPV4_SOCK:
-            case SCAP_FD_IPV4_SERVSOCK: {
-                info = new net_info();
-                break;
-            }
-            default:
-                return false;
-        }
-        auto pres = sevt->get_param_value_raw("res");
-        if (!pres) {
-            return false;
-        }
-        info->size = *(uint32_t *) pres->m_val;
-        info->end_time = sevt->get_ts();
-        info->exit = true;
-    }
+	if (PPME_IS_ENTER(type)) {
+		if (type == PPME_SYSCALL_FUTEX_E) {
+			info = new futex_info();
+			info->start_time = sevt->get_ts();
+			info->operation_type = to_string(*(int64_t *) sevt->get_param_value_raw("addr")->m_val);
+			info->event_type = static_cast<uint16_t>(type);
+			return futex_cache->setInfo(s_tinfo->m_tid, info);
+		}
+		switch (s_fdinfo->m_type) {
+			case SCAP_FD_FILE:
+			case SCAP_FD_FILE_V2: {
+				info = new file_info();
+				info->start_time = sevt->get_ts();
+				info->name = s_fdinfo->m_name;
+				auto psize = sevt->get_param_value_raw("size");
+				if (!psize || *(uint32_t *) psize->m_val <= 0) {
+					return false;
+				}
 
-    info->event_type = static_cast<uint16_t>(type);
+				info->size = *(uint32_t *) psize->m_val;
+				info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
+				break;
+			}
+			case SCAP_FD_IPV4_SOCK:
+			case SCAP_FD_IPV4_SERVSOCK: {
+				info = new net_info();
+				info->start_time = sevt->get_ts();
+				info->name = s_fdinfo->m_name;
+				auto psize = sevt->get_param_value_raw("size");
+				if (!psize || *(uint32_t *) psize->m_val <= 0) {
+					return false;
+				}
+				info->size = *(uint32_t *) psize->m_val;
+				info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
 
-    switch (s_fdinfo->m_type) {
+				epoll_cache->SetLastEpollCache(s_tinfo->m_tid, sevt->get_fd_num(), info);
+				break;
+			}
+			default:
+				return false;
+		}
+	} else {
+		if (type == PPME_SYSCALL_FUTEX_X) {
+			info = new futex_info();
+			info->event_type = static_cast<uint16_t>(type);
+			info->end_time = sevt->get_ts();
+			info->exit = true;
+			return futex_cache->setInfo(s_tinfo->m_tid, info);
+		}
+		switch (s_fdinfo->m_type) {
+			case SCAP_FD_FILE:
+			case SCAP_FD_FILE_V2: {
+				info = new file_info();
+				auto data_param = sevt->get_param_value_raw("data");
+				cout << data_param->m_val << endl;
+				if (cat.m_category == EC_IO_WRITE && data_param != nullptr) {
+					char *data_val = data_param->m_val;
+					if (data_param->m_len > 3 && memcmp(data_val, "kd@", 3) == 0) {
+						info = new java_futex_info();
+						char *start_time_char = new char(32);;
+						char *end_time_char = new char(32);
+						char *tid_char = new char(32);
+						int val_offset = 0;
+						int tmp_offset = 0;
+						for (int i = 3; i < data_param->m_len; i++) {
+							if (data_val[i] == '!') {
+								if (val_offset == 0) {
+									start_time_char[tmp_offset] = '\0';
+								} else if (val_offset == 1) {
+									end_time_char[tmp_offset] = '\0';
+								} else if (val_offset == 2) {
+									tid_char[tmp_offset] = '\0';
+									break;
+								}
+								tmp_offset = 0;
+								val_offset++;
+								continue;
+							}
+							if (val_offset == 0) {
+
+								start_time_char[tmp_offset] = data_val[i];
+							} else if (val_offset == 1) {
+
+								end_time_char[tmp_offset] = data_val[i];
+							} else if (val_offset == 2) {
+								tid_char[tmp_offset] = data_val[i];
+							} else {
+								break;
+							}
+							tmp_offset++;
+						}
+						info->start_time = atol(start_time_char);
+						info->end_time = atol(end_time_char);
+						info->value = data_val;
+//						if (atol(tid_char) == 18160) {
+//							cout << data_val << endl;
+//						}
+						return java_futex_cache->setInfo(atol(tid_char), info);
+					}
+				}
+				break;
+			}
+			case SCAP_FD_IPV4_SOCK:
+			case SCAP_FD_IPV4_SERVSOCK: {
+				info = new net_info();
+				break;
+			}
+			default:
+				return false;
+		}
+		auto pres = sevt->get_param_value_raw("res");
+		if (!pres) {
+			return false;
+		}
+		info->size = *(uint32_t *) pres->m_val;
+		info->end_time = sevt->get_ts();
+		info->exit = true;
+	}
+
+	info->event_type = static_cast<uint16_t>(type);
+
+	switch (s_fdinfo->m_type) {
 		case SCAP_FD_FILE:
-        case SCAP_FD_FILE_V2:
-            return file_cache->setInfo(s_tinfo->m_tid, info);
-        case SCAP_FD_IPV4_SOCK:
-        case SCAP_FD_IPV4_SERVSOCK: {
-            return net_cache->setInfo(s_tinfo->m_tid, info);
-        }
-        default:
-            return false;
-    }
+		case SCAP_FD_FILE_V2:
+			return file_cache->setInfo(s_tinfo->m_tid, info);
+		case SCAP_FD_IPV4_SOCK:
+		case SCAP_FD_IPV4_SERVSOCK: {
+			return net_cache->setInfo(s_tinfo->m_tid, info);
+		}
+		default:
+			return false;
+	}
 }
 
-int cpu_converter::convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *cpu_evt)
-{
-    // convert
-    init_kindling_event(p_kindling_event, cpu_evt);
-    add_threadinfo(p_kindling_event, cpu_evt);
-    add_cpu_data(p_kindling_event, cpu_evt);
-    return 1;
+int cpu_converter::convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *cpu_evt) {
+	// convert
+	init_kindling_event(p_kindling_event, cpu_evt);
+	add_threadinfo(p_kindling_event, cpu_evt);
+	add_cpu_data(p_kindling_event, cpu_evt);
+	return 1;
 }
 
-void merge()
-{
-    return;
-}
-void split()
-{
-    return;
+void merge() {
+	return;
 }
 
-int cpu_converter::init_kindling_event(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt)
-{
-    strcpy(p_kindling_event->name, "cpu_event");
-
-    return 0;
+void split() {
+	return;
 }
 
-int cpu_converter::add_threadinfo(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt)
-{
-    auto threadInfo = evt->get_thread_info();
-    if (!threadInfo) {
-        return -1;
-    }
+int cpu_converter::init_kindling_event(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt) {
+	strcpy(p_kindling_event->name, "cpu_event");
+
+	return 0;
+}
+
+int cpu_converter::add_threadinfo(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt) {
+	auto threadInfo = evt->get_thread_info();
+	if (!threadInfo) {
+		return -1;
+	}
 	p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
 	p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
-	strcpy(p_kindling_event->context.tinfo.comm, (char *)threadInfo->m_comm.data());
-	strcpy(p_kindling_event->context.tinfo.containerId, (char *)threadInfo->m_container_id.data());
+	strcpy(p_kindling_event->context.tinfo.comm, (char *) threadInfo->m_comm.data());
+	strcpy(p_kindling_event->context.tinfo.containerId, (char *) threadInfo->m_container_id.data());
 
-    return 0;
+	return 0;
 }
 
-int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt)
-{
-    uint64_t start_time = *reinterpret_cast<uint64_t*> (sevt->get_param_value_raw("start_ts")->m_val);
-    uint64_t end_time = *reinterpret_cast<uint64_t*> (sevt->get_param_value_raw("end_ts")->m_val);
-    uint32_t cnt = *reinterpret_cast<uint32_t*> (sevt->get_param_value_raw("cnt")->m_val);
-    uint64_t *time_specs = reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("time_specs")->m_val);
-    uint64_t *runq_latency = reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("runq_latency")->m_val);
-    uint8_t *time_type = reinterpret_cast<uint8_t *> (sevt->get_param_value_raw("time_type")->m_val);
-    cpu_data c_data;
-    vector<pair<uint64_t, uint64_t>> on_time, off_time;
-    vector<uint8_t> off_type;
-    uint64_t start = start_time;
-    for (int i = 0; i < cnt; i++) {
-        if (time_type[i] == 0) {
-            c_data.on_total_time += time_specs[i];
-            //on_time.emplace_back(make_pair(start, start + time_specs[i] * 1000));
-            on_time.emplace_back(start, start + time_specs[i] * 1000);
+int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt) {
+	uint64_t start_time = *reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("start_ts")->m_val);
+	uint64_t end_time = *reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("end_ts")->m_val);
+	uint32_t cnt = *reinterpret_cast<uint32_t *> (sevt->get_param_value_raw("cnt")->m_val);
+	uint64_t *time_specs = reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("time_specs")->m_val);
+	uint64_t *runq_latency = reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("runq_latency")->m_val);
+	uint8_t *time_type = reinterpret_cast<uint8_t *> (sevt->get_param_value_raw("time_type")->m_val);
+	cpu_data c_data;
+	vector<pair<uint64_t, uint64_t>> on_time, off_time;
+	vector<uint8_t> off_type;
+	uint64_t start = start_time;
 
-            //on_time.push_back({start, start + time_specs[i] * 1000});
-        } else {
-            c_data.off_total_time += time_specs[i];
-            c_data.runq_latency += (to_string(runq_latency[i/2]) + ",");
-            off_time.emplace_back(start, start + time_specs[i] * 1000);
-            //off_time.push_back({start, start + time_specs[i] * 1000});
-            //cout<<time_type[i]<<endl;
-            off_type.emplace_back(time_type[i]);
-            //off_type.push_back(time_type[i]);
-        }
-        start = start + time_specs[i] * 1000;
-        c_data.time_specs += (to_string(time_specs[i]) + ",");
-        c_data.time_type += (to_string(time_type[i]) +  ",");
-    }
+	for (int i = 0; i < cnt; i++) {
+		if (time_type[i] == 0) {
+			c_data.on_total_time += time_specs[i];
+			on_time.emplace_back(start, start + time_specs[i]);
+		} else {
+			c_data.off_total_time += time_specs[i];
+			c_data.runq_latency += (to_string(runq_latency[i / 2]) + ",");
+			off_time.emplace_back(start, start + time_specs[i]);
 
-    uint16_t userAttNumber = 0;
-    // on_total_time
-    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "on_total_time");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.on_total_time, 8);
-    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
-    p_kindling_event->userAttributes[userAttNumber].len = 8;
-    userAttNumber++;
+			off_type.emplace_back(time_type[i]);
+		}
+		start = start + time_specs[i];
+		c_data.time_specs += (to_string(time_specs[i]) + ",");
+		c_data.time_type += (to_string(time_type[i]) + ",");
+	}
 
-    // off_total_time
-    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "off_total_time");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.off_total_time, 8);
-    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
-    p_kindling_event->userAttributes[userAttNumber].len = 8;
-    userAttNumber++;
+	uint16_t userAttNumber = 0;
+	// on_total_time
+	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "on_total_time");
+	memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.on_total_time, 8);
+	p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+	p_kindling_event->userAttributes[userAttNumber].len = 8;
+	userAttNumber++;
 
-    // start_time
-    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "start_time");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &start_time, 8);
-    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
-    p_kindling_event->userAttributes[userAttNumber].len = 8;
-    userAttNumber++;
+	// off_total_time
+	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "off_total_time");
+	memcpy(p_kindling_event->userAttributes[userAttNumber].value, &c_data.off_total_time, 8);
+	p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+	p_kindling_event->userAttributes[userAttNumber].len = 8;
+	userAttNumber++;
 
-    // end_time
-    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, &end_time, 8);
-    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
-    p_kindling_event->userAttributes[userAttNumber].len = 8;
-    userAttNumber++;
+	// start_time
+	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "start_time");
+	memcpy(p_kindling_event->userAttributes[userAttNumber].value, &start_time, 8);
+	p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+	p_kindling_event->userAttributes[userAttNumber].len = 8;
+	userAttNumber++;
 
-    // time_specs
-    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "type_specs");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_specs.data(), c_data.time_specs.length());
-    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-    p_kindling_event->userAttributes[userAttNumber].len = c_data.time_specs.length();
-    userAttNumber++;
+	// end_time
+	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
+	memcpy(p_kindling_event->userAttributes[userAttNumber].value, &end_time, 8);
+	p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+	p_kindling_event->userAttributes[userAttNumber].len = 8;
+	userAttNumber++;
 
-    // runq_latency
-    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "runq_latency");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.runq_latency.data(), c_data.runq_latency.length());
-    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-    p_kindling_event->userAttributes[userAttNumber].len = c_data.runq_latency.length();
-    userAttNumber++;
+	// time_specs
+	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "type_specs");
+	memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_specs.data(), c_data.time_specs.length());
+	p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+	p_kindling_event->userAttributes[userAttNumber].len = c_data.time_specs.length();
+	userAttNumber++;
 
-    // time_type
-    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "time_type");
-    memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_type.data(), c_data.time_type.length());
-    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-    p_kindling_event->userAttributes[userAttNumber].len = c_data.time_type.length();
-    userAttNumber++;
+	// runq_latency
+	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "runq_latency");
+	memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.runq_latency.data(),
+		   c_data.runq_latency.length());
+	p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+	p_kindling_event->userAttributes[userAttNumber].len = c_data.runq_latency.length();
+	userAttNumber++;
 
-    // on_stack
-    auto s_tinfo = sevt->get_thread_info();
-    string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
-    if (data != "") {
-        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "stack");
-        memcpy(p_kindling_event->userAttributes[userAttNumber].value, data.data(), data.length());
-        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-        p_kindling_event->userAttributes[userAttNumber].len = data.length();
-        userAttNumber++;
-    }
-    auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
-    if (log_msg != "") {
-        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "log");
-        memcpy(p_kindling_event->userAttributes[userAttNumber].value, log_msg.data(), log_msg.length());
-        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-        p_kindling_event->userAttributes[userAttNumber].len = log_msg.length();
-        userAttNumber++;
-    }
+	// time_type
+	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "time_type");
+	memcpy(p_kindling_event->userAttributes[userAttNumber].value, c_data.time_type.data(), c_data.time_type.length());
+	p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+	p_kindling_event->userAttributes[userAttNumber].len = c_data.time_type.length();
+	userAttNumber++;
 
-    string on_info = "";
-    for (auto period : on_time) {
-        string v = net_cache->GetOnInfo(s_tinfo->m_tid, period);
-        if (v != "") {
-            on_info.append(v);
-        }
-        on_info.append("|");
-    }
+	// on_stack
+	auto s_tinfo = sevt->get_thread_info();
+	string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
+	if (data != "") {
+		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "stack");
+		memcpy(p_kindling_event->userAttributes[userAttNumber].value, data.data(), data.length());
+		p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+		p_kindling_event->userAttributes[userAttNumber].len = data.length();
+		userAttNumber++;
+	}
+	auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
+	if (log_msg != "") {
+		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "log");
+		memcpy(p_kindling_event->userAttributes[userAttNumber].value, log_msg.data(), log_msg.length());
+		p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+		p_kindling_event->userAttributes[userAttNumber].len = log_msg.length();
+		userAttNumber++;
+	}
 
-    if (on_info.length() != on_time.size()) {
-        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "on_info");
-        memcpy(p_kindling_event->userAttributes[userAttNumber].value, on_info.data(), on_info.length());
-        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-        p_kindling_event->userAttributes[userAttNumber].len = on_info.length();
-        userAttNumber++;
-    }
+	string on_info = "";
+	for (auto period : on_time) {
+		string v = net_cache->GetOnInfo(s_tinfo->m_tid, period);
+		if (v != "") {
+			on_info.append(v);
+		}
+		on_info.append("|");
+	}
 
-    string info = "";
-    for (int i = 0; i < off_time.size(); i++) {
-        switch (off_type[i]) {
-            case 1: {
-                info.append(file_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
-                break;
-            }
-            case 2: {
-                info.append(net_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
-                break;
-            }
-            case 4: {
-                info.append(epoll_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
-                break;
-            }
-        }
-        info.append("|");
-    }
-    if (info.length() != off_time.size()) {
-        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "off_info");
-        memcpy(p_kindling_event->userAttributes[userAttNumber].value, info.data(), info.length());
-        p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-        p_kindling_event->userAttributes[userAttNumber].len = info.length();
-        userAttNumber++;
-    }
-    p_kindling_event->paramsNumber = userAttNumber;
+	if (on_info.length() != on_time.size()) {
+		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "on_info");
+		memcpy(p_kindling_event->userAttributes[userAttNumber].value, on_info.data(), on_info.length());
+		p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+		p_kindling_event->userAttributes[userAttNumber].len = on_info.length();
+		userAttNumber++;
+	}
+
+	string info = "";
+	for (int i = 0; i < off_time.size(); i++) {
+		switch (off_type[i]) {
+			case 1: {
+				info.append(file_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
+				break;
+			}
+			case 2: {
+				info.append(net_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
+				break;
+			}
+			case 3: {
+				info.append(futex_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
+				break;
+			}
+			case 4: {
+				info.append(epoll_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
+				break;
+			}
+		}
+		info.append("|");
+	}
+	if (info.length() != off_time.size()) {
+		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "off_info");
+		memcpy(p_kindling_event->userAttributes[userAttNumber].value, info.data(), info.length());
+		p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+		p_kindling_event->userAttributes[userAttNumber].len = info.length();
+		userAttNumber++;
+	}
+
+	string java_futex_info = "";
+	for (int i = 0; i < off_time.size(); i++) {
+		if (off_type[i] == 3) {
+			java_futex_info.append(java_futex_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
+			java_futex_info.append("|");
+			if (s_tinfo->m_tid == 18160) {
+				cout << java_futex_info << endl;
+			}
+		}
+
+	}
+	if (java_futex_info.length() != off_time.size()) {
+		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "java_futex_info");
+		memcpy(p_kindling_event->userAttributes[userAttNumber].value, java_futex_info.data(), java_futex_info.length());
+		p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+		p_kindling_event->userAttributes[userAttNumber].len = java_futex_info.length();
+		userAttNumber++;
+	}
+
+	p_kindling_event->paramsNumber = userAttNumber;
 
 //    printf("-----------------------");
 //    printf("name: %s thread: %s(%d)\n", p_kindling_event->name, p_kindling_event->context.tinfo.comm, p_kindling_event->context.tinfo.tid);
@@ -309,7 +397,7 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 //        printf("%s: %s\n", p_kindling_event->userAttributes[i].key, p_kindling_event->userAttributes[i].value);
 //    }
 
-    // merge();
-    // analyse()
-    return 0;
+	// merge();
+	// analyse()
+	return 0;
 }
