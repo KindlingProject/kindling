@@ -20,7 +20,9 @@ const (
 
 	CpuEvent = "cpu_event"
 
-	OtherEvent             = "other"
+	JavaFutexInfo = "java_futex_info"
+
+	OtherEvent = "other"
 
 	GrpcUprobeEvent = "grpc_uprobe"
 	// NetRequestMetricGroupName is used for dataGroup generated from networkAnalyzer.

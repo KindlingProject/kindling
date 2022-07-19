@@ -18,12 +18,13 @@ import (
 	"time"
 )
 
-var SendChannel    chan SendContent
+var SendChannel chan SendContent
+
 type SendContent struct {
 	Pid       uint32 `json:"pid"`
 	StartTime uint64 `json:"startTime"`
 	SpendTime uint64 `json:"spendTime"`
-	Sport int64 `json:"sport"`
+	Sport     int64  `json:"sport"`
 }
 
 const (
@@ -31,11 +32,12 @@ const (
 )
 
 type CpuAnalyzer struct {
-	cfg          *Config
-	cpuPidEvents map[uint32]TimeSegments
-	lock          sync.Mutex
-	esClient     *elastic.Client
-	telemetry    *component.TelemetryTools
+	cfg                *Config
+	cpuPidEvents       map[uint32]TimeSegments
+	javaFutexPidEvents map[uint32]TimeSegments
+	lock               sync.Mutex
+	esClient           *elastic.Client
+	telemetry          *component.TelemetryTools
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -43,21 +45,22 @@ func (ca *CpuAnalyzer) Type() analyzer.Type {
 }
 
 func (ca *CpuAnalyzer) ConsumableEvents() []string {
-	return []string{constnames.CpuEvent}
+	return []string{constnames.CpuEvent, constnames.JavaFutexInfo}
 }
 
 type TimeSegments struct {
-	Pid      uint32    `json:"pid"`
-	BaseTime uint64    `json:"baseTime"`
+	Pid      uint32       `json:"pid"`
+	BaseTime uint64       `json:"baseTime"`
 	Segments *CircleQueue `json:"segments"`
 }
 
 type Segment struct {
-	Pid      uint32    `json:"pid"`
-	StartTime uint64     `json:"startTime"`
-	EndTime   uint64     `json:"endTime"`
-	CpuEvents []*CpuEvent `json:"cpuEvents"`
-	IsSend    int
+	Pid             uint32            `json:"pid"`
+	StartTime       uint64            `json:"startTime"`
+	EndTime         uint64            `json:"endTime"`
+	CpuEvents       []*CpuEvent       `json:"cpuEvents"`
+	JavaFutexEvents []*JavaFutexEvent `json:"javaFutexEvents"`
+	IsSend          int
 }
 
 type CpuEvent struct {
@@ -67,10 +70,16 @@ type CpuEvent struct {
 	RunqLatency string     `json:"runqLatency"`
 	TimeType    string     `json:"timeType"`
 	OnInfo      string     `json:"onInfo"`
-	OffInfo      string     `json:"offInfo"`
+	OffInfo     string     `json:"offInfo"`
 	Log         string     `json:"log"`
 	Tinfo       theradInfo `json:"tinfo"`
-	JavaFutexInfo string  `json:"javaFutexInfo"`
+}
+
+type JavaFutexEvent struct {
+	StartTime uint64     `json:"startTime"`
+	EndTime   uint64     `json:"endTime"`
+	DataVal   string     `json:"dataValue"`
+	Tinfo     theradInfo `json:"tinfo"`
 }
 
 type theradInfo struct {
@@ -87,6 +96,7 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		telemetry: telemetry,
 	}
 	ca.cpuPidEvents = make(map[uint32]TimeSegments, 100000)
+	ca.javaFutexPidEvents = make(map[uint32]TimeSegments, 100000)
 	SendChannel = make(chan SendContent, 3e5)
 	return ca
 }
@@ -114,6 +124,112 @@ func (ca *CpuAnalyzer) Start() error {
 }
 
 func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
+	if event.Name != "cpu_event" {
+		fmt.Println(event.Name)
+	}
+
+	if event.Name == "cpu_event" {
+		ca.ConsumeCpuEvent(event)
+	} else if event.Name == "java_futex_info" {
+		ca.ConsumeJavaFutexEvent(event)
+	}
+	return nil
+}
+
+func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) error {
+	ev := new(JavaFutexEvent)
+	ev.StartTime = event.Timestamp
+	fmt.Println(event.ParamsNumber)
+	for i := 0; i < int(event.ParamsNumber); i++ {
+		userAttributes := event.UserAttributes[i]
+		switch {
+		case userAttributes.GetKey() == "end_time":
+			fmt.Println("end_time:")
+			fmt.Println(string(userAttributes.GetValue()))
+			ev.EndTime, _ = strconv.ParseUint(string(userAttributes.GetValue()), 10, 64)
+			break
+		case event.UserAttributes[i].GetKey() == "data":
+			ev.DataVal = string(userAttributes.GetValue())
+			break
+		default:
+			break
+		}
+	}
+	ev.Tinfo.Tid = event.Ctx.ThreadInfo.Tid
+	ev.Tinfo.Comm = event.Ctx.ThreadInfo.Comm
+	fmt.Println(ev)
+	ca.lock.Lock()
+	defer ca.lock.Unlock()
+	timeSegments, exist := ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid]
+	timeSegments.Pid = event.Ctx.ThreadInfo.Pid
+	if exist {
+		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= ev.StartTime/1000000000 {
+			clearSize := 0
+
+			clearSize = ca.cfg.GetSegmentSize() / 2
+			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
+
+			for i := 0; i < clearSize; i++ {
+				val, _ := timeSegments.Segments.GetByIndex(i)
+				segment := val.(Segment)
+				segment.JavaFutexEvents = make([]*JavaFutexEvent, 0)
+				if clearSize > ca.cfg.GetSegmentSize()/2 && i < ca.cfg.GetSegmentSize()/2 {
+					val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
+					segmentTmp := val.(Segment)
+					timeSegments.Segments.UpdateByIndex(i, segmentTmp)
+				} else if clearSize > ca.cfg.GetSegmentSize()/2 && i >= ca.cfg.GetSegmentSize()/2 {
+					timeSegments.Segments.UpdateByIndex(i, segment)
+				} else {
+					timeSegments.Segments.UpdateByIndex(i, segment)
+				}
+			}
+		}
+		if int(ev.EndTime/1000000000-timeSegments.BaseTime) < 0 {
+			return nil
+		}
+		// 开始时间基于baseTime的偏移量
+		startOffset := ev.StartTime/1000000000 - timeSegments.BaseTime
+		// 结束时间基于开始时间的偏移量
+		endOffset := ev.EndTime/1000000000 - ev.StartTime/1000000000
+		fmt.Println(startOffset)
+		fmt.Println(endOffset)
+		if startOffset > 0 {
+			for i := startOffset; i <= startOffset+endOffset; i++ {
+				var segment Segment
+				val, _ := timeSegments.Segments.GetByIndex(int(i))
+				if val == nil {
+					segment = *new(Segment)
+				} else {
+					segment = val.(Segment)
+				}
+
+				segment.JavaFutexEvents = append(segment.JavaFutexEvents, ev)
+				timeSegments.Segments.UpdateByIndex(int(i), segment)
+				ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = timeSegments
+			}
+		}
+	} else {
+		newTimeSegments := *new(TimeSegments)
+		newTimeSegments.Segments = NewCircleQueue(ca.cfg.GetSegmentSize() + 1)
+
+		newTimeSegments.BaseTime = ev.StartTime / 1000000000
+		ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = newTimeSegments
+		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
+			segment := *new(Segment)
+			newTimeSegments.Segments.Push(segment)
+		}
+		val, _ := newTimeSegments.Segments.GetByIndex(0)
+		segment := val.(Segment)
+		segment.JavaFutexEvents = append(segment.JavaFutexEvents, ev)
+		newTimeSegments.Segments.UpdateByIndex(0, segment)
+		ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = newTimeSegments
+
+	}
+	fmt.Println(222)
+	return nil
+}
+
+func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) error {
 	ev := new(CpuEvent)
 	for i := 0; i < int(event.ParamsNumber); i++ {
 		userAttributes := event.UserAttributes[i]
@@ -142,9 +258,6 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		case event.UserAttributes[i].GetKey() == "log":
 			ev.Log = string(userAttributes.GetValue())
 			break
-		case event.UserAttributes[i].GetKey() == "java_futex_info":
-			ev.JavaFutexInfo = string(userAttributes.GetValue())
-			break
 		default:
 			break
 		}
@@ -155,37 +268,37 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	defer ca.lock.Unlock()
 	timeSegments, exist := ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid]
 	timeSegments.Pid = event.Ctx.ThreadInfo.Pid
-	profilePid,_ := strconv.Atoi(os.Getenv("profilepid"))
-	profilePid2:= uint32(profilePid)
+	profilePid, _ := strconv.Atoi(os.Getenv("profilepid"))
+	profilePid2 := uint32(profilePid)
 	if exist {
-		if timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize()) <= ev.StartTime/1000000000 {
+		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= ev.StartTime/1000000000 {
 			clearSize := 0
 			if event.Ctx.ThreadInfo.Pid == profilePid2 {
-				ca.telemetry.Logger.Info("base_time_update",zap.Uint64("base_time_update_qian",timeSegments.BaseTime))
+				ca.telemetry.Logger.Info("base_time_update", zap.Uint64("base_time_update_qian", timeSegments.BaseTime))
 			}
-			clearSize = ca.cfg.GetSegmentSize()/2
+			clearSize = ca.cfg.GetSegmentSize() / 2
 			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
 			if event.Ctx.ThreadInfo.Pid == profilePid2 {
-				ca.telemetry.Logger.Info("base_time_update",zap.Uint64("base_time_update",timeSegments.BaseTime))
+				ca.telemetry.Logger.Info("base_time_update", zap.Uint64("base_time_update", timeSegments.BaseTime))
 			}
 
 			for i := 0; i < clearSize; i++ {
-				val,_ := timeSegments.Segments.GetByIndex(i)
+				val, _ := timeSegments.Segments.GetByIndex(i)
 				segment := val.(Segment)
 				segment.CpuEvents = make([]*CpuEvent, 0)
-				if clearSize > ca.cfg.GetSegmentSize()/2 && i<ca.cfg.GetSegmentSize()/2 {
-					val,_ := timeSegments.Segments.GetByIndex(i+ca.cfg.GetSegmentSize()/2)
+				if clearSize > ca.cfg.GetSegmentSize()/2 && i < ca.cfg.GetSegmentSize()/2 {
+					val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
 					segmentTmp := val.(Segment)
 					timeSegments.Segments.UpdateByIndex(i, segmentTmp)
-				}else if clearSize > ca.cfg.GetSegmentSize()/2 && i>=ca.cfg.GetSegmentSize()/2{
+				} else if clearSize > ca.cfg.GetSegmentSize()/2 && i >= ca.cfg.GetSegmentSize()/2 {
 					timeSegments.Segments.UpdateByIndex(i, segment)
-				}else {
+				} else {
 					timeSegments.Segments.UpdateByIndex(i, segment)
 				}
 			}
 		}
 
-		if int(ev.EndTime/1000000000 - timeSegments.BaseTime) < 0 {
+		if int(ev.EndTime/1000000000-timeSegments.BaseTime) < 0 {
 			return nil
 		}
 		// 开始时间基于baseTime的偏移量
@@ -193,12 +306,12 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		// 结束时间基于开始时间的偏移量
 		endOffset := ev.EndTime/1000000000 - ev.StartTime/1000000000
 		if startOffset > 0 {
-			for i := startOffset; i <= startOffset + endOffset; i++ {
+			for i := startOffset; i <= startOffset+endOffset; i++ {
 				var segment Segment
-				val,_ := timeSegments.Segments.GetByIndex(int(i))
+				val, _ := timeSegments.Segments.GetByIndex(int(i))
 				if val == nil {
 					segment = *new(Segment)
-				}else {
+				} else {
 					segment = val.(Segment)
 				}
 
@@ -209,7 +322,7 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		}
 	} else {
 		newTimeSegments := *new(TimeSegments)
-		newTimeSegments.Segments = NewCircleQueue(ca.cfg.GetSegmentSize()+1)
+		newTimeSegments.Segments = NewCircleQueue(ca.cfg.GetSegmentSize() + 1)
 
 		//for i := 0; i < defaultSegmentSize; i++ {
 		//	newTimeSegments.Segments[i].CpuEvents = make([]CpuEvent, 0)
@@ -220,7 +333,7 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 			segment := *new(Segment)
 			newTimeSegments.Segments.Push(segment)
 		}
-		val,_ := newTimeSegments.Segments.GetByIndex(0)
+		val, _ := newTimeSegments.Segments.GetByIndex(0)
 		segment := val.(Segment)
 		segment.CpuEvents = append(segment.CpuEvents, ev)
 		newTimeSegments.Segments.UpdateByIndex(0, segment)
@@ -236,7 +349,7 @@ func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) error {
 	if exist {
 
 		for i := 0; i < 20; i++ {
-			val,_ := timeSegments.Segments.GetByIndex(i)
+			val, _ := timeSegments.Segments.GetByIndex(i)
 			segment := val.(Segment)
 			segment.Pid = pid
 			data, _ := json.Marshal(segment)
@@ -245,40 +358,38 @@ func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) error {
 			ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 		}
 
-
 	}
 	defer ca.lock.Unlock()
 	return nil
 }
 
-
 func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint64) error {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
 
-	profilePid,_ := strconv.Atoi(os.Getenv("profilepid"))
-	profilePid2:= uint32(profilePid)
+	profilePid, _ := strconv.Atoi(os.Getenv("profilepid"))
+	profilePid2 := uint32(profilePid)
 	fmt.Println(profilePid2)
 	if pid == profilePid2 {
-		ca.telemetry.Logger.Info("time",zap.Uint64("start_time",startTime))
-		ca.telemetry.Logger.Info("time",zap.Uint64("end_time",spendTime))
-	}else {
+		ca.telemetry.Logger.Info("time", zap.Uint64("start_time", startTime))
+		ca.telemetry.Logger.Info("time", zap.Uint64("end_time", spendTime))
+	} else {
 		return nil
 	}
 	timeSegments, exist := ca.cpuPidEvents[pid]
 	if exist {
 		if pid == profilePid2 {
-			ca.telemetry.Logger.Info("base_time",zap.Uint64("base_time",timeSegments.BaseTime))
+			ca.telemetry.Logger.Info("base_time", zap.Uint64("base_time", timeSegments.BaseTime))
 		}
-		if timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize()) < startTime/1000000000 || timeSegments.BaseTime > startTime/1000000000  || pid != profilePid2{
+		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) < startTime/1000000000 || timeSegments.BaseTime > startTime/1000000000 || pid != profilePid2 {
 			return nil
 		}
 
-		for i := 0; i < int(spendTime/1000000000) + 1 + 2; i++ {
+		for i := 0; i < int(spendTime/1000000000)+1+2; i++ {
 			if pid == profilePid2 {
-				ca.telemetry.Logger.Info("base_time",zap.Int("key",i))
+				ca.telemetry.Logger.Info("base_time", zap.Int("key", i))
 			}
-			val,_ := timeSegments.Segments.GetByIndex(int(startTime/1000000000 - timeSegments.BaseTime)+i-1)
+			val, _ := timeSegments.Segments.GetByIndex(int(startTime/1000000000-timeSegments.BaseTime) + i - 1)
 			if val == nil {
 				continue
 			}
@@ -291,7 +402,7 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 			}
 			segment.IsSend = 1
-			timeSegments.Segments.UpdateByIndex(int(startTime/1000000000 - timeSegments.BaseTime)+i-1, segment)
+			timeSegments.Segments.UpdateByIndex(int(startTime/1000000000-timeSegments.BaseTime)+i-1, segment)
 		}
 		ca.cpuPidEvents[pid] = timeSegments
 
@@ -301,7 +412,7 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 
 func (ca *CpuAnalyzer) SendCircle() {
 	for {
-		sendContent := <- SendChannel
+		sendContent := <-SendChannel
 		data, _ := json.Marshal(sendContent)
 		fmt.Println(string(data))
 		ca.SendCpuEvent(sendContent.Pid, sendContent.StartTime, sendContent.SpendTime)
