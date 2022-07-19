@@ -56,7 +56,7 @@ func (n *NetMetricGroupAdapter) dealWithPreAggMetricGroups(dataGroup *model.Data
 	srcNamespace := dataGroup.Labels.GetStringValue(constlabels.SrcNamespace)
 	if n.StoreExternalSrcIP && srcNamespace == constlabels.ExternalClusterNamespace && isServer {
 		externalAdapterCache := n.detailTopologyAdapter
-		externalTopology := n.createNetMetricResults(dataGroup, externalAdapterCache, attrType)
+		externalTopology := n.createNetMetricResults(dataGroup, externalAdapterCache, attrType, true)
 		results = append(results, externalTopology...)
 	}
 
@@ -74,20 +74,20 @@ func (n *NetMetricGroupAdapter) dealWithPreAggMetricGroups(dataGroup *model.Data
 			metricAdapterCache = n.aggTopologyAdapter
 		}
 	}
-	metrics := n.createNetMetricResults(dataGroup, metricAdapterCache, attrType)
+	metrics := n.createNetMetricResults(dataGroup, metricAdapterCache, attrType, false)
 	return append(results, metrics...)
 }
 
-func (n *NetMetricGroupAdapter) createNetMetricResults(dataGroup *model.DataGroup, adapter [2]*LabelConverter, attrType AttrType) (tmpResults []*AdaptedResult) {
+func (n *NetMetricGroupAdapter) createNetMetricResults(dataGroup *model.DataGroup, adapter [2]*LabelConverter, attrType AttrType, toTopology bool) (tmpResults []*AdaptedResult) {
 	values := dataGroup.Metrics
 	isServer := dataGroup.Labels.GetBoolValue(constlabels.IsServer)
 	metricsExceptRequestCount := make([]*model.Metric, 0, len(values))
 	requestCount := make([]*model.Metric, 0, 1)
 	for _, metric := range dataGroup.Metrics {
 		if metric.Name != constvalues.RequestCount {
-			metricsExceptRequestCount = append(metricsExceptRequestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer), metric.GetData()))
+			metricsExceptRequestCount = append(metricsExceptRequestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer && !toTopology), metric.GetData()))
 		} else {
-			requestCount = append(requestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer), metric.GetData()))
+			requestCount = append(requestCount, model.NewMetric(constnames.ToKindlingNetMetricName(metric.Name, isServer && !toTopology), metric.GetData()))
 		}
 	}
 	tmpResults = make([]*AdaptedResult, 0, 2)

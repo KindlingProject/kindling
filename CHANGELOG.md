@@ -5,11 +5,14 @@
 
 ## Unreleased 
 ### Enhancements
+- Print logs when subscribing to events. Print a warning message if there is no event the agent subscribes to. ([#290](https://github.com/CloudDectective-Harmonycloud/kindling/pull/290))
 - Allow the collector run in the non-Kubernetes environment by setting the option `enable` `false` under the `k8smetadataprocessor` section. ([#285](https://github.com/CloudDectective-Harmonycloud/kindling/pull/285))
 - Add a new environment variable: IS_PRINT_EVENT. When the value is true, sinsp events can be printed to the stdout. ([#283](https://github.com/CloudDectective-Harmonycloud/kindling/pull/283))
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
 ### Bug fixes 
 - Fix the bug that need_trace_as_span options cannot take effect ([#292](https://github.com/CloudDectective-Harmonycloud/kindling/pull/292))
+- Fix connection failure rate data lost when change topology layout in the Grafana plugin. ([#289](https://github.com/CloudDectective-Harmonycloud/kindling/pull/289))
+- Fix the bug that the external topologys' metric name is named with `kindling_entity_request` prefix. Change the prefix of these metrics to `kindling_topology_request` ([#287](https://github.com/CloudDectective-Harmonycloud/kindling/pull/287))
 - Fix the bug where the table name of SQL is missed if there is no trailing character at the end of the table name. ([#284](https://github.com/CloudDectective-Harmonycloud/kindling/pull/284))
 
 ## v0.3.0 - 2022-06-29
