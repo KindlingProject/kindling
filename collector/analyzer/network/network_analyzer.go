@@ -3,11 +3,12 @@ package network
 import (
 	"context"
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/analyzer/cpuanalyzer"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Kindling-project/kindling/collector/analyzer/cpuanalyzer"
 
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
@@ -91,7 +92,7 @@ func (na *NetworkAnalyzer) Start() error {
 	newSelfMetrics(na.telemetry.MeterProvider, na)
 
 	go na.consumerFdNoReusingTrace()
-	go na.consumerUnFinishTrace()
+	// go na.consumerUnFinishTrace()
 	na.staticPortMap = map[uint32]string{}
 	for _, config := range na.cfg.ProtocolConfigs {
 		for _, port := range config.Ports {
@@ -199,7 +200,6 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 	}
 }
 
-
 func (na *NetworkAnalyzer) consumerUnFinishTrace() {
 	timer := time.NewTicker(1 * time.Second)
 	for {
@@ -210,11 +210,10 @@ func (na *NetworkAnalyzer) consumerUnFinishTrace() {
 				if mps.requests.event.Ctx.ThreadInfo.Pid == 7795 {
 					var timeoutTs = mps.getTimeoutTs()
 					if timeoutTs != 0 && (time.Now().UnixNano()/1000000000-int64(mps.requests.getFirstTimestamp())/1000000000) >= 2 {
-						sc:=&cpuanalyzer.SendContent{
+						sc := &cpuanalyzer.SendTriggerEvent{
 							Pid:       mps.requests.event.Ctx.ThreadInfo.Pid,
 							StartTime: mps.requests.getFirstTimestamp(),
 							SpendTime: uint64(4000000000),
-							Sport: int64(mps.requests.event.GetSport()),
 						}
 						fmt.Println("find metirc")
 						cpuanalyzer.SendChannel <- *sc
@@ -354,21 +353,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		}
 		netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
 
-		metric, exist := record.GetMetric(constvalues.RequestTotalTime)
-		if exist {
-			record.Labels.GetIntValue("pid")
-			me:=metric.GetInt().Value
-			if me/1000000000>2{
-				sc:=&cpuanalyzer.SendContent{
-					Pid:       uint32(record.Labels.GetIntValue("pid")),
-					StartTime: record.Timestamp,
-					SpendTime: uint64(me),
-					Sport: record.Labels.GetIntValue("src_port"),
-				}
-				fmt.Println("find metirc")
-				cpuanalyzer.SendChannel <- *sc
-			}
-		}
+		checkSendSignalToCpuAnalyzer(record)
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}
