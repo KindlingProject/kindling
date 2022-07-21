@@ -4,6 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
@@ -11,11 +17,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/olivere/elastic/v6"
 	"go.uber.org/zap"
-	"log"
-	"os"
-	"strconv"
-	"sync"
-	"time"
 )
 
 var SendChannel chan SendContent
@@ -46,47 +47,6 @@ func (ca *CpuAnalyzer) Type() analyzer.Type {
 
 func (ca *CpuAnalyzer) ConsumableEvents() []string {
 	return []string{constnames.CpuEvent, constnames.JavaFutexInfo}
-}
-
-type TimeSegments struct {
-	Pid      uint32       `json:"pid"`
-	BaseTime uint64       `json:"baseTime"`
-	Segments *CircleQueue `json:"segments"`
-}
-
-type Segment struct {
-	Pid             uint32            `json:"pid"`
-	StartTime       uint64            `json:"startTime"`
-	EndTime         uint64            `json:"endTime"`
-	CpuEvents       []*CpuEvent       `json:"cpuEvents"`
-	JavaFutexEvents []*JavaFutexEvent `json:"javaFutexEvents"`
-	IsSend          int
-}
-
-type CpuEvent struct {
-	StartTime   uint64     `json:"startTime"`
-	EndTime     uint64     `json:"endTime"`
-	TypeSpecs   string     `json:"typeSpecs"`
-	RunqLatency string     `json:"runqLatency"`
-	TimeType    string     `json:"timeType"`
-	OnInfo      string     `json:"onInfo"`
-	OffInfo     string     `json:"offInfo"`
-	Log         string     `json:"log"`
-	Tinfo       theradInfo `json:"tinfo"`
-}
-
-type JavaFutexEvent struct {
-	StartTime uint64     `json:"startTime"`
-	EndTime   uint64     `json:"endTime"`
-	DataVal   string     `json:"dataValue"`
-	Tinfo     theradInfo `json:"tinfo"`
-}
-
-type theradInfo struct {
-	// Thread/task id of thread.
-	Tid uint32 `json:"tid"`
-	// Command of thread.
-	Comm string `json:"comm"`
 }
 
 func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
@@ -136,7 +96,7 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	return nil
 }
 
-func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) error {
+func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 	ev := new(JavaFutexEvent)
 	ev.StartTime = event.Timestamp
 	fmt.Println(event.ParamsNumber)
@@ -148,88 +108,17 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) error {
 			fmt.Println(string(userAttributes.GetValue()))
 			ev.EndTime, _ = strconv.ParseUint(string(userAttributes.GetValue()), 10, 64)
 			break
-		case event.UserAttributes[i].GetKey() == "data":
+		case userAttributes.GetKey() == "data":
 			ev.DataVal = string(userAttributes.GetValue())
 			break
 		default:
 			break
 		}
 	}
-	ev.Tinfo.Tid = event.Ctx.ThreadInfo.Tid
-	ev.Tinfo.Comm = event.Ctx.ThreadInfo.Comm
-	fmt.Println(ev)
-	ca.lock.Lock()
-	defer ca.lock.Unlock()
-	timeSegments, exist := ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid]
-	timeSegments.Pid = event.Ctx.ThreadInfo.Pid
-	if exist {
-		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= ev.StartTime/1000000000 {
-			clearSize := 0
-
-			clearSize = ca.cfg.GetSegmentSize() / 2
-			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
-
-			for i := 0; i < clearSize; i++ {
-				val, _ := timeSegments.Segments.GetByIndex(i)
-				segment := val.(Segment)
-				segment.JavaFutexEvents = make([]*JavaFutexEvent, 0)
-				if clearSize > ca.cfg.GetSegmentSize()/2 && i < ca.cfg.GetSegmentSize()/2 {
-					val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
-					segmentTmp := val.(Segment)
-					timeSegments.Segments.UpdateByIndex(i, segmentTmp)
-				} else if clearSize > ca.cfg.GetSegmentSize()/2 && i >= ca.cfg.GetSegmentSize()/2 {
-					timeSegments.Segments.UpdateByIndex(i, segment)
-				} else {
-					timeSegments.Segments.UpdateByIndex(i, segment)
-				}
-			}
-		}
-		if int(ev.EndTime/1000000000-timeSegments.BaseTime) < 0 {
-			return nil
-		}
-		// 开始时间基于baseTime的偏移量
-		startOffset := ev.StartTime/1000000000 - timeSegments.BaseTime
-		// 结束时间基于开始时间的偏移量
-		endOffset := ev.EndTime/1000000000 - ev.StartTime/1000000000
-		fmt.Println(startOffset)
-		fmt.Println(endOffset)
-		if startOffset > 0 {
-			for i := startOffset; i <= startOffset+endOffset; i++ {
-				var segment Segment
-				val, _ := timeSegments.Segments.GetByIndex(int(i))
-				if val == nil {
-					segment = *new(Segment)
-				} else {
-					segment = val.(Segment)
-				}
-
-				segment.JavaFutexEvents = append(segment.JavaFutexEvents, ev)
-				timeSegments.Segments.UpdateByIndex(int(i), segment)
-				ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = timeSegments
-			}
-		}
-	} else {
-		newTimeSegments := *new(TimeSegments)
-		newTimeSegments.Segments = NewCircleQueue(ca.cfg.GetSegmentSize() + 1)
-
-		newTimeSegments.BaseTime = ev.StartTime / 1000000000
-		ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = newTimeSegments
-		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
-			segment := *new(Segment)
-			newTimeSegments.Segments.Push(segment)
-		}
-		val, _ := newTimeSegments.Segments.GetByIndex(0)
-		segment := val.(Segment)
-		segment.JavaFutexEvents = append(segment.JavaFutexEvents, ev)
-		newTimeSegments.Segments.UpdateByIndex(0, segment)
-		ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = newTimeSegments
-
-	}
-	fmt.Println(222)
-	return nil
+	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
-func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) error {
+func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 	ev := new(CpuEvent)
 	for i := 0; i < int(event.ParamsNumber); i++ {
 		userAttributes := event.UserAttributes[i]
@@ -262,30 +151,30 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) error {
 			break
 		}
 	}
-	ev.Tinfo.Tid = event.Ctx.ThreadInfo.Tid
-	ev.Tinfo.Comm = event.Ctx.ThreadInfo.Comm
+	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+}
+
+var nanoToSeconds uint64 = 1e9
+
+func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName string, event TimedEvent) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
-	timeSegments, exist := ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid]
-	timeSegments.Pid = event.Ctx.ThreadInfo.Pid
-	profilePid, _ := strconv.Atoi(os.Getenv("profilepid"))
-	profilePid2 := uint32(profilePid)
+	timeSegments, exist := ca.cpuPidEvents[pid]
+	timeSegments.Pid = pid
+	timeSegments.Tid = tid
+	timeSegments.ThreadName = threadName
 	if exist {
-		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= ev.StartTime/1000000000 {
+		// The current segment is full
+		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= event.StartTimestamp()/nanoToSeconds {
 			clearSize := 0
-			if event.Ctx.ThreadInfo.Pid == profilePid2 {
-				ca.telemetry.Logger.Info("base_time_update", zap.Uint64("base_time_update_qian", timeSegments.BaseTime))
-			}
+
 			clearSize = ca.cfg.GetSegmentSize() / 2
 			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
-			if event.Ctx.ThreadInfo.Pid == profilePid2 {
-				ca.telemetry.Logger.Info("base_time_update", zap.Uint64("base_time_update", timeSegments.BaseTime))
-			}
 
 			for i := 0; i < clearSize; i++ {
 				val, _ := timeSegments.Segments.GetByIndex(i)
 				segment := val.(Segment)
-				segment.CpuEvents = make([]*CpuEvent, 0)
+				segment.makeTimedEventList(event.Kind())
 				if clearSize > ca.cfg.GetSegmentSize()/2 && i < ca.cfg.GetSegmentSize()/2 {
 					val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
 					segmentTmp := val.(Segment)
@@ -297,14 +186,15 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) error {
 				}
 			}
 		}
-
-		if int(ev.EndTime/1000000000-timeSegments.BaseTime) < 0 {
-			return nil
+		if int(event.EndTimestamp()/nanoToSeconds-timeSegments.BaseTime) < 0 {
+			return
 		}
 		// 开始时间基于baseTime的偏移量
-		startOffset := ev.StartTime/1000000000 - timeSegments.BaseTime
+		startOffset := event.StartTimestamp()/nanoToSeconds - timeSegments.BaseTime
 		// 结束时间基于开始时间的偏移量
-		endOffset := ev.EndTime/1000000000 - ev.StartTime/1000000000
+		endOffset := event.EndTimestamp()/nanoToSeconds - event.StartTimestamp()/nanoToSeconds
+		fmt.Println(startOffset)
+		fmt.Println(endOffset)
 		if startOffset > 0 {
 			for i := startOffset; i <= startOffset+endOffset; i++ {
 				var segment Segment
@@ -314,33 +204,27 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) error {
 				} else {
 					segment = val.(Segment)
 				}
-
-				segment.CpuEvents = append(segment.CpuEvents, ev)
+				segment.putTimedEvent(event)
 				timeSegments.Segments.UpdateByIndex(int(i), segment)
-				ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = timeSegments
+				ca.cpuPidEvents[pid] = timeSegments
 			}
 		}
 	} else {
 		newTimeSegments := *new(TimeSegments)
 		newTimeSegments.Segments = NewCircleQueue(ca.cfg.GetSegmentSize() + 1)
 
-		//for i := 0; i < defaultSegmentSize; i++ {
-		//	newTimeSegments.Segments[i].CpuEvents = make([]CpuEvent, 0)
-		//}
-		newTimeSegments.BaseTime = ev.StartTime / 1000000000
-		ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = newTimeSegments
+		newTimeSegments.BaseTime = event.StartTimestamp() / nanoToSeconds
+		ca.cpuPidEvents[pid] = newTimeSegments
 		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
 			segment := *new(Segment)
 			newTimeSegments.Segments.Push(segment)
 		}
 		val, _ := newTimeSegments.Segments.GetByIndex(0)
 		segment := val.(Segment)
-		segment.CpuEvents = append(segment.CpuEvents, ev)
+		segment.putTimedEvent(event)
 		newTimeSegments.Segments.UpdateByIndex(0, segment)
-		ca.cpuPidEvents[event.Ctx.ThreadInfo.Pid] = newTimeSegments
-
+		ca.cpuPidEvents[pid] = newTimeSegments
 	}
-	return nil
 }
 
 func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) error {
