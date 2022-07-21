@@ -3,12 +3,6 @@ package cpuanalyzer
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"os"
-	"strconv"
-	"time"
-
-	"go.uber.org/zap"
 )
 
 var SendChannel chan SendTriggerEvent
@@ -38,43 +32,36 @@ func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) {
 		for i := 0; i < 20; i++ {
 			val, _ := timeSegments.Segments.GetByIndex(i)
 			segment := val.(*Segment)
-			data, _ := json.Marshal(segment)
-			fmt.Println(string(data))
-			fmt.Println("--------------------------------")
 			ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 		}
+	}
+}
+
+func (ca *CpuAnalyzer) SendCircle() {
+	for {
+		sendContent := <-SendChannel
+		data, _ := json.Marshal(sendContent)
+		ca.telemetry.Logger.Sugar().Info("Receive a trace signal: %s", string(data))
+		ca.SendCpuEvent(sendContent.Pid, sendContent.StartTime, sendContent.SpendTime)
 	}
 }
 
 func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint64) error {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
+	ca.telemetry.Logger.Sugar().Infof("Will send cpu events for pid=%d, start_time=%d, duration=%d", pid, startTime, spendTime)
 
-	profilePid, _ := strconv.Atoi(os.Getenv("profilepid"))
-	profilePid2 := uint32(profilePid)
-	fmt.Println(profilePid2)
-	if pid == profilePid2 {
-		ca.telemetry.Logger.Info("time", zap.Uint64("start_time", startTime))
-		ca.telemetry.Logger.Info("time", zap.Uint64("end_time", spendTime))
-	} else {
-		return nil
-	}
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
+		ca.telemetry.Logger.Sugar().Infof("Not found the cpu events with the pid=%d", pid)
 		return nil
 	}
 	for _, timeSegments := range tidCpuEvents {
-		if pid == profilePid2 {
-			ca.telemetry.Logger.Info("base_time", zap.Uint64("base_time", timeSegments.BaseTime))
-		}
-		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) < startTime/nanoToSeconds || timeSegments.BaseTime > startTime/nanoToSeconds || pid != profilePid2 {
+		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) < startTime/nanoToSeconds || timeSegments.BaseTime > startTime/nanoToSeconds {
 			return nil
 		}
 
 		for i := 0; i < int(spendTime/nanoToSeconds)+1+2; i++ {
-			if pid == profilePid2 {
-				ca.telemetry.Logger.Info("base_time", zap.Int("key", i))
-			}
 			val, _ := timeSegments.Segments.GetByIndex(int(startTime/nanoToSeconds-timeSegments.BaseTime) + i - 1)
 			if val == nil {
 				continue
@@ -88,23 +75,4 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 		}
 	}
 	return nil
-}
-
-func (ca *CpuAnalyzer) SendCircle() {
-	for {
-		sendContent := <-SendChannel
-		data, _ := json.Marshal(sendContent)
-		fmt.Println(string(data))
-		ca.SendCpuEvent(sendContent.Pid, sendContent.StartTime, sendContent.SpendTime)
-	}
-
-}
-
-func (ca *CpuAnalyzer) SendTest() {
-	for {
-		for i := 0; i < 100000; i++ {
-			ca.SendCpuEventTest(uint32(i))
-		}
-		time.Sleep(5 * time.Second)
-	}
 }

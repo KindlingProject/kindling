@@ -2,7 +2,6 @@ package cpuanalyzer
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -58,22 +57,18 @@ func (ca *CpuAnalyzer) Start() error {
 	if err != nil {
 		ca.telemetry.Logger.Warn("new es client error", zap.Error(err))
 	}
-	fmt.Printf("Es return with code %d and version %s \n", code, info.Version.Number)
+	ca.telemetry.Logger.Sugar().Infof("Es return with code %d and version %s", code, info.Version.Number)
 	esversionCode, err := ca.esClient.ElasticsearchVersion(ca.cfg.GetEsHost())
 	if err != nil {
 		ca.telemetry.Logger.Warn("new es client error", zap.Error(err))
 	}
-	fmt.Printf("es version %s\n", esversionCode)
+	ca.telemetry.Logger.Sugar().Infof("es version %s\n", esversionCode)
 	//go ca.SendTest()
 	go ca.SendCircle()
 	return nil
 }
 
 func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
-	if event.Name != "cpu_event" {
-		fmt.Println(event.Name)
-	}
-
 	if event.Name == "cpu_event" {
 		ca.ConsumeCpuEvent(event)
 	} else if event.Name == "java_futex_info" {
@@ -85,13 +80,10 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 	ev := new(JavaFutexEvent)
 	ev.StartTime = event.Timestamp
-	fmt.Println(event.ParamsNumber)
 	for i := 0; i < int(event.ParamsNumber); i++ {
 		userAttributes := event.UserAttributes[i]
 		switch {
 		case userAttributes.GetKey() == "end_time":
-			fmt.Println("end_time:")
-			fmt.Println(string(userAttributes.GetValue()))
 			ev.EndTime, _ = strconv.ParseUint(string(userAttributes.GetValue()), 10, 64)
 			break
 		case userAttributes.GetKey() == "data":
@@ -181,8 +173,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		startOffset := event.StartTimestamp()/nanoToSeconds - timeSegments.BaseTime
 		// 结束时间基于开始时间的偏移量
 		endOffset := event.EndTimestamp()/nanoToSeconds - event.StartTimestamp()/nanoToSeconds
-		fmt.Println(startOffset)
-		fmt.Println(endOffset)
 		if startOffset > 0 {
 			for i := startOffset; i <= startOffset+endOffset; i++ {
 				var segment *Segment
