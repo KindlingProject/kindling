@@ -33,12 +33,11 @@ const (
 )
 
 type CpuAnalyzer struct {
-	cfg                *Config
-	cpuPidEvents       map[uint32]TimeSegments
-	javaFutexPidEvents map[uint32]TimeSegments
-	lock               sync.Mutex
-	esClient           *elastic.Client
-	telemetry          *component.TelemetryTools
+	cfg          *Config
+	cpuPidEvents map[uint32]map[uint32]TimeSegments
+	lock         sync.Mutex
+	esClient     *elastic.Client
+	telemetry    *component.TelemetryTools
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -55,8 +54,7 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		cfg:       config,
 		telemetry: telemetry,
 	}
-	ca.cpuPidEvents = make(map[uint32]TimeSegments, 100000)
-	ca.javaFutexPidEvents = make(map[uint32]TimeSegments, 100000)
+	ca.cpuPidEvents = make(map[uint32]map[uint32]TimeSegments, 100000)
 	SendChannel = make(chan SendContent, 3e5)
 	return ca
 }
@@ -159,10 +157,12 @@ var nanoToSeconds uint64 = 1e9
 func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName string, event TimedEvent) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
-	timeSegments, exist := ca.cpuPidEvents[pid]
-	timeSegments.Pid = pid
-	timeSegments.Tid = tid
-	timeSegments.ThreadName = threadName
+	tidCpuEvents, exist := ca.cpuPidEvents[pid]
+	if !exist {
+		tidCpuEvents = make(map[uint32]TimeSegments)
+		ca.cpuPidEvents[pid] = tidCpuEvents
+	}
+	timeSegments, exist := tidCpuEvents[tid]
 	if exist {
 		// The current segment is full
 		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= event.StartTimestamp()/nanoToSeconds {
@@ -206,45 +206,48 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				}
 				segment.putTimedEvent(event)
 				timeSegments.Segments.UpdateByIndex(int(i), segment)
-				ca.cpuPidEvents[pid] = timeSegments
+				tidCpuEvents[tid] = timeSegments
 			}
 		}
 	} else {
-		newTimeSegments := *new(TimeSegments)
-		newTimeSegments.Segments = NewCircleQueue(ca.cfg.GetSegmentSize() + 1)
-
-		newTimeSegments.BaseTime = event.StartTimestamp() / nanoToSeconds
-		ca.cpuPidEvents[pid] = newTimeSegments
+		newTimeSegments := TimeSegments{
+			Pid:      pid,
+			Tid:      tid,
+			BaseTime: event.StartTimestamp() / nanoToSeconds,
+			Segments: NewCircleQueue(ca.cfg.GetSegmentSize() + 1),
+		}
 		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
-			segment := *new(Segment)
+			segment := &Segment{
+				Pid:        pid,
+				Tid:        tid,
+				ThreadName: threadName,
+			}
 			newTimeSegments.Segments.Push(segment)
 		}
 		val, _ := newTimeSegments.Segments.GetByIndex(0)
 		segment := val.(Segment)
 		segment.putTimedEvent(event)
-		newTimeSegments.Segments.UpdateByIndex(0, segment)
-		ca.cpuPidEvents[pid] = newTimeSegments
+		tidCpuEvents[pid] = newTimeSegments
 	}
 }
 
-func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) error {
+func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) {
 	ca.lock.Lock()
-	timeSegments, exist := ca.cpuPidEvents[pid]
-	if exist {
-
+	defer ca.lock.Unlock()
+	tidCpuEvents, exist := ca.cpuPidEvents[pid]
+	if !exist {
+		return
+	}
+	for _, timeSegments := range tidCpuEvents {
 		for i := 0; i < 20; i++ {
 			val, _ := timeSegments.Segments.GetByIndex(i)
 			segment := val.(Segment)
-			segment.Pid = pid
 			data, _ := json.Marshal(segment)
 			fmt.Println(string(data))
 			fmt.Println("--------------------------------")
 			ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 		}
-
 	}
-	defer ca.lock.Unlock()
-	return nil
 }
 
 func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint64) error {
@@ -260,36 +263,33 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 	} else {
 		return nil
 	}
-	timeSegments, exist := ca.cpuPidEvents[pid]
-	if exist {
+	tidCpuEvents, exist := ca.cpuPidEvents[pid]
+	if !exist {
+		return nil
+	}
+	for _, timeSegments := range tidCpuEvents {
 		if pid == profilePid2 {
 			ca.telemetry.Logger.Info("base_time", zap.Uint64("base_time", timeSegments.BaseTime))
 		}
-		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) < startTime/1000000000 || timeSegments.BaseTime > startTime/1000000000 || pid != profilePid2 {
+		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) < startTime/nanoToSeconds || timeSegments.BaseTime > startTime/nanoToSeconds || pid != profilePid2 {
 			return nil
 		}
 
-		for i := 0; i < int(spendTime/1000000000)+1+2; i++ {
+		for i := 0; i < int(spendTime/nanoToSeconds)+1+2; i++ {
 			if pid == profilePid2 {
 				ca.telemetry.Logger.Info("base_time", zap.Int("key", i))
 			}
-			val, _ := timeSegments.Segments.GetByIndex(int(startTime/1000000000-timeSegments.BaseTime) + i - 1)
+			val, _ := timeSegments.Segments.GetByIndex(int(startTime/nanoToSeconds-timeSegments.BaseTime) + i - 1)
 			if val == nil {
 				continue
 			}
 			segment := val.(Segment)
-			segment.Pid = pid
-			//data, _ := json.Marshal(segment)
-			//fmt.Println(string(data))
-			//fmt.Println("---------------send "+string(i)+"-----------------")
 			if segment.IsSend != 1 {
 				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 			}
 			segment.IsSend = 1
-			timeSegments.Segments.UpdateByIndex(int(startTime/1000000000-timeSegments.BaseTime)+i-1, segment)
+			timeSegments.Segments.UpdateByIndex(int(startTime/nanoToSeconds-timeSegments.BaseTime)+i-1, segment)
 		}
-		ca.cpuPidEvents[pid] = timeSegments
-
 	}
 	return nil
 }

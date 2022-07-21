@@ -14,16 +14,16 @@ type TimedEvent interface {
 }
 
 type TimeSegments struct {
-	Pid        uint32       `json:"pid"`
-	Tid        uint32       `json:"tid"`
-	ThreadName string       `json:threadName`
-	BaseTime   uint64       `json:"baseTime"`
-	Segments   *CircleQueue `json:"segments"`
+	Pid      uint32       `json:"pid"`
+	Tid      uint32       `json:"tid"`
+	BaseTime uint64       `json:"baseTime"`
+	Segments *CircleQueue `json:"segments"`
 }
 
 type Segment struct {
 	Pid             uint32       `json:"pid"`
 	Tid             uint32       `json:"tid"`
+	ThreadName      string       `json:"threadName"`
 	StartTime       uint64       `json:"startTime"`
 	EndTime         uint64       `json:"endTime"`
 	CpuEvents       []TimedEvent `json:"cpuEvents"`
