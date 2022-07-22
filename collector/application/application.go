@@ -3,6 +3,7 @@ package application
 import (
 	"flag"
 	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/analyzer/cpuanalyzer"
 
 	"github.com/Kindling-project/kindling/collector/analyzer"
@@ -12,6 +13,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
+	"github.com/Kindling-project/kindling/collector/consumer/exporter/esexporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/logexporter"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter/otelexporter"
 	"github.com/Kindling-project/kindling/collector/consumer/processor/aggregateprocessor"
@@ -84,6 +86,7 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterAnalyzer(loganalyzer.Type.String(), loganalyzer.New, &loganalyzer.Config{})
 	a.componentsFactory.RegisterProcessor(aggregateprocessor.Type, aggregateprocessor.New, aggregateprocessor.NewDefaultConfig())
 	a.componentsFactory.RegisterAnalyzer(tcpconnectanalyzer.Type.String(), tcpconnectanalyzer.New, tcpconnectanalyzer.NewDefaultConfig())
+	a.componentsFactory.RegisterExporter(esexporter.Type, esexporter.New, &esexporter.Config{})
 }
 
 func (a *Application) readInConfig(path string) error {
@@ -106,10 +109,12 @@ func (a *Application) buildPipeline() error {
 	// Initialize exporters
 	otelExporterFactory := a.componentsFactory.Exporters[otelexporter.Otel]
 	otelExporter := otelExporterFactory.NewFunc(otelExporterFactory.Config, a.telemetry.Telemetry)
+	esExporterFactory := a.componentsFactory.Exporters[esexporter.Type]
+	esExporter := esExporterFactory.NewFunc(esExporterFactory.Config, a.telemetry.Telemetry)
 	// Initialize all processors
 	// 1. DataGroup Aggregator
 	aggregateProcessorFactory := a.componentsFactory.Processors[aggregateprocessor.Type]
-	aggregateProcessor := aggregateProcessorFactory.NewFunc(aggregateProcessorFactory.Config, a.telemetry.Telemetry, otelExporter)
+	aggregateProcessor := aggregateProcessorFactory.NewFunc(aggregateProcessorFactory.Config, a.telemetry.Telemetry, esExporter)
 	// 2. Kubernetes metadata processor
 	k8sProcessorFactory := a.componentsFactory.Processors[k8sprocessor.K8sMetadata]
 	k8sMetadataProcessor := k8sProcessorFactory.NewFunc(k8sProcessorFactory.Config, a.telemetry.Telemetry, aggregateProcessor)
