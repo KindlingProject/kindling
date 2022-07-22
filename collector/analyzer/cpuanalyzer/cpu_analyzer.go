@@ -151,19 +151,13 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 			clearSize = ca.cfg.GetSegmentSize() / 2
 			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
 
-			for i := 0; i < clearSize; i++ {
-				val, _ := timeSegments.Segments.GetByIndex(i)
-				segment := val.(*Segment)
-				segment.makeTimedEventList(event.Kind())
-				if clearSize > ca.cfg.GetSegmentSize()/2 && i < ca.cfg.GetSegmentSize()/2 {
-					val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
-					segmentTmp := val.(*Segment)
-					timeSegments.Segments.UpdateByIndex(i, segmentTmp)
-				} else if clearSize > ca.cfg.GetSegmentSize()/2 && i >= ca.cfg.GetSegmentSize()/2 {
-					timeSegments.Segments.UpdateByIndex(i, segment)
-				} else {
-					timeSegments.Segments.UpdateByIndex(i, segment)
+			for i := 0; i < clearSize-1; i++ {
+				val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
+				segmentTmp := new(Segment)
+				if val != nil {
+					segmentTmp = val.(*Segment)
 				}
+				timeSegments.Segments.UpdateByIndex(i, segmentTmp)
 			}
 		}
 		if int(event.EndTimestamp()/nanoToSeconds-timeSegments.BaseTime) < 0 {

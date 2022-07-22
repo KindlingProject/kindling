@@ -71,7 +71,11 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 		}
 
 		for i := 0; i < int(spendTime/nanoToSeconds)+1+2; i++ {
-			val, _ := timeSegments.Segments.GetByIndex(int(startTime/nanoToSeconds-timeSegments.BaseTime) + i - 1)
+			index := int(startTime/nanoToSeconds-timeSegments.BaseTime) + i - 2
+			if index < 0 {
+				continue
+			}
+			val, _ := timeSegments.Segments.GetByIndex(index)
 			if val == nil {
 				continue
 			}
