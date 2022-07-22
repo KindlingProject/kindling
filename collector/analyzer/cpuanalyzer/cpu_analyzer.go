@@ -172,7 +172,13 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				var segment *Segment
 				val, _ := timeSegments.Segments.GetByIndex(int(i))
 				if val == nil {
-					segment = new(Segment)
+					segment = &Segment{
+						Pid:             pid,
+						Tid:             tid,
+						ThreadName:      threadName,
+						CpuEvents:       make([]TimedEvent, 0),
+						JavaFutexEvents: make([]TimedEvent, 0),
+					}
 				} else {
 					segment = val.(*Segment)
 				}
@@ -190,9 +196,11 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		}
 		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
 			segment := &Segment{
-				Pid:        pid,
-				Tid:        tid,
-				ThreadName: threadName,
+				Pid:             pid,
+				Tid:             tid,
+				ThreadName:      threadName,
+				CpuEvents:       make([]TimedEvent, 0),
+				JavaFutexEvents: make([]TimedEvent, 0),
 			}
 			newTimeSegments.Segments.Push(segment)
 		}

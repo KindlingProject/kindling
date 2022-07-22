@@ -2,6 +2,8 @@ package esexporter
 
 import (
 	"context"
+	"log"
+	"os"
 
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer/exporter"
@@ -27,8 +29,9 @@ func New(config interface{}, telemetry *component.TelemetryTools) exporter.Expor
 		config:    cfg,
 		telemetry: telemetry,
 	}
+	errorLog := log.New(os.Stdout, "app", log.LstdFlags)
 	var err error
-	ret.esClient, err = elastic.NewClient(elastic.SetURL(cfg.GetEsHost()), elastic.SetSniff(false))
+	ret.esClient, err = elastic.NewClient(elastic.SetErrorLog(errorLog), elastic.SetURL(cfg.GetEsHost()), elastic.SetSniff(false))
 	if err != nil {
 		telemetry.Logger.Error("new es client error", zap.Error(err))
 	}
@@ -58,6 +61,7 @@ func (e *EsExporter) Consume(dataGroup *model.DataGroup) error {
 }
 
 func (e *EsExporter) sendTrace(dataGroup *model.DataGroup) {
+	e.telemetry.Logger.Info("Will send a trace to ElasticSearch")
 	if e.esClient == nil {
 		return
 	}
@@ -70,7 +74,7 @@ func (e *EsExporter) sendTrace(dataGroup *model.DataGroup) {
 	for _, metric := range dataGroup.Metrics {
 		trace.Metrics[metric.Name] = metric.GetInt().Value
 	}
-	e.esClient.Index().Index("kindling_trace").BodyJson(trace).Do(context.Background())
+	e.esClient.Index().Index("kindling_trace").Type("_doc").BodyJson(trace).Do(context.Background())
 }
 
 type TraceData struct {

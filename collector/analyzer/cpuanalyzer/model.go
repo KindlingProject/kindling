@@ -36,7 +36,7 @@ func (s *Segment) makeTimedEventList(kind TimedEventKind) {
 	case TimedCpuEventKind:
 		s.CpuEvents = make([]TimedEvent, 0)
 	case TimedJavaFutexEventKind:
-		s.CpuEvents = make([]TimedEvent, 0)
+		s.JavaFutexEvents = make([]TimedEvent, 0)
 	}
 }
 
