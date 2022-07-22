@@ -3,6 +3,8 @@ package cpuanalyzer
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"strconv"
 )
 
 var SendChannel chan SendTriggerEvent
@@ -40,8 +42,15 @@ func (ca *CpuAnalyzer) SendCpuEventTest(pid uint32) {
 func (ca *CpuAnalyzer) SendCircle() {
 	for {
 		sendContent := <-SendChannel
+		profilePid := os.Getenv("profilepid")
+		if profilePid != "" {
+			pidInt, _ := strconv.ParseInt(profilePid, 10, 32)
+			if pidInt != int64(sendContent.Pid) {
+				continue
+			}
+		}
 		data, _ := json.Marshal(sendContent)
-		ca.telemetry.Logger.Sugar().Info("Receive a trace signal: %s", string(data))
+		ca.telemetry.Logger.Sugar().Infof("Receive a trace signal: %s", string(data))
 		ca.SendCpuEvent(sendContent.Pid, sendContent.StartTime, sendContent.SpendTime)
 	}
 }
@@ -67,11 +76,10 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 				continue
 			}
 			segment := val.(*Segment)
-			if segment.IsSend != 1 {
+			if segment.CpuEvents != nil && segment.IsSend != 1 {
+				segment.IsSend = 1
 				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 			}
-			segment.IsSend = 1
-			timeSegments.Segments.UpdateByIndex(int(startTime/nanoToSeconds-timeSegments.BaseTime)+i-1, segment)
 		}
 	}
 	return nil
