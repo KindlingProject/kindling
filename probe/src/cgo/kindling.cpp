@@ -178,31 +178,6 @@ int getEvent(void **pp_kindling_event)
 			return -1;
 		}
 	}
-
-	//string line;
-//	if(ev->get_type() == PPME_SYSCALL_FUTEX_X && threadInfo->m_tid == 7814) {
-//		cout<<"X:" <<ev->get_ts() << endl;
-//	}
-	string line;
-	if ((ev->get_type() == PPME_SYSCALL_WRITE_X) && formatter->tostring(ev, &line) && threadInfo->m_pid == 18135) {
-	    cout<< line << endl;
-	}
-    logCache->addLog(ev);
-	cpuConverter->Cache(ev);
-
-	uint16_t kindling_category = get_kindling_category(ev);
-
-	if(ev->get_type() == PPME_SYSCALL_READ_E && kindling_category== CAT_NET&& threadInfo->m_pid == 8395) {
-		if (formatter->tostring(ev, &line)) {
-			cout<< line << endl;
-		}
-	}
-	uint16_t ev_type = ev->get_type();
-	if(event_filters[ev_type][kindling_category] == 0)
-	{
-		return -1;
-	}
-
 	kindling_event_t_for_go *p_kindling_event;
 	if(nullptr == *pp_kindling_event)
 	{
@@ -222,11 +197,104 @@ int getEvent(void **pp_kindling_event)
 		}
 	}
 	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
+	uint16_t userAttNumber = 0;
+	//string line;
+//	if(ev->get_type() == PPME_SYSCALL_FUTEX_X && threadInfo->m_tid == 7814) {
+//		cout<<"X:" <<ev->get_ts() << endl;
+//	}
+	string line;
+	if ((ev->get_type() == PPME_SYSCALL_WRITE_X) && formatter->tostring(ev, &line) && threadInfo->m_pid == 29097) {
+	    cout<< line << endl;
+
+	}
+	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
+
+    logCache->addLog(ev);
+	cpuConverter->Cache(ev);
+	if(ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo!= nullptr && fdInfo->is_file() ){
+		auto data_param = ev->get_param_value_raw("data");
+		if (data_param != nullptr) {
+			char *data_val = data_param->m_val;
+			if (data_param->m_len > 3 && memcmp(data_val, "kd@", 3) == 0) {
+				cout << "bbbbbbbb" << data_val << endl;
+				char *start_time_char = new char(32);;
+				char *end_time_char = new char(32);
+				char *tid_char = new char(32);
+				int val_offset = 0;
+				int tmp_offset = 0;
+				for (int i = 3; i < data_param->m_len; i++) {
+					if (data_val[i] == '!') {
+						if (val_offset == 0) {
+							start_time_char[tmp_offset] = '\0';
+						} else if (val_offset == 1) {
+							end_time_char[tmp_offset] = '\0';
+						} else if (val_offset == 2) {
+							tid_char[tmp_offset] = '\0';
+							break;
+						}
+						tmp_offset = 0;
+						val_offset++;
+						continue;
+					}
+					if (val_offset == 0) {
+
+						start_time_char[tmp_offset] = data_val[i];
+					} else if (val_offset == 1) {
+
+						end_time_char[tmp_offset] = data_val[i];
+					} else if (val_offset == 2) {
+						tid_char[tmp_offset] = data_val[i];
+					} else {
+						break;
+					}
+					tmp_offset++;
+				}
+				p_kindling_event->timestamp = atol(start_time_char);
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
+					   to_string(atol(end_time_char)).data(), 19);
+				p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+				p_kindling_event->userAttributes[userAttNumber].len = 19;
+				userAttNumber++;
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "data");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value, data_val, data_param->m_len);
+				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+				p_kindling_event->userAttributes[userAttNumber].len = data_param->m_len;
+				userAttNumber++;
+//						if (atol(tid_char) == 15413) {
+//							cout << data_val << endl;
+//						}
+
+				strcpy(p_kindling_event->name, "java_futex_info");
+				p_kindling_event->context.tinfo.tid = atol(tid_char);
+				p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
+				p_kindling_event->paramsNumber = userAttNumber;
+				cout<<"cccc"<<endl;
+				return 1;
+			}
+		}
+
+
+	}
+	uint16_t kindling_category = get_kindling_category(ev);
+	ev->get_thread_info()->m_vpid
+	if(ev->get_type() == PPME_SYSCALL_READ_E && kindling_category== CAT_NET&& threadInfo->m_pid == 8395) {
+		if (formatter->tostring(ev, &line)) {
+			cout<< line << endl;
+		}
+	}
+	uint16_t ev_type = ev->get_type();
+	if(event_filters[ev_type][kindling_category] == 0)
+	{
+		return -1;
+	}
+
+
 	if (ev_type == PPME_CPU_ANALYSIS_E) {
 	    return cpuConverter->convert(p_kindling_event, ev);
 	}
 
-	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
+
 	p_kindling_event->timestamp = ev->get_ts();
 	p_kindling_event->category = kindling_category;
 	p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
@@ -285,7 +353,6 @@ int getEvent(void **pp_kindling_event)
 		}
 	}
 
-	uint16_t userAttNumber = 0;
 	switch(ev->get_type())
 	{
 	case PPME_TCP_RCV_ESTABLISHED_E:
@@ -482,6 +549,13 @@ uint16_t get_type(ppm_param_type type)
 	case PT_FDLIST:
 	default:
 		return BYTEBUF;
+	}
+}
+
+uint64_t pidVtidArr[4194304][4096]
+void put_pid_vtid_map(uint64_t pid, uint64_t tid, uint64_t vtid){
+	if(vtid<4096){
+		pidVtidArr[pid][vtid] = tid;
 	}
 }
 

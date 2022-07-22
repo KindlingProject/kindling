@@ -1,20 +1,21 @@
-#include "log_info.h"
 #include "sinsp.h"
 #include "log_info.h"
 #include "utils/ring_buffer.h"
 #include <cstdio>
+#include <cstring>
 
 LogData::LogData() {}
 
-LogData::~LogData() {}
+LogData::~LogData() {
+    string().swap(data_);
+}
 
 void LogData::setData(long ts, int64_t size, __u32 tid, char* data) {
     ts_ = ts;
     size_ = size;
     tid_ = tid;
     data_ = data;
-
-    //fprintf(stdout, "[Add Log] Time: %ld, Tid: %d, Data(%ld): %s\n", ts, tid, size, data);
+    // fprintf(stdout, "[Add Log] Time: %ld, Tid: %d, Data(%ld): %s\n", ts, tid, size, data);
 }
 
 long LogData::getTs() {
@@ -35,13 +36,7 @@ static void setLog(void* object, void* evt) {
 
     // Get Thread Id
     auto s_tinfo = sEvt->get_thread_info();
-    if (!s_tinfo) {
-        return;
-    }
     auto pres = sEvt->get_param_value_raw("res");
-    if (!pres || *(int64_t *) pres->m_val <= 0) {
-        return;
-    }
     auto pData = sEvt->get_param_value_raw("data");
 
     logData->setData(sEvt->get_ts(), *(int64_t *) pres->m_val, s_tinfo->m_tid, pData->m_val);
@@ -97,8 +92,10 @@ static void collectTidData(void* object, void* value) {
     pObject->CollectLogs(value);
 }
 
-LogCache::LogCache(int size, int cacheMs) {
-    logs_ = new BucketRingBuffers<LogData>(size, cacheMs);
+LogCache::LogCache(int size, int cacheSecond) {
+    long bucketTs = 10000000; // 10Ms
+    cacheBucketTime = (1000000000l * cacheSecond) / bucketTs;
+    logs_ = new BucketRingBuffers<LogData>(size, bucketTs);
 }
 
 LogCache::~LogCache() {
@@ -129,7 +126,20 @@ bool LogCache::addLog(void *evt) {
         return false;
     }
     
-    logs_->add(sEvt->get_ts(), evt, setLog);
+    // Get Thread Id
+    auto s_tinfo = sEvt->get_thread_info();
+    if (!s_tinfo) {
+        return false;
+    }
+    auto pres = sEvt->get_param_value_raw("res");
+    if (!pres || *(int64_t *) pres->m_val <= 0) {
+        return false;
+    }
+    count++;
+    logs_->addAndExpire(sEvt->get_ts(), cacheBucketTime, evt, setLog);
+    if (count % 10000 == 0) {
+        fprintf(stdout, "Log Count: %d # %ld\n", logs_->size(), count);
+    }
     return true;
 }
 

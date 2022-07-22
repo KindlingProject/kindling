@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cstdio>
 #include <iostream>
 #include <list>
-
 typedef void(*callback) (void*, void*);
 typedef void(*setData) (void*, void*);
 typedef long(*getTime) (void*);
@@ -159,12 +159,17 @@ class BucketCache {
             bucket->clearRingBuffer();
             m_buckets.push_back(bucket);
         }
+
+        int size() {
+            return m_buckets.size();
+        }
 };
 
 template <typename Data>
 class BucketRingBuffers {
     private:
         int m_size;
+        int m_ring_count;
         long m_bucket_period;
         std::list<Bucket<Data>*> m_buckets;
         RingBuffer<Data> *m_big_ring;
@@ -178,6 +183,7 @@ class BucketRingBuffers {
     public:
         BucketRingBuffers(int size, long bucket_period):m_size(size), m_bucket_period(bucket_period) {
             m_buckets = {};
+            m_ring_count = 1;
             m_big_ring = new RingBuffer<Data>(size);
             m_bucket_cache = new BucketCache<Data>();
         }
@@ -200,6 +206,8 @@ class BucketRingBuffers {
                     if (m_big_ring->isEmpty()) {
                         newBuffer = m_big_ring;
                     } else {
+                        m_ring_count++;
+                        fprintf(stdout, "## New RingBuffer %ld (%d), Alive Count: %d\n", m_buckets.size(), m_bucket_cache->size(), m_ring_count);
                         newBuffer = new RingBuffer<Data>(m_size / 2);
                     }
                     addBucket(newBuffer, bucketTs, value, setFn);
@@ -230,12 +238,13 @@ class BucketRingBuffers {
                     if (bucket->getRingBuffer()->isEmpty()) {
                         if (bucket->getRingBuffer() != m_big_ring) {
                             delete bucket->getRingBuffer();
+                            m_ring_count--;
+                            fprintf(stdout, "## Remove RingBuffer %ld (%d), Alive Count: %d\n", m_buckets.size(), m_bucket_cache->size(), m_ring_count);
                         }
                     }
                     m_bucket_cache->returnBucket(bucket);
                 } else {
-                    //it++;
-					return;
+                    return;
                 }
             }
         }
