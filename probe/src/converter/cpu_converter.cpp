@@ -53,7 +53,6 @@ bool cpu_converter::Cache(sinsp_evt *sevt) {
 	if (s_fdinfo == nullptr && type != PPME_SYSCALL_FUTEX_E && type != PPME_SYSCALL_FUTEX_X) {
 		return false;
 	}
-
 	if (PPME_IS_ENTER(type)) {
 		if (type == PPME_SYSCALL_FUTEX_E) {
 			info = new futex_info();
@@ -107,53 +106,53 @@ bool cpu_converter::Cache(sinsp_evt *sevt) {
 			case SCAP_FD_FILE:
 			case SCAP_FD_FILE_V2: {
 				info = new file_info();
-				auto data_param = sevt->get_param_value_raw("data");
-				cout << data_param->m_val << endl;
-				if (cat.m_category == EC_IO_WRITE && data_param != nullptr) {
-					char *data_val = data_param->m_val;
-					if (data_param->m_len > 3 && memcmp(data_val, "kd@", 3) == 0) {
-						info = new java_futex_info();
-						char *start_time_char = new char(32);;
-						char *end_time_char = new char(32);
-						char *tid_char = new char(32);
-						int val_offset = 0;
-						int tmp_offset = 0;
-						for (int i = 3; i < data_param->m_len; i++) {
-							if (data_val[i] == '!') {
-								if (val_offset == 0) {
-									start_time_char[tmp_offset] = '\0';
-								} else if (val_offset == 1) {
-									end_time_char[tmp_offset] = '\0';
-								} else if (val_offset == 2) {
-									tid_char[tmp_offset] = '\0';
-									break;
-								}
-								tmp_offset = 0;
-								val_offset++;
-								continue;
-							}
-							if (val_offset == 0) {
-
-								start_time_char[tmp_offset] = data_val[i];
-							} else if (val_offset == 1) {
-
-								end_time_char[tmp_offset] = data_val[i];
-							} else if (val_offset == 2) {
-								tid_char[tmp_offset] = data_val[i];
-							} else {
-								break;
-							}
-							tmp_offset++;
-						}
-						info->start_time = atol(start_time_char);
-						info->end_time = atol(end_time_char);
-						info->value = data_val;
-//						if (atol(tid_char) == 18160) {
-//							cout << data_val << endl;
+//				auto data_param = sevt->get_param_value_raw("data");
+//				if (cat.m_category == EC_IO_WRITE && data_param != nullptr) {
+//					char *data_val = data_param->m_val;
+//					if (data_param->m_len > 3 && memcmp(data_val, "kd@", 3) == 0) {
+//						cout<<"bbbbbbbb"<<data_val<<endl;
+//						info = new java_futex_info();
+//						char *start_time_char = new char(32);;
+//						char *end_time_char = new char(32);
+//						char *tid_char = new char(32);
+//						int val_offset = 0;
+//						int tmp_offset = 0;
+//						for (int i = 3; i < data_param->m_len; i++) {
+//							if (data_val[i] == '!') {
+//								if (val_offset == 0) {
+//									start_time_char[tmp_offset] = '\0';
+//								} else if (val_offset == 1) {
+//									end_time_char[tmp_offset] = '\0';
+//								} else if (val_offset == 2) {
+//									tid_char[tmp_offset] = '\0';
+//									break;
+//								}
+//								tmp_offset = 0;
+//								val_offset++;
+//								continue;
+//							}
+//							if (val_offset == 0) {
+//
+//								start_time_char[tmp_offset] = data_val[i];
+//							} else if (val_offset == 1) {
+//
+//								end_time_char[tmp_offset] = data_val[i];
+//							} else if (val_offset == 2) {
+//								tid_char[tmp_offset] = data_val[i];
+//							} else {
+//								break;
+//							}
+//							tmp_offset++;
 //						}
-						return java_futex_cache->setInfo(atol(tid_char), info);
-					}
-				}
+//						info->start_time = atol(start_time_char);
+//						info->end_time = atol(end_time_char);
+//						info->value = data_val;
+////						if (atol(tid_char) == 15413) {
+////							cout << data_val << endl;
+////						}
+//						return java_futex_cache->setInfo(atol(tid_char), info);
+//					}
+//				}
 				break;
 			}
 			case SCAP_FD_IPV4_SOCK:
@@ -373,9 +372,6 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 		if (off_type[i] == 3) {
 			java_futex_info.append(java_futex_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
 			java_futex_info.append("|");
-			if (s_tinfo->m_tid == 18160) {
-				cout << java_futex_info << endl;
-			}
 		}
 
 	}
