@@ -73,14 +73,14 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 		for i := 0; i < int(spendTime/nanoToSeconds)+1+2; i++ {
 			index := int(startTime/nanoToSeconds-timeSegments.BaseTime) + i - 2
 			if index < 0 {
-				continue
+				index = 0
 			}
 			val, _ := timeSegments.Segments.GetByIndex(index)
 			if val == nil {
 				continue
 			}
 			segment := val.(*Segment)
-			if segment.CpuEvents != nil && segment.IsSend != 1 {
+			if len(segment.CpuEvents) != 0 && segment.IsSend != 1 {
 				segment.IsSend = 1
 				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 			}
