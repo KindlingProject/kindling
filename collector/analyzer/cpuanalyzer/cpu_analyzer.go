@@ -79,9 +79,6 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 
 func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 	ev := new(JavaFutexEvent)
-	ev.Pid = event.GetPid()
-	ev.Tid = event.Ctx.ThreadInfo.GetTid()
-	ev.Comm = event.Ctx.ThreadInfo.Comm
 	ev.StartTime = event.Timestamp
 	for i := 0; i < int(event.ParamsNumber); i++ {
 		userAttributes := event.UserAttributes[i]
@@ -97,14 +94,11 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 		}
 	}
 	ca.telemetry.Logger.Sugar().Infof("Receive a java futex event, %v", ev)
-	ca.PutEventToSegments(ev.Pid, ev.Tid, ev.Comm, ev)
+	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
 func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 	ev := new(CpuEvent)
-	ev.Pid = event.GetPid()
-	ev.Tid = event.Ctx.ThreadInfo.GetTid()
-	ev.Comm = event.Ctx.ThreadInfo.Comm
 	for i := 0; i < int(event.ParamsNumber); i++ {
 		userAttributes := event.UserAttributes[i]
 		switch {
@@ -136,7 +130,7 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 			break
 		}
 	}
-	ca.PutEventToSegments(ev.Pid, ev.Tid, ev.Comm, ev)
+	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
 var nanoToSeconds uint64 = 1e9
@@ -221,7 +215,7 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		val, _ := newTimeSegments.Segments.GetByIndex(0)
 		segment := val.(*Segment)
 		segment.putTimedEvent(event)
-		tidCpuEvents[pid] = newTimeSegments
+		tidCpuEvents[tid] = newTimeSegments
 	}
 }
 

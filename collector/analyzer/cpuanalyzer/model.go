@@ -61,9 +61,6 @@ func (s *Segment) getTimedEventList(kind TimedEventKind) []TimedEvent {
 }
 
 type CpuEvent struct {
-	Pid         uint32
-	Tid         uint32
-	Comm        string
 	StartTime   uint64 `json:"startTime"`
 	EndTime     uint64 `json:"endTime"`
 	TypeSpecs   string `json:"typeSpecs"`
@@ -87,9 +84,6 @@ func (c *CpuEvent) Kind() TimedEventKind {
 }
 
 type JavaFutexEvent struct {
-	Pid       uint32
-	Tid       uint32
-	Comm      string
 	StartTime uint64 `json:"startTime"`
 	EndTime   uint64 `json:"endTime"`
 	DataVal   string `json:"dataValue"`
