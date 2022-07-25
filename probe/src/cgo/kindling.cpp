@@ -202,11 +202,11 @@ int getEvent(void **pp_kindling_event)
 //	if(ev->get_type() == PPME_SYSCALL_FUTEX_X && threadInfo->m_tid == 7814) {
 //		cout<<"X:" <<ev->get_ts() << endl;
 //	}
-	string line;
-	if ((ev->get_type() == PPME_SYSCALL_WRITE_X) && formatter->tostring(ev, &line) && threadInfo->m_pid == 29097) {
-	    cout<< line << endl;
-
-	}
+//	string line;
+//	if ((ev->get_type() == PPME_SYSCALL_WRITE_X) && formatter->tostring(ev, &line) && threadInfo->m_pid == 7487) {
+//	    cout<< line << endl;
+//
+//	}
 	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
 
     logCache->addLog(ev);
@@ -277,12 +277,11 @@ int getEvent(void **pp_kindling_event)
 
 	}
 	uint16_t kindling_category = get_kindling_category(ev);
-	ev->get_thread_info()->m_vpid
-	if(ev->get_type() == PPME_SYSCALL_READ_E && kindling_category== CAT_NET&& threadInfo->m_pid == 8395) {
-		if (formatter->tostring(ev, &line)) {
-			cout<< line << endl;
-		}
-	}
+//	if(ev->get_type() == PPME_SYSCALL_READ_E && kindling_category== CAT_NET&& threadInfo->m_pid == 8395) {
+//		if (formatter->tostring(ev, &line)) {
+//			cout<< line << endl;
+//		}
+//	}
 	uint16_t ev_type = ev->get_type();
 	if(event_filters[ev_type][kindling_category] == 0)
 	{
@@ -552,12 +551,6 @@ uint16_t get_type(ppm_param_type type)
 	}
 }
 
-uint64_t pidVtidArr[4194304][4096]
-void put_pid_vtid_map(uint64_t pid, uint64_t tid, uint64_t vtid){
-	if(vtid<4096){
-		pidVtidArr[pid][vtid] = tid;
-	}
-}
 
 uint16_t get_kindling_category(sinsp_evt *sEvt)
 {
