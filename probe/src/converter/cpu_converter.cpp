@@ -216,7 +216,6 @@ int cpu_converter::add_threadinfo(kindling_event_t_for_go *p_kindling_event, sin
 	}
 	p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
 	p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
-	strcpy(p_kindling_event->context.tinfo.comm, (char *) threadInfo->m_comm.data());
 	strcpy(p_kindling_event->context.tinfo.containerId, (char *) threadInfo->m_container_id.data());
 
 	return 0;
