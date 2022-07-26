@@ -154,15 +154,19 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 
 			for i := 0; i < clearSize-1; i++ {
 				val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
-				segmentTmp := new(Segment)
 				if val != nil {
-					segmentTmp = val.(*Segment)
-					old := val.(*Segment)
-					old.StartTime = (timeSegments.BaseTime + uint64(i+clearSize)) * nanoToSeconds
-					old.EndTime = (timeSegments.BaseTime + uint64(i+clearSize+1)) * nanoToSeconds
-					timeSegments.Segments.UpdateByIndex(i+ca.cfg.GetSegmentSize()/2, old)
+					timeSegments.Segments.UpdateByIndex(i, val)
 				}
-				timeSegments.Segments.UpdateByIndex(i, segmentTmp)
+				segmentTmp := &Segment{
+					Pid:             pid,
+					Tid:             tid,
+					StartTime:       (timeSegments.BaseTime + uint64(i+clearSize)) * nanoToSeconds,
+					EndTime:         (timeSegments.BaseTime + uint64(i+clearSize+1)) * nanoToSeconds,
+					ThreadName:      threadName,
+					CpuEvents:       make([]TimedEvent, 0),
+					JavaFutexEvents: make([]TimedEvent, 0),
+				}
+				timeSegments.Segments.UpdateByIndex(i+clearSize, segmentTmp)
 			}
 
 		}
@@ -181,6 +185,8 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 					segment = &Segment{
 						Pid:             pid,
 						Tid:             tid,
+						StartTime:       (timeSegments.BaseTime + uint64(i)) * nanoToSeconds,
+						EndTime:         (timeSegments.BaseTime + uint64(i+1)) * nanoToSeconds,
 						ThreadName:      threadName,
 						CpuEvents:       make([]TimedEvent, 0),
 						JavaFutexEvents: make([]TimedEvent, 0),
