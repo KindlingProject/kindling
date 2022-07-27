@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -215,7 +214,6 @@ func (na *NetworkAnalyzer) consumerUnFinishTrace() {
 							StartTime: mps.requests.getFirstTimestamp(),
 							SpendTime: uint64(4000000000),
 						}
-						fmt.Println("find metirc")
 						cpuanalyzer.SendChannel <- *sc
 					}
 				}

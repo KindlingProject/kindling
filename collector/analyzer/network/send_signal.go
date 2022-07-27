@@ -22,7 +22,6 @@ func checkSendSignalToCpuAnalyzer(data *model.DataGroup) {
 			StartTime: data.Timestamp,
 			SpendTime: uint64(duration.GetInt().Value),
 		}
-		fmt.Println("find metirc")
 		cpuanalyzer.ReceiveSendSignal(event)
 	}
 }

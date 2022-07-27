@@ -257,6 +257,10 @@ int getEvent(void **pp_kindling_event)
 				userAttNumber++;
 				strcpy(p_kindling_event->name, "java_futex_info");
 				p_kindling_event->context.tinfo.tid = atol(tid_char);
+				char* tmp_comm = ptid_comm[threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF)];
+				if(tmp_comm != "" && tmp_comm != nullptr){
+					strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
+				}
 				p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
 				p_kindling_event->paramsNumber = userAttNumber;
 				return 1;
@@ -465,7 +469,7 @@ int getEvent(void **pp_kindling_event)
 	}
 	p_kindling_event->paramsNumber = userAttNumber;
 	strcpy(p_kindling_event->name, (char *)ev->get_name());
-	char* tmp_comm = ptid_comm[threadInfo->m_pid<<32 & (threadInfo->m_tid & 0x0000FFFF)];
+	char* tmp_comm = ptid_comm[threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF)];
 	if(tmp_comm == "" || tmp_comm == nullptr){
 		tmp_comm = (char *)threadInfo->m_comm.data();
 	}
