@@ -10,6 +10,14 @@ void runForGo(){
 	init_probe();
 }
 
+void startPerf() {
+	start_perf();
+}
+
+void stopPerf() {
+	stop_perf();
+}
+
 int getKindlingEvent(void **kindlingEvent){
 	return getEvent(kindlingEvent);
 }

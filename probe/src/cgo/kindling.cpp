@@ -65,9 +65,12 @@ void sub_event(char *eventName, char *category)
 	}
 }
 
-void start_profiler(Profiler *prof) {
+void start_perf() {
     prof->Start();
+}
 
+void stop_perf() {
+	prof->Stop();
 }
 
 void init_probe()
@@ -136,9 +139,8 @@ void init_probe()
 		}
 		logCache = new LogCache(10000, 5);
         prof = new Profiler(5000, 10);
+		prof->SetMaxDepth(20);
         cpuConverter = new cpu_converter(inspector, prof, logCache);
-//		thread profile(start_profiler, prof);
-//		profile.detach();
 	}
 	catch(const exception &e)
 	{

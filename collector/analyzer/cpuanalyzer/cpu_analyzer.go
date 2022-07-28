@@ -126,6 +126,8 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 		case event.UserAttributes[i].GetKey() == "log":
 			ev.Log = string(userAttributes.GetValue())
 			break
+		case event.UserAttributes[i].GetKey() == "stack":
+			ev.Stack = string(userAttributes.GetValue())
 		default:
 			break
 		}
