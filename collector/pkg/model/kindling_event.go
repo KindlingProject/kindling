@@ -1,6 +1,12 @@
 package model
 
-import "encoding/json"
+import (
+	"fmt"
+	"math"
+	"strings"
+)
+
+var replacer = strings.NewReplacer("\n", "\\n", "\r", "\\r")
 
 type Source int32
 
@@ -236,11 +242,7 @@ var L4Proto_value = map[string]int32{
 	"RAW":     4,
 }
 
-func (m *KindlingEvent) String() string {
-	data, _ := json.Marshal(&m)
-	return string(data)
-}
-
+type UserAttributes [8]KeyValue
 type KindlingEvent struct {
 	Source Source
 	// Timestamp in nanoseconds at which the event were collected.
@@ -252,9 +254,27 @@ type KindlingEvent struct {
 	// Number of UserAttributes
 	ParamsNumber uint16
 	// User-defined Attributions of Kindling Event, now including latency for syscall.
-	UserAttributes [8]KeyValue
+	UserAttributes UserAttributes
 	// Context includes Thread information and Fd information.
 	Ctx Context
+}
+
+func (attrs UserAttributes) String() string {
+	var attrsStr strings.Builder
+	var block = false
+	attrsStr.WriteByte('[')
+	for _, attr := range attrs {
+		if attr.ValueType != ValueType_NONE {
+			if block {
+				attrsStr.WriteByte(' ')
+			} else {
+				block = true
+			}
+			attrsStr.WriteString(fmt.Sprint(attr))
+		}
+	}
+	attrsStr.WriteByte(']')
+	return attrsStr.String()
 }
 
 func (k *KindlingEvent) Reset() {
@@ -291,7 +311,7 @@ func (m *KindlingEvent) GetCategory() Category {
 }
 
 func (m *KindlingEvent) GetUserAttributes() *[8]KeyValue {
-	return &m.UserAttributes
+	return (*[8]KeyValue)(&m.UserAttributes)
 }
 
 func (m *KindlingEvent) GetCtx() *Context {
@@ -305,6 +325,37 @@ type KeyValue struct {
 	ValueType ValueType
 	// Value of Key in bytes, should be converted according to ValueType.
 	Value []byte
+}
+
+func (m KeyValue) String() string {
+	switch m.ValueType {
+	case ValueType_CHARBUF:
+		return fmt.Sprintf("%s:CHARBUF(%s)", m.Key, replacer.Replace(strings.ToValidUTF8(string(m.Value), "")))
+	case ValueType_BYTEBUF:
+		return fmt.Sprintf("%s:BYTEBUF(%s)", m.Key, replacer.Replace(strings.ToValidUTF8(string(m.Value), "")))
+	case ValueType_INT64:
+		fallthrough
+	case ValueType_INT32:
+		fallthrough
+	case ValueType_INT16:
+		fallthrough
+	case ValueType_INT8:
+		return fmt.Sprintf("%s:INT(%d)", m.Key, m.GetIntValue())
+	case ValueType_UINT64:
+		fallthrough
+	case ValueType_UINT32:
+		fallthrough
+	case ValueType_UINT16:
+		fallthrough
+	case ValueType_UINT8:
+		return fmt.Sprintf("%s:UINT(%d)", m.Key, m.GetUintValue())
+	case ValueType_FLOAT:
+		return fmt.Sprintf("%s:FLOAT(%f)", m.Key, math.Float32frombits(byteOrder.Uint32(m.Value)))
+	case ValueType_NONE:
+		return "none"
+	default:
+		return fmt.Sprintf("%s:UNKNOW(%s)", m.Key, string(m.Value))
+	}
 }
 
 func (m *KeyValue) GetKey() string {
@@ -409,6 +460,8 @@ func (m *Thread) GetContainerName() string {
 	return ""
 }
 
+type IP []uint32
+
 type Fd struct {
 	// FD number.
 	Num int32
@@ -421,8 +474,8 @@ type Fd struct {
 	Protocol L4Proto
 	// repeated for ipv6, client_ip[0] for ipv4
 	Role  bool
-	Sip   []uint32
-	Dip   []uint32
+	Sip   IP
+	Dip   IP
 	Sport uint32
 	Dport uint32
 	// if FD is type of unix_sock
@@ -430,6 +483,14 @@ type Fd struct {
 	Source uint64
 	// Destination socket endpoint
 	Destination uint64
+}
+
+func (i IP) String() string {
+	if len(i) > 0 {
+		return IPLong2String(i[0])
+	} else {
+		return ""
+	}
 }
 
 func (m *Fd) GetNum() int32 {

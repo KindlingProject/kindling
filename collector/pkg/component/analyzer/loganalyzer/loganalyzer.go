@@ -1,6 +1,8 @@
 package loganalyzer
 
 import (
+	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
@@ -34,7 +36,7 @@ func (a *LogAnalyzer) Start() error {
 
 func (a *LogAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if ce := a.telemetry.Logger.Check(zapcore.InfoLevel, ""); ce != nil {
-		a.telemetry.Logger.Debug("Receive event: " + event.String())
+		a.telemetry.Logger.Debug(fmt.Sprintf("Receive event: %+v", event))
 	}
 	for _, nextConsumer := range a.nextConsumers {
 		nextConsumer.Consume(&model.DataGroup{})
