@@ -82,7 +82,7 @@ void init_probe()
 	{
 		inspector = new sinsp();
 		inspector->set_hostname_and_port_resolution_mode(false);
-		inspector->set_snaplen(200);
+		inspector->set_snaplen(1000);
 
 		inspector->suppress_events_comm("containerd");
 		inspector->suppress_events_comm("dockerd");
@@ -212,10 +212,12 @@ int getEvent(void **pp_kindling_event)
 		auto data_param = ev->get_param_value_raw("data");
 		if (data_param != nullptr) {
 			char *data_val = data_param->m_val;
+//			if (data_param->m_len > 6 && memcmp(data_val, "kd-jf@", 6) == 0)
+//				cout<<data_val<<endl;
 			if (data_param->m_len > 6 && memcmp(data_val, "kd-jf@", 6) == 0) {
-				char *start_time_char = new char(32);;
-				char *end_time_char = new char(32);
-				char *tid_char = new char(32);
+				char *start_time_char = new char[32];
+				char *end_time_char = new char[32];
+				char *tid_char = new char[32];
 				int val_offset = 0;
 				int tmp_offset = 0;
 				for (int i = 6; i < data_param->m_len; i++) {
@@ -257,17 +259,18 @@ int getEvent(void **pp_kindling_event)
 				userAttNumber++;
 				strcpy(p_kindling_event->name, "java_futex_info");
 				p_kindling_event->context.tinfo.tid = atol(tid_char);
-				char* tmp_comm = ptid_comm[threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF)];
-				if(tmp_comm != "" && tmp_comm != nullptr){
-					strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
+				map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
+				if(key!=ptid_comm.end())
+				{
+					strcpy(p_kindling_event->context.tinfo.comm, key->second);
 				}
 				p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
 				p_kindling_event->paramsNumber = userAttNumber;
 				return 1;
 			}
 			if (data_param->m_len > 6 && memcmp(data_val, "kd-tm@", 6) == 0) {
-				char *comm_char = new char(64);
-				char *tid_char = new char(32);
+				char *comm_char = new char[64];
+				char *tid_char = new char[32];
 				int val_offset = 0;
 				int tmp_offset = 0;
 				for (int i = 6; i < data_param->m_len; i++) {
@@ -311,12 +314,15 @@ int getEvent(void **pp_kindling_event)
 
 
 	if (ev_type == PPME_CPU_ANALYSIS_E) {
-		char* tmp_comm = ptid_comm[threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF)];
-    	if(tmp_comm == "" || tmp_comm == nullptr){
-    		tmp_comm = (char *)threadInfo->m_comm.data();
-    	}else{
-    	    cout<<"gggggggggg------------gggggggg"<<(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF))<<tmp_comm<<endl;
-        }
+		char* tmp_comm;
+
+		map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
+		if(key!=ptid_comm.end())
+		{
+			tmp_comm = key->second;
+		}else {
+			tmp_comm = (char *)threadInfo->m_comm.data();
+		}
 
     	strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
 	    return cpuConverter->convert(p_kindling_event, ev);
@@ -469,8 +475,12 @@ int getEvent(void **pp_kindling_event)
 	}
 	p_kindling_event->paramsNumber = userAttNumber;
 	strcpy(p_kindling_event->name, (char *)ev->get_name());
-	char* tmp_comm = ptid_comm[threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF)];
-	if(tmp_comm == "" || tmp_comm == nullptr){
+	char* tmp_comm;
+	map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
+	if(key!=ptid_comm.end())
+	{
+		tmp_comm = key->second;
+	}else {
 		tmp_comm = (char *)threadInfo->m_comm.data();
 	}
 	strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
