@@ -11,10 +11,8 @@ func (p *prometheusExporter) Consume(dataGroup *model.DataGroup) error {
 		// no need consume
 		return nil
 	}
-	if ce := p.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a dataGroup: "); ce != nil {
-		ce.Write(
-			zap.String("dataGroup", dataGroup.String()),
-		)
+	if ce := p.telemetry.Logger.Check(zap.DebugLevel, ""); ce != nil {
+		p.telemetry.Logger.Debug("exporter receives a dataGroup: " + dataGroup.String())
 	}
 
 	if adapters, ok := p.adapters[dataGroup.Name]; ok {

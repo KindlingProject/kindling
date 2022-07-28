@@ -5,7 +5,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -34,10 +33,8 @@ func (a *LogAnalyzer) Start() error {
 }
 
 func (a *LogAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
-	if ce := a.telemetry.Logger.Check(zapcore.InfoLevel, "Receive event"); ce != nil {
-		ce.Write(
-			zap.String("event", event.String()),
-		)
+	if ce := a.telemetry.Logger.Check(zapcore.InfoLevel, ""); ce != nil {
+		a.telemetry.Logger.Debug("Receive event: " + event.String())
 	}
 	for _, nextConsumer := range a.nextConsumers {
 		nextConsumer.Consume(&model.DataGroup{})

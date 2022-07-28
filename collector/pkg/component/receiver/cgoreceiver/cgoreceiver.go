@@ -151,10 +151,8 @@ func If(condition bool, trueVal, falseVal interface{}) interface{} {
 }
 
 func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
-	if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, "Receive Event"); ce != nil {
-		ce.Write(
-			zap.String("event", evt.String()),
-		)
+	if ce := r.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
+		r.telemetry.Logger.Debug("Receive Event: " + evt.String())
 	}
 	analyzers := r.analyzerManager.GetConsumableAnalyzers(evt.Name)
 	if analyzers == nil || len(analyzers) == 0 {
