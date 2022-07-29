@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,8 +30,7 @@ func TestGetUintUserAttribute(t *testing.T) {
 					{Key: test.key, ValueType: test.valueType, Value: test.value},
 				},
 			}
-			fmt.Printf("%+v", event)
-			// assert.Equal(t, test.expect, event.GetUintUserAttribute(test.key))
+			assert.Equal(t, test.expect, event.GetUintUserAttribute(test.key))
 		})
 	}
 }
