@@ -83,8 +83,8 @@ func (t *TelemetryManager) SelectorOption(component string) TelemetryOption {
 	if len(t.Selector) == 0 {
 		return WithDebug(true)
 	}
-	for _, slectedComponent := range t.Selector {
-		if slectedComponent == component {
+	for _, selectedComponent := range t.Selector {
+		if selectedComponent == component {
 			return WithDebug(true)
 		}
 	}
