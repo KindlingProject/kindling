@@ -12,6 +12,7 @@ var lumberJackLogLevel zapcore.Level
 type Config struct {
 	ConsoleLogLevel  string             `mapstructure:"console_level"`
 	FileLogLevel     string             `mapstructure:"file_level"`
+	Selector         []string           `mapstructure:"debug_selector"`
 	LumberJackConfig *lumberjack.Logger `mapstructure:"file_rotation"`
 }
 

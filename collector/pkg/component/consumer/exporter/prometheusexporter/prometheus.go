@@ -62,7 +62,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			registry,
 			promhttp.HandlerOpts{
 				ErrorHandling: promhttp.ContinueOnError,
-				ErrorLog:      &promLogger{realLog: telemetry.Logger},
+				ErrorLog:      &promLogger{realLog: telemetry.GetZapLogger()},
 			},
 		),
 		// metricAggregationMap: cfg.MetricAggregationMap,

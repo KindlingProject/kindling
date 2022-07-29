@@ -11,7 +11,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"github.com/Kindling-project/kindling/collector/pkg/observability/logger"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
@@ -50,7 +49,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 		},
 	}
 
-	loggerInstance := logger.CreateConsoleLogger()
+	loggerInstance := component.NewDefaultTelemetryTools()
 	exporter, _ := newExporters(context.Background(), cfg, loggerInstance)
 
 	cont := controller.New(
@@ -64,7 +63,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 
 	cont.Start(context.Background())
 
-	ins := newInstrumentFactory(cont.Meter("test"), component.NewDefaultTelemetryTools().Logger, nil)
+	ins := newInstrumentFactory(cont.Meter("test"), component.NewDefaultTelemetryTools(), nil)
 
 	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
@@ -150,7 +149,7 @@ func makeTraceAsMetricGroup(requestLatency int64, timestamp uint64, dstIp string
 }
 
 func Test_instrumentFactory_recordTraceAsMetric(t *testing.T) {
-	ins := newInstrumentFactory(metric.Meter{}, component.NewDefaultTelemetryTools().Logger, nil)
+	ins := newInstrumentFactory(metric.Meter{}, component.NewDefaultTelemetryTools(), nil)
 	metricName := constnames.TraceAsMetric
 	var randTime int64
 	var timestamp uint64

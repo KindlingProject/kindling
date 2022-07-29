@@ -14,7 +14,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
-	"github.com/Kindling-project/kindling/collector/pkg/observability/logger"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
@@ -171,8 +170,8 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		},
 	}
 
-	logger := logger.CreateConsoleLogger()
-	exporter, _ := newExporters(context.Background(), cfg, logger)
+	telemetry := component.NewDefaultTelemetryTools()
+	exporter, _ := newExporters(context.Background(), cfg, telemetry)
 
 	cont := controller.New(
 		otelprocessor.NewFactory(simple.NewWithHistogramDistribution(
@@ -189,7 +188,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 		traceProvider:        nil,
 		defaultTracer:        nil,
 		customLabels:         nil,
-		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), logger, nil),
+		instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry, nil),
 		metricAggregationMap: cfg.MetricAggregationMap,
 		telemetry:            component.NewDefaultTelemetryTools(),
 		adapters: []adapter.Adapter{
@@ -204,7 +203,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 	}
 
 	if err := cont.Start(context.Background()); err != nil {
-		logger.Panic("failed to start controller:", zap.Error(err))
+		telemetry.Logger.Panic("failed to start controller:", zap.Error(err))
 	}
 	newSelfMetrics(otelexporter.telemetry.MeterProvider)
 

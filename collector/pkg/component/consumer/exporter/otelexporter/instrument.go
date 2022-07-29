@@ -8,12 +8,12 @@ import (
 
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
+	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/otel/metric"
 )
@@ -25,7 +25,7 @@ type instrumentFactory struct {
 	instruments  sync.Map
 	meter        metric.Meter
 	customLabels []attribute.KeyValue
-	logger       *zap.Logger
+	telemetry    *component.TelemetryTools
 
 	aggregator *defaultaggregator.DefaultAggregator
 
@@ -33,12 +33,12 @@ type instrumentFactory struct {
 	TcpRttMillsSelector   *aggregator.LabelSelectors
 }
 
-func newInstrumentFactory(meter metric.Meter, logger *zap.Logger, customLabels []attribute.KeyValue) *instrumentFactory {
+func newInstrumentFactory(meter metric.Meter, telemetry *component.TelemetryTools, customLabels []attribute.KeyValue) *instrumentFactory {
 	return &instrumentFactory{
 		instruments:  sync.Map{},
 		meter:        meter,
 		customLabels: customLabels,
-		logger:       logger,
+		telemetry:    telemetry,
 		aggregator: defaultaggregator.NewDefaultAggregator(&defaultaggregator.AggregatedConfig{
 			KindMap: map[string][]defaultaggregator.KindConfig{
 				constnames.TcpRttMetricName: {

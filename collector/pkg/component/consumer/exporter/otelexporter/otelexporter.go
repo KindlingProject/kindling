@@ -141,7 +141,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			traceProvider:        nil,
 			defaultTracer:        nil,
 			customLabels:         customLabels,
-			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry.Logger, customLabels),
+			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
 			adapters: []adapter.Adapter{
@@ -155,7 +155,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			},
 		}
 		go func() {
-			err := StartServer(exp, telemetry.Logger, cfg.PromCfg.Port)
+			err := StartServer(exp, telemetry, cfg.PromCfg.Port)
 			if err != nil {
 				telemetry.Logger.Warn("error starting otelexporter prometheus server: ", zap.Error(err))
 			}
@@ -172,7 +172,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			return nil
 		}
 
-		exporters, err := newExporters(context.Background(), cfg, telemetry.Logger)
+		exporters, err := newExporters(context.Background(), cfg, telemetry)
 		if err != nil {
 			telemetry.Logger.Panic("Error happened when creating otel exporter:", zap.Error(err))
 			return nil
@@ -208,7 +208,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			traceProvider:        tracerProvider,
 			defaultTracer:        tracer,
 			customLabels:         customLabels,
-			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry.Logger, customLabels),
+			instrumentFactory:    newInstrumentFactory(cont.Meter(MeterName), telemetry, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
 			adapters: []adapter.Adapter{
@@ -237,9 +237,9 @@ func (e *OtelExporter) findInstrumentKind(metricName string) (MetricAggregationK
 }
 
 // Crete new opentelemetry-go exporter.
-func newExporters(context context.Context, cfg *Config, logger *zap.Logger) (*OtelOutputExporters, error) {
+func newExporters(context context.Context, cfg *Config, telemetry *component.TelemetryTools) (*OtelOutputExporters, error) {
 	var retExporters *OtelOutputExporters
-	logger.Sugar().Infof("Initializing OpenTelemetry exporter whose type is %s", cfg.ExportKind)
+	telemetry.Logger.Sugar().Infof("Initializing OpenTelemetry exporter whose type is %s", cfg.ExportKind)
 	switch cfg.ExportKind {
 	case StdoutKindExporter:
 		metricExp, err := stdoutmetric.New(
