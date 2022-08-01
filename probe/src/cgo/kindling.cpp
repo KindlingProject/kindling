@@ -293,7 +293,7 @@ int getEvent(void **pp_kindling_event)
 					}
 					tmp_offset++;
 				}
-				cout<<(threadInfo->m_pid<<32 | (atol(tid_char)& 0xFFFFFFFF))<<comm_char<<endl;
+				//cout<<(threadInfo->m_pid<<32 | (atol(tid_char)& 0xFFFFFFFF))<<comm_char<<endl;
 				ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
 			}
 		}

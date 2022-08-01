@@ -1,14 +1,13 @@
 package cpuanalyzer
 
 const (
-	defaultSegmentSize      = 20
+	defaultSegmentSize = 40
 )
 
 type Config struct {
-	SegmentSize int `mapstructure:"segment_size"`
+	SegmentSize int    `mapstructure:"segment_size"`
 	EsHost      string `mapstructure:"es_host"`
 }
-
 
 func (cfg *Config) GetSegmentSize() int {
 	if cfg.SegmentSize > 0 {

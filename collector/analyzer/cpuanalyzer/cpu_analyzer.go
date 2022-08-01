@@ -2,11 +2,7 @@ package cpuanalyzer
 
 import (
 	"context"
-	"log"
-	"os"
-	"strconv"
-	"sync"
-
+	"fmt"
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
@@ -14,6 +10,10 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/olivere/elastic/v6"
 	"go.uber.org/zap"
+	"log"
+	"os"
+	"strconv"
+	"sync"
 )
 
 const (
@@ -95,6 +95,7 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 	}
 	ca.telemetry.Logger.Sugar().Infof("Receive a java futex event, %v", ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+	//ca.PutSegment(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
 func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
@@ -131,26 +132,62 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 		}
 	}
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+	//ca.PutSegment(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
 var nanoToSeconds uint64 = 1e9
+
+func (ca *CpuAnalyzer) PutSegment(pid uint32, tid uint32, threadName string, event TimedEvent) {
+	newTimeSegments := TimeSegments{
+		Pid:      pid,
+		Tid:      tid,
+		BaseTime: event.StartTimestamp() / nanoToSeconds,
+		Segments: NewCircleQueue(ca.cfg.GetSegmentSize() + 1),
+	}
+	segment := &Segment{
+		Pid:             pid,
+		Tid:             tid,
+		StartTime:       (newTimeSegments.BaseTime) * nanoToSeconds,
+		EndTime:         (newTimeSegments.BaseTime) * nanoToSeconds,
+		ThreadName:      threadName,
+		CpuEvents:       make([]TimedEvent, 0),
+		JavaFutexEvents: make([]TimedEvent, 0),
+	}
+	segment.putTimedEvent(event)
+	ca.SendSegment(*segment)
+}
 
 func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName string, event TimedEvent) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
+		if pid == 4777 {
+			fmt.Println("reset tidCpuEvents:" + strconv.Itoa(int(pid)))
+		}
 		tidCpuEvents = make(map[uint32]TimeSegments)
 		ca.cpuPidEvents[pid] = tidCpuEvents
 	}
 	timeSegments, exist := tidCpuEvents[tid]
 	if exist {
 		// The current segment is full
-		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= event.StartTimestamp()/nanoToSeconds {
+		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= event.StartTimestamp()/nanoToSeconds || event.EndTimestamp()/nanoToSeconds > timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) {
 			clearSize := 0
 
 			clearSize = ca.cfg.GetSegmentSize() / 2
 			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
+			//if tid == 24917 {
+			//	fmt.Println("-----------before clear----------")
+			//	fmt.Println(time.Now().Unix())
+			//	for i := 0; i < ca.cfg.GetSegmentSize() - 1; i++ {
+			//		val, _ := timeSegments.Segments.GetByIndex(i)
+			//		if val != nil {
+			//			sg := val.(*Segment)
+			//			fmt.Println("start:"+strconv.Itoa(int(sg.StartTime))+"   end:"+strconv.Itoa(int(sg.EndTime)))
+			//		}
+			//	}
+			//	fmt.Println("----------------------------------")
+			//}
 
 			for i := 0; i < clearSize-1; i++ {
 				val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
@@ -169,6 +206,18 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				timeSegments.Segments.UpdateByIndex(i+clearSize, segmentTmp)
 			}
 
+			//if tid == 24917 {
+			//	fmt.Println("-----------after clear----------")
+			//	for i := 0; i < ca.cfg.GetSegmentSize() - 1; i++ {
+			//		val, _ := timeSegments.Segments.GetByIndex(i)
+			//		if val != nil {
+			//			sg := val.(*Segment)
+			//			fmt.Println("start:"+strconv.Itoa(int(sg.StartTime))+"   end:"+strconv.Itoa(int(sg.EndTime)))
+			//		}
+			//	}
+			//	fmt.Println("----------------------------------")
+			//}
+
 		}
 		if int(event.EndTimestamp()/nanoToSeconds-timeSegments.BaseTime) < 0 {
 			return
@@ -177,28 +226,42 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		startOffset := event.StartTimestamp()/nanoToSeconds - timeSegments.BaseTime
 		// 结束时间基于开始时间的偏移量
 		endOffset := event.EndTimestamp()/nanoToSeconds - event.StartTimestamp()/nanoToSeconds
-		if startOffset > 0 {
-			for i := startOffset; i <= startOffset+endOffset; i++ {
-				var segment *Segment
-				val, _ := timeSegments.Segments.GetByIndex(int(i))
-				if val == nil {
-					segment = &Segment{
-						Pid:             pid,
-						Tid:             tid,
-						StartTime:       (timeSegments.BaseTime + uint64(i)) * nanoToSeconds,
-						EndTime:         (timeSegments.BaseTime + uint64(i+1)) * nanoToSeconds,
-						ThreadName:      threadName,
-						CpuEvents:       make([]TimedEvent, 0),
-						JavaFutexEvents: make([]TimedEvent, 0),
-					}
-				} else {
-					segment = val.(*Segment)
-				}
-				segment.putTimedEvent(event)
-				timeSegments.Segments.UpdateByIndex(int(i), segment)
-				tidCpuEvents[tid] = timeSegments
+		if startOffset < 0 {
+			startOffset = 0
+			endOffset = event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime
+			if endOffset < 0 {
+				fmt.Println("start<end")
 			}
 		}
+		if tid == 4777 {
+			fmt.Println("-----------put----------")
+			fmt.Println("start:" + strconv.Itoa(int(event.StartTimestamp())) + "   end:" + strconv.Itoa(int(event.EndTimestamp())))
+			fmt.Println("----------------------------------")
+		}
+		for i := startOffset; i <= startOffset+endOffset; i++ {
+			var segment *Segment
+			val, _ := timeSegments.Segments.GetByIndex(int(i))
+			if val == nil {
+				segment = &Segment{
+					Pid:             pid,
+					Tid:             tid,
+					StartTime:       (timeSegments.BaseTime + uint64(i)) * nanoToSeconds,
+					EndTime:         (timeSegments.BaseTime + uint64(i+1)) * nanoToSeconds,
+					ThreadName:      threadName,
+					CpuEvents:       make([]TimedEvent, 0),
+					JavaFutexEvents: make([]TimedEvent, 0),
+				}
+			} else {
+				segment = val.(*Segment)
+			}
+			segment.putTimedEvent(event)
+			if tid == 4777 {
+				fmt.Println("basetime:" + strconv.Itoa(int(timeSegments.BaseTime)) + "    i:" + strconv.Itoa(int(i)))
+			}
+			timeSegments.Segments.UpdateByIndex(int(i), segment)
+			tidCpuEvents[tid] = timeSegments
+		}
+
 	} else {
 		newTimeSegments := TimeSegments{
 			Pid:      pid,
