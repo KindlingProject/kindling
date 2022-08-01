@@ -52,7 +52,7 @@ func New() (*Application, error) {
 }
 
 func (a *Application) Run() error {
-	err := a.analyzerManager.StartAll(a.telemetry.Logger)
+	err := a.analyzerManager.StartAll(a.telemetry.GetGlobalTelemetryTools().Logger)
 	if err != nil {
 		return fmt.Errorf("failed to start application: %v", err)
 	}
@@ -65,7 +65,7 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) Shutdown() error {
-	return multierr.Combine(a.receiver.Shutdown(), a.analyzerManager.ShutdownAll(a.telemetry.Logger))
+	return multierr.Combine(a.receiver.Shutdown(), a.analyzerManager.ShutdownAll(a.telemetry.GetGlobalTelemetryTools().Logger))
 }
 
 func initFlags() error {

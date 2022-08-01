@@ -239,7 +239,7 @@ func (e *OtelExporter) findInstrumentKind(metricName string) (MetricAggregationK
 // Crete new opentelemetry-go exporter.
 func newExporters(context context.Context, cfg *Config, telemetry *component.TelemetryTools) (*OtelOutputExporters, error) {
 	var retExporters *OtelOutputExporters
-	telemetry.Logger.Sugar().Infof("Initializing OpenTelemetry exporter whose type is %s", cfg.ExportKind)
+	telemetry.Logger.Infof("Initializing OpenTelemetry exporter whose type is %s", cfg.ExportKind)
 	switch cfg.ExportKind {
 	case StdoutKindExporter:
 		metricExp, err := stdoutmetric.New(

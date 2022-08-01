@@ -15,14 +15,14 @@ func StartServer(exporter *prometheus.Exporter, telemetry *component.TelemetryTo
 		Handler: http.DefaultServeMux,
 	}
 
-	telemetry.Logger.Sugar().Infof("Prometheus Server listening at port: [%s]", port)
+	telemetry.Logger.Infof("Prometheus Server listening at port: [%s]", port)
 	err := srv.ListenAndServe()
 
 	if err != nil && err != http.ErrServerClosed {
 		return err
 	}
 
-	telemetry.Logger.Sugar().Infof("Prometheus gracefully shutdown the http server...\n")
+	telemetry.Logger.Infof("Prometheus gracefully shutdown the http server...\n")
 
 	return nil
 }

@@ -62,7 +62,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			registry,
 			promhttp.HandlerOpts{
 				ErrorHandling: promhttp.ContinueOnError,
-				ErrorLog:      &promLogger{realLog: telemetry.GetZapLogger()},
+				ErrorLog:      &promLogger{realLog: telemetry.Logger},
 			},
 		),
 		// metricAggregationMap: cfg.MetricAggregationMap,
@@ -118,10 +118,10 @@ func (p *prometheusExporter) Start(_ context.Context) error {
 }
 
 type promLogger struct {
-	realLog *zap.Logger
+	realLog *component.TelemetryLogger
 }
 
-func newPromLogger(zapLog *zap.Logger) *promLogger {
+func newPromLogger(zapLog *component.TelemetryLogger) *promLogger {
 	return &promLogger{
 		realLog: zapLog,
 	}

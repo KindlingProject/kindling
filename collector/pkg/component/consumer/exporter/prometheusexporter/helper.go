@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -46,7 +47,7 @@ var commonLabels = []attribute.KeyValue{
 	attribute.String("instance", GetHostname()),
 }
 
-func GetCommonLabels(withUserInfo bool, logger *zap.Logger) []attribute.KeyValue {
+func GetCommonLabels(withUserInfo bool, logger *component.TelemetryLogger) []attribute.KeyValue {
 	var clusterId, userId string
 	var err error
 
