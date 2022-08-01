@@ -5,7 +5,7 @@
 
 ## Unreleased 
 ### Enhancements 
-- Improve log readability, and add an option name `debug_selector` to filter debug_log from different components ([#299](https://github.com/CloudDectective-Harmonycloud/kindling/pull/299))
+- Improve log readability, and add an option name `debug_selector` to filter debug_log from different components ([#300](https://github.com/CloudDectective-Harmonycloud/kindling/pull/300))
 - Print logs when subscribing to events. Print a warning message if there is no event the agent subscribes to. ([#290](https://github.com/CloudDectective-Harmonycloud/kindling/pull/290))
 - Allow the collector run in the non-Kubernetes environment by setting the option `enable` `false` under the `k8smetadataprocessor` section. ([#285](https://github.com/CloudDectective-Harmonycloud/kindling/pull/285))
 - Add a new environment variable: IS_PRINT_EVENT. When the value is true, sinsp events can be printed to the stdout. ([#283](https://github.com/CloudDectective-Harmonycloud/kindling/pull/283))
