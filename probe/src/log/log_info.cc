@@ -144,7 +144,6 @@ bool LogCache::addLog(void *evt) {
 }
 
 string LogCache::getLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods) {
-    __u64 start_time = 0, end_time = 0;
     __u64 size = periods.size();
     LogDatas *logDatas = new LogDatas(tid);
     // len@logs|len2@logs|0@|

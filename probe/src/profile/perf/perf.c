@@ -35,7 +35,6 @@ int perf(struct perfData *data) {
 
     struct perf_evlist *evlist;
 	struct perf_evsel *evsel;
-	struct perf_mmap *map;
 	struct perf_cpu_map *cpus;
 	struct perf_event_attr attr = {
         .size           = sizeof(struct perf_event_attr),
@@ -53,7 +52,6 @@ int perf(struct perfData *data) {
     uint64_t time_end;
     int time_left;
     int err = -1;
-    union perf_event *event;
 
 	libperf_init(libperf_print);
 	cpus = perf_cpu_map__new(NULL);

@@ -69,6 +69,7 @@ type CpuEvent struct {
 	OnInfo      string `json:"onInfo"`
 	OffInfo     string `json:"offInfo"`
 	Log         string `json:"log"`
+	Stack       string `json:"stack"`
 }
 
 func (c *CpuEvent) StartTimestamp() uint64 {

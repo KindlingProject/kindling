@@ -10,14 +10,15 @@ package cgoreceiver
 */
 import "C"
 import (
+	"sync"
+	"time"
+	"unsafe"
+
 	analyzerpackage "github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/model"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"sync"
-	"time"
-	"unsafe"
 
 	"github.com/Kindling-project/kindling/collector/receiver"
 )
@@ -72,6 +73,7 @@ func (r *CgoReceiver) Start() error {
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
 	go r.startGetEvent()
+	go r.startPerf()
 	return nil
 }
 
@@ -101,6 +103,20 @@ func (r *CgoReceiver) startGetEvent() {
 				r.eventCount++
 				r.eventChannel <- convertEvent((*CKindlingEventForGo)(pKindlingEvent))
 			}
+		}
+	}
+}
+
+func (r *CgoReceiver) startPerf() {
+	for {
+		select {
+		case <-r.stopCh:
+			C.stopPerf()
+			return
+		default:
+			r.telemetry.Logger.Info("Start Perf")
+			C.startPerf()
+			r.telemetry.Logger.Info("Finish Perf")
 		}
 	}
 }

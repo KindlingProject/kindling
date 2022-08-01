@@ -7,6 +7,8 @@
 #include "sinsp.h"
 
 void init_probe();
+void start_perf();
+void stop_perf();
 int getEvent(void **kindlingEvent);
 uint16_t get_kindling_category(sinsp_evt *sEvt);
 void init_sub_label();
