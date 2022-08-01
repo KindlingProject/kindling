@@ -21,7 +21,7 @@ func (a AttributeMap) MarshalJSON() ([]byte, error) {
 	return json.Marshal(a.values)
 }
 
-func (a AttributeMap) UnmarshalJSON(data []byte) error {
+func (a *AttributeMap) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &a.values)
 }
 
