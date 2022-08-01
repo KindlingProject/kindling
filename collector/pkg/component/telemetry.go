@@ -95,7 +95,8 @@ func (t *TelemetryManager) getToolsWithOption(opts ...TelemetryOption) *Telemetr
 	newSubTool := &TelemetryTools{
 		MeterProvider: t.MeterProvider,
 		Logger: &TelemetryLogger{
-			Logger: t.Logger,
+			logger: t.Logger,
+			sugar:  t.Logger.Sugar(),
 		},
 	}
 
@@ -107,7 +108,8 @@ func (t *TelemetryManager) getToolsWithOption(opts ...TelemetryOption) *Telemetr
 }
 
 type TelemetryLogger struct {
-	*zap.Logger
+	logger      *zap.Logger
+	sugar       *zap.SugaredLogger
 	EnableDebug bool
 }
 
@@ -117,18 +119,46 @@ type TelemetryTools struct {
 }
 
 func (t *TelemetryTools) GetZapLogger() *zap.Logger {
-	return t.Logger.Logger
+	return t.Logger.logger
 }
 
 func (t *TelemetryLogger) Debug(msg string, fields ...zap.Field) {
 	if t.EnableDebug {
-		t.Logger.Debug(msg, fields...)
+		t.logger.Debug(msg, fields...)
 	}
+}
+
+func (t *TelemetryLogger) Info(msg string, fields ...zap.Field) {
+	t.logger.Info(msg, fields...)
+}
+
+func (t *TelemetryLogger) Warn(msg string, fields ...zap.Field) {
+	t.logger.Warn(msg, fields...)
+}
+
+func (t *TelemetryLogger) Error(msg string, fields ...zap.Field) {
+	t.logger.Error(msg, fields...)
+}
+
+func (t *TelemetryLogger) Panic(msg string, fields ...zap.Field) {
+	t.logger.Panic(msg, fields...)
+}
+
+func (t *TelemetryLogger) Infof(template string, args ...interface{}) {
+	t.sugar.Infof(template, args)
+}
+
+func (t *TelemetryLogger) Errorf(template string, args ...interface{}) {
+	t.sugar.Errorf(template, args)
+}
+
+func (t *TelemetryLogger) Panicf(template string, args ...interface{}) {
+	t.sugar.Panicf(template, args)
 }
 
 func (t *TelemetryLogger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	if t.EnableDebug {
-		return t.Logger.Check(lvl, msg)
+		return t.logger.Check(lvl, msg)
 	} else {
 		return nil
 	}
@@ -143,9 +173,11 @@ func WithDebug(enableDebug bool) TelemetryOption {
 }
 
 func NewDefaultTelemetryTools() *TelemetryTools {
+	logger := logger.CreateDefaultLogger()
 	return &TelemetryTools{
 		Logger: &TelemetryLogger{
-			Logger:      logger.CreateDefaultLogger(),
+			logger:      logger,
+			sugar:       logger.Sugar(),
 			EnableDebug: true,
 		},
 		MeterProvider: metric.NewNoopMeterProvider(),

@@ -22,17 +22,17 @@ func CreateCombineLogger(config *lumberjack.Logger) *zap.Logger {
 		ConfigConsoleOutput(ConsoleEncodingConfig, consoleLogLevel),
 		ConfigFileRotationOutput(lumberJackEncodingConfig, config, lumberJackLogLevel),
 	)
-	return zap.New(core).WithOptions(zap.AddCaller())
+	return zap.New(core).WithOptions(zap.AddCaller(), zap.AddCallerSkip(1))
 }
 
 func CreateConsoleLogger() *zap.Logger {
 	core := ConfigConsoleOutput(ConsoleEncodingConfig, consoleLogLevel)
-	return zap.New(core).WithOptions(zap.AddCaller())
+	return zap.New(core).WithOptions(zap.AddCaller(), zap.AddCallerSkip(1))
 }
 
 func CreateFileRotationLogger(config *lumberjack.Logger) *zap.Logger {
 	core := ConfigFileRotationOutput(lumberJackEncodingConfig, config, lumberJackLogLevel)
-	return zap.New(core).WithOptions(zap.AddCaller())
+	return zap.New(core).WithOptions(zap.AddCaller(), zap.AddCallerSkip(1))
 }
 
 func InitLogger(config Config) *zap.Logger {
