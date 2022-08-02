@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -63,21 +64,25 @@ func (g *DataGroup) RemoveMetric(name string) {
 	g.Metrics = newValues
 }
 
-func (g *DataGroup) String() string {
+func (g DataGroup) String() string {
 	var str strings.Builder
-	str.WriteString(fmt.Sprintf("GagugeGroup:\n"))
+	str.WriteString(fmt.Sprintln("DataGroup:"))
 	str.WriteString(fmt.Sprintf("\tName: %s\n", g.Name))
-	str.WriteString(fmt.Sprintf("\tValues: \n"))
+	str.WriteString(fmt.Sprintln("\tValues:"))
 	for _, v := range g.Metrics {
 		switch v.DataType() {
 		case IntMetricType:
-			str.WriteString(fmt.Sprintf("\t\t{Name: %s, Value: %d}\n", v.Name, v.GetInt().Value))
+			str.WriteString(fmt.Sprintf("\t\t\"%s\": %d\n", v.Name, v.GetInt().Value))
 		case HistogramMetricType:
 			histogram := v.GetHistogram()
-			str.WriteString(fmt.Sprintf("\t\t{Name: %s, Sum: %d, Count: %d,ExplicitBoundaries: %v,BucketCount: %v}\n", v.Name, histogram.Sum, histogram.Count, histogram.ExplicitBoundaries, histogram.BucketCounts))
+			str.WriteString(fmt.Sprintf("\t\t\"%s\": \n\t\t\tSum: %d\n\t\t\tCount: %d\n\t\t\tExplicitBoundaries: %v\n\t\t\tBucketCount: %v\n", v.Name, histogram.Sum, histogram.Count, histogram.ExplicitBoundaries, histogram.BucketCounts))
 		}
 	}
-	str.WriteString(fmt.Sprintf("\tLabels: %v\n", g.Labels))
+	if labelsStr, err := json.MarshalIndent(g.Labels, "\t", "\t"); err == nil {
+		str.WriteString(fmt.Sprintf("\tLabels:\n\t%v\n", string(labelsStr)))
+	} else {
+		str.WriteString(fmt.Sprintln("\tLabels: marshal Failed"))
+	}
 	str.WriteString(fmt.Sprintf("\tTimestamp: %d\n", g.Timestamp))
 	return str.String()
 }

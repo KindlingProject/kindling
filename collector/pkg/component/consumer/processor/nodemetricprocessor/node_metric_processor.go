@@ -59,10 +59,8 @@ func (p *NodeMetricProcessor) process(dataGroup *model.DataGroup, role string) e
 	dstNodeIp := labels.GetStringValue(constlabels.DstNodeIp)
 	srcNodeIp := labels.GetStringValue(constlabels.SrcNodeIp)
 	if dstNodeIp == "" || srcNodeIp == "" {
-		if ce := p.telemetry.Logger.Check(zapcore.DebugLevel, "dstNodeIp or srcNodeIp is empty which is not expected, skip: "); ce != nil {
-			ce.Write(
-				zap.String("dataGroup", dataGroup.String()),
-			)
+		if ce := p.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
+			p.telemetry.Logger.Debug("dstNodeIp or srcNodeIp is empty which is not expected, skip:\n" + dataGroup.String())
 		}
 		return nil
 	}

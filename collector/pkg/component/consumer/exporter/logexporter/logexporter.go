@@ -4,7 +4,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -22,9 +21,7 @@ func New(config interface{}, telemetry *component.TelemetryTools) exporter.Expor
 
 func (e *LogExporter) Consume(dataGroup *model.DataGroup) error {
 	if ce := e.telemetry.Logger.Check(zapcore.DebugLevel, "Receiver DataGroup"); ce != nil {
-		ce.Write(
-			zap.String("dataGroup", dataGroup.String()),
-		)
+		e.telemetry.Logger.Debug("Receiver DataGroup:\n " + dataGroup.String())
 	}
 	return nil
 }
