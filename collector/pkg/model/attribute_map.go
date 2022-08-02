@@ -17,6 +17,14 @@ type AttributeMap struct {
 	values map[string]AttributeValue
 }
 
+func (a AttributeMap) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.values)
+}
+
+func (a *AttributeMap) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &a.values)
+}
+
 func NewAttributeMap() *AttributeMap {
 	values := make(map[string]AttributeValue)
 	return &AttributeMap{values}
@@ -175,6 +183,14 @@ func (v *stringValue) Type() AttributeValueType {
 	return StringAttributeValueType
 }
 
+func (v stringValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(v.value)
+}
+
+func (v *stringValue) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &v.value)
+}
+
 func (v *stringValue) ToString() string {
 	return v.value
 }
@@ -195,6 +211,14 @@ func (v *intValue) ToString() string {
 	return strconv.FormatInt(v.value, 10)
 }
 
+func (v intValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(v.value)
+}
+
+func (v *intValue) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &v.value)
+}
+
 func (v *intValue) Reset() {
 	v.value = 0
 }
@@ -209,6 +233,14 @@ func (v *boolValue) Type() AttributeValueType {
 
 func (v *boolValue) ToString() string {
 	return strconv.FormatBool(v.value)
+}
+
+func (v boolValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(v.value)
+}
+
+func (v *boolValue) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &v.value)
 }
 
 func (v *boolValue) Reset() {
