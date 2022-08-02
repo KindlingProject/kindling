@@ -20,10 +20,8 @@ func (e *OtelExporter) Consume(dataGroup *model.DataGroup) error {
 	}
 
 	dataGroupReceiverCounter.Add(context.Background(), 1, attribute.String("name", dataGroup.Name))
-	if ce := e.telemetry.Logger.Check(zap.DebugLevel, "exporter receives a dataGroup: "); ce != nil {
-		ce.Write(
-			zap.String("dataGroup", dataGroup.String()),
-		)
+	if ce := e.telemetry.Logger.Check(zap.DebugLevel, ""); ce != nil {
+		e.telemetry.Logger.Debug("exporter receives a dataGroup: \n" + dataGroup.String())
 	}
 
 	for i := 0; i < len(e.adapters); i++ {
