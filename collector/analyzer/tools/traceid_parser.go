@@ -3,6 +3,10 @@ package tools
 import "strings"
 
 func ParseTraceHeader(headers map[string]string) (traceType string, traceId string) {
+	if harmonycloud, ok := headers["apm-transactionid"]; ok {
+		return "harmonycloud", harmonycloud
+	}
+
 	if zipkin, ok := headers["x-b3-traceid"]; ok {
 		return "zipkin", zipkin
 	}

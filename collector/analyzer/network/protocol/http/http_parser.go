@@ -33,8 +33,8 @@ func parseHeaders(message *protocol.PayloadMessage) map[string]string {
 		if data == nil {
 			return header
 		}
-		if position := strings.Index(string(data), ":"); position > 0 && position < len(data)-1 {
-			header[strings.ToLower(string(data[0:position]))] = string(data[position+1])
+		if position := strings.Index(string(data), ":"); position > 0 && position < len(data)-2 {
+			header[strings.ToLower(string(data[0:position]))] = string(data[position+2:])
 			continue
 		}
 		return header
