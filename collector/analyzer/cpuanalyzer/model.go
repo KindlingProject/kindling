@@ -5,6 +5,7 @@ type TimedEventKind int
 const (
 	TimedCpuEventKind TimedEventKind = iota
 	TimedJavaFutexEventKind
+	TimedTransactionIdEventKind
 )
 
 type TimedEvent interface {
@@ -28,35 +29,33 @@ type Segment struct {
 	EndTime         uint64       `json:"endTime"`
 	CpuEvents       []TimedEvent `json:"cpuEvents"`
 	JavaFutexEvents []TimedEvent `json:"javaFutexEvents"`
+	TransactionIds  []TimedEvent `json:"transactionIds"`
 	IsSend          int
+	IndexTimestamp  string `json:"indexTimestamp"`
 }
 
-func (s *Segment) makeTimedEventList(kind TimedEventKind) {
-	switch kind {
-	case TimedCpuEventKind:
-		s.CpuEvents = make([]TimedEvent, 0)
-	case TimedJavaFutexEventKind:
-		s.JavaFutexEvents = make([]TimedEvent, 0)
+func newSegment(pid uint32, tid uint32, threadName string, startTime uint64, endTime uint64) *Segment {
+	return &Segment{
+		Pid:             pid,
+		Tid:             tid,
+		ThreadName:      threadName,
+		StartTime:       startTime,
+		EndTime:         endTime,
+		CpuEvents:       make([]TimedEvent, 0),
+		JavaFutexEvents: make([]TimedEvent, 0),
+		TransactionIds:  make([]TimedEvent, 0),
+		IsSend:          0,
+		IndexTimestamp:  "",
 	}
 }
-
 func (s *Segment) putTimedEvent(event TimedEvent) {
 	switch event.Kind() {
 	case TimedCpuEventKind:
 		s.CpuEvents = append(s.CpuEvents, event)
 	case TimedJavaFutexEventKind:
 		s.JavaFutexEvents = append(s.JavaFutexEvents, event)
-	}
-}
-
-func (s *Segment) getTimedEventList(kind TimedEventKind) []TimedEvent {
-	switch kind {
-	case TimedCpuEventKind:
-		return s.CpuEvents
-	case TimedJavaFutexEventKind:
-		return s.JavaFutexEvents
-	default:
-		return []TimedEvent{}
+	case TimedTransactionIdEventKind:
+		s.TransactionIds = append(s.TransactionIds, event)
 	}
 }
 
@@ -100,4 +99,22 @@ func (j *JavaFutexEvent) EndTimestamp() uint64 {
 
 func (c *JavaFutexEvent) Kind() TimedEventKind {
 	return TimedJavaFutexEventKind
+}
+
+type TransactionIdEvent struct {
+	Timestamp uint64 `json:"timestamp"`
+	TraceId   string `json:"traceId"`
+	IsEntry   uint32 `json:"isEntry"`
+}
+
+func (t *TransactionIdEvent) StartTimestamp() uint64 {
+	return t.Timestamp
+}
+
+func (t *TransactionIdEvent) EndTimestamp() uint64 {
+	return t.Timestamp
+}
+
+func (t *TransactionIdEvent) Kind() TimedEventKind {
+	return TimedTransactionIdEventKind
 }

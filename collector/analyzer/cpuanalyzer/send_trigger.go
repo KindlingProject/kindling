@@ -110,6 +110,7 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 					fmt.Println("send data3:" + strconv.Itoa(int(startTime/nanoToSeconds)+i-2))
 				}
 				segment.IsSend = 1
+				segment.IndexTimestamp = time.Now().String()
 				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
 			}
 		}

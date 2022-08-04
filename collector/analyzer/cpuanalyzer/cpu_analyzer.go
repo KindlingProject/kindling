@@ -3,6 +3,11 @@ package cpuanalyzer
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"sync"
+
 	"github.com/Kindling-project/kindling/collector/analyzer"
 	"github.com/Kindling-project/kindling/collector/component"
 	"github.com/Kindling-project/kindling/collector/consumer"
@@ -10,10 +15,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/model/constnames"
 	"github.com/olivere/elastic/v6"
 	"go.uber.org/zap"
-	"log"
-	"os"
-	"strconv"
-	"sync"
 )
 
 const (
@@ -33,7 +34,7 @@ func (ca *CpuAnalyzer) Type() analyzer.Type {
 }
 
 func (ca *CpuAnalyzer) ConsumableEvents() []string {
-	return []string{constnames.CpuEvent, constnames.JavaFutexInfo}
+	return []string{constnames.CpuEvent, constnames.JavaFutexInfo, constnames.TransactionIdEvent}
 }
 
 func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
@@ -69,12 +70,25 @@ func (ca *CpuAnalyzer) Start() error {
 }
 
 func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
-	if event.Name == "cpu_event" {
+	switch event.Name {
+	case constnames.CpuEvent:
 		ca.ConsumeCpuEvent(event)
-	} else if event.Name == "java_futex_info" {
+	case constnames.JavaFutexInfo:
 		ca.ConsumeJavaFutexEvent(event)
+	case constnames.TransactionIdEvent:
+		ca.ConsumeTransactionIdEvent(event)
 	}
 	return nil
+}
+
+func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
+	isEntry, _ := strconv.Atoi(event.GetStringUserAttribute("is_enter"))
+	ev := &TransactionIdEvent{
+		Timestamp: event.Timestamp,
+		TraceId:   event.GetStringUserAttribute("trace_id"),
+		IsEntry:   uint32(isEntry),
+	}
+	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
 func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
@@ -146,15 +160,7 @@ func (ca *CpuAnalyzer) PutSegment(pid uint32, tid uint32, threadName string, eve
 		BaseTime: event.StartTimestamp() / nanoToSeconds,
 		Segments: NewCircleQueue(ca.cfg.GetSegmentSize() + 1),
 	}
-	segment := &Segment{
-		Pid:             pid,
-		Tid:             tid,
-		StartTime:       (newTimeSegments.BaseTime) * nanoToSeconds,
-		EndTime:         (newTimeSegments.BaseTime) * nanoToSeconds,
-		ThreadName:      threadName,
-		CpuEvents:       make([]TimedEvent, 0),
-		JavaFutexEvents: make([]TimedEvent, 0),
-	}
+	segment := newSegment(pid, tid, threadName, newTimeSegments.BaseTime*nanoToSeconds, newTimeSegments.BaseTime*nanoToSeconds)
 	segment.putTimedEvent(event)
 	ca.SendSegment(*segment)
 }
@@ -196,15 +202,9 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				if val != nil {
 					timeSegments.Segments.UpdateByIndex(i, val)
 				}
-				segmentTmp := &Segment{
-					Pid:             pid,
-					Tid:             tid,
-					StartTime:       (timeSegments.BaseTime + uint64(i+clearSize)) * nanoToSeconds,
-					EndTime:         (timeSegments.BaseTime + uint64(i+clearSize+1)) * nanoToSeconds,
-					ThreadName:      threadName,
-					CpuEvents:       make([]TimedEvent, 0),
-					JavaFutexEvents: make([]TimedEvent, 0),
-				}
+				segmentTmp := newSegment(pid, tid, threadName,
+					(timeSegments.BaseTime+uint64(i+clearSize))*nanoToSeconds,
+					(timeSegments.BaseTime+uint64(i+clearSize+1))*nanoToSeconds)
 				timeSegments.Segments.UpdateByIndex(i+clearSize, segmentTmp)
 			}
 
@@ -244,15 +244,9 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 			var segment *Segment
 			val, _ := timeSegments.Segments.GetByIndex(int(i))
 			if val == nil {
-				segment = &Segment{
-					Pid:             pid,
-					Tid:             tid,
-					StartTime:       (timeSegments.BaseTime + uint64(i)) * nanoToSeconds,
-					EndTime:         (timeSegments.BaseTime + uint64(i+1)) * nanoToSeconds,
-					ThreadName:      threadName,
-					CpuEvents:       make([]TimedEvent, 0),
-					JavaFutexEvents: make([]TimedEvent, 0),
-				}
+				segment = newSegment(pid, tid, threadName,
+					(timeSegments.BaseTime+uint64(i))*nanoToSeconds,
+					(timeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
 			} else {
 				segment = val.(*Segment)
 			}
@@ -272,15 +266,9 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 			Segments: NewCircleQueue(ca.cfg.GetSegmentSize() + 1),
 		}
 		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
-			segment := &Segment{
-				Pid:             pid,
-				Tid:             tid,
-				StartTime:       (newTimeSegments.BaseTime + uint64(i)) * nanoToSeconds,
-				EndTime:         (newTimeSegments.BaseTime + uint64(i+1)) * nanoToSeconds,
-				ThreadName:      threadName,
-				CpuEvents:       make([]TimedEvent, 0),
-				JavaFutexEvents: make([]TimedEvent, 0),
-			}
+			segment := newSegment(pid, tid, threadName,
+				(timeSegments.BaseTime+uint64(i))*nanoToSeconds,
+				(timeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
 			newTimeSegments.Segments.Push(segment)
 		}
 		val, _ := newTimeSegments.Segments.GetByIndex(0)

@@ -18,11 +18,10 @@ const (
 	TcpConnectEvent        = "tcp_connect"
 	TcpSetStateEvent       = "tcp_set_state"
 
-	CpuEvent = "cpu_event"
-
-	JavaFutexInfo = "java_futex_info"
-
-	OtherEvent = "other"
+	CpuEvent           = "cpu_event"
+	JavaFutexInfo      = "java_futex_info"
+	TransactionIdEvent = "apm_trace_id_event"
+	OtherEvent         = "other"
 
 	GrpcUprobeEvent = "grpc_uprobe"
 	// NetRequestMetricGroupName is used for dataGroup generated from networkAnalyzer.
