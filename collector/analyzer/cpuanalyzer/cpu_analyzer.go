@@ -24,9 +24,11 @@ const (
 type CpuAnalyzer struct {
 	cfg          *Config
 	cpuPidEvents map[uint32]map[uint32]TimeSegments
-	lock         sync.Mutex
-	esClient     *elastic.Client
-	telemetry    *component.TelemetryTools
+	// { pid: routine }
+	sendEventsRoutineMap sync.Map
+	lock                 sync.Mutex
+	esClient             *elastic.Client
+	telemetry            *component.TelemetryTools
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -65,7 +67,8 @@ func (ca *CpuAnalyzer) Start() error {
 	}
 	ca.telemetry.Logger.Sugar().Infof("es version %s\n", esversionCode)
 	//go ca.SendTest()
-	go ca.SendCircle()
+	// go ca.SendCircle()
+	go ca.ReceiveSendSignal()
 	return nil
 }
 
@@ -99,12 +102,8 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 		switch {
 		case userAttributes.GetKey() == "end_time":
 			ev.EndTime, _ = strconv.ParseUint(string(userAttributes.GetValue()), 10, 64)
-			break
 		case userAttributes.GetKey() == "data":
 			ev.DataVal = string(userAttributes.GetValue())
-			break
-		default:
-			break
 		}
 	}
 	ca.telemetry.Logger.Sugar().Infof("Receive a java futex event, %v", ev)
@@ -119,32 +118,22 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 		switch {
 		case userAttributes.GetKey() == "start_time":
 			ev.StartTime = userAttributes.GetUintValue()
-			break
 		case event.UserAttributes[i].GetKey() == "end_time":
 			ev.EndTime = userAttributes.GetUintValue()
-			break
 		case event.UserAttributes[i].GetKey() == "type_specs":
 			ev.TypeSpecs = string(userAttributes.GetValue())
-			break
 		case event.UserAttributes[i].GetKey() == "runq_latency":
 			ev.RunqLatency = string(userAttributes.GetValue())
-			break
 		case event.UserAttributes[i].GetKey() == "time_type":
 			ev.TimeType = string(userAttributes.GetValue())
-			break
 		case event.UserAttributes[i].GetKey() == "on_info":
 			ev.OnInfo = string(userAttributes.GetValue())
-			break
 		case event.UserAttributes[i].GetKey() == "off_info":
 			ev.OffInfo = string(userAttributes.GetValue())
-			break
 		case event.UserAttributes[i].GetKey() == "log":
 			ev.Log = string(userAttributes.GetValue())
-			break
 		case event.UserAttributes[i].GetKey() == "stack":
 			ev.Stack = string(userAttributes.GetValue())
-		default:
-			break
 		}
 	}
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
@@ -225,12 +214,12 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 			return
 		}
 		// 开始时间基于baseTime的偏移量
-		startOffset := event.StartTimestamp()/nanoToSeconds - timeSegments.BaseTime
+		startOffset := int(event.StartTimestamp()/nanoToSeconds - timeSegments.BaseTime)
 		// 结束时间基于开始时间的偏移量
-		endOffset := event.EndTimestamp()/nanoToSeconds - event.StartTimestamp()/nanoToSeconds
+		endOffset := int(event.EndTimestamp()/nanoToSeconds - event.StartTimestamp()/nanoToSeconds)
 		if startOffset < 0 {
 			startOffset = 0
-			endOffset = event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime
+			endOffset = int(event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime)
 			if endOffset < 0 {
 				fmt.Println("start<end")
 			}
@@ -251,6 +240,7 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				segment = val.(*Segment)
 			}
 			segment.putTimedEvent(event)
+			segment.IsSend = 0
 			if tid == 4777 {
 				fmt.Println("basetime:" + strconv.Itoa(int(timeSegments.BaseTime)) + "    i:" + strconv.Itoa(int(i)))
 			}
