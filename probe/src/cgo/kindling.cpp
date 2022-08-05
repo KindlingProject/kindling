@@ -266,8 +266,8 @@ int getEvent(void **pp_kindling_event)
 		memcpy(p_kindling_event->userAttributes[userAttNumber].value, &latency, 8);
 		p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
 		p_kindling_event->userAttributes[userAttNumber].len = 8;
+		userAttNumber++;
 	}
-	userAttNumber++;
 	switch(ev->get_type())
 	{
 	case PPME_TCP_RCV_ESTABLISHED_E:
@@ -342,6 +342,7 @@ int getEvent(void **pp_kindling_event)
 		{
 			paramsNumber = 8;
 		}
+		paramsNumber -= userAttNumber;
 		for(auto i = 0; i < paramsNumber; i++)
 		{
 
