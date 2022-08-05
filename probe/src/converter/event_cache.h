@@ -39,7 +39,7 @@ public:
     file_info() {}
     ~file_info() {}
     string toString() {
-        return "file@" + operation_type + "@" + name + "@" + to_string(size);
+        return "file@" + operation_type + "@" + name + "@" + to_string(start_time) + "@" + to_string(size);
     }
 };
 
@@ -48,7 +48,7 @@ public:
     net_info() {}
     ~net_info() {}
     string toString() {
-        return "net@" + operation_type + "@" + name + "@" + to_string(size);
+        return "net@" + operation_type + "@" + name + "@" + to_string(start_time) + "@" + to_string(size);
     }
 };
 

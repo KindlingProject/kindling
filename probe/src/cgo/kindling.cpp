@@ -270,6 +270,60 @@ int getEvent(void **pp_kindling_event)
 				p_kindling_event->paramsNumber = userAttNumber;
 				return 1;
 			}
+
+			if (data_param->m_len > 8 && memcmp(data_val, "kd-txid@", 8) == 0) {
+				char *traceId = new char[128];
+				char *isEnter = new char[16];
+				int val_offset = 0;
+				int tmp_offset = 0;
+				int traceId_offset = 0;
+				for (int i = 8; i < data_param->m_len; i++) {
+					if (data_val[i] == '!') {
+						if (val_offset == 0) {
+							traceId[tmp_offset] = '\0';
+							traceId_offset = tmp_offset;
+						}else if (val_offset == 1) {
+							isEnter[tmp_offset] = '\0';
+							break;
+						}
+						tmp_offset = 0;
+						val_offset++;
+						continue;
+					}
+					if (val_offset == 0) {
+
+						traceId[tmp_offset] = data_val[i];
+					}else if (val_offset == 1) {
+
+						isEnter[tmp_offset] = data_val[i];
+					}
+					tmp_offset++;
+				}
+				p_kindling_event->timestamp = ev->get_ts();
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "trace_id");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
+					   traceId, traceId_offset);
+				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+		 		p_kindling_event->userAttributes[userAttNumber].len = traceId_offset;
+				userAttNumber++;
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "is_enter");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
+					   isEnter, 1);
+				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+				p_kindling_event->userAttributes[userAttNumber].len = 1;
+				userAttNumber++;
+				strcpy(p_kindling_event->name, "apm_trace_id_event");
+				p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
+				map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
+				if(key!=ptid_comm.end())
+				{
+					strcpy(p_kindling_event->context.tinfo.comm, key->second);
+				}
+				p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
+				p_kindling_event->paramsNumber = userAttNumber;
+				return 1;
+			}
+
 			if (data_param->m_len > 6 && memcmp(data_val, "kd-tm@", 6) == 0) {
 				char *comm_char = new char[64];
 				char *tid_char = new char[32];

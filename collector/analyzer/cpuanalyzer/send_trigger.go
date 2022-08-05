@@ -46,7 +46,7 @@ func (ca *CpuAnalyzer) SendCircle() {
 		sendContent := <-SendChannel
 		if sendContent.StartTime+sendContent.SpendTime+uint64(10*nanoToSeconds) > uint64(time.Now().UnixNano()) {
 			SendChannel <- sendContent
-			time.Sleep(100)
+			time.Sleep(300 * time.Millisecond)
 			continue
 		}
 		profilePid := os.Getenv("profilepid")
@@ -58,6 +58,7 @@ func (ca *CpuAnalyzer) SendCircle() {
 		}
 		data, _ := json.Marshal(sendContent)
 		ca.telemetry.Logger.Sugar().Infof("Receive a trace signal: %s", string(data))
+		fmt.Println("start send ::" + strconv.Itoa(int(sendContent.StartTime/nanoToSeconds)) + "spend:" + strconv.Itoa(int(sendContent.SpendTime/nanoToSeconds)) + "now time: " + strconv.Itoa(int(time.Now().UnixNano()/int64(nanoToSeconds))))
 		ca.SendCpuEvent(sendContent.Pid, sendContent.StartTime, sendContent.SpendTime)
 	}
 }
@@ -67,7 +68,7 @@ func (ca *CpuAnalyzer) SendSegment(segment Segment) {
 }
 
 func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint64) error {
-	tmpTid := uint32(4777)
+	tmpTid := uint32(13717)
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
 	ca.telemetry.Logger.Sugar().Infof("Will send cpu events for pid=%d, start_time=%d, duration=%d", pid, startTime, spendTime)
@@ -89,7 +90,7 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 				fmt.Println("starttime:" + strconv.Itoa(int(startTime/nanoToSeconds)))
 				fmt.Println("-----------------")
 			}
-			return nil
+			continue
 		}
 		if timeSegments.Tid == tmpTid {
 			fmt.Println("send data2 start time:" + strconv.Itoa(int(startTime/nanoToSeconds)) + "spend:" + strconv.Itoa(int(spendTime/nanoToSeconds)) + "now time: " + strconv.Itoa(int(time.Now().UnixNano()/int64(nanoToSeconds))))
