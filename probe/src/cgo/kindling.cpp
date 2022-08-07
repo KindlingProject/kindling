@@ -270,90 +270,90 @@ int getEvent(void **pp_kindling_event)
 	}
 	switch(ev->get_type())
 	{
-	case PPME_TCP_RCV_ESTABLISHED_E:
-	case PPME_TCP_CLOSE_E:
-	{
-		auto pTuple = ev->get_param_value_raw("tuple");
-		userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
+		case PPME_TCP_RCV_ESTABLISHED_E:
+		case PPME_TCP_CLOSE_E:
+		{
+			auto pTuple = ev->get_param_value_raw("tuple");
+			userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
 
-		auto pRtt = ev->get_param_value_raw("srtt");
-		if(pRtt != NULL)
+			auto pRtt = ev->get_param_value_raw("srtt");
+			if(pRtt != NULL)
+			{
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "rtt");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value, pRtt->m_val, pRtt->m_len);
+				p_kindling_event->userAttributes[userAttNumber].valueType = UINT32;
+				p_kindling_event->userAttributes[userAttNumber].len = pRtt->m_len;
+				userAttNumber++;
+			}
+			break;
+		}	
+		case PPME_TCP_CONNECT_X:
 		{
-			strcpy(p_kindling_event->userAttributes[userAttNumber].key, "rtt");
-			memcpy(p_kindling_event->userAttributes[userAttNumber].value, pRtt->m_val, pRtt->m_len);
-			p_kindling_event->userAttributes[userAttNumber].valueType = UINT32;
-			p_kindling_event->userAttributes[userAttNumber].len = pRtt->m_len;
-			userAttNumber++;
+			auto pTuple = ev->get_param_value_raw("tuple");
+			userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
+			auto pRetVal = ev->get_param_value_raw("retval");
+			if(pRetVal != NULL)
+			{
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "retval");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value, pRetVal->m_val, pRetVal->m_len);
+				p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+				p_kindling_event->userAttributes[userAttNumber].len = pRetVal->m_len;
+				userAttNumber++;
+			}
+			break;
 		}
-		break;
-	}
-	case PPME_TCP_CONNECT_X:
-	{
-		auto pTuple = ev->get_param_value_raw("tuple");
-		userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
-		auto pRetVal = ev->get_param_value_raw("retval");
-		if(pRetVal != NULL)
+		case PPME_TCP_DROP_E:
+		case PPME_TCP_RETRANCESMIT_SKB_E:
+		case PPME_TCP_SET_STATE_E:
 		{
-			strcpy(p_kindling_event->userAttributes[userAttNumber].key, "retval");
-			memcpy(p_kindling_event->userAttributes[userAttNumber].value, pRetVal->m_val, pRetVal->m_len);
-			p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
-			p_kindling_event->userAttributes[userAttNumber].len = pRetVal->m_len;
-			userAttNumber++;
+			auto pTuple = ev->get_param_value_raw("tuple");
+			userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
+			auto old_state = ev->get_param_value_raw("old_state");
+			if(old_state != NULL)
+			{
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "old_state");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value, old_state->m_val, old_state->m_len);
+				p_kindling_event->userAttributes[userAttNumber].len = old_state->m_len;
+				p_kindling_event->userAttributes[userAttNumber].valueType = INT32;
+				userAttNumber++;
+			}
+			auto new_state = ev->get_param_value_raw("new_state");
+			if(new_state != NULL)
+			{
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "new_state");
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value, new_state->m_val, new_state->m_len);
+				p_kindling_event->userAttributes[userAttNumber].valueType = INT32;
+				p_kindling_event->userAttributes[userAttNumber].len = new_state->m_len;
+				userAttNumber++;
+			}
+			break;
 		}
-		break;
-	}
-	case PPME_TCP_DROP_E:
-	case PPME_TCP_RETRANCESMIT_SKB_E:
-	case PPME_TCP_SET_STATE_E:
-	{
-		auto pTuple = ev->get_param_value_raw("tuple");
-		userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
-		auto old_state = ev->get_param_value_raw("old_state");
-		if(old_state != NULL)
+		case PPME_TCP_SEND_RESET_E:
+		case PPME_TCP_RECEIVE_RESET_E:
 		{
-			strcpy(p_kindling_event->userAttributes[userAttNumber].key, "old_state");
-			memcpy(p_kindling_event->userAttributes[userAttNumber].value, old_state->m_val, old_state->m_len);
-			p_kindling_event->userAttributes[userAttNumber].len = old_state->m_len;
-			p_kindling_event->userAttributes[userAttNumber].valueType = INT32;
-			userAttNumber++;
+			auto pTuple = ev->get_param_value_raw("tuple");
+			userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
+			break;
 		}
-		auto new_state = ev->get_param_value_raw("new_state");
-		if(new_state != NULL)
+		default:
 		{
-			strcpy(p_kindling_event->userAttributes[userAttNumber].key, "new_state");
-			memcpy(p_kindling_event->userAttributes[userAttNumber].value, new_state->m_val, new_state->m_len);
-			p_kindling_event->userAttributes[userAttNumber].valueType = INT32;
-			p_kindling_event->userAttributes[userAttNumber].len = new_state->m_len;
-			userAttNumber++;
-		}
-		break;
-	}
-	case PPME_TCP_SEND_RESET_E:
-	case PPME_TCP_RECEIVE_RESET_E:
-	{
-		auto pTuple = ev->get_param_value_raw("tuple");
-		userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
-		break;
-	}
-	default:
-	{
-		uint16_t paramsNumber = ev->get_num_params();
-		if(paramsNumber > 8)
-		{
-			paramsNumber = 8;
-		}
-		paramsNumber -= userAttNumber;
-		for(auto i = 0; i < paramsNumber; i++)
-		{
+			uint16_t paramsNumber = ev->get_num_params();
+			if(paramsNumber > 8)
+			{
+				paramsNumber = 8;
+			}
+			paramsNumber -= userAttNumber;
+			for(auto i = 0; i < paramsNumber; i++)
+			{
 
-			strcpy(p_kindling_event->userAttributes[userAttNumber].key, (char *)ev->get_param_name(i));
-			memcpy(p_kindling_event->userAttributes[userAttNumber].value, ev->get_param(i)->m_val,
-			       ev->get_param(i)->m_len);
-			p_kindling_event->userAttributes[userAttNumber].len = ev->get_param(i)->m_len;
-			p_kindling_event->userAttributes[userAttNumber].valueType = get_type(ev->get_param_info(i)->type);
-			userAttNumber++;
+				strcpy(p_kindling_event->userAttributes[userAttNumber].key, (char *)ev->get_param_name(i));
+				memcpy(p_kindling_event->userAttributes[userAttNumber].value, ev->get_param(i)->m_val,
+			       	ev->get_param(i)->m_len);
+				p_kindling_event->userAttributes[userAttNumber].len = ev->get_param(i)->m_len;
+				p_kindling_event->userAttributes[userAttNumber].valueType = get_type(ev->get_param_info(i)->type);
+				userAttNumber++;
+			}
 		}
-	}
 	}
 	p_kindling_event->paramsNumber = userAttNumber;
 	strcpy(p_kindling_event->name, (char *)ev->get_name());
