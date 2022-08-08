@@ -30,8 +30,8 @@ void do_collect() {
     profile_ctx.flame_graph->CollectData();
 }
 
-Profiler::Profiler(int cache_keep_time, int perf_period_ms) {
-    profile_ctx.flame_graph = new FlameGraph(cache_keep_time, perf_period_ms);
+Profiler::Profiler(int size, int cache_keep_ms, int perf_period_ms) {
+    profile_ctx.flame_graph = new FlameGraph(size, cache_keep_ms, perf_period_ms);
 
     perf_data_ = (struct perfData *)malloc(sizeof(struct perfData) * 1);
     perf_data_->running = 0;
@@ -56,22 +56,14 @@ void Profiler::Stop() {
     perf_data_->running = 0;
 }
 
-void Profiler::EnableAutoGet() {
-    profile_ctx.flame_graph->EnableAutoGet();
-}
-
-void Profiler::EnableFlameFile() {
-    profile_ctx.flame_graph->EnableFlameFile();
+void Profiler::RecordProfileData(uint64_t time, __u32 pid, __u32 tid, int depth, bool finish, string stack) {
+    profile_ctx.flame_graph->RecordProfileData(time, pid, tid, depth, finish, stack);
 }
 
 void Profiler::SetMaxDepth(int max_depth) {
     profile_ctx.flame_graph->SetMaxDepth(max_depth);
 }
 
-void Profiler::SetFilterThreshold(int filter_threshold) {
-    profile_ctx.flame_graph->SetFilterThreshold(filter_threshold);
-}
-
-string Profiler::GetOnCpuData(__u32 tid, vector<pair<uint64_t, uint64_t>> &periods) {
-    return profile_ctx.flame_graph->GetOnCpuData(tid, periods);
+string Profiler::GetOnCpuData(__u32 pid, __u32 tid, vector<pair<uint64_t, uint64_t>> &periods) {
+    return profile_ctx.flame_graph->GetOnCpuData(pid, tid, periods);
 }

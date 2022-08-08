@@ -92,9 +92,9 @@ static void collectTidData(void* object, void* value) {
     pObject->CollectLogs(value);
 }
 
-LogCache::LogCache(int size, int cacheSecond) {
+LogCache::LogCache(int size, int cache_ms) {
     long bucketTs = 10000000; // 10Ms
-    cacheBucketTime = (1000000000l * cacheSecond) / bucketTs;
+    cacheBucketTime = (1000000l * cache_ms) / bucketTs;
     logs_ = new BucketRingBuffers<LogData>(size, bucketTs);
 }
 

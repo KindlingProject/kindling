@@ -8,7 +8,6 @@ struct FlameGraphCtx{
     string seperator_flame_ = "|";
 
     int max_depth_ = 1;
-    bool auto_get_ = false;
     BPFSymbolTable *symbol_table_ = new BPFSymbolTable();
 } flame_graph_ctx;
 
@@ -22,15 +21,41 @@ static void setSampleData(void* object, void* value) {
     memcpy(&sampleData->ips_[0], sample_data->callchain.ips, sampleData->nr_ * sizeof(sample_data->callchain.ips[0]));
 }
 
+static void setProfileData(void* object, void* value) {
+    ProfileData *profileData = (ProfileData*) object;
+    ProfileData *newProfileData = (ProfileData*) value;
+
+    profileData->tid_ = newProfileData->tid_;
+    profileData->depth_ = newProfileData->depth_;
+    profileData->finish_ = newProfileData->finish_;
+    profileData->stack_ = newProfileData->stack_;
+}
+
 bool FlameSymbolDatas::addPerfSymbol(int depth, __u64 ip, int pid, bool user) {
     if (depth >= max_depth_) {
         return false;
     }
     FlameSymbolData* data = symbol_datas_.at(depth);
     data->symbol_ = flame_graph_ctx.symbol_table_->GetSymbol(ip, pid);
-    data->color_ = getPerfColor(user);
-    symbol_size_ = depth;
+    data->type_ = user ? TYPE_USER : TYPE_KERNEL;
+    symbol_to_ = depth;
     return true;
+}
+
+void FlameSymbolDatas::addProfileSymbol(int depth, string name) {
+    if (depth >= max_depth_) {
+        return;
+    }
+    if (depth == 0) {
+        symbol_from_ = 0;
+    } else if (depth != symbol_to_ + 1) {
+        // FIX Skip First Data.
+        symbol_from_ = depth;
+    }
+    FlameSymbolData* data = symbol_datas_.at(depth);
+    data->symbol_ = name;
+    data->type_ = TYPE_JVM;
+    symbol_to_ = depth;
 }
 
 void SampleData::collectStacks(FlameSymbolDatas *symbolDatas) {
@@ -58,22 +83,23 @@ void SampleData::collectStacks(FlameSymbolDatas *symbolDatas) {
     }
 }
 
-void AggregateData::Aggregate(void* data) {
-    SampleData *sample_data = (SampleData*)data;
-    if (sample_data->pid_ == 0 || (tid_ > 0 && sample_data->tid_ != tid_)) {
-        return;
+bool ProfileData::collectStacks(FlameSymbolDatas *symbolDatas) {
+    int index = 0, depth = depth_;
+    for (int i = 0; i < stack_.length(); i++) {
+        if (stack_[i] == '!') {
+            string symbol = stack_.substr(index, i - index);
+            symbolDatas->addProfileSymbol(depth++, symbol);
+            index = i + 1;
+        }
     }
+    return finish_;
+}
 
-    Node* f = root();
-    if (tid_ == 0) {
-        f = f->addChild(std::to_string(sample_data->pid_), getPerfColor(false));
-        f = f->addChild(std::to_string(sample_data->tid_), getPerfColor(false));
-    }
-
-    sample_data->collectStacks(symbol_datas_);
+void AggregateData::Aggregate() {
     // Sort by Desc.
-    for (int i = symbol_datas_->symbol_size_ - 1; i >= 0; i--) {
-        f = f->addChild(symbol_datas_->symbol_datas_[i]->symbol_, symbol_datas_->symbol_datas_[i]->color_);
+    Node* f = root();
+    for (int i = symbol_datas_->symbol_to_; i >= symbol_datas_->symbol_from_; i--) {
+        f = f->addChild(symbol_datas_->symbol_datas_[i]->symbol_, symbol_datas_->symbol_datas_[i]->type_);
     }
     f->addLeaf();
 }
@@ -86,6 +112,8 @@ void AggregateData::DumpFrameDatas(string& frameDatas, bool file) {
 }
 
 void AggregateData::dumpFrameData(string& frameDatas, const string& name, const Node& node, int depth, __u64 x, bool seperator, bool file) {
+    Node node_copy = node;
+    string name_copy = name;
     if (seperator) {
         frameDatas.append(flame_graph_ctx.seperator_next_);
     }
@@ -98,14 +126,14 @@ void AggregateData::dumpFrameData(string& frameDatas, const string& name, const 
     frameDatas.append(flame_graph_ctx.seperator_frame_);
     frameDatas.append(std::to_string(node.total_));
     frameDatas.append(flame_graph_ctx.seperator_frame_);
-    frameDatas.append(std::to_string(node.color_));
+    frameDatas.append(std::to_string(node_copy.getColor(name_copy)));
     frameDatas.append(flame_graph_ctx.seperator_frame_);
     if (file) {
         frameDatas.append("'");
-        frameDatas.append(name);
+        frameDatas.append(name_copy);
         frameDatas.append("')");
     } else {
-        frameDatas.append(std::to_string(getFuncId(name)));
+        frameDatas.append(std::to_string(getFuncId(name_copy)));
     }
 
     x += node.self_;
@@ -140,16 +168,34 @@ int AggregateData::getFuncId(const string& name) {
     return id - 1;
 }
 
-static void aggTidData(void* object, void* value) {
-    AggregateData* pObject = (AggregateData*) object;
-    pObject->Aggregate(value);
+static void aggSampleData(void* object, void* value) {
+    AggregateData* agg_data = (AggregateData*) object;
+    SampleData *sample_data = (SampleData*)value;
+    if (sample_data->pid_ == 0 || (agg_data->tid_ > 0 && sample_data->tid_ != agg_data->tid_)) {
+        return;
+    }
+    sample_data->collectStacks(agg_data->symbol_datas_);
+    agg_data->Aggregate();
 }
 
-FlameGraph::FlameGraph(int cache_keep_time, int perf_period_ms) {
+static void aggProfileData(void* object, void* value) {
+    AggregateData* agg_data = (AggregateData*) object;
+    ProfileData *profile_data = (ProfileData*)value;
+    if (profile_data->tid_ == 0 || (profile_data->tid_ > 0 && profile_data->tid_ != profile_data->tid_)) {
+        return;
+    }
+
+    bool finish = profile_data->collectStacks(agg_data->symbol_datas_);
+    if (finish) {
+        agg_data->Aggregate();
+    }
+}
+
+FlameGraph::FlameGraph(int size, int cache_keep_ms, int perf_period_ms) {
     perf_period_ns_ = perf_period_ms * 1000000;
-    sample_datas_ = new BucketRingBuffers<SampleData>(2000, perf_period_ns_);
+    sample_datas_ = new BucketRingBuffers<SampleData>(size, perf_period_ns_);
     perf_threshold_ns_ = perf_period_ns_;
-    cache_keep_time_ = cache_keep_time / perf_period_ms;
+    cache_keep_time_ = cache_keep_ms / perf_period_ms;
 }
 
 FlameGraph::~FlameGraph() {
@@ -158,27 +204,10 @@ FlameGraph::~FlameGraph() {
     flame_graph_ctx.symbol_table_ = NULL;
 }
 
-void FlameGraph::EnableAutoGet() {
-    flame_graph_ctx.auto_get_ = true;
-}
-
-void FlameGraph::EnableFlameFile() {
-    write_flame_graph_ = true;
-    flame_graph_ctx.seperator_frame_ = ", ";
-    flame_graph_ctx.seperator_next_ = "\n";
-    flame_graph_ctx.seperator_flame_ = "\n\n";
-
-    resetLogFile();
-}
-
 void FlameGraph::SetMaxDepth(int max_depth) {
     if (max_depth > 1) {
         flame_graph_ctx.max_depth_ = max_depth;
     }
-}
-
-void FlameGraph::SetFilterThreshold(int filter_threshold) {
-    perf_threshold_ns_ = perf_period_ns_ * filter_threshold;
 }
 
 void FlameGraph::RecordSampleData(struct sample_type_data *sample_data) {
@@ -189,36 +218,26 @@ void FlameGraph::RecordSampleData(struct sample_type_data *sample_data) {
     last_sample_time_ = sample_datas_->add(sample_data->time, sample_data, setSampleData);
 }
 
-void FlameGraph::CollectData() {
-    if (flame_graph_ctx.auto_get_) {
-        AggregateData *aggregateData = new AggregateData(0, flame_graph_ctx.max_depth_);
-        sample_datas_->collect(last_collect_time_, last_sample_time_, aggregateData, aggTidData);
-        string result = "";
-        aggregateData->DumpFrameDatas(result, write_flame_graph_);
-        if (write_flame_graph_ == false) {
-            aggregateData->DumpFuncNames(result);
-        }
-
-        if (write_flame_graph_) {
-            fprintf(collect_file_, "%s\n", result.c_str());  // Write To File.
-            fclose(collect_file_);
-            resetLogFile();
-        } else {
-            fprintf(stdout, "%s\n", result.c_str());
-        }
+void FlameGraph::RecordProfileData(uint64_t time, __u32 pid, __u32 tid, int depth, bool finish, string stack) {
+    if (profile_datas_.count(pid) == 0) {
+        profile_datas_[pid] = new BucketRingBuffers<ProfileData>(2000, perf_period_ns_);
     }
-
-    //fprintf(stdout, "Before Exipre Size: %d\n", sample_datas_->size());
-    // Expire BucketRingBuffers Datas.
-    sample_datas_->expire(last_sample_time_ - cache_keep_time_);
-    //fprintf(stdout, "After Exipre Size: %d\n", sample_datas_->size());
-    last_collect_time_ = last_sample_time_;
+    ProfileData *data = new ProfileData(tid, depth, finish, stack);
+    profile_datas_[pid]->addAndExpire(time, cache_keep_time_, data, setProfileData);
 }
 
-string FlameGraph::GetOnCpuData(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods) {
+void FlameGraph::CollectData() {
+    // Expire Perf Datas.
+    sample_datas_->expire(last_sample_time_ - cache_keep_time_);
+}
+
+string FlameGraph::GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods) {
     string result = "";
     AggregateData *aggregateData = new AggregateData(tid, flame_graph_ctx.max_depth_);
-
+    BucketRingBuffers<ProfileData> *profileData = NULL;
+    if (profile_datas_.count(pid) > 0) {
+        profileData = profile_datas_[pid];
+    }
     __u64 start_time = 0, end_time = 0;
     __u64 size = periods.size();
     for (__u64 i = 0; i < size; i++) {
@@ -227,7 +246,11 @@ string FlameGraph::GetOnCpuData(__u32 tid, vector<std::pair<uint64_t, uint64_t>>
             end_time = periods[i].second / perf_period_ns_; // ns->ms
 
             //fprintf(stdout, ">> Collect: %lld -> %lld, Duration: %lld, Exist Data %ld -> %ld\n", start_time, end_time, end_time-start_time, sample_datas_->getFrom(), sample_datas_->getTo());
-            sample_datas_->collect(start_time, end_time, aggregateData, aggTidData);
+            if (profileData != NULL) {
+                profileData->collect(start_time, end_time, aggregateData, aggProfileData);
+            } else {
+                sample_datas_->collect(start_time, end_time, aggregateData, aggSampleData);
+            }
             aggregateData->DumpFrameDatas(result, false);
             aggregateData->Reset();
         }
@@ -240,13 +263,6 @@ string FlameGraph::GetOnCpuData(__u32 tid, vector<std::pair<uint64_t, uint64_t>>
     }
 
     aggregateData->DumpFuncNames(result);
+    fprintf(stdout, ">> FlameData: %s\n", result.c_str());
     return result;
-}
-
-void FlameGraph::resetLogFile() {
-    char collectFileName[128];
-    time_t nowtime = time(NULL);
-    tm *now = localtime(&nowtime);
-    snprintf(collectFileName, sizeof(collectFileName), "flamegraph_%d_%d_%d.txt", now->tm_hour, now->tm_min, now->tm_sec);
-    collect_file_ = fopen(collectFileName, "w+");
 }

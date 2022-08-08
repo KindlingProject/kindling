@@ -14,12 +14,25 @@ using std::map;
 using std::vector;
 using std::string;
 
-static int getPerfColor(bool user) {
-  if (user) {
-    return 1;
-  } else {
-    return 5;
-  }
+enum FrameTypeId {
+  FRAME_INTERPRETED  = 0,
+  FRAME_JIT_COMPILED = 1,
+  FRAME_INLINED      = 2,
+  FRAME_NATIVE       = 3,
+  FRAME_CPP          = 4,
+  FRAME_KERNEL       = 5,
+  FRAME_C1_COMPILED  = 6,
+};
+
+enum SymbolType {
+  TYPE_KERNEL = 0,
+  TYPE_USER = 1,
+  TYPE_JVM = 2,
+};
+
+static bool endsWith(const string& s, const char* suffix, size_t suffixlen) {
+    size_t len = s.length();
+    return len >= suffixlen && s.compare(len - suffixlen, suffixlen, suffix) == 0; 
 }
 
 class FlameSymbolData {
@@ -28,16 +41,17 @@ class FlameSymbolData {
     }
 
     string symbol_;
-    int color_;
+    int type_;
 };
 
 class FlameSymbolDatas {
   public:
     vector<FlameSymbolData*> symbol_datas_;
-    int symbol_size_;
+    int symbol_from_;
+    int symbol_to_;
     int max_depth_;
 
-    FlameSymbolDatas(int max_depth) : symbol_size_(0), max_depth_(max_depth) {
+    FlameSymbolDatas(int max_depth) : symbol_from_(0), symbol_to_(0), max_depth_(max_depth) {
       symbol_datas_ = vector<FlameSymbolData*>();
       for (int i = 0; i < max_depth; i++) {
         symbol_datas_.push_back(new FlameSymbolData());
@@ -45,6 +59,7 @@ class FlameSymbolDatas {
     }
 
     bool addPerfSymbol(int depth, __u64 ip, int pid, bool user);
+    void addProfileSymbol(int depth, string symbol);
 };
 
 class SampleData {
@@ -60,23 +75,66 @@ class SampleData {
     void collectStacks(FlameSymbolDatas *symbolDatas);
 };
 
+class ProfileData {
+  public:
+    ProfileData() {
+    }
+
+    ProfileData(__u32 tid, int depth, bool finish, string stack) : tid_(tid), depth_(depth), finish_(finish), stack_(stack) {
+    }
+    __u32 tid_;
+    int depth_;
+    bool finish_;
+    string stack_;
+
+    bool collectStacks(FlameSymbolDatas *symbolDatas);
+};
+
 class Node {
   public:
     map<string, Node> children_;
     __u64 total_;
     __u64 self_;
-    __u32 color_;
+    int type_;
 
-    Node() : children_(), total_(0), self_(0), color_(0) {
+    Node() : children_(), total_(0), self_(0), type_(0) {
     }
 
-    Node* addChild(const string& key, int color) {
+    Node* addChild(const string& key, int type) {
         total_ += 1;
         Node* node = &children_[key];
         if (node->total_ == 0) {
-          node->color_ = color;
+          node->type_ = type;
         }
         return node;
+    }
+
+    int getColor(string& name) {
+      if (type_ == TYPE_KERNEL) {
+        return FRAME_KERNEL;
+      } else if (type_ == TYPE_USER) {
+        return FRAME_JIT_COMPILED;
+      } else if (type_ == TYPE_JVM) {
+        if (endsWith(name, "_[j]", 4)) {
+          name = name.substr(0, name.length() - 4);
+          return FRAME_JIT_COMPILED;
+        } else if (endsWith(name, "_[i]", 4)) {
+          name = name.substr(0, name.length() - 4);
+          return FRAME_INLINED;
+        } else if (endsWith(name, "_[k]", 4)) {
+          name = name.substr(0, name.length() - 4);
+          return FRAME_KERNEL;
+        } else if (name.find("::") != std::string::npos || name.compare(0, 2, "-[") == 0 || name.compare(0, 2, "+[") == 0) {
+          return FRAME_CPP;
+        } else if (((int)name.find('/') > 0 && name[0] != '[')
+                || ((int)name.find('.') > 0 && name[0] >= 'A' && name[0] <= 'Z')) {
+          return FRAME_JIT_COMPILED;
+        } else {
+          return FRAME_NATIVE;
+        }
+      } else {
+        return FRAME_JIT_COMPILED;
+      }
     }
 
     void addLeaf() {
@@ -87,8 +145,10 @@ class Node {
 
 class AggregateData {
   public:
+    __u32 tid_;
+    FlameSymbolDatas *symbol_datas_;
+
     AggregateData(__u32 tid, int max_depth) : tid_(tid), root_(), func_name_map_(), func_names_() {
-      root_.color_ = getPerfColor(false);
       symbol_datas_ = new FlameSymbolDatas(max_depth);
     }
     ~AggregateData() {
@@ -102,19 +162,16 @@ class AggregateData {
     void Reset() {
       if (root_.total_ > 0) {
         root_ = Node();
-        root_.color_ = getPerfColor(false);
       }
     }
-    void Aggregate(void* data);
+    void Aggregate();
     void DumpFrameDatas(string& frameDatas, bool file);
     void DumpFuncNames(string& frameDatas);
 
   private:
-    __u32 tid_;
     Node root_;
     map<string, int> func_name_map_;
     vector<string> func_names_;
-    FlameSymbolDatas *symbol_datas_;
 
     int getFuncId(const string& funcName);
     void dumpFrameData(string& frameDatas, const string& name, const Node& node, int depth, __u64 x, bool seperator, bool file);
@@ -122,26 +179,22 @@ class AggregateData {
 
 class FlameGraph {
  public:
-  FlameGraph(int cache_keep_time, int perf_period);
+  FlameGraph(int size, int cache_keep_ms, int perf_period_ms);
   ~FlameGraph();
-  void EnableAutoGet();
-  void EnableFlameFile();
   void SetMaxDepth(int max_depth);
-  void SetFilterThreshold(int filter_threshold);
   void RecordSampleData(struct sample_type_data *sample_data);
+  void RecordProfileData(uint64_t time, __u32 pid, __u32 tid, int depth, bool finish, string stack);
   void CollectData();
-  string GetOnCpuData(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods);
+  string GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods);
 
  private:
-  void resetLogFile();
-
+  int size_;
   __u64 cache_keep_time_;
   __u64 perf_period_ns_;
   __u64 perf_threshold_ns_;
-  bool write_flame_graph_;
   __u64 last_sample_time_;
-  __u64 last_collect_time_;
   BucketRingBuffers<SampleData> *sample_datas_;
+  map<uint64_t, BucketRingBuffers<ProfileData>*> profile_datas_;
   FILE *collect_file_;
 };
 #endif //KINDLING_PROBE_PROFILE_FLAMEGRAPH_H

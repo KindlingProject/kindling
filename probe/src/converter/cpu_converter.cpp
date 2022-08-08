@@ -302,7 +302,7 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 
 	// on_stack
 	auto s_tinfo = sevt->get_thread_info();
-	string data = m_profiler->GetOnCpuData(s_tinfo->m_tid, on_time);
+	string data = m_profiler->GetOnCpuData(s_tinfo->m_pid, s_tinfo->m_tid, on_time);
 	if (data != "") {
 		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "stack");
 		memcpy(p_kindling_event->userAttributes[userAttNumber].value, data.data(), data.length());

@@ -39,7 +39,7 @@ class LogDatas {
 
 class LogCache {
   public:
-    LogCache(int size, int cacheSecond);
+    LogCache(int size, int cache_ms);
     ~LogCache();
     bool addLog(void* evt);
     string getLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods);

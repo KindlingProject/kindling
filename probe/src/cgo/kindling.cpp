@@ -137,8 +137,8 @@ void init_probe()
 
 			inspector->open("");
 		}
-		logCache = new LogCache(10000, 5);
-        prof = new Profiler(5000, 10);
+		logCache = new LogCache(10000, 5000);
+        prof = new Profiler(2000, 5000, 10);
 		prof->SetMaxDepth(20);
         cpuConverter = new cpu_converter(inspector, prof, logCache);
 	}
@@ -351,6 +351,68 @@ int getEvent(void **pp_kindling_event)
 				}
 				//cout<<(threadInfo->m_pid<<32 | (atol(tid_char)& 0xFFFFFFFF))<<comm_char<<endl;
 				ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
+			}
+
+			if (data_param->m_len > 9 && memcmp(data_val, "kd-stack@", 9) == 0) {
+				char *time_char = new char[32];
+				char *tid_char = new char[32];
+				char *depth_char = new char[8];
+				char *finish_char = new char[4];
+				char* stack = new char[1024];
+				int val_offset = 0;
+				int tmp_offset = 0;
+
+				for (int i = 9; i < data_param->m_len; i++) {
+					if (data_val[i] != '!') {
+						switch (val_offset) {
+							case 0:
+								time_char[tmp_offset++] = data_val[i];
+								break;
+							case 1:
+								tid_char[tmp_offset++] = data_val[i];
+								break;
+							case 2:
+								depth_char[tmp_offset++] = data_val[i];
+								break;
+							case 3:
+								finish_char[tmp_offset++] = data_val[i];
+								break;
+							default:
+								stack[tmp_offset++] = data_val[i];
+								break;
+						}
+					} else {
+						if (val_offset == 0) {
+							time_char[tmp_offset] = '\0';
+						} else if (val_offset == 1) {
+							tid_char[tmp_offset] = '\0';
+						} else if (val_offset == 2) {
+							depth_char[tmp_offset] = '\0';
+						} else if (val_offset == 3) {
+                			finish_char[tmp_offset] = '\0';
+						} else if (val_offset > 3) {
+							stack[tmp_offset++] = data_val[i];
+						}
+						if (val_offset < 4) {
+							tmp_offset = 0;
+						}
+						val_offset++;
+					}
+				}
+				stack[tmp_offset] = '\0';
+
+				uint64_t time = atol(time_char);
+				uint64_t vtid = atol(tid_char);
+				uint64_t host_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, vtid);
+				if (host_tid == 0) {
+					// Not in contianer.
+					host_tid = vtid;
+				}
+				int depth = atoi(depth_char);
+				bool finish = (atoi(finish_char) == 1) ? true : false;
+				// printf("ts: %ld, pid: %ld, host_tid: %ld, depth: %d, finish: %d, stack: %s\n", time, threadInfo->m_pid, host_tid, depth, finish, stack);
+				prof->RecordProfileData(time, threadInfo->m_pid, host_tid, depth, finish, string(stack));
+				return 1;
 			}
 		}
 
