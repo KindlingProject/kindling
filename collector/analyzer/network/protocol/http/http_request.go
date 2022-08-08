@@ -53,7 +53,6 @@ func parseHttpRequest() protocol.ParsePkgFn {
 
 		message.AddStringAttribute(constlabels.HttpMethod, string(method))
 		message.AddByteArrayUtf8Attribute(constlabels.HttpUrl, url)
-		message.AddByteArrayUtf8Attribute(constlabels.HttpRequestPayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 
 		contentKey := getContentKey(string(url))
 		if len(contentKey) == 0 {

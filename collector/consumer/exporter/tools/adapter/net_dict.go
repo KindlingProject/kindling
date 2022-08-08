@@ -215,9 +215,9 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanHttpStatusCode, constlabels.HttpStatusCode, Int64},
 		{constlabels.SpanHttpTraceId, constlabels.HttpApmTraceId, String},
 		{constlabels.SpanHttpTraceType, constlabels.HttpApmTraceType, String},
-		{constlabels.SpanHttpRequestHeaders, constlabels.HttpRequestPayload, String},
+		{constlabels.SpanHttpRequestHeaders, constlabels.RequestPayload, String},
 		{constlabels.SpanHttpRequestBody, constlabels.STR_EMPTY, StrEmpty},
-		{constlabels.SpanHttpResponseHeaders, constlabels.HttpResponsePayload, String},
+		{constlabels.SpanHttpResponseHeaders, constlabels.ResponsePayload, String},
 		{constlabels.SpanHttpResponseBody, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{HTTP}},
 	{[]dictionary{

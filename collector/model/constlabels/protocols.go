@@ -3,13 +3,13 @@ package constlabels
 const (
 	ContentKey = "content_key"
 
-	HttpMethod          = "http_method"
-	HttpUrl             = "http_url"
-	HttpApmTraceType    = "trace_type"
-	HttpApmTraceId      = "trace_id"
-	HttpRequestPayload  = "request_payload"
-	HttpResponsePayload = "response_payload"
-	HttpStatusCode      = "http_status_code"
+	HttpMethod       = "http_method"
+	HttpUrl          = "http_url"
+	HttpApmTraceType = "trace_type"
+	HttpApmTraceId   = "trace_id"
+	RequestPayload   = "request_payload"
+	ResponsePayload  = "response_payload"
+	HttpStatusCode   = "http_status_code"
 
 	DnsId     = "dns_id"
 	DnsDomain = "dns_domain"
