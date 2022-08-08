@@ -25,6 +25,7 @@ struct kindling_event_t_for_go{
 	char *name;
 	uint32_t category;
 	uint16_t paramsNumber;
+    uint64_t latency;
     struct KeyValue {
 	char *key;
 	char* value;

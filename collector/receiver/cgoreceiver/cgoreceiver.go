@@ -166,6 +166,7 @@ func convertEvent(cgoEvent *CKindlingEventForGo) *model.KindlingEvent {
 	ev.Ctx.FdInfo.Destination = uint64(cgoEvent.context.fdInfo.destination)
 
 	ev.ParamsNumber = uint16(cgoEvent.paramsNumber)
+	ev.Latency = uint64(cgoEvent.latency)
 	for i := 0; i < int(ev.ParamsNumber); i++ {
 		ev.UserAttributes[i].Key = C.GoString(cgoEvent.userAttributes[i].key)
 		userAttributesLen := cgoEvent.userAttributes[i].len

@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -176,6 +177,9 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 		return err
 	}
 	if isRequest {
+		if evt.GetPid() == 13759 {
+			log.Printf("latency = %d", evt.GetLatency())
+		}
 		return na.analyseRequest(evt)
 	} else {
 		return na.analyseResponse(evt)

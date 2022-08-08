@@ -251,6 +251,7 @@ type KindlingEvent struct {
 	Category Category
 	// Number of UserAttributes
 	ParamsNumber uint16
+	Latency      uint64
 	// User-defined Attributions of Kindling Event, now including latency for syscall.
 	UserAttributes [16]KeyValue
 	// Context includes Thread information and Fd information.
