@@ -447,7 +447,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 		// Parse failure
 		return nil
 	}
-	responseMsg.AddByteArrayUtf8Attribute(constlabels.ResponsePayload, mps.requests.getData())
+	responseMsg.AddByteArrayUtf8Attribute(constlabels.ResponsePayload, mps.responses.getData())
 
 	return na.getRecords(mps, parser.GetProtocol(), responseMsg.GetAttributes())
 }
