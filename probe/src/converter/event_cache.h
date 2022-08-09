@@ -45,10 +45,14 @@ public:
 
 class net_info : public info_base {
 public:
+	uint8_t role;
     net_info() {}
+	net_info(uint8_t roleTmp) {
+    	role = roleTmp;
+    }
     ~net_info() {}
     string toString() {
-        return "net@" + operation_type + "@" + name + "@" + to_string(start_time) + "@" + to_string(size);
+        return "net@" + operation_type + "@" + name + "@" + to_string(start_time) + "@" + to_string(role) + "@" + to_string(size);
     }
 };
 

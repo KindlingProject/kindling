@@ -78,9 +78,10 @@ bool cpu_converter::Cache(sinsp_evt *sevt) {
 			}
 			case SCAP_FD_IPV4_SOCK:
 			case SCAP_FD_IPV4_SERVSOCK: {
-				info = new net_info();
+				info = new net_info(s_fdinfo->is_role_server());
 				info->start_time = sevt->get_ts();
 				info->name = s_fdinfo->m_name;
+
 				auto psize = sevt->get_param_value_raw("size");
 				if (!psize || *(uint32_t *) psize->m_val <= 0) {
 					return false;
@@ -351,7 +352,7 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 				info.append(futex_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
 				break;
 			}
-			case 4: {
+			case 6: {
 				info.append(epoll_cache->GetInfo(s_tinfo->m_tid, off_time[i], off_type[i]));
 				break;
 			}

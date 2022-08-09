@@ -199,17 +199,31 @@ int getEvent(void **pp_kindling_event)
 			p_kindling_event->userAttributes[i].value = (char *)malloc(sizeof(char) * 8096);
 		}
 	}
+	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
 	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
 	uint16_t userAttNumber = 0;
-//	string line;
-//	if ((ev->get_type() == PPME_SYSCALL_WRITE_X) && formatter->tostring(ev, &line) && threadInfo->m_pid == 7487) {
-//	    cout<< line << endl;
-//
-//	}
-	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
+	uint16_t source = get_kindling_source(ev->get_type());
+	if(threadInfo->m_pid == 13759 &&ev->get_type() == PPME_SYSCALL_READ_E && fdInfo!= nullptr){
+		cout<<"tid: "<< threadInfo->m_tid<<" fd num: "<< ev->get_fd_num()<<"reade: "<<ev->get_ts()<<endl;
+	}
+	if(source == SYSCALL_EXIT) {
+		p_kindling_event->latency = threadInfo->m_latency;
+		if(threadInfo->m_pid == 13759 &&ev->get_type() == PPME_SYSCALL_READ_X && fdInfo!= nullptr){
+			cout<<"tid: "<< threadInfo->m_tid<< " fd num: "<< ev->get_fd_num()<<" readx: "<<ev->get_ts()<<" latency: "<<threadInfo->m_latency<<endl;
+		}
+	}
+	userAttNumber++;
+	string line;
+	if ( formatter->tostring(ev, &line) && threadInfo->m_tid == 24533) {
+	    cout<< line << endl;
+
+	}
+
 
     logCache->addLog(ev);
 	cpuConverter->Cache(ev);
+
+
 	if(ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo!= nullptr && fdInfo->is_file() ){
 		auto data_param = ev->get_param_value_raw("data");
 		if (data_param != nullptr) {
@@ -759,5 +773,56 @@ uint16_t get_kindling_category(sinsp_evt *sEvt)
 	}
 	default:
 		return CAT_OTHER;
+	}
+}
+
+uint16_t get_kindling_source(uint16_t etype) {
+	if (PPME_IS_ENTER(etype)) {
+		switch (etype) {
+			case PPME_PROCEXIT_E:
+			case PPME_SCHEDSWITCH_6_E:
+			case PPME_SYSDIGEVENT_E:
+			case PPME_CONTAINER_E:
+			case PPME_PROCINFO_E:
+			case PPME_SCHEDSWITCH_1_E:
+			case PPME_DROP_E:
+			case PPME_PROCEXIT_1_E:
+			case PPME_CPU_HOTPLUG_E:
+			case PPME_K8S_E:
+			case PPME_TRACER_E:
+			case PPME_MESOS_E:
+			case PPME_CONTAINER_JSON_E:
+			case PPME_NOTIFICATION_E:
+			case PPME_INFRASTRUCTURE_EVENT_E:
+			case PPME_PAGE_FAULT_E:
+				return SOURCE_UNKNOWN;
+			case PPME_TCP_RCV_ESTABLISHED_E:
+			case PPME_TCP_CLOSE_E:
+			case PPME_TCP_DROP_E:
+			case PPME_TCP_RETRANCESMIT_SKB_E:
+				return KRPOBE;
+				// TODO add cases of tracepoint, kprobe, uprobe
+			default:
+				return SYSCALL_ENTER;
+		}
+	} else {
+		switch (etype) {
+			case PPME_CONTAINER_X:
+			case PPME_PROCINFO_X:
+			case PPME_SCHEDSWITCH_1_X:
+			case PPME_DROP_X:
+			case PPME_CPU_HOTPLUG_X:
+			case PPME_K8S_X:
+			case PPME_TRACER_X:
+			case PPME_MESOS_X:
+			case PPME_CONTAINER_JSON_X:
+			case PPME_NOTIFICATION_X:
+			case PPME_INFRASTRUCTURE_EVENT_X:
+			case PPME_PAGE_FAULT_X:
+				return SOURCE_UNKNOWN;
+				// TODO add cases of tracepoint, kprobe, uprobe
+			default:
+				return SYSCALL_EXIT;
+		}
 	}
 }

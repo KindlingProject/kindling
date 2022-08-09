@@ -15,6 +15,7 @@ void init_sub_label();
 void sub_event(char* eventName, char* category);
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
+uint16_t get_kindling_source(uint16_t etype);
 struct event {
     string event_name;
     ppm_event_type event_type;
@@ -24,6 +25,7 @@ struct kindling_event_t_for_go{
 	char *name;
 	uint32_t category;
 	uint16_t paramsNumber;
+	uint64_t latency;
     struct KeyValue {
 	char *key;
 	char* value;
@@ -57,6 +59,17 @@ struct kindling_event_t_for_go{
 };
 
 int setTuple(kindling_event_t_for_go* kevt, const sinsp_evt_param *pTuple, int userAttNumber);
+
+enum Source {
+	SOURCE_UNKNOWN = 0,
+	SYSCALL_ENTER = 1,
+	SYSCALL_EXIT = 2,
+	TRACEPOINT = 3,
+	KRPOBE = 4,
+	KRETPROBE = 5,
+	UPROBE = 6,
+	URETPROBE = 7
+};
 
 enum Category {
     CAT_NONE = 0,
