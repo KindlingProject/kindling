@@ -19,6 +19,7 @@
 
 ## v0.3.0 - 2022-06-29
 ### New features
+- Add an option name `debug_selector` to filter debug_log from different components ([#300](https://github.com/CloudDectective-Harmonycloud/kindling/pull/300))
 - Add a URL clustering method to reduce the cardinality of the entity metrics. Configuration options are provided to choose which method to use. ([#268](https://github.com/CloudDectective-Harmonycloud/kindling/pull/268)) 
 - Display connection failure metrics in the Grafana-plugin ([#255](https://github.com/CloudDectective-Harmonycloud/kindling/pull/255)) 
 - Add the metrics that describe how many times the TCP connections have been made ([#234](https://github.com/CloudDectective-Harmonycloud/kindling/pull/234) [#235](https://github.com/CloudDectective-Harmonycloud/kindling/pull/235) [#236](https://github.com/CloudDectective-Harmonycloud/kindling/pull/236) [#237](https://github.com/CloudDectective-Harmonycloud/kindling/pull/237))

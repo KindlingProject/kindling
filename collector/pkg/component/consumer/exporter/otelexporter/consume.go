@@ -2,7 +2,6 @@ package otelexporter
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
@@ -89,8 +88,8 @@ func (e *OtelExporter) exportMetric(result *adapter.AdaptedResult) {
 		} else if metric.DataType() == model.HistogramMetricType {
 			e.telemetry.Logger.Warn("Failed to exporter Metric: can not use otlp-exporter to export histogram Data", zap.String("MetricName", metric.Name))
 		} else {
-			if ce := e.telemetry.Logger.Check(zapcore.DebugLevel, "Undefined metricKind for this Metric"); ce != nil {
-				ce.Write(zap.String("MetricName", metric.Name), zap.String("MetricType", reflect.TypeOf(metric).String()))
+			if ce := e.telemetry.Logger.Check(zapcore.DebugLevel, "Undefined metricKind for this Metric in metric_aggregation_map"); ce != nil {
+				ce.Write(zap.String("MetricName", metric.Name))
 			}
 		}
 	}

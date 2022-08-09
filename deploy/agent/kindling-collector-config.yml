@@ -159,6 +159,12 @@ observability:
   logger:
     console_level: info # debug,info,warn,error,none
     file_level: info
+    # debug_selector is used to filter debug message from different components
+    # 1. This filter will not take effect when there is no element in the debug_selector list
+    # 2. If the list is not empty, only the components contained in this list will print debug message
+    # 3. The name of each component is defined above, such as `receiver.cgoreceiver`, `exporter.otelexporter`, only the second part of the config name needed
+    # e.g debug_selector: ["cgoreceiver","otelexporter"]
+    debug_selector: []
     file_rotation:
       filename: agent.log
       maxsize: 512 #MB

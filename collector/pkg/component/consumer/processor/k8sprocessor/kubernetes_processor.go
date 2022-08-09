@@ -47,7 +47,7 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	options = append(options, kubernetes.WithGraceDeletePeriod(config.GraceDeletePeriod))
 	err := kubernetes.InitK8sHandler(options...)
 	if err != nil {
-		telemetry.Logger.Sugar().Panicf("Failed to initialize [%s]: %v. Set the option 'enable' false if you want to run the agent in the non-Kubernetes environment.", K8sMetadata, err)
+		telemetry.Logger.Panicf("Failed to initialize [%s]: %v. Set the option 'enable' false if you want to run the agent in the non-Kubernetes environment.", K8sMetadata, err)
 		return nil
 	}
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -17,12 +18,12 @@ type ConnectMonitor struct {
 	connMap        map[ConnKey]*ConnectionStats
 	statesResource StatesResource
 	hostProcPath   string
-	logger         *zap.Logger
+	logger         *component.TelemetryLogger
 }
 
 const HostProc = "HOST_PROC_PATH"
 
-func NewConnectMonitor(logger *zap.Logger) *ConnectMonitor {
+func NewConnectMonitor(logger *component.TelemetryLogger) *ConnectMonitor {
 	path, ok := os.LookupEnv(HostProc)
 	if !ok {
 		path = "/proc"

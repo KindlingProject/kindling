@@ -118,10 +118,10 @@ func (p *prometheusExporter) Start(_ context.Context) error {
 }
 
 type promLogger struct {
-	realLog *zap.Logger
+	realLog *component.TelemetryLogger
 }
 
-func newPromLogger(zapLog *zap.Logger) *promLogger {
+func newPromLogger(zapLog *component.TelemetryLogger) *promLogger {
 	return &promLogger{
 		realLog: zapLog,
 	}

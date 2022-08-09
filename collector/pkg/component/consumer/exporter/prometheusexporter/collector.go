@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
+	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 )
 
 type collector struct {
@@ -69,7 +69,7 @@ func (c *collector) recordMetricGroups(group *model.DataGroup) {
 	c.aggregator.AggregatorWithAllLabelsAndMetric(group, time.Now())
 }
 
-func newCollector(config *Config, logger *zap.Logger) *collector {
+func newCollector(config *Config, _ *component.TelemetryLogger) *collector {
 	// TODO Do this in config later !!!!
 	requestTimeHistogramTopologyMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTimeHistogram, false)
 	requestTimeHistogramEntityMetric := constnames.ToKindlingNetMetricName(constvalues.RequestTimeHistogram, true)
