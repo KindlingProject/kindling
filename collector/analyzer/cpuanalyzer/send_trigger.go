@@ -12,7 +12,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-var eventsWindowsDuration = 5 * time.Second
+var eventsWindowsDuration = 10 * time.Second
 var SendChannel chan SendTriggerEvent
 
 func init() {

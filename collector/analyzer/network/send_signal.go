@@ -1,8 +1,6 @@
 package network
 
 import (
-	"fmt"
-
 	"github.com/Kindling-project/kindling/collector/analyzer/cpuanalyzer"
 	"github.com/Kindling-project/kindling/collector/model"
 	"github.com/Kindling-project/kindling/collector/model/constlabels"
