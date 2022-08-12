@@ -263,6 +263,6 @@ string FlameGraph::GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t,
     }
 
     aggregateData->DumpFuncNames(result);
-    fprintf(stdout, ">> FlameData: %s\n", result.c_str());
+    // fprintf(stdout, ">> FlameData: %s\n", result.c_str());
     return result;
 }
