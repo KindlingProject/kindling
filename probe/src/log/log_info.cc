@@ -10,12 +10,11 @@ LogData::~LogData() {
     string().swap(data_);
 }
 
-void LogData::setData(long ts, int64_t size, __u32 tid, char* data) {
+void LogData::setData(long ts, int size, __u32 tid, char* data) {
     ts_ = ts;
-    size_ = size;
     tid_ = tid;
     data_ = data;
-    // fprintf(stdout, "[Add Log] Time: %ld, Tid: %d, Data(%ld): %s\n", ts, tid, size, data);
+    // fprintf(stdout, "[Add Log] Time: %ld, Tid: %d, Data(%d): %s\n", ts, tid, size, data);
 }
 
 long LogData::getTs() {
@@ -36,10 +35,14 @@ static void setLog(void* object, void* evt) {
 
     // Get Thread Id
     auto s_tinfo = sEvt->get_thread_info();
-    auto pres = sEvt->get_param_value_raw("res");
     auto pData = sEvt->get_param_value_raw("data");
 
-    logData->setData(sEvt->get_ts(), *(int64_t *) pres->m_val, s_tinfo->m_tid, pData->m_val);
+    if (pData->m_len > 0) {
+        char* log_info = new char[pData->m_len];
+        memcpy(log_info, pData->m_val, pData->m_len);
+        log_info[pData->m_len - 1] = '\0';
+        logData->setData(sEvt->get_ts(), pData->m_len, s_tinfo->m_tid, log_info);
+    }
 }
 
 static long getLogTime(void* object) {
@@ -78,7 +81,7 @@ string LogDatas::ToString() {
     bool seperator = false;
     for (auto itr = logs_.begin(); itr != logs_.end(); itr++) {
         if (seperator) {
-            result.append("\n");
+            result.append("<br>");
         } else {
             seperator = true;
         }

@@ -14,13 +14,12 @@ class LogData {
   public:
     LogData();
     ~LogData();
-    void setData(long ts, int64_t size, __u32 tid, char* data);
+    void setData(long ts, int size, __u32 tid, char* data);
     long getTs();
     __u32 getTid();
     string getData();
   private:
     long ts_;
-    int64_t size_;
     __u32 tid_;
     string data_;
 };
