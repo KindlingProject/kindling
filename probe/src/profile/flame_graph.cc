@@ -105,7 +105,7 @@ void AggregateData::Aggregate() {
 }
 
 void AggregateData::DumpFrameDatas(string& frameDatas, bool file) {
-    if (root_.total_ == 0) {
+    if (root_.total_ < 1) {
         return;
     }
     dumpFrameData(frameDatas, "all", root_, 0, 0, false, file);
