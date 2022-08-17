@@ -26,6 +26,9 @@ receivers:
       - name: kprobe-tcp_set_state
       - name: tracepoint-cpu_analysis
 analyzers:
+  cpuanalyzer:
+    es_host: http://10.10.103.96:9200
+    es_index: cpu_event
   tcpconnectanalyzer:
     channel_size: 10000
     wait_event_second: 10
@@ -106,6 +109,9 @@ processors:
       error_data: 100
 
 exporters:
+  esexporter:
+    es_host: http://10.10.103.96:9200
+    es_index: kindling_trace
   otelexporter:
     adapter_config:
       need_trace_as_metric: true
