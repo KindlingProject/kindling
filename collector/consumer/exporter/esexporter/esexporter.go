@@ -74,7 +74,7 @@ func (e *EsExporter) sendTrace(dataGroup *model.DataGroup) {
 	for _, metric := range dataGroup.Metrics {
 		trace.Metrics[metric.Name] = metric.GetInt().Value
 	}
-	e.esClient.Index().Index("kindling_trace").Type("_doc").BodyJson(trace).Do(context.Background())
+	e.esClient.Index().Index(e.config.GetEsIndexName()).Type("_doc").BodyJson(trace).Do(context.Background())
 }
 
 type TraceData struct {

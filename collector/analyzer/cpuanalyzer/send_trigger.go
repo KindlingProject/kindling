@@ -284,7 +284,7 @@ func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) 
 			if len(segment.CpuEvents) != 0 && segment.IsSend != 1 {
 				segment.IsSend = 1
 				segment.IndexTimestamp = time.Now().String()
-				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
+				ca.esClient.Index().Index(ca.cfg.GetEsIndexName()).Type("_doc").BodyJson(segment).Do(context.Background())
 			}
 		}
 	}
