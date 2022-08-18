@@ -181,7 +181,7 @@ static void aggSampleData(void* object, void* value) {
 static void aggProfileData(void* object, void* value) {
     AggregateData* agg_data = (AggregateData*) object;
     ProfileData *profile_data = (ProfileData*)value;
-    if (profile_data->tid_ == 0 || (profile_data->tid_ > 0 && profile_data->tid_ != profile_data->tid_)) {
+    if (profile_data->tid_ == 0 || (agg_data->tid_ > 0 && profile_data->tid_ != agg_data->tid_)) {
         return;
     }
 
