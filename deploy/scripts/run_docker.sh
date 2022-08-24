@@ -2,7 +2,7 @@ script_dir="$(dirname "$0")"
 workspace_root=$(realpath "${script_dir}/../")
 
 # Docker image information.
-docker_image_with_tag="kindlingproject/agent-builder"
+docker_image_with_tag="registry.cn-hangzhou.aliyuncs.com/zjd-kindling/kindling-build:scl"
 
 configs=(-v "$HOME/.config:/root/.config" \
   -v "$HOME/.ssh:/root/.ssh" \
@@ -22,6 +22,7 @@ docker run --rm -it \
   "${configs[@]}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "${workspace_root}/../:/kindling" \
+  -v "/root/clash:/root/clash" \
   -w "/kindling" \
   "${RUN_DOCKER_EXTRA_ARGS[@]}" \
   "${docker_image_with_tag}" \

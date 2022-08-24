@@ -125,7 +125,7 @@ bool LogCache::addLog(void *evt) {
             && type != PPME_SYSCALL_PWRITE_X && type != PPME_SYSCALL_PWRITEV_X ) {
         return false;
     }
-    if (isLogFile(sEvt) ==  false) {
+    if (isLogFile(sEvt) == false) {
         return false;
     }
     

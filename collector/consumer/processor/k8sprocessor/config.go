@@ -13,6 +13,6 @@ type Config struct {
 
 var DefaultConfig Config = Config{
 	KubeAuthType:      "serviceAccount",
-	KubeConfigDir:     "~/.kube/config",
+	KubeConfigDir:     "/root/.kube/config",
 	GraceDeletePeriod: 60,
 }

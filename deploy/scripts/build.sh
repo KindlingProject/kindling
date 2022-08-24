@@ -18,6 +18,6 @@ else
   else
     cp -rf ./collector ./docker/kindling-collector
     cd docker
-    docker build -t kindling-collector .
+    docker build -t kindling-collector . -f DockerfileLocalProbe
   fi
 fi

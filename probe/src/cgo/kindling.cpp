@@ -212,9 +212,9 @@ int getEvent(void **pp_kindling_event)
 			cout<<"tid: "<< threadInfo->m_tid<< " fd num: "<< ev->get_fd_num()<<" readx: "<<ev->get_ts()<<" latency: "<<threadInfo->m_latency<<endl;
 		}
 	}
-	userAttNumber++;
+
 	string line;
-	if ( formatter->tostring(ev, &line) && threadInfo->m_tid == 24533) {
+	if (formatter->tostring(ev, &line) && threadInfo->m_tid == 24533) {
 	    cout<< line << endl;
 
 	}
