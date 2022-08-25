@@ -8,9 +8,9 @@ Service metrics are generated from the server-side events, which are used to sho
 | `kindling_entity_request_duration_nanoseconds_total` | Counter | Total duration of requests |
 | `kindling_entity_request_send_bytes_total` | Counter | Total size of payload sent |
 | `kindling_entity_request_receive_bytes_total` | Counter | Total size of payload received |
-| `kindling_entity_request_average_duration_nanoseconds_count`  | Histogram | Count of average duration of requests |
-| `kindling_entity_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests |
-| `kindling_entity_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests |
+| `kindling_entity_request_average_duration_nanoseconds_count` | Histogram | Count of average duration of requests <br> **Disabled by default. See Note 3 for how to enable it.**|
+| `kindling_entity_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests <br> **Disabled by default. See Note 3 for how to enable it.**|
+| `kindling_entity_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests <br> **Disabled by default. See Note 3 for how to enable it.**|
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ Service metrics are generated from the server-side events, which are used to sho
   
 | **Label** | **Example** | **Notes** |
 | --- | --- | --- |
-| `request_content` | select employee | SQL of MySQL. SQL has been truncated to avoid high-cardinality. The format is ['operation' 'space' 'table']. |
+| `request_content` | select employee | SQL of MySQL. SQL has been truncated to avoid high-cardinality. The format is ['operation' 'space' 'table' '*']. |
 | `response_content` | 1064 | Error code of MySQL. Only applicable when the response is in error type. See [codes introduction](https://dev.mysql.com/doc/mysql-errors/5.7/en/error-reference-introduction.html).|
 
 - When protocol is `kafka`:
@@ -70,6 +70,15 @@ Service metrics are generated from the server-side events, which are used to sho
 
 - For other cases, the `request_content` and `response_content` are both empty.
 
+**Note 3**: The histogram metric `kindling_entity_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
+```yaml
+exporters:
+  otelexporter:
+    metric_aggregation_map:
+      # add the following line
+      kindling_entity_request_average_duration_nanoseconds: histogram 
+```
+
 ## Topology Metrics
 
 Topology metrics are typically generated from the client-side events, which are used to show the service dependencies map, so the metrics are called "topology". Some timeseries may be generated from the server-side events, which contain a non-empty label `dst_container_id`. These timeseries are generated only when the source IP is not the pod's IP inside the Kubernetes cluster, which are useful when there is no agent installed on the client-side. 
@@ -81,9 +90,9 @@ Topology metrics are typically generated from the client-side events, which are 
 | `kindling_topology_request_duration_nanoseconds_total` | Counter |  Total duration of requests |
 | `kindling_topology_request_request_bytes_total` | Counter | Total size of payload sent |
 | `kindling_topology_request_response_bytes_total` | Counter | Total size of payload received |
-| `kindling_topology_request_average_duration_nanoseconds_count` | Histogram | Count of average duration of requests |​
-| `kindling_topology_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests  |
-| `kindling_topology_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests |
+| `kindling_topology_request_average_duration_nanoseconds_count` | Histogram | Count of average duration of requests<br> **Disabled by default. See Note 3 for how to enable it.** |​
+| `kindling_topology_request_average_duration_nanoseconds_sum` | Histogram | Sum of average duration of requests<br> **Disabled by default. See Note 3 for how to enable it.** |
+| `kindling_topology_request_average_duration_nanoseconds_bucket` | Histogram | Histogram buckets of average duration of requests<br> **Disabled by default. See Note 3 for how to enable it.** |
 
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
@@ -125,6 +134,14 @@ These two terms are composed of two parts.
 - **DUBBO**: 'Error Code' of Dubbo request.
 - **others**: empty temporarily
 
+**Note 3**: The histogram metric `kindling_topology_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
+```yaml
+exporters:
+  otelexporter:
+    metric_aggregation_map:
+      # add the following line
+      kindling_topology_request_average_duration_nanoseconds: histogram 
+```
 ## Trace As Metric
 We made some rules for considering whether a request is abnormal. For the abnormal request, the detail request information is considered as useful for debugging or profiling. We name this kind of data "trace". It is not a good practice to store such data in Prometheus as some labels are high-cardinality, so we picked up some labels from the original ones to generate a new kind of metric, which is called "Trace As Metric". The following table shows what labels this metric contains.  
 
@@ -208,7 +225,8 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
 | --- | --- | --- |
-| `pid` | 1024 | The client's process ID |
+| `pid` | 1024 | The client's process ID|
+| `comm` | java | The client's process command|
 | `src_node` | slave-node1 | Which node the source pod is on |
 | `src_namespace` | default | Namespace of the source pod |
 | `src_workload_kind` | deployment | Workload kind of the source pod |
@@ -237,6 +255,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 
 **Note 2**: The field `errno` is not `0` only if the TCP socket is blocking and there is an error happened. There are multiple possible values it could contain. See the `ERRORS` section of the [connect(2) manual](https://man7.org/linux/man-pages/man2/connect.2.html) for more details.
 
+**Note 3**: The field `pid` and `comm` will not exist if you set `need_process_info` to `false` (default is false), that will reduce the pressure of Prometheus.
 
 ## PromQL Example
 Here are some examples of how to use these metrics in Prometheus, which can help you understand them faster.

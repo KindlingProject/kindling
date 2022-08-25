@@ -1,11 +1,12 @@
 package defaultaggregator
 
 import (
-	"github.com/Kindling-project/kindling/collector/model"
-	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 func TestConcurrentAggregator(t *testing.T) {

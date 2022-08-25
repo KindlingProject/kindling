@@ -7,19 +7,23 @@
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
 #include <cstdlib>
+
 #include "converter/cpu_converter.h"
 #include "profile/profiler.h"
 #include "log/log_info.h"
 
-static sinsp *inspector = nullptr;
-sinsp_evt_formatter *formatter = nullptr;
 LogCache *logCache;
 Profiler *prof;
 cpu_converter *cpuConverter;
+map<uint64_t, char*> ptid_comm;
+static sinsp *inspector = nullptr;
+sinsp_evt_formatter *formatter = nullptr;
+bool printEvent = false;
 int cnt = 0;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
-map<uint64_t, char*> ptid_comm;
+
+
 int16_t event_filters[1024][16];
 
 void init_sub_label()
@@ -76,6 +80,10 @@ void stop_perf() {
 void init_probe()
 {
 	bool bpf = false;
+	char* isPrintEvent = getenv("IS_PRINT_EVENT");
+	if (isPrintEvent != nullptr && strncmp("true", isPrintEvent, sizeof (isPrintEvent))==0){
+		printEvent = true;
+	}
 	string bpf_probe;
 	inspector = new sinsp();
 	init_sub_label();
@@ -179,6 +187,19 @@ int getEvent(void **pp_kindling_event)
 		if(pres && *(int64_t *)pres->m_val <= 0)
 		{
 			return -1;
+		}
+	}
+
+	uint16_t kindling_category = get_kindling_category(ev);
+	uint16_t ev_type = ev->get_type();
+	if(event_filters[ev_type][kindling_category] == 0)
+	{
+		return -1;
+	}
+	if(printEvent){
+		string line;
+		if (formatter->tostring(ev, &line)) {
+			cout<< line << endl;
 		}
 	}
 	kindling_event_t_for_go *p_kindling_event;
@@ -432,17 +453,17 @@ int getEvent(void **pp_kindling_event)
 
 
 	}
-	uint16_t kindling_category = get_kindling_category(ev);
+	//uint16_t kindling_category = get_kindling_category(ev);
 //	if(ev->get_type() == PPME_SYSCALL_READ_E && kindling_category== CAT_NET&& threadInfo->m_pid == 8395) {
 //		if (formatter->tostring(ev, &line)) {
 //			cout<< line << endl;
 //		}
 //	}
-	uint16_t ev_type = ev->get_type();
-	if(event_filters[ev_type][kindling_category] == 0)
-	{
-		return -1;
-	}
+	//uint16_t ev_type = ev->get_type();
+	// if(event_filters[ev_type][kindling_category] == 0)
+	// {
+	// 	return -1;
+	// }
 
 
 	if (ev_type == PPME_CPU_ANALYSIS_E) {
@@ -725,7 +746,6 @@ uint16_t get_type(ppm_param_type type)
 		return BYTEBUF;
 	}
 }
-
 
 uint16_t get_kindling_category(sinsp_evt *sEvt)
 {

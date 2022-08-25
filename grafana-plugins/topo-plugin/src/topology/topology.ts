@@ -93,7 +93,7 @@ export const serviceLineUpdate = (SGraph: any, dir: string) => {
 export const updateLinesAndNodes = (SGraph: any, options: any, volumes: any, metric: string, serviceLine: boolean) => {
     const nodes = SGraph.getNodes();
     const edges = SGraph.getEdges();
-    if (metric === 'latency' || metric === 'rtt' || metric === 'errorRate') {
+    if (metric === 'latency' || metric === 'rtt' || metric === 'errorRate' || metric === 'connFail') {
         edges.forEach((edge: any, idx: number) => {
             let edgeModel = edge.getModel();
             let color: string;
@@ -104,9 +104,12 @@ export const updateLinesAndNodes = (SGraph: any, options: any, volumes: any, met
             } else if (metric === 'rtt') {
                 color = edgeModel.rtt > options.abnormalRtt ? '#ff4c4c' : (edgeModel.rtt > options.normalRtt ? '#f3ff69' : '#C2C8D5');
                 edgeModel.label = formatTime(edgeModel.rtt);
-            } else {
+            } else if (metric === 'errorRate') {
                 color = edgeModel.errorRate > 0 ? '#ff4c4c' : '#C2C8D5';
                 edgeModel.label = formatPercent(edgeModel.errorRate);
+            } else {
+                color = edgeModel.connFail > 0 ? '#ff4c4c' : '#C2C8D5';
+                edgeModel.label = formatPercent(edgeModel.connFail);
             }
             edgeModel.opposite && (edgeModel.labelCfg.refY = -10);
             edgeModel.style.stroke = color;
@@ -122,8 +125,10 @@ export const updateLinesAndNodes = (SGraph: any, options: any, volumes: any, met
                 nodeModel.status = nodeModel.latency > options.abnormalLatency ? 'red' : (nodeModel.latency > options.normalLatency ? 'yellow' : 'green');
             } else if (metric === 'rtt') {
                 nodeModel.status = 'green';
-            } else {
+            } else if (metric === 'errorRate') {
                 nodeModel.status = nodeModel.errorRate > 0 ? 'red' : 'green';
+            } else {
+                nodeModel.status = 'green';
             }
             SGraph.updateItem(node, nodeModel);
         });

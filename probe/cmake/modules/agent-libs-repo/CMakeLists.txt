@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5.1)
 
+project(. NONE)
+
 include(ExternalProject)
 message(STATUS "Driver version: ${AGENT_LIBS_VERSION}")
 

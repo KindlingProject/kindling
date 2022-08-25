@@ -51,7 +51,7 @@ type SubEvent struct {
 func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
 	cfg, ok := config.(*Config)
 	if !ok {
-		telemetry.Logger.Sugar().Panicf("Cannot convert [%s] config", Cgo)
+		telemetry.Logger.Panicf("Cannot convert [%s] config", Cgo)
 	}
 	cgoReceiver := &CgoReceiver{
 		cfg:             cfg,

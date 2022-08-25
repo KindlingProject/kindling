@@ -88,6 +88,8 @@ enum Category {
     CAT_SYSTEM = 13, // System-related operations (e.g. reboot)
     Category_MAX = 14
 };
+
+
 const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
 	{"syscall_enter-open",              PPME_SYSCALL_OPEN_E},
 	{"syscall_exit-open",               PPME_SYSCALL_OPEN_X},
