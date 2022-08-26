@@ -29,13 +29,15 @@ static void setProfileData(void* object, void* value) {
     profileData->depth_ = newProfileData->depth_;
     profileData->finish_ = newProfileData->finish_;
     profileData->stack_ = newProfileData->stack_;
+
+    delete newProfileData;
 }
 
 bool FlameSymbolDatas::addPerfSymbol(int depth, __u64 ip, int pid, bool user) {
     if (depth >= max_depth_) {
         return false;
     }
-    FlameSymbolData* data = symbol_datas_.at(depth);
+    FlameSymbolData* data = getOrCreateSymbolData(depth);
     data->symbol_ = flame_graph_ctx.symbol_table_->GetSymbol(ip, pid);
     data->type_ = user ? TYPE_USER : TYPE_KERNEL;
     symbol_to_ = depth;
@@ -52,7 +54,7 @@ void FlameSymbolDatas::addProfileSymbol(int depth, string name) {
         // FIX Skip First Data.
         symbol_from_ = depth;
     }
-    FlameSymbolData* data = symbol_datas_.at(depth);
+    FlameSymbolData* data = getOrCreateSymbolData(depth);
     data->symbol_ = name;
     data->type_ = TYPE_JVM;
     symbol_to_ = depth;
@@ -85,7 +87,7 @@ void SampleData::collectStacks(FlameSymbolDatas *symbolDatas) {
 
 bool ProfileData::collectStacks(FlameSymbolDatas *symbolDatas) {
     int index = 0, depth = depth_;
-    for (int i = 0; i < stack_.length(); i++) {
+    for (size_t i = 0; i < stack_.length(); i++) {
         if (stack_[i] == '!') {
             string symbol = stack_.substr(index, i - index);
             symbolDatas->addProfileSymbol(depth++, symbol);
@@ -105,14 +107,13 @@ void AggregateData::Aggregate() {
 }
 
 void AggregateData::DumpFrameDatas(string& frameDatas, bool file) {
-    if (root_.total_ < 1) {
+    if (root_->total_ < 2) {
         return;
     }
     dumpFrameData(frameDatas, "all", root_, 0, 0, false, file);
 }
 
-void AggregateData::dumpFrameData(string& frameDatas, const string& name, const Node& node, int depth, __u64 x, bool seperator, bool file) {
-    Node node_copy = node;
+void AggregateData::dumpFrameData(string& frameDatas, const string& name, Node* node, int depth, __u64 x, bool seperator, bool file) {
     string name_copy = name;
     if (seperator) {
         frameDatas.append(flame_graph_ctx.seperator_next_);
@@ -124,9 +125,9 @@ void AggregateData::dumpFrameData(string& frameDatas, const string& name, const 
     frameDatas.append(flame_graph_ctx.seperator_frame_);
     frameDatas.append(std::to_string(x));
     frameDatas.append(flame_graph_ctx.seperator_frame_);
-    frameDatas.append(std::to_string(node.total_));
+    frameDatas.append(std::to_string(node->total_));
     frameDatas.append(flame_graph_ctx.seperator_frame_);
-    frameDatas.append(std::to_string(node_copy.getColor(name_copy)));
+    frameDatas.append(std::to_string(node->getColor(name_copy)));
     frameDatas.append(flame_graph_ctx.seperator_frame_);
     if (file) {
         frameDatas.append("'");
@@ -136,12 +137,12 @@ void AggregateData::dumpFrameData(string& frameDatas, const string& name, const 
         frameDatas.append(std::to_string(getFuncId(name_copy)));
     }
 
-    x += node.self_;
-    for (map<string, Node>::const_iterator itr = node.children_.begin(); itr != node.children_.end(); ++itr) {
-        if (itr->second.total_ > 2) {
+    x += node->self_;
+    for (map<string, Node*>::const_iterator itr = node->children_.begin(); itr != node->children_.end(); ++itr) {
+        if (itr->second->total_ > 2) {
             dumpFrameData(frameDatas, itr->first, itr->second, depth + 1, x, true, file);
         }
-        x += itr->second.total_;
+        x += itr->second->total_;
     }
 }
 
@@ -233,7 +234,7 @@ void FlameGraph::CollectData() {
 
 string FlameGraph::GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods) {
     string result = "";
-    AggregateData *aggregateData = new AggregateData(tid, flame_graph_ctx.max_depth_);
+    AggregateData *aggregateData = NULL;
     BucketRingBuffers<ProfileData> *profileData = NULL;
     if (profile_datas_.count(pid) > 0) {
         profileData = profile_datas_[pid];
@@ -245,6 +246,9 @@ string FlameGraph::GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t,
             start_time = periods[i].first / perf_period_ns_; // ns->ms
             end_time = periods[i].second / perf_period_ns_; // ns->ms
 
+            if (NULL == aggregateData) {
+                aggregateData = new AggregateData(tid, flame_graph_ctx.max_depth_);
+            }
             //fprintf(stdout, ">> Collect: %lld -> %lld, Duration: %lld, Exist Data %ld -> %ld\n", start_time, end_time, end_time-start_time, sample_datas_->getFrom(), sample_datas_->getTo());
             if (profileData != NULL) {
                 profileData->collect(start_time, end_time, aggregateData, aggProfileData);
@@ -259,10 +263,14 @@ string FlameGraph::GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t,
 
     if (result.size() == size) {
         // Set values like |||| to empty.
+        if (aggregateData != NULL) {
+            delete aggregateData;
+        }
         return "";
     }
 
     aggregateData->DumpFuncNames(result);
-    // fprintf(stdout, ">> FlameData: %s\n", result.c_str());
+    delete aggregateData;
+    fprintf(stdout, ">> FlameData: %s\n", result.c_str());
     return result;
 }

@@ -40,6 +40,9 @@ class FlameSymbolData {
     FlameSymbolData() {
     }
 
+    ~FlameSymbolData() {
+    }
+
     string symbol_;
     int type_;
 };
@@ -53,9 +56,25 @@ class FlameSymbolDatas {
 
     FlameSymbolDatas(int max_depth) : symbol_from_(0), symbol_to_(0), max_depth_(max_depth) {
       symbol_datas_ = vector<FlameSymbolData*>();
-      for (int i = 0; i < max_depth; i++) {
-        symbol_datas_.push_back(new FlameSymbolData());
+    }
+
+    ~FlameSymbolDatas() {
+      for (auto itr = symbol_datas_.begin(); itr != symbol_datas_.end(); itr++) {
+        if (NULL != *itr) {
+          delete *itr;
+          *itr = NULL;
+        }
       }
+      symbol_datas_.clear();
+    }
+
+    FlameSymbolData* getOrCreateSymbolData(int depth) {
+      if (symbol_datas_.size() == 0) {
+        for (int i = 0; i < max_depth_; i++) {
+          symbol_datas_.push_back(new FlameSymbolData());
+        }
+      }
+      return symbol_datas_.at(depth);
     }
 
     bool addPerfSymbol(int depth, __u64 ip, int pid, bool user);
@@ -92,7 +111,7 @@ class ProfileData {
 
 class Node {
   public:
-    map<string, Node> children_;
+    map<string, Node*> children_;
     __u64 total_;
     __u64 self_;
     int type_;
@@ -100,10 +119,23 @@ class Node {
     Node() : children_(), total_(0), self_(0), type_(0) {
     }
 
+    ~Node() {
+      for (auto itr = children_.begin(); itr != children_.end();) {
+        auto node = itr->second;
+        if (node) {
+          delete node;
+          node = NULL;
+          children_.erase(itr++);
+        }
+      }
+      children_.clear();
+    }
+
     Node* addChild(const string& key, int type) {
         total_ += 1;
-        Node* node = &children_[key];
-        if (node->total_ == 0) {
+        Node* node = children_[key];
+        if (node == NULL) {
+          node = children_[key] = new Node();
           node->type_ = type;
         }
         return node;
@@ -148,20 +180,24 @@ class AggregateData {
     __u32 tid_;
     FlameSymbolDatas *symbol_datas_;
 
-    AggregateData(__u32 tid, int max_depth) : tid_(tid), root_(), func_name_map_(), func_names_() {
+    AggregateData(__u32 tid, int max_depth) : tid_(tid), func_name_map_(), func_names_() {
       symbol_datas_ = new FlameSymbolDatas(max_depth);
+      root_ = new Node();
     }
+
     ~AggregateData() {
       func_name_map_.clear();
       func_names_.clear();
+      delete root_;
       delete symbol_datas_;
     }
     Node* root() {
-        return &root_;
+        return root_;
     }
     void Reset() {
-      if (root_.total_ > 0) {
-        root_ = Node();
+      if (root_->total_ > 0) {
+        delete root_;
+        root_ = new Node();
       }
     }
     void Aggregate();
@@ -169,12 +205,12 @@ class AggregateData {
     void DumpFuncNames(string& frameDatas);
 
   private:
-    Node root_;
+    Node *root_;
     map<string, int> func_name_map_;
     vector<string> func_names_;
 
     int getFuncId(const string& funcName);
-    void dumpFrameData(string& frameDatas, const string& name, const Node& node, int depth, __u64 x, bool seperator, bool file);
+    void dumpFrameData(string& frameDatas, const string& name, Node* node, int depth, __u64 x, bool seperator, bool file);
 };
 
 class FlameGraph {
