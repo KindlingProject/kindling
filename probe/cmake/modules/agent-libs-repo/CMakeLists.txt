@@ -7,7 +7,7 @@ message(STATUS "Driver version: ${AGENT_LIBS_VERSION}")
 
 ExternalProject_Add(
   agent-libs
-  URL "https://github.com/yaofighting/agent-libs/archive/${AGENT_LIBS_VERSION}.tar.gz"
+  URL "https://github.com/CloudDectective-Harmonycloud/agent-libs/archive/${AGENT_LIBS_VERSION}.tar.gz"
   URL_HASH "${AGENT_LIBS_CHECKSUM}"
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
