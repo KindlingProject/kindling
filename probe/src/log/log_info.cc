@@ -164,5 +164,6 @@ string LogCache::getLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &perio
         }
         logDatas->Reset();
     }
+    delete logDatas;
     return result.length() == periods.size() * 3 ? "" : result;
 }
