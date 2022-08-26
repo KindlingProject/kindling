@@ -42,6 +42,7 @@ static void setLog(void* object, void* evt) {
         memcpy(log_info, pData->m_val, pData->m_len);
         log_info[pData->m_len - 1] = '\0';
         logData->setData(sEvt->get_ts(), pData->m_len, s_tinfo->m_tid, log_info);
+        delete []log_info;
     }
 }
 

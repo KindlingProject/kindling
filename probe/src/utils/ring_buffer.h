@@ -194,7 +194,7 @@ class BucketRingBuffers {
         }
         
         long add(long ts, void* value, setData setFn) {
-            long bucketTs = ts / m_bucket_period;
+            long bucketTs = ts / m_bucket_period; 
             if (m_buckets.empty()) {
                 addBucket(m_big_ring, bucketTs, value, setFn);
             } else {
