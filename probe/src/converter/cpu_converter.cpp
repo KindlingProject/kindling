@@ -31,161 +31,131 @@ cpu_converter::~cpu_converter() {
 }
 
 bool cpu_converter::Cache(sinsp_evt *sevt) {
-	info_base *info = nullptr;
-	auto type = sevt->get_type();
-	if (type == PPME_SYSCALL_EPOLLWAIT_X) {
-		return epoll_cache->setInfo(sevt);
-	}
-	sinsp_evt::category cat;
-	sevt->get_category(&cat);
-	auto s_tinfo = sevt->get_thread_info();
-	if (type == PPME_PROCEXIT_1_E || type == PPME_PROCEXIT_E) {
-		net_cache->clearList(s_tinfo->m_tid);
-		file_cache->clearList(s_tinfo->m_tid);
-		epoll_cache->clearList(s_tinfo->m_tid);
-		futex_cache->clearList(s_tinfo->m_tid);
-	}
-	if (!(cat.m_category == EC_IO_WRITE || cat.m_category == EC_IO_READ || type == PPME_SYSCALL_FUTEX_E ||
-		  type == PPME_SYSCALL_FUTEX_X)) {
-		return false;
-	}
-	auto s_fdinfo = sevt->get_fd_info();
-	if (s_fdinfo == nullptr && type != PPME_SYSCALL_FUTEX_E && type != PPME_SYSCALL_FUTEX_X) {
-		return false;
-	}
-	if (PPME_IS_ENTER(type)) {
-		if (type == PPME_SYSCALL_FUTEX_E) {
-			info = new futex_info();
-			info->start_time = sevt->get_ts();
-			info->operation_type = to_string(*(int64_t *) sevt->get_param_value_raw("addr")->m_val);
-			info->event_type = static_cast<uint16_t>(type);
-			return futex_cache->setInfo(s_tinfo->m_tid, info);
-		}
-		switch (s_fdinfo->m_type) {
-			case SCAP_FD_FILE:
-			case SCAP_FD_FILE_V2: {
-				info = new file_info();
-				info->start_time = sevt->get_ts();
-				info->name = s_fdinfo->m_name;
-				auto psize = sevt->get_param_value_raw("size");
-				if (!psize || *(uint32_t *) psize->m_val <= 0) {
-					return false;
-				}
+    info_base *info = nullptr;
+    auto type = sevt->get_type();
+    if (type == PPME_SYSCALL_EPOLLWAIT_X) {
+        return epoll_cache->setInfo(sevt);
+    }
+    sinsp_evt::category cat;
+    sevt->get_category(&cat);
+    auto s_tinfo = sevt->get_thread_info();
+    if (type == PPME_PROCEXIT_1_E || type == PPME_PROCEXIT_E) {
+        net_cache->clearList(s_tinfo->m_tid);
+        file_cache->clearList(s_tinfo->m_tid);
+        epoll_cache->clearList(s_tinfo->m_tid);
+        futex_cache->clearList(s_tinfo->m_tid);
+    }
+    if (!(cat.m_category == EC_IO_WRITE || cat.m_category == EC_IO_READ || type == PPME_SYSCALL_FUTEX_E ||
+          type == PPME_SYSCALL_FUTEX_X || type == PPME_SYSCALL_OPEN_E || type == PPME_SYSCALL_OPEN_X|| type == PPME_SYSCALL_CLOSE_E || type == PPME_SYSCALL_CLOSE_X)) {
+        return false;
+    }
 
-				info->size = *(uint32_t *) psize->m_val;
-				info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
-				break;
-			}
-			case SCAP_FD_IPV4_SOCK:
-			case SCAP_FD_IPV4_SERVSOCK: {
-				info = new net_info(s_fdinfo->is_role_server());
-				info->start_time = sevt->get_ts();
-				info->name = s_fdinfo->m_name;
+    if(type == PPME_SYSCALL_OPEN_E){
+        info = new file_info();
+        info->start_time = sevt->get_ts();
+        info->operation_type = "open";
+        info->event_type = static_cast<uint16_t>(type);
+        info->exit = false;
+        return file_cache->setInfo(s_tinfo->m_tid, info);
+    }
+    auto s_fdinfo = sevt->get_fd_info();
+    if (s_fdinfo == nullptr && type != PPME_SYSCALL_FUTEX_E && type != PPME_SYSCALL_FUTEX_X) {
+        return false;
+    }
 
-				auto psize = sevt->get_param_value_raw("size");
-				if (!psize || *(uint32_t *) psize->m_val <= 0) {
-					return false;
-				}
-				info->size = *(uint32_t *) psize->m_val;
-				info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
+    if (PPME_IS_ENTER(type)) {
+        if (type == PPME_SYSCALL_FUTEX_E) {
+            info = new futex_info();
+            info->start_time = sevt->get_ts();
+            info->operation_type = to_string(*(int64_t *) sevt->get_param_value_raw("addr")->m_val);
+            info->event_type = static_cast<uint16_t>(type);
+            return futex_cache->setInfo(s_tinfo->m_tid, info);
+        }
+        switch (s_fdinfo->m_type) {
+            case SCAP_FD_FILE:
+            case SCAP_FD_FILE_V2: {
+                info = new file_info();
+                info->start_time = sevt->get_ts();
+                info->name = s_fdinfo->m_name;
+                auto psize = sevt->get_param_value_raw("size");
+                if (!psize || *(uint32_t *) psize->m_val <= 0 && (type != PPME_SYSCALL_OPEN_E && type!= PPME_SYSCALL_OPEN_X && type!=PPME_SYSCALL_CLOSE_E && type!=PPME_SYSCALL_CLOSE_X)) {
+                    return false;
+                }
 
-				epoll_cache->SetLastEpollCache(s_tinfo->m_tid, sevt->get_fd_num(), info);
-				break;
-			}
-			default:
-				return false;
-		}
-	} else {
-		if (type == PPME_SYSCALL_FUTEX_X) {
-			info = new futex_info();
-			info->event_type = static_cast<uint16_t>(type);
-			info->end_time = sevt->get_ts();
-			info->exit = true;
-			return futex_cache->setInfo(s_tinfo->m_tid, info);
-		}
-		switch (s_fdinfo->m_type) {
-			case SCAP_FD_FILE:
-			case SCAP_FD_FILE_V2: {
-				info = new file_info();
-//				auto data_param = sevt->get_param_value_raw("data");
-//				if (cat.m_category == EC_IO_WRITE && data_param != nullptr) {
-//					char *data_val = data_param->m_val;
-//					if (data_param->m_len > 3 && memcmp(data_val, "kd@", 3) == 0) {
-//						cout<<"bbbbbbbb"<<data_val<<endl;
-//						info = new java_futex_info();
-//						char *start_time_char = new char(32);;
-//						char *end_time_char = new char(32);
-//						char *tid_char = new char(32);
-//						int val_offset = 0;
-//						int tmp_offset = 0;
-//						for (int i = 3; i < data_param->m_len; i++) {
-//							if (data_val[i] == '!') {
-//								if (val_offset == 0) {
-//									start_time_char[tmp_offset] = '\0';
-//								} else if (val_offset == 1) {
-//									end_time_char[tmp_offset] = '\0';
-//								} else if (val_offset == 2) {
-//									tid_char[tmp_offset] = '\0';
-//									break;
-//								}
-//								tmp_offset = 0;
-//								val_offset++;
-//								continue;
-//							}
-//							if (val_offset == 0) {
-//
-//								start_time_char[tmp_offset] = data_val[i];
-//							} else if (val_offset == 1) {
-//
-//								end_time_char[tmp_offset] = data_val[i];
-//							} else if (val_offset == 2) {
-//								tid_char[tmp_offset] = data_val[i];
-//							} else {
-//								break;
-//							}
-//							tmp_offset++;
-//						}
-//						info->start_time = atol(start_time_char);
-//						info->end_time = atol(end_time_char);
-//						info->value = data_val;
-////						if (atol(tid_char) == 15413) {
-////							cout << data_val << endl;
-////						}
-//						return java_futex_cache->setInfo(atol(tid_char), info);
-//					}
-//				}
-				break;
-			}
-			case SCAP_FD_IPV4_SOCK:
-			case SCAP_FD_IPV4_SERVSOCK: {
-				info = new net_info();
-				break;
-			}
-			default:
-				return false;
-		}
-		auto pres = sevt->get_param_value_raw("res");
-		if (!pres) {
-			return false;
-		}
-		info->size = *(uint32_t *) pres->m_val;
-		info->end_time = sevt->get_ts();
-		info->exit = true;
-	}
+                info->size = *(uint32_t *) psize->m_val;
+                info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
+                if(type == PPME_SYSCALL_CLOSE_E){
+                    info->operation_type = "close";
+                }
+                break;
+            }
+            case SCAP_FD_IPV4_SOCK:
+            case SCAP_FD_IPV4_SERVSOCK: {
+                info = new net_info(s_fdinfo->is_role_server());
+                info->start_time = sevt->get_ts();
+                info->name = s_fdinfo->m_name;
+                auto psize = sevt->get_param_value_raw("size");
+                if (!psize || *(uint32_t *) psize->m_val <= 0) {
+                    return false;
+                }
+                info->size = *(uint32_t *) psize->m_val;
+                info->operation_type = (cat.m_category == EC_IO_READ) ? "read" : "write";
 
-	info->event_type = static_cast<uint16_t>(type);
+                epoll_cache->SetLastEpollCache(s_tinfo->m_tid, sevt->get_fd_num(), info);
+                break;
+            }
+            default:
+                return false;
+        }
+    } else {
 
-	switch (s_fdinfo->m_type) {
-		case SCAP_FD_FILE:
-		case SCAP_FD_FILE_V2:
-			return file_cache->setInfo(s_tinfo->m_tid, info);
-		case SCAP_FD_IPV4_SOCK:
-		case SCAP_FD_IPV4_SERVSOCK: {
-			return net_cache->setInfo(s_tinfo->m_tid, info);
-		}
-		default:
-			return false;
-	}
+        if (type == PPME_SYSCALL_FUTEX_X) {
+            info = new futex_info();
+            info->event_type = static_cast<uint16_t>(type);
+            info->end_time = sevt->get_ts();
+            info->exit = true;
+            info->latency = s_tinfo->m_latency;
+            return futex_cache->setInfo(s_tinfo->m_tid, info);
+        }
+        switch (s_fdinfo->m_type) {
+            case SCAP_FD_FILE:
+            case SCAP_FD_FILE_V2: {
+                info = new file_info();
+                if(type == PPME_SYSCALL_OPEN_X){
+                    info->name=s_fdinfo->m_name;
+                }
+                break;
+            }
+            case SCAP_FD_IPV4_SOCK:
+            case SCAP_FD_IPV4_SERVSOCK: {
+                info = new net_info();
+                break;
+            }
+            default:
+                return false;
+        }
+        auto pres = sevt->get_param_value_raw("res");
+        if (pres) {
+            info->size = *(uint32_t *) pres->m_val;
+        }
+        info->latency = s_tinfo->m_latency;
+        info->end_time = sevt->get_ts();
+        info->exit = true;
+    }
+
+    info->event_type = static_cast<uint16_t>(type);
+
+    switch (s_fdinfo->m_type) {
+        case SCAP_FD_FILE:
+        case SCAP_FD_FILE_V2:
+            return file_cache->setInfo(s_tinfo->m_tid, info);
+        case SCAP_FD_IPV4_SOCK:
+        case SCAP_FD_IPV4_SERVSOCK: {
+            return net_cache->setInfo(s_tinfo->m_tid, info);
+        }
+        default:
+            return false;
+    }
 }
 
 int cpu_converter::convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *cpu_evt) {

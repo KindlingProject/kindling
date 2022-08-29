@@ -13,6 +13,7 @@ public:
     info_base() {
         start_time = 0;
         end_time = INTMAX_MAX; // 如果没有收到exit时间，认为是符合要求的
+        latency = 0;
         size = 0;
         exit = false;
     }
@@ -21,6 +22,7 @@ public:
     }
     uint64_t start_time;
     uint64_t end_time;
+    uint64_t latency;
     bool exit;
     uint16_t event_type;
     string name;
@@ -39,45 +41,45 @@ public:
     file_info() {}
     ~file_info() {}
     string toString() {
-        return "file@" + operation_type + "@" + name + "@" + to_string(start_time) + "@" + to_string(size);
+        return "file@" + operation_type + "@" + name + "@" + to_string(start_time) + "@" + to_string(latency) + "@" + to_string(size);
     }
 };
 
 class net_info : public info_base {
 public:
-	uint8_t role;
+    uint8_t role;
     net_info() {}
-	net_info(uint8_t roleTmp) {
-    	role = roleTmp;
+    net_info(uint8_t roleTmp) {
+        role = roleTmp;
     }
     ~net_info() {}
     string toString() {
-        return "net@" + operation_type + "@" + name + "@" + to_string(start_time) + "@" + to_string(role) + "@" + to_string(size);
+        return "net@" + operation_type + "@" + name + "@" + to_string(start_time)+ "@" + to_string(latency)  + "@" + to_string(role) + "@" + to_string(size);
     }
 };
 
 class futex_info : public info_base {
 public:
-	futex_info() {}
-	~futex_info() {}
-	string toString() {
-		return "futex@addr" + operation_type;
-	}
+    futex_info() {}
+    ~futex_info() {}
+    string toString() {
+        return "futex@addr" + operation_type + "@" + to_string(start_time)+ "@" + to_string(latency);
+    }
 };
 
 class java_futex_info : public info_base {
 public:
-	java_futex_info() {}
-	~java_futex_info() {}
-	string toString() {
-		return "java_futex@" + value;
-	}
+    java_futex_info() {}
+    ~java_futex_info() {}
+    string toString() {
+        return "java_futex@" + value;
+    }
 };
 
 class event_cache {
 public:
     event_cache(uint8_t type) : event_type(type) {
-    	event_type = type;
+        event_type = type;
         threshold = 0; // 100us
     }
     string GetInfo(uint32_t tid, pair<uint64_t, uint64_t> &period, uint8_t off_type);

@@ -192,10 +192,10 @@ int getEvent(void **pp_kindling_event)
 
 	uint16_t kindling_category = get_kindling_category(ev);
 	uint16_t ev_type = ev->get_type();
-	if(event_filters[ev_type][kindling_category] == 0)
-	{
-		return -1;
-	}
+//	if(event_filters[ev_type][kindling_category] == 0)
+//	{
+//		return -1;
+//	}
 	if(printEvent){
 		string line;
 		if (formatter->tostring(ev, &line)) {
@@ -241,7 +241,7 @@ int getEvent(void **pp_kindling_event)
 	}
 
 
-    logCache->addLog(ev);
+    //logCache->addLog(ev);
 	cpuConverter->Cache(ev);
 
 
@@ -283,11 +283,13 @@ int getEvent(void **pp_kindling_event)
 					tmp_offset++;
 				}
 				p_kindling_event->timestamp = atol(start_time_char);
+                delete start_time_char;
 				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
 				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
 					   to_string(atol(end_time_char)).data(), 19);
 				p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
 				p_kindling_event->userAttributes[userAttNumber].len = 19;
+                delete end_time_char;
 				userAttNumber++;
 				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "data");
 				memcpy(p_kindling_event->userAttributes[userAttNumber].value, data_val, data_param->m_len);
@@ -296,6 +298,7 @@ int getEvent(void **pp_kindling_event)
 				userAttNumber++;
 				strcpy(p_kindling_event->name, "java_futex_info");
 				p_kindling_event->context.tinfo.tid = atol(tid_char);
+                delete tid_char;
 				map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
 				if(key!=ptid_comm.end())
 				{
@@ -340,12 +343,14 @@ int getEvent(void **pp_kindling_event)
 					   traceId, traceId_offset);
 				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
 		 		p_kindling_event->userAttributes[userAttNumber].len = traceId_offset;
+                delete traceId;
 				userAttNumber++;
 				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "is_enter");
 				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
 					   isEnter, 1);
 				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
 				p_kindling_event->userAttributes[userAttNumber].len = 1;
+                delete isEnter;
 				userAttNumber++;
 				strcpy(p_kindling_event->name, "apm_trace_id_event");
 				p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
@@ -384,13 +389,16 @@ int getEvent(void **pp_kindling_event)
 					}
 					tmp_offset++;
 				}
+                return -1;
                 uint64_t v_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, atol(tid_char));
-				//cout<<(threadInfo->m_pid<<32 | (atol(tid_char)& 0xFFFFFFFF))<<comm_char<<endl;
+//				//cout<<(threadInfo->m_pid<<32 | (atol(tid_char)& 0xFFFFFFFF))<<comm_char<<endl;
                 if(v_tid == 0){
                     ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
                 }else {
                     ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)] = comm_char;
                 }
+                delete tid_char;
+                delete comm_char;
 			}
 
 			if (data_param->m_len > 9 && memcmp(data_val, "kd-stack@", 9) == 0) {
@@ -452,7 +460,12 @@ int getEvent(void **pp_kindling_event)
 				bool finish = (atoi(finish_char) == 1) ? true : false;
 				// printf("ts: %ld, pid: %ld, host_tid: %ld, depth: %d, finish: %d, stack: %s\n", time, threadInfo->m_pid, host_tid, depth, finish, stack);
 				prof->RecordProfileData(time, threadInfo->m_pid, host_tid, depth, finish, string(stack));
-				return 1;
+                delete time_char;
+                delete tid_char;
+                delete depth_char;
+                delete finish_char;
+                delete stack;
+                return 1;
 			}
 		}
 
