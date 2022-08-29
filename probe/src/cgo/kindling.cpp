@@ -389,9 +389,7 @@ int getEvent(void **pp_kindling_event)
 					}
 					tmp_offset++;
 				}
-                return -1;
                 uint64_t v_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, atol(tid_char));
-//				//cout<<(threadInfo->m_pid<<32 | (atol(tid_char)& 0xFFFFFFFF))<<comm_char<<endl;
                 if(v_tid == 0){
                     ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
                 }else {
