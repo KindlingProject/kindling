@@ -157,7 +157,7 @@ func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
 	}
 	analyzers := r.analyzerManager.GetConsumableAnalyzers(evt.Name)
 	if analyzers == nil || len(analyzers) == 0 {
-		r.telemetry.Logger.Info("analyzer not found for event ", zap.String("eventName", evt.Name))
+		//r.telemetry.Logger.Info("analyzer not found for event ", zap.String("eventName", evt.Name))
 		return nil
 	}
 	for _, analyzer := range analyzers {

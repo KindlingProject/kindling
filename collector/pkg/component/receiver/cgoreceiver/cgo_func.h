@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 void runForGo();
+void startPerf();
+void stopPerf();
 int getKindlingEvent(void **kindlingEvent);
 int subEventForGo(char* eventName, char* category);
 #ifdef __cplusplus
@@ -23,12 +25,13 @@ struct kindling_event_t_for_go{
 	char *name;
 	uint32_t category;
 	uint16_t paramsNumber;
+    uint64_t latency;
     struct KeyValue {
 	char *key;
 	char* value;
 	uint32_t len;
 	uint32_t valueType;
-    }userAttributes[8];
+    }userAttributes[16];
     struct event_context {
         struct thread_info {
             uint32_t pid;

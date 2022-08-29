@@ -13,7 +13,7 @@ bool epoll_event_cache::SetLastEpollCache(uint32_t tid, int64_t fd, info_base *i
     auto epoll_pair = cache[tid]->back();
     // 判断时间，1ms内认为可以关联
     if (info->start_time - epoll_pair->end_time < 1000000) { // 1ms
-        for (auto efd : dynamic_cast<epoll_info*>(epoll_pair)->fds) {
+        for (auto efd : dynamic_cast<epoll_info*>(epoll_pair)->fds) { 
             if (fd == efd) {
                 // 匹配fd，更新epoll 事件中的relate id信息为net.ts
                 epoll_pair->relate_id = to_string(fd) + "-" + to_string(info->start_time);

@@ -22,6 +22,7 @@ docker run --rm -it \
   "${configs[@]}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "${workspace_root}/../:/kindling" \
+  -v "/root/clash:/root/clash" \
   -w "/kindling" \
   --privileged=true \
   "${RUN_DOCKER_EXTRA_ARGS[@]}" \

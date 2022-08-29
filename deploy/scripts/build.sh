@@ -16,7 +16,6 @@ else
   if [ ! -f "$collectorPath" ]; then
     echo "compiler collector failed! exit!"
   else
-    cp -rf ./collector ./docker/kindling-collector
     cd docker
     docker build -t kindling-collector . -f DockerfileLocalProbe
   fi
