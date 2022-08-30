@@ -161,326 +161,57 @@ int getEvent(void **pp_kindling_event)
 	int32_t res;
 	sinsp_evt *ev;
 	res = inspector->next(&ev);
-	if(res == SCAP_TIMEOUT)
-	{
-		return -1;
-	}
-	else if(res != SCAP_SUCCESS)
-	{
-		return -1;
-	}
-	if(!inspector->is_debug_enabled() &&
-	   ev->get_category() & EC_INTERNAL)
-	{
-		return -1;
-	}
-	auto threadInfo = ev->get_thread_info();
-	if(threadInfo == nullptr)
-	{
-		return -1;
-	}
 
-	auto category = ev->get_category();
-	if(category & EC_IO_BASE)
-	{
-		auto pres = ev->get_param_value_raw("res");
-		if(pres && *(int64_t *)pres->m_val <= 0)
-		{
-			return -1;
-		}
-	}
+    ppm_event_category category;
+    int result = is_normal_event(res, ev, &category);
+    if(result == -1){
+        return -1;
+    }
+    auto threadInfo = ev->get_thread_info();
 
 	uint16_t kindling_category = get_kindling_category(ev);
 	uint16_t ev_type = ev->get_type();
-//	if(event_filters[ev_type][kindling_category] == 0)
-//	{
-//		return -1;
-//	}
-	if(printEvent){
-		string line;
-		if (formatter->tostring(ev, &line)) {
-			cout<< line << endl;
-		}
-	}
+
+    print_event(ev);
+
 	kindling_event_t_for_go *p_kindling_event;
-	if(nullptr == *pp_kindling_event)
-	{
-		*pp_kindling_event = (kindling_event_t_for_go *)malloc(sizeof(kindling_event_t_for_go));
-		p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
+    init_kindling_event(p_kindling_event, pp_kindling_event);
 
-		p_kindling_event->name = (char *)malloc(sizeof(char) * 1024);
-		p_kindling_event->context.tinfo.comm = (char *)malloc(sizeof(char) * 256);
-		p_kindling_event->context.tinfo.containerId = (char *)malloc(sizeof(char) * 256);
-		p_kindling_event->context.fdInfo.filename = (char *)malloc(sizeof(char) * 1024);
-		p_kindling_event->context.fdInfo.directory = (char *)malloc(sizeof(char) * 1024);
-
-		for(int i = 0; i < 16; i++)
-		{
-			p_kindling_event->userAttributes[i].key = (char *)malloc(sizeof(char) * 128);
-			p_kindling_event->userAttributes[i].value = (char *)malloc(sizeof(char) * 8096);
-		}
-	}
 	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
 	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
 	uint16_t userAttNumber = 0;
 	uint16_t source = get_kindling_source(ev->get_type());
-	if(threadInfo->m_pid == 13759 &&ev->get_type() == PPME_SYSCALL_READ_E && fdInfo!= nullptr){
-		cout<<"tid: "<< threadInfo->m_tid<<" fd num: "<< ev->get_fd_num()<<"reade: "<<ev->get_ts()<<endl;
-	}
-	if(source == SYSCALL_EXIT) {
-		p_kindling_event->latency = threadInfo->m_latency;
-		if(threadInfo->m_pid == 13759 &&ev->get_type() == PPME_SYSCALL_READ_X && fdInfo!= nullptr){
-			cout<<"tid: "<< threadInfo->m_tid<< " fd num: "<< ev->get_fd_num()<<" readx: "<<ev->get_ts()<<" latency: "<<threadInfo->m_latency<<endl;
-		}
-	}
-
-	string line;
-	if (formatter->tostring(ev, &line) && threadInfo->m_tid == 24533) {
-	    cout<< line << endl;
-
-	}
 
 
     //logCache->addLog(ev);
 	cpuConverter->Cache(ev);
 
-
 	if(ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo!= nullptr && fdInfo->is_file() ){
 		auto data_param = ev->get_param_value_raw("data");
 		if (data_param != nullptr) {
 			char *data_val = data_param->m_val;
-//			if (data_param->m_len > 6 && memcmp(data_val, "kd-jf@", 6) == 0)
-//				cout<<data_val<<endl;
-			if (data_param->m_len > 6 && memcmp(data_val, "kd-jf@", 6) == 0) {
-				char *start_time_char = new char[32];
-				char *end_time_char = new char[32];
-				char *tid_char = new char[32];
-				int val_offset = 0;
-				int tmp_offset = 0;
-				for (int i = 6; i < data_param->m_len; i++) {
-					if (data_val[i] == '!') {
-						if (val_offset == 0) {
-							start_time_char[tmp_offset] = '\0';
-						} else if (val_offset == 1) {
-							end_time_char[tmp_offset] = '\0';
-						} else if (val_offset == 2) {
-							tid_char[tmp_offset] = '\0';
-							break;
-						}
-						tmp_offset = 0;
-						val_offset++;
-						continue;
-					}
-					if (val_offset == 0) {
-
-						start_time_char[tmp_offset] = data_val[i];
-					} else if (val_offset == 1) {
-
-						end_time_char[tmp_offset] = data_val[i];
-					} else if (val_offset == 2) {
-						tid_char[tmp_offset] = data_val[i];
-					}
-					tmp_offset++;
-				}
-				p_kindling_event->timestamp = atol(start_time_char);
-                delete start_time_char;
-				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
-				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
-					   to_string(atol(end_time_char)).data(), 19);
-				p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
-				p_kindling_event->userAttributes[userAttNumber].len = 19;
-                delete end_time_char;
-				userAttNumber++;
-				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "data");
-				memcpy(p_kindling_event->userAttributes[userAttNumber].value, data_val, data_param->m_len);
-				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-				p_kindling_event->userAttributes[userAttNumber].len = data_param->m_len;
-				userAttNumber++;
-				strcpy(p_kindling_event->name, "java_futex_info");
-				p_kindling_event->context.tinfo.tid = atol(tid_char);
-                delete tid_char;
-				map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
-				if(key!=ptid_comm.end())
-				{
-					strcpy(p_kindling_event->context.tinfo.comm, key->second);
-				}
-				p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
-				p_kindling_event->paramsNumber = userAttNumber;
-				return 1;
-			}
-
-			if (data_param->m_len > 8 && memcmp(data_val, "kd-txid@", 8) == 0) {
-				char *traceId = new char[128];
-				char *isEnter = new char[16];
-				int val_offset = 0;
-				int tmp_offset = 0;
-				int traceId_offset = 0;
-				for (int i = 8; i < data_param->m_len; i++) {
-					if (data_val[i] == '!') {
-						if (val_offset == 0) {
-							traceId[tmp_offset] = '\0';
-							traceId_offset = tmp_offset;
-						}else if (val_offset == 1) {
-							isEnter[tmp_offset] = '\0';
-							break;
-						}
-						tmp_offset = 0;
-						val_offset++;
-						continue;
-					}
-					if (val_offset == 0) {
-
-						traceId[tmp_offset] = data_val[i];
-					}else if (val_offset == 1) {
-
-						isEnter[tmp_offset] = data_val[i];
-					}
-					tmp_offset++;
-				}
-				p_kindling_event->timestamp = ev->get_ts();
-				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "trace_id");
-				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
-					   traceId, traceId_offset);
-				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-		 		p_kindling_event->userAttributes[userAttNumber].len = traceId_offset;
-                delete traceId;
-				userAttNumber++;
-				strcpy(p_kindling_event->userAttributes[userAttNumber].key, "is_enter");
-				memcpy(p_kindling_event->userAttributes[userAttNumber].value,
-					   isEnter, 1);
-				p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
-				p_kindling_event->userAttributes[userAttNumber].len = 1;
-                delete isEnter;
-				userAttNumber++;
-				strcpy(p_kindling_event->name, "apm_trace_id_event");
-				p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
-				map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
-				if(key!=ptid_comm.end())
-				{
-					strcpy(p_kindling_event->context.tinfo.comm, key->second);
-				}
-				p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
-				p_kindling_event->paramsNumber = userAttNumber;
-				return 1;
+            if (data_param->m_len > 6 && memcmp(data_val, "kd-jf@", 6) == 0) {
+                parse_jf(data_val, *data_param,p_kindling_event, threadInfo, userAttNumber);
+                return 1;
+            }
+            if (data_param->m_len > 8 && memcmp(data_val, "kd-txid@", 8) == 0) {
+                parse_xtid(ev, data_val, *data_param,p_kindling_event, threadInfo, userAttNumber);
+                return 1;
 			}
 
 			if (data_param->m_len > 6 && memcmp(data_val, "kd-tm@", 6) == 0) {
-				char *comm_char = new char[64];
-				char *tid_char = new char[32];
-				int val_offset = 0;
-				int tmp_offset = 0;
-				for (int i = 6; i < data_param->m_len; i++) {
-					if (data_val[i] == '!') {
-						if (val_offset == 0) {
-							tid_char[tmp_offset] = '\0';
-						} else if (val_offset == 1) {
-							comm_char[tmp_offset] = '\0';
-							break;
-						}
-						tmp_offset = 0;
-						val_offset++;
-						continue;
-					}
-					if (val_offset == 0) {
-
-						tid_char[tmp_offset] = data_val[i];
-					} else if (val_offset == 1) {
-						comm_char[tmp_offset] = data_val[i];
-					}
-					tmp_offset++;
-				}
-                uint64_t v_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, atol(tid_char));
-                if(v_tid == 0){
-                    ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
-                }else {
-                    ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)] = comm_char;
-                }
-                delete tid_char;
-                delete comm_char;
+                parse_tm(data_val, *data_param, threadInfo);
+                return -1;
 			}
 
 			if (data_param->m_len > 9 && memcmp(data_val, "kd-stack@", 9) == 0) {
-				char *time_char = new char[32];
-				char *tid_char = new char[32];
-				char *depth_char = new char[8];
-				char *finish_char = new char[4];
-				char* stack = new char[1024];
-				int val_offset = 0;
-				int tmp_offset = 0;
-
-				for (int i = 9; i < data_param->m_len; i++) {
-					if (data_val[i] != '!') {
-						switch (val_offset) {
-							case 0:
-								time_char[tmp_offset++] = data_val[i];
-								break;
-							case 1:
-								tid_char[tmp_offset++] = data_val[i];
-								break;
-							case 2:
-								depth_char[tmp_offset++] = data_val[i];
-								break;
-							case 3:
-								finish_char[tmp_offset++] = data_val[i];
-								break;
-							default:
-								stack[tmp_offset++] = data_val[i];
-								break;
-						}
-					} else {
-						if (val_offset == 0) {
-							time_char[tmp_offset] = '\0';
-						} else if (val_offset == 1) {
-							tid_char[tmp_offset] = '\0';
-						} else if (val_offset == 2) {
-							depth_char[tmp_offset] = '\0';
-						} else if (val_offset == 3) {
-                			finish_char[tmp_offset] = '\0';
-						} else if (val_offset > 3) {
-							stack[tmp_offset++] = data_val[i];
-						}
-						if (val_offset < 4) {
-							tmp_offset = 0;
-						}
-						val_offset++;
-					}
-				}
-				stack[tmp_offset] = '\0';
-
-				uint64_t time = atol(time_char);
-				uint64_t vtid = atol(tid_char);
-				uint64_t host_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, vtid);
-				if (host_tid == 0) {
-					// Not in contianer.
-					host_tid = vtid;
-				}
-				int depth = atoi(depth_char);
-				bool finish = (atoi(finish_char) == 1) ? true : false;
-				// printf("ts: %ld, pid: %ld, host_tid: %ld, depth: %d, finish: %d, stack: %s\n", time, threadInfo->m_pid, host_tid, depth, finish, stack);
-				prof->RecordProfileData(time, threadInfo->m_pid, host_tid, depth, finish, string(stack));
-                delete time_char;
-                delete tid_char;
-                delete depth_char;
-                delete finish_char;
-                delete stack;
-                return 1;
+                parse_stack(data_val, *data_param, threadInfo);
+                return -1;
 			}
 		}
 
 
 	}
-	//uint16_t kindling_category = get_kindling_category(ev);
-//	if(ev->get_type() == PPME_SYSCALL_READ_E && kindling_category== CAT_NET&& threadInfo->m_pid == 8395) {
-//		if (formatter->tostring(ev, &line)) {
-//			cout<< line << endl;
-//		}
-//	}
-	//uint16_t ev_type = ev->get_type();
-	// if(event_filters[ev_type][kindling_category] == 0)
-	// {
-	// 	return -1;
-	// }
-
 
 	if (ev_type == PPME_CPU_ANALYSIS_E) {
 		char* tmp_comm;
@@ -489,7 +220,7 @@ int getEvent(void **pp_kindling_event)
 		if(key!=ptid_comm.end())
 		{
 			tmp_comm = key->second;
-		}else {
+        }else {
 			tmp_comm = (char *)threadInfo->m_comm.data();
 		}
 
@@ -497,7 +228,14 @@ int getEvent(void **pp_kindling_event)
 	    return cpuConverter->convert(p_kindling_event, ev);
 	}
 
+    if(event_filters[ev_type][kindling_category] == 0)
+    {
+        return -1;
+    }
 
+    if(source == SYSCALL_EXIT) {
+        p_kindling_event->latency = threadInfo->m_latency;
+    }
 	p_kindling_event->timestamp = ev->get_ts();
 	p_kindling_event->category = kindling_category;
 	p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
@@ -655,6 +393,273 @@ int getEvent(void **pp_kindling_event)
 	strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
 	strcpy(p_kindling_event->context.tinfo.containerId, (char *)threadInfo->m_container_id.data());
 	return 1;
+}
+
+
+void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber){
+    char *start_time_char = new char[32];
+    char *end_time_char = new char[32];
+    char *tid_char = new char[32];
+    int val_offset = 0;
+    int tmp_offset = 0;
+    for (int i = 6; i < data_param.m_len; i++) {
+        if (data_val[i] == '!') {
+            if (val_offset == 0) {
+                start_time_char[tmp_offset] = '\0';
+            } else if (val_offset == 1) {
+                end_time_char[tmp_offset] = '\0';
+            } else if (val_offset == 2) {
+                tid_char[tmp_offset] = '\0';
+                break;
+            }
+            tmp_offset = 0;
+            val_offset++;
+            continue;
+        }
+        if (val_offset == 0) {
+
+            start_time_char[tmp_offset] = data_val[i];
+        } else if (val_offset == 1) {
+
+            end_time_char[tmp_offset] = data_val[i];
+        } else if (val_offset == 2) {
+            tid_char[tmp_offset] = data_val[i];
+        }
+        tmp_offset++;
+    }
+    p_kindling_event->timestamp = atol(start_time_char);
+    delete[] start_time_char;
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value,
+           to_string(atol(end_time_char)).data(), 19);
+    p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
+    p_kindling_event->userAttributes[userAttNumber].len = 19;
+    delete[] end_time_char;
+    userAttNumber++;
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "data");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value, data_val, data_param.m_len);
+    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+    p_kindling_event->userAttributes[userAttNumber].len = data_param.m_len;
+    userAttNumber++;
+    strcpy(p_kindling_event->name, "java_futex_info");
+    p_kindling_event->context.tinfo.tid = atol(tid_char);
+    delete[] tid_char;
+    map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
+    if(key!=ptid_comm.end())
+    {
+        strcpy(p_kindling_event->context.tinfo.comm, key->second);
+    }
+    p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
+    p_kindling_event->paramsNumber = userAttNumber;
+}
+
+void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber){
+    char *traceId = new char[128];
+    char *isEnter = new char[16];
+    int val_offset = 0;
+    int tmp_offset = 0;
+    int traceId_offset = 0;
+    for (int i = 8; i < data_param.m_len; i++) {
+        if (data_val[i] == '!') {
+            if (val_offset == 0) {
+                traceId[tmp_offset] = '\0';
+                traceId_offset = tmp_offset;
+            }else if (val_offset == 1) {
+                isEnter[tmp_offset] = '\0';
+                break;
+            }
+            tmp_offset = 0;
+            val_offset++;
+            continue;
+        }
+        if (val_offset == 0) {
+
+            traceId[tmp_offset] = data_val[i];
+        }else if (val_offset == 1) {
+
+            isEnter[tmp_offset] = data_val[i];
+        }
+        tmp_offset++;
+    }
+    p_kindling_event->timestamp = s_evt->get_ts();
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "trace_id");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value,
+           traceId, traceId_offset);
+    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+    p_kindling_event->userAttributes[userAttNumber].len = traceId_offset;
+    delete[] traceId;
+    userAttNumber++;
+    strcpy(p_kindling_event->userAttributes[userAttNumber].key, "is_enter");
+    memcpy(p_kindling_event->userAttributes[userAttNumber].value,
+           isEnter, 1);
+    p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+    p_kindling_event->userAttributes[userAttNumber].len = 1;
+    delete[] isEnter;
+    userAttNumber++;
+    strcpy(p_kindling_event->name, "apm_trace_id_event");
+    p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
+    map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
+    if(key!=ptid_comm.end())
+    {
+        strcpy(p_kindling_event->context.tinfo.comm, key->second);
+    }
+    p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
+    p_kindling_event->paramsNumber = userAttNumber;
+}
+
+void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo){
+    char *comm_char = new char[64];
+    char *tid_char = new char[32];
+    int val_offset = 0;
+    int tmp_offset = 0;
+    for (int i = 6; i < data_param.m_len; i++) {
+        if (data_val[i] == '!') {
+            if (val_offset == 0) {
+                tid_char[tmp_offset] = '\0';
+            } else if (val_offset == 1) {
+                comm_char[tmp_offset] = '\0';
+                break;
+            }
+            tmp_offset = 0;
+            val_offset++;
+            continue;
+        }
+        if (val_offset == 0) {
+
+            tid_char[tmp_offset] = data_val[i];
+        } else if (val_offset == 1) {
+            comm_char[tmp_offset] = data_val[i];
+        }
+        tmp_offset++;
+    }
+    uint64_t v_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, atol(tid_char));
+    if(v_tid == 0){
+        delete ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)];
+        ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
+    }else {
+        delete ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)];
+        ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)] = comm_char;
+    }
+    delete[] tid_char;
+}
+
+void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo){
+    char *time_char = new char[32];
+    char *tid_char = new char[32];
+    char *depth_char = new char[8];
+    char *finish_char = new char[4];
+    char* stack = new char[1024];
+    int val_offset = 0;
+    int tmp_offset = 0;
+
+    for (int i = 9; i < data_param.m_len; i++) {
+        if (data_val[i] != '!') {
+            switch (val_offset) {
+                case 0:
+                    time_char[tmp_offset++] = data_val[i];
+                    break;
+                case 1:
+                    tid_char[tmp_offset++] = data_val[i];
+                    break;
+                case 2:
+                    depth_char[tmp_offset++] = data_val[i];
+                    break;
+                case 3:
+                    finish_char[tmp_offset++] = data_val[i];
+                    break;
+                default:
+                    stack[tmp_offset++] = data_val[i];
+                    break;
+            }
+        } else {
+            if (val_offset == 0) {
+                time_char[tmp_offset] = '\0';
+            } else if (val_offset == 1) {
+                tid_char[tmp_offset] = '\0';
+            } else if (val_offset == 2) {
+                depth_char[tmp_offset] = '\0';
+            } else if (val_offset == 3) {
+                finish_char[tmp_offset] = '\0';
+            } else if (val_offset > 3) {
+                stack[tmp_offset++] = data_val[i];
+            }
+            if (val_offset < 4) {
+                tmp_offset = 0;
+            }
+            val_offset++;
+        }
+    }
+    stack[tmp_offset] = '\0';
+
+    uint64_t time = atol(time_char);
+    uint64_t vtid = atol(tid_char);
+    uint64_t host_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, vtid);
+    if (host_tid == 0) {
+        // Not in contianer.
+        host_tid = vtid;
+    }
+    int depth = atoi(depth_char);
+    bool finish = (atoi(finish_char) == 1) ? true : false;
+    prof->RecordProfileData(time, threadInfo->m_pid, host_tid, depth, finish, string(stack));
+    delete[] time_char;
+    delete[] tid_char;
+    delete[] depth_char;
+    delete[] finish_char;
+    delete[] stack;
+}
+
+void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_kindling_event){
+    if(nullptr == *pp_kindling_event)
+    {
+        *pp_kindling_event = (kindling_event_t_for_go *)malloc(sizeof(kindling_event_t_for_go));
+        p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
+
+        p_kindling_event->name = (char *)malloc(sizeof(char) * 1024);
+        p_kindling_event->context.tinfo.comm = (char *)malloc(sizeof(char) * 256);
+        p_kindling_event->context.tinfo.containerId = (char *)malloc(sizeof(char) * 256);
+        p_kindling_event->context.fdInfo.filename = (char *)malloc(sizeof(char) * 1024);
+        p_kindling_event->context.fdInfo.directory = (char *)malloc(sizeof(char) * 1024);
+
+        for(int i = 0; i < 16; i++)
+        {
+            p_kindling_event->userAttributes[i].key = (char *)malloc(sizeof(char) * 128);
+            p_kindling_event->userAttributes[i].value = (char *)malloc(sizeof(char) * 8096);
+        }
+    }
+}
+
+void print_event(sinsp_evt *s_evt){
+    if(printEvent){
+        string line;
+        if (formatter->tostring(s_evt, &line)) {
+            cout<< line << endl;
+        }
+    }
+}
+
+int is_normal_event(int res, sinsp_evt *s_evt, ppm_event_category *category){
+    if(res == SCAP_TIMEOUT)
+    {
+        return -1;
+    }
+    else if(res != SCAP_SUCCESS)
+    {
+        return -1;
+    }
+    *category =  s_evt->get_category();
+    if(!inspector->is_debug_enabled() &&
+            *category & EC_INTERNAL)
+    {
+        return -1;
+    }
+    if(*category & EC_IO_BASE)
+    {
+        auto pres = s_evt->get_param_value_raw("res");
+        if(pres && *(int64_t *)pres->m_val <= 0)
+        {
+            return -1;
+        }
+    }
 }
 
 int setTuple(kindling_event_t_for_go *p_kindling_event, const sinsp_evt_param *pTuple, int userAttNumber)

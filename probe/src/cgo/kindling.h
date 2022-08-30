@@ -58,6 +58,20 @@ struct kindling_event_t_for_go{
     }context;
 };
 
+void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber);
+
+void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber);
+
+void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo);
+
+void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo);
+
+void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_kindling_event);
+
+void print_event(sinsp_evt *s_evt);
+
+int is_normal_event(int res, sinsp_evt *s_evt, ppm_event_category *category);
+
 int setTuple(kindling_event_t_for_go* kevt, const sinsp_evt_param *pTuple, int userAttNumber);
 
 enum Source {
