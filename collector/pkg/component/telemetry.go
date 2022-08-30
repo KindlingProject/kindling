@@ -145,15 +145,15 @@ func (t *TelemetryLogger) Panic(msg string, fields ...zap.Field) {
 }
 
 func (t *TelemetryLogger) Infof(template string, args ...interface{}) {
-	t.sugar.Infof(template, args)
+	t.sugar.Infof(template, args...)
 }
 
 func (t *TelemetryLogger) Errorf(template string, args ...interface{}) {
-	t.sugar.Errorf(template, args)
+	t.sugar.Errorf(template, args...)
 }
 
 func (t *TelemetryLogger) Panicf(template string, args ...interface{}) {
-	t.sugar.Panicf(template, args)
+	t.sugar.Panicf(template, args...)
 }
 
 func (t *TelemetryLogger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
