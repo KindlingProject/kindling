@@ -68,6 +68,7 @@ trace:
         request_io: 42
         response_io: 89
       Labels:
+        comm: "systemd-resolve"
         pid: 577
         src_ip: "127.0.0.1"
         src_port: 60129
@@ -96,6 +97,7 @@ trace:
         request_io: 42
         response_io: 73
       Labels:
+        comm: "systemd-resolve"
         pid: 577
         src_ip: "127.0.0.1"
         src_port: 60129

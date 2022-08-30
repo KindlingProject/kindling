@@ -36,6 +36,7 @@ trace:
         request_io: 193
         response_io: 135
       Labels:
+        comm: testdemo
         pid: 12345
         src_ip: "127.0.0.1"
         src_port: 56266

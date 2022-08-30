@@ -42,6 +42,7 @@ trace:
         request_io: 24
         response_io: 160
       Labels:
+        comm: "mysqld"
         pid: 903
         src_ip: "127.0.0.1"
         src_port: 49368
@@ -53,7 +54,7 @@ trace:
         is_slow: false
         is_server: true
         protocol: "mysql"
-        content_key: "select *"
+        content_key: "select dummy *"
         sql: "SELECT * FROM dummy"
         is_error: false
         error_type: 0
