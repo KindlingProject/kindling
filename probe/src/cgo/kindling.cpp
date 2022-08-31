@@ -23,6 +23,16 @@ int cnt = 0;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
 
+char *traceId = new char[128];
+char *isEnter = new char[16];
+char *start_time_char = new char[32];
+char *end_time_char = new char[32];
+char *tid_char = new char[32];
+char *time_char = new char[32];
+char *depth_char = new char[8];
+char *finish_char = new char[4];
+char* kd_stack = new char[1024];
+
 
 int16_t event_filters[1024][16];
 
@@ -397,9 +407,6 @@ int getEvent(void **pp_kindling_event)
 
 
 void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber){
-    char *start_time_char = new char[32];
-    char *end_time_char = new char[32];
-    char *tid_char = new char[32];
     int val_offset = 0;
     int tmp_offset = 0;
     for (int i = 6; i < data_param.m_len; i++) {
@@ -428,13 +435,11 @@ void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_g
         tmp_offset++;
     }
     p_kindling_event->timestamp = atol(start_time_char);
-    delete[] start_time_char;
     strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
     memcpy(p_kindling_event->userAttributes[userAttNumber].value,
            to_string(atol(end_time_char)).data(), 19);
     p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
     p_kindling_event->userAttributes[userAttNumber].len = 19;
-    delete[] end_time_char;
     userAttNumber++;
     strcpy(p_kindling_event->userAttributes[userAttNumber].key, "data");
     memcpy(p_kindling_event->userAttributes[userAttNumber].value, data_val, data_param.m_len);
@@ -443,7 +448,6 @@ void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_g
     userAttNumber++;
     strcpy(p_kindling_event->name, "java_futex_info");
     p_kindling_event->context.tinfo.tid = atol(tid_char);
-    delete[] tid_char;
     map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
     if(key!=ptid_comm.end())
     {
@@ -454,8 +458,6 @@ void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_g
 }
 
 void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber){
-    char *traceId = new char[128];
-    char *isEnter = new char[16];
     int val_offset = 0;
     int tmp_offset = 0;
     int traceId_offset = 0;
@@ -487,14 +489,12 @@ void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, ki
            traceId, traceId_offset);
     p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
     p_kindling_event->userAttributes[userAttNumber].len = traceId_offset;
-    delete[] traceId;
     userAttNumber++;
     strcpy(p_kindling_event->userAttributes[userAttNumber].key, "is_enter");
     memcpy(p_kindling_event->userAttributes[userAttNumber].value,
            isEnter, 1);
     p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
     p_kindling_event->userAttributes[userAttNumber].len = 1;
-    delete[] isEnter;
     userAttNumber++;
     strcpy(p_kindling_event->name, "apm_trace_id_event");
     p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
@@ -509,7 +509,6 @@ void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, ki
 
 void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo){
     char *comm_char = new char[64];
-    char *tid_char = new char[32];
     int val_offset = 0;
     int tmp_offset = 0;
     for (int i = 6; i < data_param.m_len; i++) {
@@ -534,21 +533,17 @@ void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* thre
     }
     uint64_t v_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, atol(tid_char));
     if(v_tid == 0){
-        delete ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)];
+        delete[] ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)];
+        ptid_comm.erase(threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF));
         ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
     }else {
-        delete ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)];
+        delete[] ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)];
+        ptid_comm.erase(threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF));
         ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)] = comm_char;
     }
-    delete[] tid_char;
 }
 
 void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo){
-    char *time_char = new char[32];
-    char *tid_char = new char[32];
-    char *depth_char = new char[8];
-    char *finish_char = new char[4];
-    char* stack = new char[1024];
     int val_offset = 0;
     int tmp_offset = 0;
 
@@ -568,7 +563,7 @@ void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* t
                     finish_char[tmp_offset++] = data_val[i];
                     break;
                 default:
-                    stack[tmp_offset++] = data_val[i];
+                    kd_stack[tmp_offset++] = data_val[i];
                     break;
             }
         } else {
@@ -581,7 +576,7 @@ void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* t
             } else if (val_offset == 3) {
                 finish_char[tmp_offset] = '\0';
             } else if (val_offset > 3) {
-                stack[tmp_offset++] = data_val[i];
+                kd_stack[tmp_offset++] = data_val[i];
             }
             if (val_offset < 4) {
                 tmp_offset = 0;
@@ -589,7 +584,7 @@ void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* t
             val_offset++;
         }
     }
-    stack[tmp_offset] = '\0';
+    kd_stack[tmp_offset] = '\0';
 
     uint64_t time = atol(time_char);
     uint64_t vtid = atol(tid_char);
@@ -600,12 +595,7 @@ void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* t
     }
     int depth = atoi(depth_char);
     bool finish = (atoi(finish_char) == 1) ? true : false;
-    prof->RecordProfileData(time, threadInfo->m_pid, host_tid, depth, finish, string(stack));
-    delete[] time_char;
-    delete[] tid_char;
-    delete[] depth_char;
-    delete[] finish_char;
-    delete[] stack;
+    prof->RecordProfileData(time, threadInfo->m_pid, host_tid, depth, finish, string(kd_stack));
 }
 
 void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_kindling_event){
