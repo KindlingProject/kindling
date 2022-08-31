@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/factory"
 	"reflect"
 	"sync"
 	"testing"
