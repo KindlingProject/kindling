@@ -2,7 +2,6 @@ package cpuanalyzer
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -106,7 +105,6 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 			ev.DataVal = string(userAttributes.GetValue())
 		}
 	}
-	ca.telemetry.Logger.Infof("Receive a java futex event, %v", ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	//ca.PutSegment(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
@@ -159,9 +157,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 	defer ca.lock.Unlock()
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
-		if pid == 4777 {
-			fmt.Println("reset tidCpuEvents:" + strconv.Itoa(int(pid)))
-		}
 		tidCpuEvents = make(map[uint32]TimeSegments)
 		ca.cpuPidEvents[pid] = tidCpuEvents
 	}
@@ -173,19 +168,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 
 			clearSize = ca.cfg.GetSegmentSize() / 2
 			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
-			//if tid == 24917 {
-			//	fmt.Println("-----------before clear----------")
-			//	fmt.Println(time.Now().Unix())
-			//	for i := 0; i < ca.cfg.GetSegmentSize() - 1; i++ {
-			//		val, _ := timeSegments.Segments.GetByIndex(i)
-			//		if val != nil {
-			//			sg := val.(*Segment)
-			//			fmt.Println("start:"+strconv.Itoa(int(sg.StartTime))+"   end:"+strconv.Itoa(int(sg.EndTime)))
-			//		}
-			//	}
-			//	fmt.Println("----------------------------------")
-			//}
-
 			for i := 0; i < clearSize-1; i++ {
 				val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
 				if val != nil {
@@ -196,19 +178,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 					(timeSegments.BaseTime+uint64(i+clearSize+1))*nanoToSeconds)
 				timeSegments.Segments.UpdateByIndex(i+clearSize, segmentTmp)
 			}
-
-			//if tid == 24917 {
-			//	fmt.Println("-----------after clear----------")
-			//	for i := 0; i < ca.cfg.GetSegmentSize() - 1; i++ {
-			//		val, _ := timeSegments.Segments.GetByIndex(i)
-			//		if val != nil {
-			//			sg := val.(*Segment)
-			//			fmt.Println("start:"+strconv.Itoa(int(sg.StartTime))+"   end:"+strconv.Itoa(int(sg.EndTime)))
-			//		}
-			//	}
-			//	fmt.Println("----------------------------------")
-			//}
-
 		}
 		if int(event.EndTimestamp()/nanoToSeconds-timeSegments.BaseTime) < 0 {
 			return
@@ -220,14 +189,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		if startOffset < 0 {
 			startOffset = 0
 			endOffset = int(event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime)
-			if endOffset < 0 {
-				fmt.Println("start<end")
-			}
-		}
-		if tid == 4777 {
-			fmt.Println("-----------put----------")
-			fmt.Println("start:" + strconv.Itoa(int(event.StartTimestamp())) + "   end:" + strconv.Itoa(int(event.EndTimestamp())))
-			fmt.Println("----------------------------------")
 		}
 		for i := startOffset; i <= startOffset+endOffset; i++ {
 			var segment *Segment
@@ -241,9 +202,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 			}
 			segment.putTimedEvent(event)
 			segment.IsSend = 0
-			if tid == 4777 {
-				fmt.Println("basetime:" + strconv.Itoa(int(timeSegments.BaseTime)) + "    i:" + strconv.Itoa(int(i)))
-			}
 			timeSegments.Segments.UpdateByIndex(int(i), segment)
 			tidCpuEvents[tid] = timeSegments
 		}
@@ -257,8 +215,8 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		}
 		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
 			segment := newSegment(pid, tid, threadName,
-				(timeSegments.BaseTime+uint64(i))*nanoToSeconds,
-				(timeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
+				(newTimeSegments.BaseTime+uint64(i))*nanoToSeconds,
+				(newTimeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
 			newTimeSegments.Segments.Push(segment)
 		}
 		val, _ := newTimeSegments.Segments.GetByIndex(0)
