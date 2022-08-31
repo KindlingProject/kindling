@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/factory"
 	"reflect"
 	"sync"
 	"testing"
@@ -82,6 +83,7 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 			nextConsumers: []consumer.Consumer{&NopProcessor{}},
 			telemetry:     component.NewDefaultTelemetryTools(),
 		}
+		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 		na.Start()
 	}
 	return na
