@@ -1,18 +1,15 @@
 package cpuanalyzer
 
 import (
-	"context"
-	"log"
-	"os"
 	"strconv"
 	"sync"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
+	"github.com/Kindling-project/kindling/collector/pkg/esclient"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"github.com/olivere/elastic/v6"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +23,7 @@ type CpuAnalyzer struct {
 	// { pid: routine }
 	sendEventsRoutineMap sync.Map
 	lock                 sync.Mutex
-	esClient             *elastic.Client
+	esClient             *esclient.EsClient
 	telemetry            *component.TelemetryTools
 }
 
@@ -49,23 +46,11 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 }
 
 func (ca *CpuAnalyzer) Start() error {
-	errorLog := log.New(os.Stdout, "app", log.LstdFlags)
-	var err error
-	ca.esClient, err = elastic.NewClient(elastic.SetErrorLog(errorLog), elastic.SetURL(ca.cfg.GetEsHost()), elastic.SetSniff(false))
+	client, err := esclient.NewEsClient(ca.cfg.GetEsHost())
 	if err != nil {
-		ca.telemetry.Logger.Warn("new es client error", zap.Error(err))
+		ca.telemetry.Logger.Errorf("Fail to create elasticsearch client: ", zap.Error(err))
 	}
-	info, code, err := ca.esClient.Ping(ca.cfg.GetEsHost()).Do(context.Background())
-	if err != nil {
-		ca.telemetry.Logger.Warn("new es client error", zap.Error(err))
-	}
-	ca.telemetry.Logger.Infof("Es return with code %d and version %s", code, info.Version.Number)
-	esversionCode, err := ca.esClient.ElasticsearchVersion(ca.cfg.GetEsHost())
-	if err != nil {
-		ca.telemetry.Logger.Warn("new es client error", zap.Error(err))
-	}
-	ca.telemetry.Logger.Infof("es version %s\n", esversionCode)
-	//go ca.SendTest()
+	ca.esClient = client
 	// go ca.SendCircle()
 	go ca.ReceiveSendSignal()
 	return nil
@@ -106,7 +91,6 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 		}
 	}
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
-	//ca.PutSegment(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
 func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
@@ -135,22 +119,9 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 		}
 	}
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
-	//ca.PutSegment(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
 var nanoToSeconds uint64 = 1e9
-
-func (ca *CpuAnalyzer) PutSegment(pid uint32, tid uint32, threadName string, event TimedEvent) {
-	newTimeSegments := TimeSegments{
-		Pid:      pid,
-		Tid:      tid,
-		BaseTime: event.StartTimestamp() / nanoToSeconds,
-		Segments: NewCircleQueue(ca.cfg.GetSegmentSize() + 1),
-	}
-	segment := newSegment(pid, tid, threadName, newTimeSegments.BaseTime*nanoToSeconds, newTimeSegments.BaseTime*nanoToSeconds)
-	segment.putTimedEvent(event)
-	ca.SendSegment(*segment)
-}
 
 func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName string, event TimedEvent) {
 	ca.lock.Lock()

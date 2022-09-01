@@ -1,15 +1,11 @@
 package esexporter
 
 import (
-	"context"
-	"log"
-	"os"
-
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
+	"github.com/Kindling-project/kindling/collector/pkg/esclient"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"github.com/olivere/elastic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -17,7 +13,7 @@ import (
 const Type = "esexporter"
 
 type EsExporter struct {
-	esClient *elastic.Client
+	esClient *esclient.EsClient
 
 	telemetry *component.TelemetryTools
 	config    *Config
@@ -29,12 +25,11 @@ func New(config interface{}, telemetry *component.TelemetryTools) exporter.Expor
 		config:    cfg,
 		telemetry: telemetry,
 	}
-	errorLog := log.New(os.Stdout, "app", log.LstdFlags)
-	var err error
-	ret.esClient, err = elastic.NewClient(elastic.SetErrorLog(errorLog), elastic.SetURL(cfg.GetEsHost()), elastic.SetSniff(false))
+	client, err := esclient.NewEsClient(cfg.GetEsHost())
 	if err != nil {
-		telemetry.Logger.Error("new es client error", zap.Error(err))
+		telemetry.Logger.Errorf("Fail to create elasticsearch client: ", zap.Error(err))
 	}
+	ret.esClient = client
 	return ret
 }
 
@@ -74,7 +69,11 @@ func (e *EsExporter) sendTrace(dataGroup *model.DataGroup) {
 	for _, metric := range dataGroup.Metrics {
 		trace.Metrics[metric.Name] = metric.GetInt().Value
 	}
-	e.esClient.Index().Index(e.config.GetEsIndexName()).Type("_doc").BodyJson(trace).Do(context.Background())
+	if e.esClient != nil {
+		_ = e.esClient.IndexJson(e.config.GetEsIndexName(), trace)
+	} else {
+		e.telemetry.Logger.Infof("EsClient is nil, the trace should have been sent: %v", trace)
+	}
 }
 
 type TraceData struct {

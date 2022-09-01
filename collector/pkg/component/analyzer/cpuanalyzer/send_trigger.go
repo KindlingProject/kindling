@@ -1,7 +1,6 @@
 package cpuanalyzer
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -90,11 +89,14 @@ func (ca *CpuAnalyzer) putNewRoutine(task *SendEventsTask) {
 }
 
 func (ca *CpuAnalyzer) SendSegment(segment Segment) {
-	ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
+	if ca.esClient != nil {
+		ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
+	} else {
+		ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
+	}
 }
 
 func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint64) error {
-	tmpTid := uint32(13717)
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
 	ca.telemetry.Logger.Infof("Will send cpu events for pid=%d, start_time=%d, duration=%d", pid, startTime, spendTime)
@@ -106,20 +108,8 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 		return nil
 	}
 	for _, timeSegments := range tidCpuEvents {
-		if timeSegments.Tid == tmpTid {
-			fmt.Println("send data1")
-		}
 		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) < startTime/nanoToSeconds || timeSegments.BaseTime > startTime/nanoToSeconds {
-			if timeSegments.Tid == tmpTid {
-				fmt.Println("-----------------")
-				fmt.Println("basetime:" + strconv.Itoa(int(timeSegments.BaseTime)))
-				fmt.Println("starttime:" + strconv.Itoa(int(startTime/nanoToSeconds)))
-				fmt.Println("-----------------")
-			}
 			continue
-		}
-		if timeSegments.Tid == tmpTid {
-			fmt.Println("send data2 start time:" + strconv.Itoa(int(startTime/nanoToSeconds)) + "spend:" + strconv.Itoa(int(spendTime/nanoToSeconds)) + "now time: " + strconv.Itoa(int(time.Now().UnixNano()/int64(nanoToSeconds))))
 		}
 		for i := 0; i < int(spendTime/nanoToSeconds)+1+2; i++ {
 			index := int(startTime/nanoToSeconds-timeSegments.BaseTime) + i - 2
@@ -133,12 +123,13 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 			segment := val.(*Segment)
 
 			if len(segment.CpuEvents) != 0 && segment.IsSend != 1 {
-				if segment.Tid == tmpTid {
-					fmt.Println("send data3:" + strconv.Itoa(int(startTime/nanoToSeconds)+i-2))
-				}
 				segment.IsSend = 1
 				segment.IndexTimestamp = time.Now().String()
-				ca.esClient.Index().Index("cpu_event").Type("_doc").BodyJson(segment).Do(context.Background())
+				if ca.esClient != nil {
+					ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
+				} else {
+					ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
+				}
 			}
 		}
 	}
@@ -291,7 +282,11 @@ func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) 
 			if len(segment.CpuEvents) != 0 && segment.IsSend != 1 {
 				segment.IsSend = 1
 				segment.IndexTimestamp = time.Now().String()
-				ca.esClient.Index().Index(ca.cfg.GetEsIndexName()).Type("_doc").BodyJson(segment).Do(context.Background())
+				if ca.esClient != nil {
+					ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
+				} else {
+					ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
+				}
 			}
 		}
 	}
