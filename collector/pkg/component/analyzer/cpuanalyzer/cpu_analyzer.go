@@ -90,6 +90,9 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 			ev.DataVal = string(userAttributes.GetValue())
 		}
 	}
+	//fmt.Println(ev.StartTime)
+	//fmt.Println(ev.EndTime)
+	//fmt.Println(ev.DataVal)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
