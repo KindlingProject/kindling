@@ -54,6 +54,13 @@ func (ca *CpuAnalyzer) SendCircle() {
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	for {
 		sendContent := <-SendChannel
+		profilePid := os.Getenv("PROFILE_PID")
+		if profilePid != "" {
+			pidInt, _ := strconv.ParseInt(profilePid, 10, 32)
+			if pidInt != int64(sendContent.Pid) {
+				continue
+			}
+		}
 		task := &SendEventsTask{ca, &sendContent}
 		// "Load" and "Delete" could be executed concurrently
 		value, ok := ca.sendEventsRoutineMap.Load(sendContent.Pid)
