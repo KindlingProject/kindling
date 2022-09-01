@@ -13,6 +13,7 @@ static sinsp *inspector = nullptr;
 sinsp_evt_formatter *formatter = nullptr;
 bool printEvent = false;
 int cnt = 0;
+int MAX_USERATTR_NUM = 8;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
 int16_t event_filters[1024][16];
@@ -338,11 +339,12 @@ int getEvent(void **pp_kindling_event)
 		default:
 		{
 			uint16_t paramsNumber = ev->get_num_params();
-			if(paramsNumber > 8)
+			// Since current data structure specifies the maximum count of `user_attributes` 
+			if ((paramsNumber + userAttNumber) > MAX_USERATTR_NUM )
 			{
-				paramsNumber = 8;
+				paramsNumber =  MAX_USERATTR_NUM - userAttNumber;
 			}
-			paramsNumber -= userAttNumber;
+			// TODO Add another branch to verify the number of userAttNumber is less than MAX_USERATTR_NUM after the program becomes more complexd
 			for(auto i = 0; i < paramsNumber; i++)
 			{
 
