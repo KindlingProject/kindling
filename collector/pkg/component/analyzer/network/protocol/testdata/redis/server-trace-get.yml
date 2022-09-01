@@ -30,6 +30,7 @@ trace:
         request_io: 22
         response_io: 9
       Labels:
+        comm: "redis-server"
         pid: 817
         src_ip: "127.0.0.1"
         src_port: 39130

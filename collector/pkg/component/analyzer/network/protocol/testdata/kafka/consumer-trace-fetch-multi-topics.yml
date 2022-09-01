@@ -38,6 +38,7 @@ trace:
         request_io: 294
         response_io: 22
       Labels:
+        comm: "rdk:broker1"
         pid: 925
         src_ip: "127.0.0.1"
         src_port: 38970

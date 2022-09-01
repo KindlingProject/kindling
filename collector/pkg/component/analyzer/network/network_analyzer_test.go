@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/factory"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/spf13/viper"
@@ -82,6 +83,7 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 			nextConsumers: []consumer.Consumer{&NopProcessor{}},
 			telemetry:     component.NewDefaultTelemetryTools(),
 		}
+		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 		na.Start()
 	}
 	return na
@@ -285,10 +287,11 @@ func (evt *TraceEvent) exchange(common *EventCommon) *model.KindlingEvent {
 	var byteData = getData(evt.UserAttributes.Data)
 
 	modelEvt := &model.KindlingEvent{
-		Source:    model.Source(common.Source),
-		Timestamp: evt.Timestamp,
-		Name:      evt.Name,
-		Category:  model.Category(common.Category),
+		Source:       model.Source(common.Source),
+		Timestamp:    evt.Timestamp,
+		Name:         evt.Name,
+		Category:     model.Category(common.Category),
+		ParamsNumber: 3,
 		UserAttributes: [8]model.KeyValue{
 			{Key: "latency", ValueType: model.ValueType_UINT64, Value: Int64ToBytes(evt.UserAttributes.Latency)},
 			{Key: "res", ValueType: model.ValueType_INT64, Value: Int64ToBytes(evt.UserAttributes.Res)},
@@ -383,6 +386,6 @@ func Int64ToBytes(value int64) []byte {
 
 type TraceExpect struct {
 	Timestamp uint64                 `mapstructure:"Timestamp"`
-	Values    map[string]int64       `mapstructure:"Metrics"`
+	Values    map[string]int64       `mapstructure:"Values"`
 	Labels    map[string]interface{} `mapstructure:"Labels"`
 }
