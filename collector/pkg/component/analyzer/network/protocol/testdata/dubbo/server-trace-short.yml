@@ -36,6 +36,7 @@ trace:
         request_io: 398
         response_io: 35
       Labels:
+        comm: "java"
         pid: 942
         src_ip: "127.0.0.1"
         src_port: 41458
