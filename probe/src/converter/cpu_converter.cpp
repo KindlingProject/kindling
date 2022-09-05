@@ -281,7 +281,7 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 		p_kindling_event->userAttributes[userAttNumber].len = data.length();
 		userAttNumber++;
 	}
-	auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time);
+	auto log_msg = m_log->getLogs(s_tinfo->m_tid, on_time, EVENT_DATA_SIZE);
 	if (log_msg != "") {
 		strcpy(p_kindling_event->userAttributes[userAttNumber].key, "log");
 		memcpy(p_kindling_event->userAttributes[userAttNumber].value, log_msg.data(), log_msg.length());

@@ -199,7 +199,7 @@ int getEvent(void **pp_kindling_event)
 	uint16_t source = get_kindling_source(ev->get_type());
 
 
-    //logCache->addLog(ev);
+    logCache->addLog(ev);
 	cpuConverter->Cache(ev);
 
 	if(ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo!= nullptr && fdInfo->is_file() ){
@@ -625,7 +625,7 @@ void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_ki
         for(int i = 0; i < 16; i++)
         {
             p_kindling_event->userAttributes[i].key = (char *)malloc(sizeof(char) * 128);
-            p_kindling_event->userAttributes[i].value = (char *)malloc(sizeof(char) * 8096);
+            p_kindling_event->userAttributes[i].value = (char *)malloc(sizeof(char) * EVENT_DATA_SIZE);
         }
     }
 }

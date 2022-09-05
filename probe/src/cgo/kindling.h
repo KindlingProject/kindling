@@ -433,4 +433,6 @@ enum ValueType {
 	BOOL = 13 // 4 bytes
 };
 
+const static int EVENT_DATA_SIZE = 80960;
+
 #endif //SYSDIG_KINDLING_H
