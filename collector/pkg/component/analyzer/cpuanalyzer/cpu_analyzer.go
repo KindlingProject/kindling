@@ -3,6 +3,7 @@ package cpuanalyzer
 import (
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
@@ -75,6 +76,7 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 		TraceId:   event.GetStringUserAttribute("trace_id"),
 		IsEntry:   uint32(isEntry),
 	}
+	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
@@ -90,9 +92,7 @@ func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
 			ev.DataVal = string(userAttributes.GetValue())
 		}
 	}
-	//fmt.Println(ev.StartTime)
-	//fmt.Println(ev.EndTime)
-	//fmt.Println(ev.DataVal)
+	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
@@ -121,6 +121,7 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 			ev.Stack = string(userAttributes.GetValue())
 		}
 	}
+	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
@@ -197,6 +198,20 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		segment := val.(*Segment)
 		segment.putTimedEvent(event)
 		tidCpuEvents[tid] = newTimeSegments
+	}
+}
+
+func (ca *CpuAnalyzer) sendEventDirectly(pid uint32, tid uint32, threadName string, event TimedEvent) {
+	ca.lock.Lock()
+	defer ca.lock.Unlock()
+	baseTime := event.StartTimestamp() / nanoToSeconds
+	segment := newSegment(pid, tid, threadName, (baseTime)*nanoToSeconds, (baseTime+1)*nanoToSeconds)
+	segment.putTimedEvent(event)
+	segment.IndexTimestamp = time.Now().String()
+	if ca.esClient != nil {
+		ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
+	} else {
+		ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
 	}
 }
 
