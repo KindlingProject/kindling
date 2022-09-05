@@ -25,6 +25,10 @@ bool event_cache::setInfo(uint32_t tid, info_base *info) {
                 if (info->exit == true && info_pair->event_type == info->event_type - 1 && info->end_time - info_pair->start_time > threshold) {
                     info_pair->size = info->size;
                     info_pair->end_time = info->end_time;
+                    if(info_pair->name.empty()){
+                        info_pair->name = info->name;
+                    }
+                    info_pair->latency = info->latency;
                     info_pair->exit = true;
                 } else { // lost exit event, delete
                     list->pop_back();
@@ -53,12 +57,6 @@ string event_cache::GetInfo(uint32_t tid, pair<uint64_t, uint64_t> &period, uint
         return result;
     }
     auto list = it->second;
-	if(tid == 18160){
-		cout<<"off_type:"<<off_type<<endl;
-		cout<<"event_type:"<<event_type<<endl;
-	}
-//	cout<<"count"<<list->size()<<endl;
-//	cout<<"threshold"<<threshold<<endl;
     if (off_type != event_type) {
         return result;
     }
@@ -74,11 +72,6 @@ string event_cache::GetInfo(uint32_t tid, pair<uint64_t, uint64_t> &period, uint
     // 搜索 start_time < off.start < end_time
     // 判断 if off.end < end_time && off.end - start_time > threshold -> result.append()
     if (f != list->end()) {
-		if(tid == 18160){
-			cout<<"aaaaaa"<<endl;
-			cout<<"syscall_start:"<<(*f)->start_time<<"syscall_end:"<<(*f)->end_time<<endl;
-			cout<<"off_first:"<<period.first<<"off_end:"<<period.second<<endl;
-		}
         if ((*f)->start_time < period.first && period.second < (*f)->end_time && period.second - (*f)->start_time > threshold) {
             result.append((*f)->toString());
         }

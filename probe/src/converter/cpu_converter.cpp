@@ -335,12 +335,15 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 
 
 	p_kindling_event->paramsNumber = userAttNumber;
-
+//    if(memcmp(p_kindling_event->context.tinfo.comm, "http-nio-9191-exec", 17)){
+//        return 0;
+//    }
+//
 //    printf("-----------------------");
 //    printf("name: %s thread: %s(%d) userattNumber: %d\n", p_kindling_event->name, p_kindling_event->context.tinfo.comm, p_kindling_event->context.tinfo.tid, userAttNumber);
 //    printf("time: %lu, %lu, %lu, %lu\n", start_time, end_time, c_data.on_total_time, c_data.off_total_time);
 //    printf("user attributes: \n");
-//    for (int i = 0; i < userAttNumber; i++) {
+//    for (int i = 5; i < userAttNumber; i++) {
 //        printf("%s: %s\n", p_kindling_event->userAttributes[i].key, p_kindling_event->userAttributes[i].value);
 //    }
 
