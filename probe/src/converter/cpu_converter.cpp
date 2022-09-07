@@ -50,7 +50,7 @@ bool cpu_converter::Cache(sinsp_evt *sevt) {
         return false;
     }
 
-    if(type == PPME_SYSCALL_OPEN_E){
+    if(type == PPME_SYSCALL_OPEN_E || type == PPME_SYSCALL_CLOSE_E){
         info = new file_info();
         info->start_time = sevt->get_ts();
         info->operation_type = "open";

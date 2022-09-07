@@ -199,7 +199,7 @@ int getEvent(void **pp_kindling_event)
 	uint16_t source = get_kindling_source(ev->get_type());
 
 
-    logCache->addLog(ev);
+    //logCache->addLog(ev);
 	cpuConverter->Cache(ev);
 
 	if(ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo!= nullptr && fdInfo->is_file() ){
@@ -515,7 +515,7 @@ void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, ki
 }
 
 void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo){
-    char *comm_char = new char[64];
+    char *comm_char = new char[256];
     int val_offset = 0;
     int tmp_offset = 0;
     for (int i = 6; i < data_param.m_len; i++) {
@@ -540,18 +540,17 @@ void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* thre
     }
     uint64_t v_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, atol(tid_char));
     if(v_tid == 0){
-        if(ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)]!= nullptr &&memcmp(ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)], comm_char,  strlen(comm_char))){
+        if(ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)]!= nullptr &&memcmp(ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)], comm_char,  strlen(comm_char)) == 0){
             delete[] comm_char;
         }else {
             ptid_comm[threadInfo->m_pid<<32 | (atol(tid_char) & 0xFFFFFFFF)] = comm_char;
         }
     }else {
-        if(ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)]!= nullptr && memcmp(ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)], comm_char,  strlen(comm_char))){
+        if(ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)]!= nullptr && memcmp(ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)], comm_char,  strlen(comm_char)) == 0){
             delete[] comm_char;
         }else {
             ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)] = comm_char;
         }
-        ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)] = comm_char;
     }
 }
 
