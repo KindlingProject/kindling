@@ -11,28 +11,6 @@ struct FlameGraphCtx{
     BPFSymbolTable *symbol_table_ = new BPFSymbolTable();
 } flame_graph_ctx;
 
-static void setSampleData(void* object, void* value) {
-    SampleData* sampleData = (SampleData*) object;
-    sample_type_data *sample_data = (sample_type_data*)value;
-
-    sampleData->pid_ = sample_data->tid_entry.pid;
-    sampleData->tid_ = sample_data->tid_entry.tid;
-    sampleData->nr_ = sample_data->callchain.nr;
-    memcpy(&sampleData->ips_[0], sample_data->callchain.ips, sampleData->nr_ * sizeof(sample_data->callchain.ips[0]));
-}
-
-static void setProfileData(void* object, void* value) {
-    ProfileData *profileData = (ProfileData*) object;
-    ProfileData *newProfileData = (ProfileData*) value;
-
-    profileData->tid_ = newProfileData->tid_;
-    profileData->depth_ = newProfileData->depth_;
-    profileData->finish_ = newProfileData->finish_;
-    profileData->stack_ = newProfileData->stack_;
-
-    delete newProfileData;
-}
-
 bool FlameSymbolDatas::addPerfSymbol(int depth, __u64 ip, int pid, bool user) {
     if (depth >= max_depth_) {
         return false;
@@ -60,6 +38,11 @@ void FlameSymbolDatas::addProfileSymbol(int depth, string name) {
     symbol_to_ = depth;
 }
 
+static long getSampleTime(void* object) {
+    SampleData *sampleData = (SampleData*) object;
+    return sampleData->ts_;
+}
+
 void SampleData::collectStacks(FlameSymbolDatas *symbolDatas) {
     bool kernel = false, user = false;
     int depth = 0, pid = 0;
@@ -83,6 +66,11 @@ void SampleData::collectStacks(FlameSymbolDatas *symbolDatas) {
             }
         }
     }
+}
+
+static long getProfileTime(void* object) {
+    ProfileData *profileData = (ProfileData*) object;
+    return profileData->ts_;
 }
 
 bool ProfileData::collectStacks(FlameSymbolDatas *symbolDatas) {
@@ -172,7 +160,7 @@ int AggregateData::getFuncId(const string& name) {
 static void aggSampleData(void* object, void* value) {
     AggregateData* agg_data = (AggregateData*) object;
     SampleData *sample_data = (SampleData*)value;
-    if (sample_data->pid_ == 0 || (agg_data->tid_ > 0 && sample_data->tid_ != agg_data->tid_)) {
+    if (sample_data->pid_ == 0) {
         return;
     }
     sample_data->collectStacks(agg_data->symbol_datas_);
@@ -182,9 +170,6 @@ static void aggSampleData(void* object, void* value) {
 static void aggProfileData(void* object, void* value) {
     AggregateData* agg_data = (AggregateData*) object;
     ProfileData *profile_data = (ProfileData*)value;
-    if (profile_data->tid_ == 0 || (agg_data->tid_ > 0 && profile_data->tid_ != agg_data->tid_)) {
-        return;
-    }
 
     bool finish = profile_data->collectStacks(agg_data->symbol_datas_);
     if (finish) {
@@ -192,15 +177,15 @@ static void aggProfileData(void* object, void* value) {
     }
 }
 
-FlameGraph::FlameGraph(int size, int cache_keep_ms, int perf_period_ms) {
-    perf_period_ns_ = perf_period_ms * 1000000;
-    sample_datas_ = new BucketRingBuffers<SampleData>(size, perf_period_ns_);
-    perf_threshold_ns_ = perf_period_ns_;
-    cache_keep_time_ = cache_keep_ms / perf_period_ms;
+FlameGraph::FlameGraph(int cache_second, int perf_period_ms) {
+    sample_datas_ = new WindowList<SampleData>(cache_second);
+    profile_datas_ = new WindowList<ProfileData>(cache_second);
+    perf_threshold_ns_ = perf_period_ms * 1000000;
 }
 
 FlameGraph::~FlameGraph() {
     delete sample_datas_;
+    delete profile_datas_;
     delete flame_graph_ctx.symbol_table_;
     flame_graph_ctx.symbol_table_ = NULL;
 }
@@ -211,49 +196,50 @@ void FlameGraph::SetMaxDepth(int max_depth) {
     }
 }
 
+void FlameGraph::ExpireCache(int seconds) {
+    sample_datas_->checkExpire(seconds);
+    profile_datas_->checkExpire(seconds);
+}
+
 void FlameGraph::RecordSampleData(struct sample_type_data *sample_data) {
     if (sample_data->callchain.nr > 256) {
         //fprintf(stdout, "[Ignore Sample Data] Pid: %d, Tid: %d, Nr: %lld\n",sample_data->tid_entry.pid, sample_data->tid_entry.tid, sample_data->callchain.nr);
         return;
     }
-    last_sample_time_ = sample_datas_->add(sample_data->time, sample_data, setSampleData);
+    SampleData *sampleData = new SampleData();
+    sampleData->ts_ = sample_data->time;
+    sampleData->pid_ = sample_data->tid_entry.pid;
+    sampleData->nr_ = sample_data->callchain.nr;
+    memcpy(&sampleData->ips_[0], sample_data->callchain.ips, sampleData->nr_ * sizeof(sample_data->callchain.ips[0]));
+
+    sample_datas_->add(sample_data->tid_entry.tid, sample_data->time, sampleData);
 }
 
-void FlameGraph::RecordProfileData(uint64_t time, __u32 pid, __u32 tid, int depth, bool finish, string stack) {
-    if (profile_datas_.count(pid) == 0) {
-        profile_datas_[pid] = new BucketRingBuffers<ProfileData>(2000, perf_period_ns_);
+void FlameGraph::RecordProfileData(uint64_t time, __u32 tid, int depth, bool finish, string stack) {
+    ProfileData *data = new ProfileData(time, depth, finish, stack);
+    profile_datas_->add(tid, time, data);
+}
+
+string FlameGraph::GetOnCpuData(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods) {
+    auto *profileData = profile_datas_->find(tid);
+    auto *sampleData = sample_datas_->find(tid);
+    if (NULL == profileData && NULL == sampleData) {
+        return "";
     }
-    ProfileData *data = new ProfileData(tid, depth, finish, stack);
-    profile_datas_[pid]->addAndExpire(time, cache_keep_time_, data, setProfileData);
-}
 
-void FlameGraph::CollectData() {
-    // Expire Perf Datas.
-    sample_datas_->expire(last_sample_time_ - cache_keep_time_);
-}
-
-string FlameGraph::GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods) {
     string result = "";
     AggregateData *aggregateData = NULL;
-    BucketRingBuffers<ProfileData> *profileData = NULL;
-    if (profile_datas_.count(pid) > 0) {
-        profileData = profile_datas_[pid];
-    }
-    __u64 start_time = 0, end_time = 0;
     __u64 size = periods.size();
     for (__u64 i = 0; i < size; i++) {
         if (periods[i].second - periods[i].first >= perf_threshold_ns_) {
-            start_time = periods[i].first / perf_period_ns_; // ns->ms
-            end_time = periods[i].second / perf_period_ns_; // ns->ms
-
             if (NULL == aggregateData) {
-                aggregateData = new AggregateData(tid, flame_graph_ctx.max_depth_);
+                aggregateData = new AggregateData(flame_graph_ctx.max_depth_);
             }
-            //fprintf(stdout, ">> Collect: %lld -> %lld, Duration: %lld, Exist Data %ld -> %ld\n", start_time, end_time, end_time-start_time, sample_datas_->getFrom(), sample_datas_->getTo());
+            // fprintf(stdout, ">> [Collect OnCpu] Tid: %d Duration: %ld\n", tid, periods[i].second-periods[i].first);
             if (profileData != NULL) {
-                profileData->collect(start_time, end_time, aggregateData, aggProfileData);
+                profileData->collect(periods[i].first, periods[i].second, aggregateData, aggProfileData, getProfileTime);
             } else {
-                sample_datas_->collect(start_time, end_time, aggregateData, aggSampleData);
+                sampleData->collect(periods[i].first, periods[i].second, aggregateData, aggSampleData, getSampleTime);
             }
             aggregateData->DumpFrameDatas(result, false);
             aggregateData->Reset();
@@ -271,6 +257,6 @@ string FlameGraph::GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t,
 
     aggregateData->DumpFuncNames(result);
     delete aggregateData;
-    //fprintf(stdout, ">> FlameData: %s\n", result.c_str());
+    // fprintf(stdout, ">> FlameData: %s\n", result.c_str());
     return result;
 }

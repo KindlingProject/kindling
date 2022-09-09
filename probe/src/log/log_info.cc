@@ -1,6 +1,6 @@
 #include "sinsp.h"
 #include "log_info.h"
-#include "utils/ring_buffer.h"
+#include "utils/window_list.h"
 #include <cstdio>
 #include <cstring>
 
@@ -8,73 +8,17 @@ bool cmpByValue(pair<int, size_t> a, pair<int, size_t> b) {
     return a.second < b.second;
 }
 
-LogData::LogData() {}
-
-LogData::~LogData() {
-    string().swap(data_);
-}
-
-void LogData::setData(long ts, int size, __u32 tid, char* data) {
-    ts_ = ts;
-    tid_ = tid;
-    data_ = data;
-    // fprintf(stdout, "[Add Log] Time: %ld, Tid: %d, Data(%d): %s\n", ts, tid, size, data);
-}
-
-long LogData::getTs() {
-    return ts_;
-}
-
-__u32 LogData::getTid() {
-    return tid_;
-}
-
-string LogData::getData() {
-    return data_;
-}
-
-static void setLog(void* object, void* evt) {
-    LogData *logData = (LogData*) object;
-    sinsp_evt *sEvt = (sinsp_evt*) evt;
-
-    // Get Thread Id
-    auto s_tinfo = sEvt->get_thread_info();
-    auto pData = sEvt->get_param_value_raw("data");
-
-    if (pData->m_len > 0) {
-        char* log_info = new char[pData->m_len];
-        memcpy(log_info, pData->m_val, pData->m_len);
-        log_info[pData->m_len - 1] = '\0';
-        logData->setData(sEvt->get_ts(), pData->m_len, s_tinfo->m_tid, log_info);
-        delete []log_info;
-    }
-}
-
 static long getLogTime(void* object) {
     LogData *logData = (LogData*) object;
-    return logData->getTs();
-}
-
-LogDatas::LogDatas(__u32 tid) {
-    tid_ = tid;
-}
-
-LogDatas::~LogDatas() {
-    logs_.clear();
+    return logData->ts_;
 }
 
 void LogDatas::CollectLogs(void* data) {
-    LogData *log_data = (LogData*)data;
-    if (log_data->getTid() != tid_) {
-        return;
+    if (leftSize_ > 0) {
+        LogData *log_data = (LogData*)data;
+        logs_.push_back(log_data->data_);
+        leftSize_ -= log_data->data_.length();
     }
-    //fprintf(stdout, "Collect Log: %s\n", log_data->getData().c_str());
-    // TODO log is split to 2 logs.
-    logs_.push_back(log_data->getData());
-}
-
-void LogDatas::Reset() {
-    logs_.clear();
 }
 
 string LogDatas::ToString() {
@@ -95,15 +39,13 @@ string LogDatas::ToString() {
     return result;
 }
 
-static void collectTidData(void* object, void* value) {
+static void collectLogData(void* object, void* value) {
     LogDatas* pObject = (LogDatas*) object;
     pObject->CollectLogs(value);
 }
 
-LogCache::LogCache(int size, int cache_ms) {
-    long bucketTs = 10000000; // 10Ms
-    cacheBucketTime = (1000000l * cache_ms) / bucketTs;
-    logs_ = new BucketRingBuffers<LogData>(size, bucketTs);
+LogCache::LogCache(int cache_second) {
+    logs_ = new WindowList<LogData>(cache_second);
 }
 
 LogCache::~LogCache() {
@@ -143,28 +85,38 @@ bool LogCache::addLog(void *evt) {
     if (!pres || *(int64_t *) pres->m_val <= 0) {
         return false;
     }
-    count++;
-    logs_->addAndExpire(sEvt->get_ts(), cacheBucketTime, evt, setLog);
-    if (count % 10000 == 0) {
-        fprintf(stdout, "Log Count: %d # %ld\n", logs_->size(), count);
+
+    auto pData = sEvt->get_param_value_raw("data");
+    if (pData->m_len > 0) {
+        char log_info[pData->m_len];
+        memcpy(log_info, pData->m_val, pData->m_len - 1);
+        log_info[pData->m_len - 1] = '\0';
+        LogData *logData = new LogData(sEvt->get_ts(), log_info);
+        logs_->add(s_tinfo->m_tid, sEvt->get_ts(), logData);
     }
+
     return true;
 }
 
-string LogCache::getLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods, int maxLength) {
+string LogCache::GetLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods, int maxLength) {
+    auto windowList = logs_->find(tid);
+    if (NULL == windowList) {
+        return "";
+    }
+
     int size = periods.size();
-    LogDatas *logDatas = new LogDatas(tid);
+    LogDatas *logDatas = new LogDatas(maxLength);
     string logs[size];
     int logLength = 0;
-    for (int i = 0; i < size; i++) {            
-        logs_->collect(periods[i].first, periods[i].second, logDatas, collectTidData, getLogTime);
+    for (int i = 0; i < size; i++) {
+        windowList->collect(periods[i].first, periods[i].second, logDatas, collectLogData, getLogTime);
         logs[i] = logDatas->ToString();
         logLength += (2 + logs[i].length() + std::to_string(logs[i].length()).length());
 
         logDatas->Reset();
     }
     delete logDatas;
-    
+
     // len@logs|len2@logs|0@|
     if (logLength == size * 3) {
         return "";
@@ -178,7 +130,7 @@ string LogCache::getLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &perio
             result.append(logs[i]);
             result.append("|");
         }
-        fprintf(stdout, "Log Size_1: %ld\n", result.length());
+        // fprintf(stdout, "Log Size_1: %ld\n", result.length());
         return result;
     }
     // Substr Log sort list and substr the longest log.
@@ -220,6 +172,10 @@ string LogCache::getLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &perio
             result.append("|");
         }
     }
-    fprintf(stdout, "Log Size_2: %ld\n", result.length());
+    // fprintf(stdout, "Log Size_2: %ld\n", result.length());
     return result;
+}
+
+void LogCache::ExpireCache(int seconds) {
+    logs_->checkExpire(seconds);
 }

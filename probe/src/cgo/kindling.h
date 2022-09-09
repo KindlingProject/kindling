@@ -9,6 +9,7 @@
 void init_probe();
 void start_perf();
 void stop_perf();
+void exipre_window_cache();
 int getEvent(void **kindlingEvent);
 uint16_t get_kindling_category(sinsp_evt *sEvt);
 void init_sub_label();

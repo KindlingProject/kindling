@@ -3,7 +3,7 @@
 extern "C" {
 #include "profile/perf/perf.h"
 }
-#include "utils/ring_buffer.h"
+#include "utils/window_list.h"
 #include <string>
 #include <list>
 #include <map>
@@ -85,9 +85,11 @@ class SampleData {
   public:
     SampleData() {
     }
+    ~SampleData() {
+    }
 
+    long ts_;
     __u32 pid_;
-    __u32 tid_;
     __u64 nr_;
     __u64 ips_[256];
   
@@ -99,8 +101,9 @@ class ProfileData {
     ProfileData() {
     }
 
-    ProfileData(__u32 tid, int depth, bool finish, string stack) : tid_(tid), depth_(depth), finish_(finish), stack_(stack) {
+    ProfileData(long ts, int depth, bool finish, string stack) : ts_(ts), depth_(depth), finish_(finish), stack_(stack) {
     }
+    uint64_t ts_;
     __u32 tid_;
     int depth_;
     bool finish_;
@@ -177,10 +180,9 @@ class Node {
 
 class AggregateData {
   public:
-    __u32 tid_;
     FlameSymbolDatas *symbol_datas_;
 
-    AggregateData(__u32 tid, int max_depth) : tid_(tid), func_name_map_(), func_names_() {
+    AggregateData(int max_depth) : func_name_map_(), func_names_() {
       symbol_datas_ = new FlameSymbolDatas(max_depth);
       root_ = new Node();
     }
@@ -215,22 +217,19 @@ class AggregateData {
 
 class FlameGraph {
  public:
-  FlameGraph(int size, int cache_keep_ms, int perf_period_ms);
+  FlameGraph(int cache_second, int perf_period_ms);
   ~FlameGraph();
   void SetMaxDepth(int max_depth);
+  void ExpireCache(int seconds);
   void RecordSampleData(struct sample_type_data *sample_data);
-  void RecordProfileData(uint64_t time, __u32 pid, __u32 tid, int depth, bool finish, string stack);
-  void CollectData();
-  string GetOnCpuData(__u32 pid, __u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods);
+  void RecordProfileData(uint64_t time, __u32 tid, int depth, bool finish, string stack);
+  string GetOnCpuData(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods);
 
  private:
   int size_;
-  __u64 cache_keep_time_;
-  __u64 perf_period_ns_;
   __u64 perf_threshold_ns_;
-  __u64 last_sample_time_;
-  BucketRingBuffers<SampleData> *sample_datas_;
-  map<uint64_t, BucketRingBuffers<ProfileData>*> profile_datas_;
+  WindowList<SampleData> *sample_datas_;
+  WindowList<ProfileData> *profile_datas_;
   FILE *collect_file_;
 };
 #endif //KINDLING_PROBE_PROFILE_FLAMEGRAPH_H

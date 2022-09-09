@@ -87,6 +87,12 @@ void stop_perf() {
 	prof->Stop();
 }
 
+void exipre_window_cache() {
+	// Expire Unused thread datas after 5 minute.
+	logCache->ExpireCache(300);
+	prof->ExpireCache(300);
+}
+
 void init_probe()
 {
 	bool bpf = false;
@@ -161,10 +167,10 @@ void init_probe()
 
 			inspector->open("");
 		}
-		logCache = new LogCache(10000, 5000);
-        prof = new Profiler(2000, 5000, 10);
+		logCache = new LogCache(5);
+		prof = new Profiler(5, 10);
 		prof->SetMaxDepth(20);
-        cpuConverter = new cpu_converter(inspector, prof, logCache);
+		cpuConverter = new cpu_converter(inspector, prof, logCache);
 	}
 	catch(const exception &e)
 	{
@@ -199,7 +205,7 @@ int getEvent(void **pp_kindling_event)
 	uint16_t source = get_kindling_source(ev->get_type());
 
 
-    //logCache->addLog(ev);
+	logCache->addLog(ev);
 	cpuConverter->Cache(ev);
 
 	if(ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo!= nullptr && fdInfo->is_file() ){
@@ -606,7 +612,7 @@ void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* t
     }
     int depth = atoi(depth_char);
     bool finish = (atoi(finish_char) == 1) ? true : false;
-    prof->RecordProfileData(time, threadInfo->m_pid, host_tid, depth, finish, string(kd_stack));
+    prof->RecordProfileData(time, host_tid, depth, finish, string(kd_stack));
 }
 
 void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_kindling_event){

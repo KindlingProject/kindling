@@ -11,6 +11,7 @@ extern "C" {
 void runForGo();
 void startPerf();
 void stopPerf();
+void expireWindowCache();
 int getKindlingEvent(void **kindlingEvent);
 int subEventForGo(char* eventName, char* category);
 #ifdef __cplusplus

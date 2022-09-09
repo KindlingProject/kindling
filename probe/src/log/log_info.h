@@ -1,6 +1,6 @@
 #ifndef KINDLING_PROBE_LOG_INFO_H
 #define KINDLING_PROBE_LOG_INFO_H
-#include "utils/ring_buffer.h"
+#include "utils/window_list.h"
 #include <string>
 #include <list>
 #include <vector>
@@ -12,40 +12,48 @@ using std::vector;
 
 class LogData {
   public:
-    LogData();
-    ~LogData();
-    void setData(long ts, int size, __u32 tid, char* data);
-    long getTs();
-    __u32 getTid();
-    string getData();
-  private:
     long ts_;
-    __u32 tid_;
     string data_;
+
+    LogData(long ts, string data) : ts_(ts), data_(data) {
+    }
+
+    ~LogData() {
+      string().swap(data_);
+    }
 };
 
 class LogDatas {
   public:
-    LogDatas(__u32 tid);
-    ~LogDatas();
+    LogDatas(int leftSize) : leftSize_(leftSize) {
+    }
+    ~LogDatas() {
+      logs_.clear();
+    }
+    void Reset() {
+      logs_.clear();
+    }
+
+    bool isOverLimit() {
+      return leftSize_ < 0; 
+    }
+
     void CollectLogs(void* data);
-    void Reset();
     string ToString();
   private:
-    __u32 tid_;
+    int leftSize_;
     list<string> logs_;
 };
 
 class LogCache {
   public:
-    LogCache(int size, int cache_ms);
+    LogCache(int cache_second);
     ~LogCache();
     bool addLog(void* evt);
-    string getLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods, int maxLength);
+    string GetLogs(__u32 tid, vector<std::pair<uint64_t, uint64_t>> &periods, int maxLength);
+    void ExpireCache(int seconds);
   private:
-    long cacheBucketTime;
-    long count = 0;
-    BucketRingBuffers<LogData>* logs_;
+    WindowList<LogData>* logs_;
 };
 
 #endif //KINDLING_PROBE_LOG_INFO_H

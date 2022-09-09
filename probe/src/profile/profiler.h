@@ -8,13 +8,14 @@ extern "C" {
 
 class Profiler {
 public:
-    Profiler(int size, int cache_keep_ms, int perf_period_ms);
+    Profiler(int cache_second, int perf_period_ms);
     ~Profiler();
     void SetMaxDepth(int max_depth);
     void Start();
     void Stop();
-    void RecordProfileData(uint64_t time, __u32 pid, __u32 tid, int depth, bool finish, std::string stack);
-    std::string GetOnCpuData(__u32 pid, __u32 tid, std::vector<std::pair<uint64_t, uint64_t>> &periods);
+    void ExpireCache(int seconds);
+    void RecordProfileData(uint64_t time, __u32 tid, int depth, bool finish, std::string stack);
+    std::string GetOnCpuData(__u32 tid, std::vector<std::pair<uint64_t, uint64_t>> &periods);
 
 private:
     struct perfData *perf_data_;
