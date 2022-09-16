@@ -131,6 +131,7 @@ void init_probe()
 	catch(const exception &e)
 	{
 		fprintf(stderr, "kindling probe init err: %s", e.what());
+		exit(1);
 	}
 }
 
