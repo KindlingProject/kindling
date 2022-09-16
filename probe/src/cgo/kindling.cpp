@@ -59,119 +59,98 @@ void sub_event(char *eventName, char *category)
 {
 	auto it_type = m_events.find(eventName);
 	if(it_type == m_events.end()) {
-        cout << "failed to find event " << eventName << endl;
-        return;
-    }
-    if(category == nullptr || category[0] == '\0') {
-        for(int j = 0; j < 16; j++) {
-            event_filters[it_type->second][j] = 1;
-        }
-        cout << "sub event name: " << eventName << endl;
+		cout << "failed to find event " << eventName << endl;
+		return;
+	}
+	if(category == nullptr || category[0] == '\0') {
+		for(int j = 0; j < 16; j++) {
+			event_filters[it_type->second][j] = 1;
+		}
+		cout << "sub event name: " << eventName << endl;
 	} else {
-        auto it_category = m_categories.find(category);
-        if(it_category == m_categories.end()) {
-            cout << "failed to find category " << category << endl;
-            return;
-        }
-        event_filters[it_type->second][it_category->second] = 1;
-        cout << "sub event name: " << eventName << "  &&  category:" << category << endl;
-    }
+		auto it_category = m_categories.find(category);
+		if(it_category == m_categories.end()) {
+			cout << "failed to find category " << category << endl;
+			return;
+		}
+		event_filters[it_type->second][it_category->second] = 1;
+		cout << "sub event name: " << eventName << "  &&  category:" << category << endl;
+	}
 }
 
+void suppress_events_comm(sinsp *inspector) {
+	const string comms[] = {"kindling-collec", "sshd",
+							"containerd", "dockerd", "containerd-shim", "kubelet",
+							"kube-apiserver", "etcd", "kube-controller", "kube-scheduler",
+							"kube-rbac-proxy","prometheus", "node_exporter", "alertmanager","adapter"};
+	for (auto &comm : comms) {
+		inspector->suppress_events_comm(comm);
+	}
+}
+
+void set_eventmask(sinsp *inspector) {
+	inspector->clear_eventmask();
+	const enum ppm_event_type enables[] = {
+			PPME_SYSCALL_WRITEV_X,
+			PPME_SYSCALL_WRITEV_E,
+			PPME_SYSCALL_WRITE_X,
+			PPME_SYSCALL_WRITE_E,
+			PPME_SYSCALL_READ_X,
+			PPME_SYSCALL_READ_E,
+			PPME_SYSCALL_FUTEX_E,
+			PPME_SYSCALL_FUTEX_X,
+			PPME_SYSCALL_OPEN_E,
+			PPME_SYSCALL_OPEN_X,
+			PPME_SYSCALL_CLOSE_E,
+			PPME_SYSCALL_CLOSE_X,
+			PPME_SYSCALL_EPOLLWAIT_E,
+			PPME_SYSCALL_EPOLLWAIT_X,
+			PPME_CPU_ANALYSIS_E,
+	};
+	for (auto event : enables) {
+		inspector->set_eventmask(event);
+	}
+}
 
 int init_probe() {
-    int argc = 1;
-    QCoreApplication app(argc, 0);
+	int argc = 1;
+	QCoreApplication app(argc, 0);
 
-    //w.show();
-    QObject *object;
-    app.addLibraryPath(QString("../KindlingPlugin"));    // 加入库路径
-    // 载入插件，取得实例
-    QPluginLoader l(QString("kindling-plugin"));
-    object = l.instance();
-    if (object != NULL) {
-        qls.push_back(object);
-    }
-    bool bpf = false;
-    char *isPrintEvent = getenv("IS_PRINT_EVENT");
-    if (isPrintEvent != nullptr && strncmp("true", isPrintEvent, sizeof(isPrintEvent)) == 0) {
-        printEvent = true;
-    }
-    string bpf_probe;
-    inspector = new sinsp();
-    init_sub_label();
-    string output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
-    formatter = new sinsp_evt_formatter(inspector, output_format);
+	//w.show();
+	QObject *object;
+	app.addLibraryPath(QString("../KindlingPlugin"));    // 加入库路径
+	// 载入插件，取得实例
+	QPluginLoader l(QString("kindling-plugin"));
+	object = l.instance();
+	if (object != NULL) {
+		qls.push_back(object);
+	}
+
+	char *isPrintEvent = getenv("IS_PRINT_EVENT");
+	if (isPrintEvent != nullptr && strncmp("true", isPrintEvent, sizeof(isPrintEvent)) == 0) {
+		printEvent = true;
+	}
+	init_sub_label();
+	string output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
+
 	try
 	{
 		inspector = new sinsp();
+		formatter = new sinsp_evt_formatter(inspector, output_format);
 		inspector->set_hostname_and_port_resolution_mode(false);
 		inspector->set_snaplen(1000);
+		suppress_events_comm(inspector);
+		inspector->open("");
+		set_eventmask(inspector);
 
-		inspector->suppress_events_comm("containerd");
-		inspector->suppress_events_comm("dockerd");
-		inspector->suppress_events_comm("containerd-shim");
-		inspector->suppress_events_comm("kindling-collector");
-		inspector->suppress_events_comm("sshd");
-		sinsp_evt_formatter formatter(inspector, output_format);
-		const char *probe = scap_get_bpf_probe_from_env();
-		if(probe)
-		{
-			bpf = true;
-			bpf_probe = probe;
-		}
-
-		bool open_success = true;
-
-		try
-		{
-			inspector->open("");
-			inspector->clear_eventmask();
-			inspector->set_eventmask(PPME_SYSCALL_WRITEV_X);
-			inspector->set_eventmask(PPME_SYSCALL_WRITEV_X - 1);
-			inspector->set_eventmask(PPME_SYSCALL_WRITE_X);
-			inspector->set_eventmask(PPME_SYSCALL_WRITE_E);
-			inspector->set_eventmask(PPME_SYSCALL_READ_X);
-			inspector->set_eventmask(PPME_SYSCALL_READ_E);
-			inspector->set_eventmask(PPME_SYSCALL_FUTEX_E);
-			inspector->set_eventmask(PPME_SYSCALL_FUTEX_X);
-            inspector->set_eventmask(PPME_SYSCALL_OPEN_E);
-            inspector->set_eventmask(PPME_SYSCALL_OPEN_X);
-            inspector->set_eventmask(PPME_SYSCALL_CLOSE_E);
-            inspector->set_eventmask(PPME_SYSCALL_CLOSE_X);
-            inspector->set_eventmask(PPME_SYSCALL_EPOLLWAIT_E);
-            inspector->set_eventmask(PPME_SYSCALL_EPOLLWAIT_X);
-		}
-		catch(const sinsp_exception &e)
-		{
-			open_success = false;
-			cout << "open failed" << endl;
-		}
-
-		//
-		// Starting the live capture failed, try to load the driver with
-		// modprobe.
-		//
-		if(!open_success)
-		{
-			if(bpf)
-			{
-				if(bpf_probe.empty())
-				{
-					fprintf(stderr, "Unable to locate the BPF probe\n");
-				}
-			}
-
-			inspector->open("");
-		}
-        cpuConverter = new cpu_converter(inspector);
+		cpuConverter = new cpu_converter(inspector);
 	}
 	catch(const exception &e)
 	{
 		fprintf(stderr, "kindling probe init err: %s", e.what());
 		return 1;
 	}
-    return 0;
+	return 0;
 }
 
 int getEvent(void **pp_kindling_event)
@@ -380,17 +359,17 @@ int getEvent(void **pp_kindling_event)
 	default:
 	{
 		uint16_t paramsNumber = ev->get_num_params();
-        // Since current data structure specifies the maximum count of `user_attributes`
-        if ((paramsNumber + userAttNumber) > MAX_USERATTR_NUM )
-        {
-            paramsNumber =  MAX_USERATTR_NUM - userAttNumber;
-        }
-        // TODO Add another branch to verify the number of userAttNumber is less than MAX_USERATTR_NUM after the program becomes more complexd
-        for(auto i = 0; i < paramsNumber; i++)
-        {
+		// Since current data structure specifies the maximum count of `user_attributes`
+		if ((paramsNumber + userAttNumber) > MAX_USERATTR_NUM )
+		{
+			paramsNumber =  MAX_USERATTR_NUM - userAttNumber;
+		}
+		// TODO Add another branch to verify the number of userAttNumber is less than MAX_USERATTR_NUM after the program becomes more complexd
+		for(auto i = 0; i < paramsNumber; i++)
+		{
 			strcpy(p_kindling_event->userAttributes[userAttNumber].key, (char *)ev->get_param_name(i));
 			memcpy(p_kindling_event->userAttributes[userAttNumber].value, ev->get_param(i)->m_val,
-			       ev->get_param(i)->m_len);
+				   ev->get_param(i)->m_len);
 			p_kindling_event->userAttributes[userAttNumber].len = ev->get_param(i)->m_len;
 			p_kindling_event->userAttributes[userAttNumber].valueType = get_type(ev->get_param_info(i)->type);
 			userAttNumber++;
