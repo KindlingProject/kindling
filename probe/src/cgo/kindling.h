@@ -6,7 +6,7 @@
 #define SYSDIG_KINDLING_H
 #include "sinsp.h"
 
-void init_probe();
+int init_probe();
 int getEvent(void **kindlingEvent);
 uint16_t get_kindling_category(sinsp_evt *sEvt);
 void init_sub_label();

@@ -61,7 +61,7 @@ void sub_event(char *eventName, char *category)
 	}
 }
 
-void init_probe()
+int init_probe()
 {
 	bool bpf = false;
 	char* isPrintEvent = getenv("IS_PRINT_EVENT");
@@ -131,8 +131,9 @@ void init_probe()
 	catch(const exception &e)
 	{
 		fprintf(stderr, "kindling probe init err: %s", e.what());
-		exit(1);
+		return 1;
 	}
+    return 0;
 }
 
 int getEvent(void **pp_kindling_event)

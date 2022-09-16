@@ -6,8 +6,8 @@
 #include "kindling.h"
 
 
-void runForGo(){
-	init_probe();
+int runForGo(){
+	return init_probe();
 }
 
 int getKindlingEvent(void **kindlingEvent){
