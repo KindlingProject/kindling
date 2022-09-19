@@ -77,7 +77,7 @@ int init_probe()
 	{
 		inspector = new sinsp();
 		inspector->set_hostname_and_port_resolution_mode(false);
-		inspector->set_snaplen(80);
+		inspector->set_snaplen(200);
 
 		inspector->suppress_events_comm("containerd");
 		inspector->suppress_events_comm("dockerd");
