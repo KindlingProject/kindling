@@ -53,8 +53,8 @@ func InitLogger(config Config) *zap.Logger {
 		logger.Sugar().Infof("Log Initialize Success! ConsoleLevel: %s,FileRotationLevel: %s", consoleLogLevel.String(), "none")
 		return logger
 	} else {
-		// By default, the console at the Info level is used to record logs
-		consoleLogLevel = zapcore.InfoLevel
+		// Both none, only record the panic log to console
+		consoleLogLevel = zapcore.DPanicLevel
 		logger := CreateConsoleLogger()
 		logger.Sugar().Infof("Log Initialize Success! ConsoleLevel: %s,FileRotationLevel: %s", consoleLogLevel.String(), "none")
 		return logger
