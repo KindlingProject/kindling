@@ -4,12 +4,15 @@
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased 
+
+## v0.4.0 - 2022-09-19
 ### Enhancements
 - Optimize the log output. ([#299](https://github.com/CloudDectective-Harmonycloud/kindling/pull/299))
 - Print logs when subscribing to events. Print a warning message if there is no event the agent subscribes to. ([#290](https://github.com/CloudDectective-Harmonycloud/kindling/pull/290))
 - Allow the collector run in the non-Kubernetes environment by setting the option `enable` `false` under the `k8smetadataprocessor` section. ([#285](https://github.com/CloudDectective-Harmonycloud/kindling/pull/285))
 - Add a new environment variable: IS_PRINT_EVENT. When the value is true, sinsp events can be printed to the stdout. ([#283](https://github.com/CloudDectective-Harmonycloud/kindling/pull/283))
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
+
 ### Bug fixes
 - Avoid printing logs to console when both `observability.logger.file_level` and `observability.logger.console_level` are set to none([#316](https://github.com/CloudDectective-Harmonycloud/kindling/pull/316))
 - Fix the userAttributes array out of range error caused by userAttNumber exceeding 8
