@@ -8,7 +8,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void runForGo();
+int runForGo();
 int getKindlingEvent(void **kindlingEvent);
 void subEventForGo(char* eventName, char* category);
 #ifdef __cplusplus

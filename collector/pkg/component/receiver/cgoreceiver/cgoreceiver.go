@@ -58,7 +58,10 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 
 func (r *CgoReceiver) Start() error {
 	r.telemetry.Logger.Info("Start CgoReceiver")
-	C.runForGo()
+	res := int(C.runForGo())
+	if res == 1 {
+	    return fmt.Errorf("fail to init probe")
+	}
 	time.Sleep(2 * time.Second)
 	r.subEvent()
 	// Wait for the C routine running
