@@ -8,7 +8,7 @@
 - When processing Redis' Requests, add additional labels to describe the key information of the message. Check [Metrics Document](https://github.com/CloudDectective-Harmonycloud/kindling/blob/main/docs/prometheus_metrics.md) for more details. ([#321](https://github.com/CloudDectective-Harmonycloud/kindling/pull/321))
 
 ### Bug fixes
-- Fix the bug when the kernel does not support some kprobe, the probe crash.
+- Fix the bug when the kernel does not support some kprobe, the probe crashes.
 
 ## v0.4.0 - 2022-09-19
 ### Enhancements
