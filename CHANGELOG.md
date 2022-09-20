@@ -4,6 +4,8 @@
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased 
+### Bug fixes
+- Fix the bug when the kernel does not support some kprobe, the probe crash.
 
 ## v0.4.0 - 2022-09-19
 ### Enhancements
