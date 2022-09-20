@@ -5,7 +5,7 @@
 
 ## Unreleased 
 ### Enhancements
-- When processing Redis' Request, add additional labels to describe the key information of the message. Check [Metrics Document](https://github.com/CloudDectective-Harmonycloud/kindling/blob/main/docs/prometheus_metrics.md) for more detail. ([#321](https://github.com/CloudDectective-Harmonycloud/kindling/pull/321))
+- When processing Redis' Requests, add additional labels to describe the key information of the message. Check [Metrics Document](https://github.com/CloudDectective-Harmonycloud/kindling/blob/main/docs/prometheus_metrics.md) for more details. ([#321](https://github.com/CloudDectective-Harmonycloud/kindling/pull/321))
 
 ## v0.4.0 - 2022-09-19
 ### Enhancements
