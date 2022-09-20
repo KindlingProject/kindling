@@ -23,4 +23,5 @@ const (
 	ProtocolDns   = "dns"
 	ProtocolKafka = "kafka"
 	ProtocolMysql = "mysql"
+	ProtocolRedis = "redis"
 )

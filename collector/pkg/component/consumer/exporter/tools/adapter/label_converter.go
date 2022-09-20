@@ -81,6 +81,8 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 		key.protocol = KAFKA
 	case constvalues.ProtocolDubbo:
 		key.protocol = DUBBO
+	case constvalues.ProtocolRedis:
+		key.protocol = REDIS
 	default:
 		key.protocol = UNSUPPORTED
 	}

@@ -17,6 +17,7 @@ const (
 	MYSQL
 	GRPC
 	DUBBO
+	REDIS
 	UNSUPPORTED
 )
 
@@ -204,6 +205,10 @@ var entityProtocol = []extraLabelsParam{
 		{constlabels.RequestContent, constlabels.ContentKey, String},
 		{constlabels.ResponseContent, constlabels.DubboErrorCode, FromInt64ToString},
 	}, extraLabelsKey{DUBBO}},
+	{[]dictionary{
+		{constlabels.RequestContent, constlabels.ContentKey, String},
+		{constlabels.ResponseContent, constlabels.RedisErrMsg, FromInt64ToString},
+	}, extraLabelsKey{REDIS}},
 	{[]dictionary{
 		{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
 		{constlabels.ResponseContent, constlabels.STR_EMPTY, StrEmpty},
