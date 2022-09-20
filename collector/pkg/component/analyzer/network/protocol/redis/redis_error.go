@@ -24,6 +24,8 @@ func parseRedisError() protocol.ParsePkgFn {
 		message.Offset = offset
 		if len(data) > 0 && !message.HasAttribute(constlabels.RedisErrMsg) {
 			message.AddByteArrayUtf8Attribute(constlabels.RedisErrMsg, data)
+			message.AddBoolAttribute(constlabels.IsError, true)
+			message.AddIntAttribute(constlabels.ErrorType, int64(constlabels.ProtocolError))
 		}
 		return true, message.IsComplete()
 	}

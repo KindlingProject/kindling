@@ -13,6 +13,12 @@ const (
 	ResponseIo = "response_io"
 
 	SpanInfo = "KSpanInfo"
+
+	ProtocolError   = "error"
+	ProtocolNoError = "noerror"
+
+	ProtocolErrorStatus   = "1"
+	ProtocolNoErrorStatus = "0"
 )
 
 const (

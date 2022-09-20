@@ -20,7 +20,8 @@ const (
 	SqlErrCode = "sql_error_code"
 	SqlErrMsg  = "sql_error_msg"
 
-	RedisErrMsg = "redis_error_msg"
+	RedisCommand = "redis_command"
+	RedisErrMsg  = "redis_error_msg"
 
 	KafkaApi           = "kafka_api"
 	KafkaVersion       = "kafka_version"
