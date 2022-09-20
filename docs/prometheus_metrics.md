@@ -68,6 +68,13 @@ Service metrics are generated from the server-side events, which are used to sho
 | `request_content` | io.kindling.dubbo.api.service.OrderService#order | Service Info. The format of service is `package.class#method`                                                                                            |
 | `response_content` | 20 | "error_code" of Dubbo. 20 means OK, more details at the [docs](https://dubbo.apache.org/en/blog/2018/10/05/introduction-to-the-dubbo-protocol/#dubbo-protocol-details). |
 
+- When protocol is `redis`:
+
+| **Label** | **Example**                   | **Notes**                           |
+| --- |-------------------------|--------------------------|
+| `request_content` | GET | The command of the Redis request. |
+| `response_content` | noerror | The value is either `error` or `noerror`. |
+
 - For other cases, the `request_content` and `response_content` are both empty.
 
 **Note 3**: The histogram metric `kindling_entity_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
@@ -128,11 +135,12 @@ These two terms are composed of two parts.
 
 **Note 2**: The field "status_code" holds different values when "protocol" is different.
 
-- **HTTP**: 'Status Code' of HTTP response. 
-- **DNS**: rcode of DNS response.
-- **MySQL**: Error code of the error response.
-- **DUBBO**: 'Error Code' of Dubbo request.
-- **others**: empty temporarily
+- **http**: `Status Code` of HTTP response.
+- **dns**: `rcode` of DNS response.
+- **mysql**: `Error Code` of the error response.
+- **dubbo**: `Error Code` of Dubbo request.
+- **redis**: `0` if there is no error; `1` otherwise.
+- **others**: empty temporarily.
 
 **Note 3**: The histogram metric `kindling_topology_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
 ```yaml
