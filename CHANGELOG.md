@@ -4,6 +4,8 @@
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased 
+### Enhancements
+- Add extra labels for the Metrics of Redis' Requests. ([#321](https://github.com/CloudDectective-Harmonycloud/kindling/pull/321))
 
 ## v0.4.0 - 2022-09-19
 ### Enhancements
