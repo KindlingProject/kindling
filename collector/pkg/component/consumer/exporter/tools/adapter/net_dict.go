@@ -17,6 +17,7 @@ const (
 	MYSQL
 	GRPC
 	DUBBO
+	REDIS
 	UNSUPPORTED
 )
 
@@ -28,6 +29,8 @@ const (
 	Bool
 	StrEmpty
 	FromInt64ToString
+	FromProtoclErrorToString
+	FromProtocolErrorToStatus
 )
 
 const (
@@ -205,6 +208,10 @@ var entityProtocol = []extraLabelsParam{
 		{constlabels.ResponseContent, constlabels.DubboErrorCode, FromInt64ToString},
 	}, extraLabelsKey{DUBBO}},
 	{[]dictionary{
+		{constlabels.RequestContent, constlabels.ContentKey, String},
+		{constlabels.ResponseContent, constlabels.STR_EMPTY, FromProtoclErrorToString},
+	}, extraLabelsKey{REDIS}},
+	{[]dictionary{
 		{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
 		{constlabels.ResponseContent, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{UNSUPPORTED}},
@@ -236,6 +243,10 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanDubboResponseBody, constlabels.DubboResponsePayload, String},
 		{constlabels.SpanDubboErrorCode, constlabels.DubboErrorCode, Int64},
 	}, extraLabelsKey{DUBBO}},
+	{[]dictionary{
+		{constlabels.SpanRedisCommand, constlabels.RedisCommand, String},
+		{constlabels.SpanRedisErrorMsg, constlabels.RedisErrMsg, String},
+	}, extraLabelsKey{REDIS}},
 	{
 		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
 	},
@@ -261,6 +272,9 @@ var topologyProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.DubboErrorCode, FromInt64ToString},
 	}, extraLabelsKey{DUBBO}},
+	{[]dictionary{
+		{constlabels.StatusCode, constlabels.STR_EMPTY, FromProtocolErrorToStatus},
+	}, extraLabelsKey{REDIS}},
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{UNSUPPORTED}},
