@@ -4,6 +4,8 @@
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased 
+
+## v0.4.1 - 2022-09-21
 ### Enhancements
 - When processing Redis' Requests, add additional labels to describe the key information of the message. Check [Metrics Document](https://github.com/CloudDectective-Harmonycloud/kindling/blob/main/docs/prometheus_metrics.md) for more details. ([#321](https://github.com/CloudDectective-Harmonycloud/kindling/pull/321))
 
