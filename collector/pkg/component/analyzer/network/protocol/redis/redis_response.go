@@ -2,6 +2,7 @@ package redis
 
 import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 )
 
 /*
@@ -24,6 +25,7 @@ func fastfailResponse() protocol.FastFailFn {
 
 func parseResponse() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
+		message.AddByteArrayUtf8Attribute(constlabels.ResponsePayload, message.GetData(0, protocol.GetPayLoadLength(protocol.REDIS)))
 		return true, false
 	}
 }

@@ -224,9 +224,9 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanHttpStatusCode, constlabels.HttpStatusCode, Int64},
 		{constlabels.SpanHttpTraceId, constlabels.HttpApmTraceId, String},
 		{constlabels.SpanHttpTraceType, constlabels.HttpApmTraceType, String},
-		{constlabels.SpanHttpRequestHeaders, constlabels.HttpRequestPayload, String},
+		{constlabels.SpanHttpRequestHeaders, constlabels.RequestPayload, String},
 		{constlabels.SpanHttpRequestBody, constlabels.STR_EMPTY, StrEmpty},
-		{constlabels.SpanHttpResponseHeaders, constlabels.HttpResponsePayload, String},
+		{constlabels.SpanHttpResponseHeaders, constlabels.ResponsePayload, String},
 		{constlabels.SpanHttpResponseBody, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{HTTP}},
 	{[]dictionary{
@@ -239,13 +239,15 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanDnsRCode, constlabels.DnsRcode, FromInt64ToString},
 	}, extraLabelsKey{DNS}},
 	{[]dictionary{
-		{constlabels.SpanDubboRequestBody, constlabels.DubboRequestPayload, String},
-		{constlabels.SpanDubboResponseBody, constlabels.DubboResponsePayload, String},
+		{constlabels.SpanDubboRequestBody, constlabels.RequestPayload, String},
+		{constlabels.SpanDubboResponseBody, constlabels.ResponsePayload, String},
 		{constlabels.SpanDubboErrorCode, constlabels.DubboErrorCode, Int64},
 	}, extraLabelsKey{DUBBO}},
 	{[]dictionary{
 		{constlabels.SpanRedisCommand, constlabels.RedisCommand, String},
 		{constlabels.SpanRedisErrorMsg, constlabels.RedisErrMsg, String},
+		{constlabels.RequestPayload, constlabels.RequestPayload, String},
+		{constlabels.ResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{REDIS}},
 	{
 		[]dictionary{}, extraLabelsKey{UNSUPPORTED},

@@ -1,15 +1,15 @@
 package constlabels
 
 const (
-	ContentKey = "content_key"
+	ContentKey      = "content_key"
+	RequestPayload  = "request_payload"
+	ResponsePayload = "response_payload"
 
-	HttpMethod          = "http_method"
-	HttpUrl             = "http_url"
-	HttpApmTraceType    = "trace_type"
-	HttpApmTraceId      = "trace_id"
-	HttpRequestPayload  = "request_payload"
-	HttpResponsePayload = "response_payload"
-	HttpStatusCode      = "http_status_code"
+	HttpMethod       = "http_method"
+	HttpUrl          = "http_url"
+	HttpApmTraceType = "trace_type"
+	HttpApmTraceId   = "trace_id"
+	HttpStatusCode   = "http_status_code"
 
 	DnsId     = "dns_id"
 	DnsDomain = "dns_domain"
@@ -27,10 +27,7 @@ const (
 	KafkaVersion       = "kafka_version"
 	KafkaCorrelationId = "kafka_id"
 	KafkaTopic         = "kafka_topic"
-	KafkaPartition     = "kafka_partition"
 	KafkaErrorCode     = "kafka_error_code"
 
-	DubboRequestPayload  = "request_payload"
-	DubboResponsePayload = "response_payload"
-	DubboErrorCode       = "dubbo_error_code"
+	DubboErrorCode = "dubbo_error_code"
 )
