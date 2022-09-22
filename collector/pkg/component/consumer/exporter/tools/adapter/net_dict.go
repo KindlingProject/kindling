@@ -246,8 +246,8 @@ var spanProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.SpanRedisCommand, constlabels.RedisCommand, String},
 		{constlabels.SpanRedisErrorMsg, constlabels.RedisErrMsg, String},
-		{constlabels.RequestPayload, constlabels.RequestPayload, String},
-		{constlabels.ResponsePayload, constlabels.ResponsePayload, String},
+		{constlabels.SpanRedisRequestPayload, constlabels.RequestPayload, String},
+		{constlabels.SpanRedisResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{REDIS}},
 	{
 		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
