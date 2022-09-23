@@ -60,7 +60,7 @@ func (ca *CpuAnalyzer) ReceiveSendSignal() {
 				continue
 			}
 		}
-		task := &SendEventsTask{ca, &sendContent}
+		task := &SendEventsTask{0, ca, &sendContent}
 		// "Load" and "Delete" could be executed concurrently
 		value, ok := ca.sendEventsRoutineMap.Load(sendContent.Pid)
 		if !ok {
@@ -229,6 +229,7 @@ func (s *ScheduledTaskRoutine) Stop() error {
 }
 
 type SendEventsTask struct {
+	tickerCount  int
 	cpuAnalyzer  *CpuAnalyzer
 	triggerEvent *SendTriggerEvent
 }
@@ -237,12 +238,12 @@ type SendEventsTask struct {
 // 0      (5s)      1  (duration)  2      (5s)       3
 // 0: The start time of the windows where the events we need are.
 // 1: The start time of the "trace".
-// 2: The end time of the "trace". This is nerely equal to the creating time of the task.
+// 2: The end time of the "trace". This is nearly equal to the creating time of the task.
 // 3: The end time of the windows where the events we need are.
 func (t *SendEventsTask) run() {
-	currentNanoTime := uint64(time.Now().UnixNano())
-	currentWindowsStartTime := currentNanoTime - t.triggerEvent.SpendTime - uint64(eventsWindowsDuration)
-	currentWindowsEndTime := currentNanoTime
+	currentWindowsStartTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime - uint64(eventsWindowsDuration)
+	currentWindowsEndTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime + t.triggerEvent.SpendTime
+	t.tickerCount++
 	t.cpuAnalyzer.sendEvents(t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
 }
 
