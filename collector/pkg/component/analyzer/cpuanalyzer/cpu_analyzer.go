@@ -136,48 +136,42 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		ca.cpuPidEvents[pid] = tidCpuEvents
 	}
 	timeSegments, exist := tidCpuEvents[tid]
+	maxSegmentSize := ca.cfg.GetSegmentSize()
 	if exist {
-		// The current segment is full
-		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) <= event.StartTimestamp()/nanoToSeconds || event.EndTimestamp()/nanoToSeconds > timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) {
-			clearSize := 0
-
-			clearSize = ca.cfg.GetSegmentSize() / 2
-			timeSegments.BaseTime = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())/2
-			for i := 0; i < clearSize-1; i++ {
-				val, _ := timeSegments.Segments.GetByIndex(i + ca.cfg.GetSegmentSize()/2)
-				if val != nil {
-					timeSegments.Segments.UpdateByIndex(i, val)
-				}
-				segmentTmp := newSegment(pid, tid, threadName,
-					(timeSegments.BaseTime+uint64(i+clearSize))*nanoToSeconds,
-					(timeSegments.BaseTime+uint64(i+clearSize+1))*nanoToSeconds)
-				timeSegments.Segments.UpdateByIndex(i+clearSize, segmentTmp)
-			}
-		}
-		if int(event.EndTimestamp()/nanoToSeconds-timeSegments.BaseTime) < 0 {
+		endOffset := int(event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime)
+		if endOffset < 0 {
 			return
 		}
-		// 开始时间基于baseTime的偏移量
 		startOffset := int(event.StartTimestamp()/nanoToSeconds - timeSegments.BaseTime)
-		// 结束时间基于开始时间的偏移量
-		endOffset := int(event.EndTimestamp()/nanoToSeconds - event.StartTimestamp()/nanoToSeconds)
 		if startOffset < 0 {
 			startOffset = 0
-			endOffset = int(event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime)
 		}
-		for i := startOffset; i <= startOffset+endOffset; i++ {
-			var segment *Segment
-			val, _ := timeSegments.Segments.GetByIndex(int(i))
-			if val == nil {
-				segment = newSegment(pid, tid, threadName,
-					(timeSegments.BaseTime+uint64(i))*nanoToSeconds,
-					(timeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
-			} else {
-				segment = val.(*Segment)
+		// The current segment is full
+		if startOffset >= maxSegmentSize || endOffset > maxSegmentSize {
+			clearSize := maxSegmentSize / 2
+			timeSegments.BaseTime = timeSegments.BaseTime + uint64(clearSize)
+			startOffset -= clearSize
+			if startOffset < 0 {
+				startOffset = 0
 			}
+			endOffset -= clearSize
+			for i := 0; i < clearSize; i++ {
+				movedIndex := i + clearSize
+				val := timeSegments.Segments.GetByIndex(movedIndex)
+				timeSegments.Segments.UpdateByIndex(i, val)
+				segmentTmp := newSegment(pid, tid, threadName,
+					(timeSegments.BaseTime+uint64(movedIndex))*nanoToSeconds,
+					(timeSegments.BaseTime+uint64(movedIndex+1))*nanoToSeconds)
+				timeSegments.Segments.UpdateByIndex(movedIndex, segmentTmp)
+			}
+		}
+
+		for i := startOffset; i <= endOffset && i < maxSegmentSize; i++ {
+			val := timeSegments.Segments.GetByIndex(i)
+			segment := val.(*Segment)
 			segment.putTimedEvent(event)
 			segment.IsSend = 0
-			timeSegments.Segments.UpdateByIndex(int(i), segment)
+			timeSegments.Segments.UpdateByIndex(i, segment)
 			tidCpuEvents[tid] = timeSegments
 		}
 
@@ -186,15 +180,15 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 			Pid:      pid,
 			Tid:      tid,
 			BaseTime: event.StartTimestamp() / nanoToSeconds,
-			Segments: NewCircleQueue(ca.cfg.GetSegmentSize() + 1),
+			Segments: NewCircleQueue(maxSegmentSize),
 		}
-		for i := 0; i < ca.cfg.GetSegmentSize(); i++ {
+		for i := 0; i < maxSegmentSize; i++ {
 			segment := newSegment(pid, tid, threadName,
 				(newTimeSegments.BaseTime+uint64(i))*nanoToSeconds,
 				(newTimeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
-			newTimeSegments.Segments.Push(segment)
+			newTimeSegments.Segments.UpdateByIndex(i, segment)
 		}
-		val, _ := newTimeSegments.Segments.GetByIndex(0)
+		val := newTimeSegments.Segments.GetByIndex(0)
 		segment := val.(*Segment)
 		segment.putTimedEvent(event)
 		tidCpuEvents[tid] = newTimeSegments

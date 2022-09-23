@@ -116,7 +116,7 @@ func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint
 			if index < 0 {
 				index = 0
 			}
-			val, _ := timeSegments.Segments.GetByIndex(index)
+			val := timeSegments.Segments.GetByIndex(index)
 			if val == nil {
 				continue
 			}
@@ -274,7 +274,7 @@ func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) 
 		ca.telemetry.Logger.Infof("pid=%d tid=%d sends events. startSecond=%d, endSecond=%d",
 			pid, timeSegments.Tid, startTimeSecond, endTimeSecond)
 		for i := startIndex; i <= int(endIndex); i++ {
-			val, _ := timeSegments.Segments.GetByIndex(i)
+			val := timeSegments.Segments.GetByIndex(i)
 			if val == nil {
 				continue
 			}
