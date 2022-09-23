@@ -11,7 +11,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-var eventsWindowsDuration = 10 * time.Second
+var eventsWindowsDuration = 6 * time.Second
 var SendChannel chan SendTriggerEvent
 
 func init() {
@@ -84,7 +84,8 @@ func (ca *CpuAnalyzer) putNewRoutine(task *SendEventsTask) {
 	expiredCallback := func() {
 		ca.sendEventsRoutineMap.Delete(task.triggerEvent.Pid)
 	}
-	routine := NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration, task, expiredCallback)
+	// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
+	routine := NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
 	ca.sendEventsRoutineMap.Store(task.triggerEvent.Pid, routine)
 }
 
