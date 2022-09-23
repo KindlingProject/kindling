@@ -4,16 +4,31 @@
 #pragma once
 #ifndef SYSDIG_KINDLING_H
 #define SYSDIG_KINDLING_H
+
 #include "sinsp.h"
+#include "KindlingInterface.h"
+#include <QtPlugin>
+#include <QPluginLoader>
+#include <QCoreApplication>
+#include <QString>
+#include <QtDebug>
 
 void init_probe();
+
 void start_perf();
+
 void stop_perf();
+
 void exipre_window_cache();
+
 int getEvent(void **kindlingEvent);
+
 uint16_t get_kindling_category(sinsp_evt *sEvt);
+
 void init_sub_label();
-void sub_event(char* eventName, char* category);
+
+void sub_event(char *eventName, char *category);
+
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);
@@ -64,8 +79,6 @@ void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_g
 void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber);
 
 void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo);
-
-void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo);
 
 void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_kindling_event);
 

@@ -9,19 +9,18 @@
 #include <cstdlib>
 
 #include "converter/cpu_converter.h"
-#include "profile/profiler.h"
-#include "log/log_info.h"
 
-LogCache *logCache;
-Profiler *prof;
+
 cpu_converter *cpuConverter;
-map<uint64_t, char*> ptid_comm;
+map<uint64_t, char *> ptid_comm;
 static sinsp *inspector = nullptr;
 sinsp_evt_formatter *formatter = nullptr;
 bool printEvent = false;
 int cnt = 0;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
+vector<QObject *> qls;
+
 
 char *traceId = new char[128];
 char *isEnter = new char[16];
@@ -79,32 +78,30 @@ void sub_event(char *eventName, char *category)
 	}
 }
 
-void start_perf() {
-    prof->Start();
-}
 
-void stop_perf() {
-	prof->Stop();
-}
+void init_probe() {
+    int argc = 1;
+    QCoreApplication app(argc, 0);
 
-void exipre_window_cache() {
-	// Expire Unused thread datas after 5 minute.
-	logCache->ExpireCache(300);
-	prof->ExpireCache(300);
-}
-
-void init_probe()
-{
-	bool bpf = false;
-	char* isPrintEvent = getenv("IS_PRINT_EVENT");
-	if (isPrintEvent != nullptr && strncmp("true", isPrintEvent, sizeof (isPrintEvent))==0){
-		printEvent = true;
-	}
-	string bpf_probe;
-	inspector = new sinsp();
-	init_sub_label();
-	string output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
-	formatter = new sinsp_evt_formatter(inspector, output_format);
+    //w.show();
+    QObject *object;
+    app.addLibraryPath(QString("../KindlingPlugin"));    // 加入库路径
+    // 载入插件，取得实例
+    QPluginLoader l(QString("kindling-plugin"));
+    object = l.instance();
+    if (object != NULL) {
+        qls.push_back(object);
+    }
+    bool bpf = false;
+    char *isPrintEvent = getenv("IS_PRINT_EVENT");
+    if (isPrintEvent != nullptr && strncmp("true", isPrintEvent, sizeof(isPrintEvent)) == 0) {
+        printEvent = true;
+    }
+    string bpf_probe;
+    inspector = new sinsp();
+    init_sub_label();
+    string output_format = "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name (%thread.tid:%thread.vtid) %evt.dir %evt.type %evt.info";
+    formatter = new sinsp_evt_formatter(inspector, output_format);
 	try
 	{
 		inspector = new sinsp();
@@ -167,10 +164,7 @@ void init_probe()
 
 			inspector->open("");
 		}
-		logCache = new LogCache(5);
-		prof = new Profiler(5, 10);
-		prof->SetMaxDepth(20);
-		cpuConverter = new cpu_converter(inspector, prof, logCache);
+        cpuConverter = new cpu_converter(inspector);
 	}
 	catch(const exception &e)
 	{
@@ -196,24 +190,27 @@ int getEvent(void **pp_kindling_event)
 
     print_event(ev);
 
-	kindling_event_t_for_go *p_kindling_event;
+    kindling_event_t_for_go *p_kindling_event;
     init_kindling_event(p_kindling_event, pp_kindling_event);
 
-	sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
-	p_kindling_event = (kindling_event_t_for_go *)*pp_kindling_event;
-	uint16_t userAttNumber = 0;
-	uint16_t source = get_kindling_source(ev->get_type());
+    sinsp_fdinfo_t *fdInfo = ev->get_fd_info();
+    p_kindling_event = (kindling_event_t_for_go *) *pp_kindling_event;
+    uint16_t userAttNumber = 0;
+    uint16_t source = get_kindling_source(ev->get_type());
+    for (auto it = qls.begin(); it != qls.end(); it++) {
+        KindlingInterface *plugin = qobject_cast<KindlingInterface *>(*it);
+        if (plugin) {
+            plugin->addCache(ev, inspector);
+        }
 
+    }
 
-	logCache->addLog(ev);
-	cpuConverter->Cache(ev);
-
-	if(ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo!= nullptr && fdInfo->is_file() ){
-		auto data_param = ev->get_param_value_raw("data");
-		if (data_param != nullptr) {
-			char *data_val = data_param->m_val;
+    if (ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo != nullptr && fdInfo->is_file()) {
+        auto data_param = ev->get_param_value_raw("data");
+        if (data_param != nullptr) {
+            char *data_val = data_param->m_val;
             if (data_param->m_len > 6 && memcmp(data_val, "kd-jf@", 6) == 0) {
-                parse_jf(data_val, *data_param,p_kindling_event, threadInfo, userAttNumber);
+                parse_jf(data_val, *data_param, p_kindling_event, threadInfo, userAttNumber);
                 return 1;
             }
             if (data_param->m_len > 8 && memcmp(data_val, "kd-txid@", 8) == 0) {
@@ -223,11 +220,6 @@ int getEvent(void **pp_kindling_event)
 
 			if (data_param->m_len > 6 && memcmp(data_val, "kd-tm@", 6) == 0) {
                 parse_tm(data_val, *data_param, threadInfo);
-                return -1;
-			}
-
-			if (data_param->m_len > 9 && memcmp(data_val, "kd-stack@", 9) == 0) {
-                parse_stack(data_val, *data_param, threadInfo);
                 return -1;
 			}
 		}
@@ -247,7 +239,7 @@ int getEvent(void **pp_kindling_event)
 		}
 
     	strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
-	    return cpuConverter->convert(p_kindling_event, ev);
+        return cpuConverter->convert(p_kindling_event, ev, qls);
 	}
 
     if(event_filters[ev_type][kindling_category] == 0)
@@ -558,61 +550,6 @@ void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* thre
             ptid_comm[threadInfo->m_pid<<32 | (v_tid & 0xFFFFFFFF)] = comm_char;
         }
     }
-}
-
-void parse_stack(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo){
-    int val_offset = 0;
-    int tmp_offset = 0;
-
-    for (int i = 9; i < data_param.m_len; i++) {
-        if (data_val[i] != '!') {
-            switch (val_offset) {
-                case 0:
-                    time_char[tmp_offset++] = data_val[i];
-                    break;
-                case 1:
-                    tid_char[tmp_offset++] = data_val[i];
-                    break;
-                case 2:
-                    depth_char[tmp_offset++] = data_val[i];
-                    break;
-                case 3:
-                    finish_char[tmp_offset++] = data_val[i];
-                    break;
-                default:
-                    kd_stack[tmp_offset++] = data_val[i];
-                    break;
-            }
-        } else {
-            if (val_offset == 0) {
-                time_char[tmp_offset] = '\0';
-            } else if (val_offset == 1) {
-                tid_char[tmp_offset] = '\0';
-            } else if (val_offset == 2) {
-                depth_char[tmp_offset] = '\0';
-            } else if (val_offset == 3) {
-                finish_char[tmp_offset] = '\0';
-            } else if (val_offset > 3) {
-                kd_stack[tmp_offset++] = data_val[i];
-            }
-            if (val_offset < 4) {
-                tmp_offset = 0;
-            }
-            val_offset++;
-        }
-    }
-    kd_stack[tmp_offset] = '\0';
-
-    uint64_t time = atol(time_char);
-    uint64_t vtid = atol(tid_char);
-    uint64_t host_tid = inspector->get_pid_vtid_info(threadInfo->m_pid, vtid);
-    if (host_tid == 0) {
-        // Not in contianer.
-        host_tid = vtid;
-    }
-    int depth = atoi(depth_char);
-    bool finish = (atoi(finish_char) == 1) ? true : false;
-    prof->RecordProfileData(time, host_tid, depth, finish, string(kd_stack));
 }
 
 void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_kindling_event){
