@@ -250,6 +250,7 @@ func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) 
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
 
+	maxSegmentSize := ca.cfg.GetSegmentSize()
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
 		ca.telemetry.Logger.Infof("Not found the cpu events with the pid=%d, startTime=%d, endTime=%d",
@@ -260,7 +261,7 @@ func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) 
 	endTimeSecond := endTime / nanoToSeconds
 
 	for _, timeSegments := range tidCpuEvents {
-		if endTimeSecond < timeSegments.BaseTime || startTimeSecond > timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) {
+		if endTimeSecond < timeSegments.BaseTime || startTimeSecond > timeSegments.BaseTime+uint64(maxSegmentSize) {
 			continue
 		}
 		startIndex := int(startTimeSecond - timeSegments.BaseTime)
@@ -268,12 +269,12 @@ func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) 
 			startIndex = 0
 		}
 		endIndex := endTimeSecond - timeSegments.BaseTime
-		if endIndex > timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) {
-			endIndex = timeSegments.BaseTime + uint64(ca.cfg.GetSegmentSize())
+		if endIndex > timeSegments.BaseTime+uint64(maxSegmentSize) {
+			endIndex = timeSegments.BaseTime + uint64(maxSegmentSize)
 		}
 		ca.telemetry.Logger.Infof("pid=%d tid=%d sends events. startSecond=%d, endSecond=%d",
 			pid, timeSegments.Tid, startTimeSecond, endTimeSecond)
-		for i := startIndex; i <= int(endIndex); i++ {
+		for i := startIndex; i <= int(endIndex) && i < maxSegmentSize; i++ {
 			val := timeSegments.Segments.GetByIndex(i)
 			if val == nil {
 				continue
