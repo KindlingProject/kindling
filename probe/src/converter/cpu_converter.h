@@ -2,8 +2,6 @@
 #define CPU_CONVERTER_H
 #include "profile/profiler.h"
 #include "log/log_info.h"
-#include "event_cache.h"
-#include "epoll_event_cache.h"
 #include <string>
 #include <map>
 #include "sinsp.h"
@@ -26,24 +24,18 @@ public:
     cpu_converter(sinsp *inspector);
     cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log);
     ~cpu_converter();
-    int convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt);
+    int convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt, vector<QObject*> qls);
     bool Cache(sinsp_evt *evt);
 private:
     int init_kindling_event(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt);
     int add_threadinfo(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt);
-    int add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt);
+    int add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt, vector<QObject*> qls);
 
     int32_t set_boot_time(uint64_t *boot_time);
 
     sinsp *m_inspector;
-    Profiler *m_profiler;
-    LogCache *m_log;
+    vector<QObject*> qls;
     uint64_t sample_interval;
-    event_cache *file_cache;
-    event_cache *net_cache;
-    epoll_event_cache *epoll_cache;
-	event_cache *futex_cache;
-	event_cache *java_futex_cache;
 };
 
 #endif //CPU_CONVERTER_H
