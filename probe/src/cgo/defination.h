@@ -283,6 +283,7 @@ const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
         {"syscall_exit-utime",              PPME_GENERIC_X},
         {"tracepoint-ingress",              PPME_NETIF_RECEIVE_SKB_E},
         {"tracepoint-egress",               PPME_NET_DEV_XMIT_E},
+        {"tracepoint-sched_process_exit",   PPME_PROCEXIT_1_E},
         {"kprobe-tcp_close",                PPME_TCP_CLOSE_E},
         {"kprobe-tcp_rcv_established",      PPME_TCP_RCV_ESTABLISHED_E},
         {"kprobe-tcp_drop",                 PPME_TCP_DROP_E},

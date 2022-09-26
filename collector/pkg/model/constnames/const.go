@@ -23,7 +23,8 @@ const (
 	TransactionIdEvent = "apm_trace_id_event"
 	OtherEvent         = "other"
 
-	GrpcUprobeEvent = "grpc_uprobe"
+	ProcessExitEvent = "sched_process_exit"
+	GrpcUprobeEvent  = "grpc_uprobe"
 	// NetRequestMetricGroupName is used for dataGroup generated from networkAnalyzer.
 	NetRequestMetricGroupName = "net_request_metric_group"
 	// SingleNetRequestMetricGroup stands for the dataGroup with abnormal status.

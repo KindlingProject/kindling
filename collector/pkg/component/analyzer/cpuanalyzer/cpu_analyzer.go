@@ -33,7 +33,7 @@ func (ca *CpuAnalyzer) Type() analyzer.Type {
 }
 
 func (ca *CpuAnalyzer) ConsumableEvents() []string {
-	return []string{constnames.CpuEvent, constnames.JavaFutexInfo, constnames.TransactionIdEvent}
+	return []string{constnames.CpuEvent, constnames.JavaFutexInfo, constnames.TransactionIdEvent, constnames.ProcessExitEvent}
 }
 
 func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
@@ -65,6 +65,10 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 		ca.ConsumeJavaFutexEvent(event)
 	case constnames.TransactionIdEvent:
 		ca.ConsumeTransactionIdEvent(event)
+	case constnames.ProcessExitEvent:
+		pid := event.GetPid()
+		tid := event.Ctx.ThreadInfo.GetTid()
+		ca.trimExitedThread(pid, tid)
 	}
 	return nil
 }
@@ -212,4 +216,14 @@ func (ca *CpuAnalyzer) sendEventDirectly(pid uint32, tid uint32, threadName stri
 func (ca *CpuAnalyzer) Shutdown() error {
 	// TODO: implement
 	return nil
+}
+
+func (ca *CpuAnalyzer) trimExitedThread(pid uint32, tid uint32) {
+	ca.lock.Lock()
+	defer ca.lock.Unlock()
+	tidEventsMap := ca.cpuPidEvents[pid]
+	if tidEventsMap == nil {
+		return
+	}
+	delete(tidEventsMap, tid)
 }

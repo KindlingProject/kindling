@@ -25,6 +25,7 @@ receivers:
       - name: kretprobe-tcp_connect
       - name: kprobe-tcp_set_state
       - name: tracepoint-cpu_analysis
+      - name: tracepoint-sched_process_exit
 analyzers:
   cpuanalyzer:
     es_host: http://10.10.103.96:9200
