@@ -23,6 +23,7 @@ var (
 	ErrMessageComplete = errors.New("message completed")
 	ErrMessageShort    = errors.New("message is too short")
 	ErrMessageInvalid  = errors.New("message is invalid")
+	ErrArgumentInvalid = errors.New("argument is invalid")
 	ErrEof             = errors.New("EOF")
 	ErrUnexpectedEOF   = errors.New("unexpected EOF")
 )
@@ -106,16 +107,19 @@ func (message PayloadMessage) HasAttribute(key string) bool {
 }
 
 // =============== PayLoad ===============
-func (message *PayloadMessage) ReadUInt16(offset int) (complete bool, value uint16) {
-	if offset+2 > len(message.Data) {
-		return true, 0
+func (message *PayloadMessage) ReadUInt16(offset int) (value uint16, err error) {
+	if offset < 0 {
+		return 0, ErrArgumentInvalid
 	}
-	return false, uint16(message.Data[offset])<<8 | uint16(message.Data[offset+1])
+	if offset+2 > len(message.Data) {
+		return 0, ErrMessageShort
+	}
+	return uint16(message.Data[offset])<<8 | uint16(message.Data[offset+1]), nil
 }
 
 func (message *PayloadMessage) ReadInt16(offset int, v *int16) (toOffset int, err error) {
 	if offset < 0 {
-		return -1, ErrMessageInvalid
+		return -1, ErrArgumentInvalid
 	}
 	if offset+2 > len(message.Data) {
 		return -1, ErrMessageShort
@@ -126,7 +130,7 @@ func (message *PayloadMessage) ReadInt16(offset int, v *int16) (toOffset int, er
 
 func (message *PayloadMessage) ReadInt32(offset int, v *int32) (toOffset int, err error) {
 	if offset < 0 {
-		return -1, ErrMessageInvalid
+		return -1, ErrArgumentInvalid
 	}
 	if offset+4 > len(message.Data) {
 		return -1, ErrMessageShort
@@ -135,17 +139,20 @@ func (message *PayloadMessage) ReadInt32(offset int, v *int32) (toOffset int, er
 	return offset + 4, nil
 }
 
-func (message *PayloadMessage) ReadBytes(offset int, length int) (toOffset int, value []byte) {
+func (message *PayloadMessage) ReadBytes(offset int, length int) (toOffset int, value []byte, err error) {
+	if offset < 0 || length < 0 {
+		return EOF, nil, ErrArgumentInvalid
+	}
 	maxLength := offset + length
 	if maxLength >= len(message.Data) {
-		return EOF, nil
+		return EOF, nil, ErrMessageShort
 	}
-	return maxLength, message.Data[offset:maxLength]
+	return maxLength, message.Data[offset:maxLength], nil
 }
 
 func (message *PayloadMessage) readUnsignedVarIntCore(offset int, times int, f func(uint64)) (toOffset int, err error) {
 	if offset < 0 {
-		return -1, ErrMessageInvalid
+		return -1, ErrArgumentInvalid
 	}
 	var b byte
 	x := uint64(0)

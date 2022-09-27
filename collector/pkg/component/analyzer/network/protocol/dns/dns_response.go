@@ -39,17 +39,17 @@ Header
 func parseDnsResponse() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		offset := message.Offset
-		_, id := message.ReadUInt16(offset)
-		_, flags := message.ReadUInt16(offset + 2)
+		id, _ := message.ReadUInt16(offset)
+		flags, _ := message.ReadUInt16(offset + 2)
 
 		qr := (flags >> 15) & 0x1
 		opcode := (flags >> 11) & 0xf
 		rcode := flags & 0xf
 
-		_, numOfQuestions := message.ReadUInt16(offset + 4)
-		_, numOfAnswers := message.ReadUInt16(offset + 6)
-		_, numOfAuth := message.ReadUInt16(offset + 8)
-		_, numOfAddl := message.ReadUInt16(offset + 10)
+		numOfQuestions, _ := message.ReadUInt16(offset + 4)
+		numOfAnswers, _ := message.ReadUInt16(offset + 6)
+		numOfAuth, _ := message.ReadUInt16(offset + 8)
+		numOfAddl, _ := message.ReadUInt16(offset + 10)
 		numOfRR := numOfQuestions + numOfAnswers + numOfAuth + numOfAddl
 
 		/*
@@ -95,11 +95,11 @@ func parseDnsResponse() protocol.ParsePkgFn {
 
 func readIpV4Answer(message *protocol.PayloadMessage, answerCount uint16) string {
 	var (
-		complete bool
-		aType    uint16
-		length   uint16
-		ip       net.IP
-		ips      []string
+		aType  uint16
+		length uint16
+		ip     net.IP
+		ips    []string
+		err    error
 	)
 
 	ips = make([]string, 0)
@@ -114,21 +114,21 @@ func readIpV4Answer(message *protocol.PayloadMessage, answerCount uint16) string
 			string rdata
 		*/
 		offset += 2
-		complete, aType = message.ReadUInt16(offset)
-		if complete {
+		aType, err = message.ReadUInt16(offset)
+		if err != nil {
 			break
 		}
 
 		offset += 8
-		complete, length = message.ReadUInt16(offset)
-		if complete {
+		length, err = message.ReadUInt16(offset)
+		if err != nil {
 			break
 		}
 
 		offset += 2
 		if aType == TypeA {
-			offset, ip = message.ReadBytes(offset, int(length))
-			if ip == nil {
+			offset, ip, err = message.ReadBytes(offset, int(length))
+			if err != nil {
 				break
 			}
 			ips = append(ips, ip.String())
