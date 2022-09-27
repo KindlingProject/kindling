@@ -101,10 +101,10 @@ func TestParseHttpRequest_GetPayLoad(t *testing.T) {
 			message := protocol.NewRequestMessage([]byte(httpData))
 			NewHttpParser("").ParseRequest(message)
 
-			if !message.HasAttribute(constlabels.HttpRequestPayload) {
+			if !message.HasAttribute(constlabels.RequestPayload) {
 				t.Errorf("Fail to parse HttpRequest()")
 			}
-			if got := message.GetStringAttribute(constlabels.HttpRequestPayload); got != tt.want {
+			if got := message.GetStringAttribute(constlabels.RequestPayload); got != tt.want {
 				t.Errorf("GetHttpPayload() = %v, want %v", got, tt.want)
 			}
 		})
@@ -163,10 +163,10 @@ func TestParseHttpRequest_GetPayLoad(t *testing.T) {
 			message := protocol.NewResponseMessage([]byte(httpData), model.NewAttributeMap())
 			NewHttpParser("").ParseResponse(message)
 
-			if !message.HasAttribute(constlabels.HttpResponsePayload) {
+			if !message.HasAttribute(constlabels.ResponsePayload) {
 				t.Errorf("Fail to parse HttpResponse()")
 			}
-			if got := message.GetStringAttribute(constlabels.HttpResponsePayload); got != tt.want {
+			if got := message.GetStringAttribute(constlabels.ResponsePayload); got != tt.want {
 				t.Errorf("GetHttpPayload() = %v, want %v", got, tt.want)
 			}
 		})

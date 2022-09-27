@@ -103,6 +103,11 @@ const (
 	SpanDubboRequestBody  = "dubbo.request_body"
 	SpanDubboResponseBody = "dubbo.response_body"
 
+	SpanRedisCommand         = "redis.command"
+	SpanRedisErrorMsg        = "redis.error_msg"
+	SpanRedisRequestPayload  = "redis.request_payload"
+	SpanRedisResponsePayload = "redis.request_payload"
+
 	NetWorkAnalyzeMetricGroup = "netAnalyzeMetrics"
 )
 const (

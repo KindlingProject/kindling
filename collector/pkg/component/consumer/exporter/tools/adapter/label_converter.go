@@ -81,6 +81,8 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 		key.protocol = KAFKA
 	case constvalues.ProtocolDubbo:
 		key.protocol = DUBBO
+	case constvalues.ProtocolRedis:
+		key.protocol = REDIS
 	default:
 		key.protocol = UNSUPPORTED
 	}
@@ -291,6 +293,18 @@ func (m *LabelConverter) transform(group *model.DataGroup) (*model.AttributeMap,
 			attrsMap.AddBoolValue(attrs.metricsDicList[i].newKey, labels.GetBoolValue(attrs.metricsDicList[i].originKey))
 		case FromInt64ToString:
 			attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+		case FromProtoclErrorToString:
+			if labels.GetIntValue(constlabels.ErrorType) == constlabels.ProtocolError {
+				attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constvalues.ProtocolError)
+			} else {
+				attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constvalues.ProtocolNoError)
+			}
+		case FromProtocolErrorToStatus:
+			if labels.GetIntValue(constlabels.ErrorType) == constlabels.ProtocolError {
+				attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constvalues.ProtocolErrorStatus)
+			} else {
+				attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constvalues.ProtocolNoErrorStatus)
+			}
 		case StrEmpty:
 			attrsMap.AddStringValue(attrs.metricsDicList[i].newKey, constlabels.STR_EMPTY)
 		}
@@ -346,6 +360,18 @@ func (m *LabelConverter) convert(group *model.DataGroup) ([]attribute.KeyValue, 
 			attrsList[attrs.sortMap[i]].Value = attribute.BoolValue(labels.GetBoolValue(attrs.metricsDicList[i].originKey))
 		case FromInt64ToString:
 			attrsList[attrs.sortMap[i]].Value = attribute.StringValue(strconv.FormatInt(labels.GetIntValue(attrs.metricsDicList[i].originKey), 10))
+		case FromProtoclErrorToString:
+			if labels.GetIntValue(constlabels.ErrorType) == constlabels.ProtocolError {
+				attrsList[attrs.sortMap[i]].Value = attribute.StringValue(constvalues.ProtocolError)
+			} else {
+				attrsList[attrs.sortMap[i]].Value = attribute.StringValue(constvalues.ProtocolNoError)
+			}
+		case FromProtocolErrorToStatus:
+			if labels.GetIntValue(constlabels.ErrorType) == constlabels.ProtocolError {
+				attrsList[attrs.sortMap[i]].Value = attribute.StringValue(constvalues.ProtocolErrorStatus)
+			} else {
+				attrsList[attrs.sortMap[i]].Value = attribute.StringValue(constvalues.ProtocolNoErrorStatus)
+			}
 		case StrEmpty:
 			attrsList[attrs.sortMap[i]].Value = attribute.StringValue(constlabels.STR_EMPTY)
 		}

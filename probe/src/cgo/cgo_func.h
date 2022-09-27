@@ -8,7 +8,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void runForGo();
+int runForGo();
 void startPerf();
 void stopPerf();
 void expireWindowCache();

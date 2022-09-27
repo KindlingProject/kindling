@@ -17,6 +17,7 @@ static sinsp *inspector = nullptr;
 sinsp_evt_formatter *formatter = nullptr;
 bool printEvent = false;
 int cnt = 0;
+int MAX_USERATTR_NUM = 8;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
 vector<QObject *> qls;
@@ -79,7 +80,7 @@ void sub_event(char *eventName, char *category)
 }
 
 
-void init_probe() {
+int init_probe() {
     int argc = 1;
     QCoreApplication app(argc, 0);
 
@@ -169,7 +170,9 @@ void init_probe() {
 	catch(const exception &e)
 	{
 		fprintf(stderr, "kindling probe init err: %s", e.what());
+		return 1;
 	}
+    return 0;
 }
 
 int getEvent(void **pp_kindling_event)
@@ -378,13 +381,14 @@ int getEvent(void **pp_kindling_event)
 	default:
 	{
 		uint16_t paramsNumber = ev->get_num_params();
-		if(paramsNumber > 8)
-		{
-			paramsNumber = 8;
-		}
-		for(auto i = 0; i < paramsNumber; i++)
-		{
-
+        // Since current data structure specifies the maximum count of `user_attributes`
+        if ((paramsNumber + userAttNumber) > MAX_USERATTR_NUM )
+        {
+            paramsNumber =  MAX_USERATTR_NUM - userAttNumber;
+        }
+        // TODO Add another branch to verify the number of userAttNumber is less than MAX_USERATTR_NUM after the program becomes more complexd
+        for(auto i = 0; i < paramsNumber; i++)
+        {
 			strcpy(p_kindling_event->userAttributes[userAttNumber].key, (char *)ev->get_param_name(i));
 			memcpy(p_kindling_event->userAttributes[userAttNumber].value, ev->get_param(i)->m_val,
 			       ev->get_param(i)->m_len);

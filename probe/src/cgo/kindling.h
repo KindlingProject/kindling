@@ -13,7 +13,7 @@
 #include <QString>
 #include <QtDebug>
 
-void init_probe();
+int init_probe();
 
 void start_perf();
 
@@ -88,17 +88,6 @@ int is_normal_event(int res, sinsp_evt *s_evt, ppm_event_category *category);
 
 int setTuple(kindling_event_t_for_go* kevt, const sinsp_evt_param *pTuple, int userAttNumber);
 
-enum Source {
-	SOURCE_UNKNOWN = 0,
-	SYSCALL_ENTER = 1,
-	SYSCALL_EXIT = 2,
-	TRACEPOINT = 3,
-	KRPOBE = 4,
-	KRETPROBE = 5,
-	UPROBE = 6,
-	URETPROBE = 7
-};
-
 enum Category {
     CAT_NONE = 0,
     CAT_OTHER = 1, // No specific category
@@ -117,6 +106,16 @@ enum Category {
     Category_MAX = 14
 };
 
+enum Source {
+	SOURCE_UNKNOWN = 0,
+	SYSCALL_ENTER = 1,
+	SYSCALL_EXIT = 2,
+	TRACEPOINT = 3,
+	KRPOBE = 4,
+	KRETPROBE = 5,
+	UPROBE = 6,
+	URETPROBE = 7
+};
 
 const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
 	{"syscall_enter-open",              PPME_SYSCALL_OPEN_E},

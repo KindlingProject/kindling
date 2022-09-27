@@ -49,7 +49,8 @@ func parseRedisBulkString() protocol.ParsePkgFn {
 
 		command := string(data)
 		if !message.HasAttribute(command) && IsRedisCommand(data) {
-			message.AddUtf8StringAttribute(constlabels.Sql, command)
+			message.AddUtf8StringAttribute(constlabels.ContentKey, command)
+			message.AddUtf8StringAttribute(constlabels.RedisCommand, command)
 		}
 
 		message.Offset = offset
