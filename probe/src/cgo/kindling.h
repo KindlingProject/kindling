@@ -399,6 +399,7 @@ const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
 	{"tracepoint-tcp_send_reset",       PPME_TCP_SEND_RESET_E},
 	{"tracepoint-tcp_receive_reset",    PPME_TCP_RECEIVE_RESET_E},
 	{"tracepoint-cpu_analysis",         PPME_CPU_ANALYSIS_E},
+    {"tracepoint-procexit",             PPME_PROCEXIT_1_E},
 };
 
 struct event_category {
