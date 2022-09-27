@@ -21,6 +21,7 @@ func TestReadBytes(t *testing.T) {
 		{"Invalid Index", -1, 1, nil, ErrArgumentInvalid},
 		{"Invalid Index", 1, -1, nil, ErrArgumentInvalid},
 		{"Positive Integer", 1, 4, []byte{0x00, 0x04, 0x74, 0x65}, nil},
+		{"All Datas", 0, 7, []byte{0xff, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74}, nil},
 		{"Large Integer", 2, 1140, nil, ErrMessageShort},
 		{"Overflow Index", 10, 1, nil, ErrMessageShort},
 	}

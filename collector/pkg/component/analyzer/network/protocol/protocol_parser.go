@@ -144,7 +144,7 @@ func (message *PayloadMessage) ReadBytes(offset int, length int) (toOffset int, 
 		return EOF, nil, ErrArgumentInvalid
 	}
 	maxLength := offset + length
-	if maxLength >= len(message.Data) {
+	if maxLength > len(message.Data) {
 		return EOF, nil, ErrMessageShort
 	}
 	return maxLength, message.Data[offset:maxLength], nil
