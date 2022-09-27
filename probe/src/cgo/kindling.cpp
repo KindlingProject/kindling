@@ -57,26 +57,25 @@ void init_sub_label()
 
 void sub_event(char *eventName, char *category)
 {
-	cout << "sub event name:" << eventName << "  &&  category:" << category << endl;
 	auto it_type = m_events.find(eventName);
-	if(it_type != m_events.end())
-	{
-		if(category == nullptr || category[0] == '\0')
-		{
-			for(int j = 0; j < 16; j++)
-			{
-				event_filters[it_type->second][j] = 1;
-			}
-		}
-		else
-		{
-			auto it_category = m_categories.find(category);
-			if(it_category != m_categories.end())
-			{
-				event_filters[it_type->second][it_category->second] = 1;
-			}
-		}
-	}
+	if(it_type == m_events.end()) {
+        cout << "failed to find event " << eventName << endl;
+        return;
+    }
+    if(category == nullptr || category[0] == '\0') {
+        for(int j = 0; j < 16; j++) {
+            event_filters[it_type->second][j] = 1;
+        }
+        cout << "sub event name: " << eventName << endl;
+	} else {
+        auto it_category = m_categories.find(category);
+        if(it_category == m_categories.end()) {
+            cout << "failed to find category " << category << endl;
+            return;
+        }
+        event_filters[it_type->second][it_category->second] = 1;
+        cout << "sub event name: " << eventName << "  &&  category:" << category << endl;
+    }
 }
 
 
