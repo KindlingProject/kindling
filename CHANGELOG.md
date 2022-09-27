@@ -4,6 +4,9 @@
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased 
+## Enhancements
+- Add request and response payload of `Redis` protocol message to `Span` data. ([#325](https://github.com/CloudDectective-Harmonycloud/kindling/pull/325))
+
 ### Bug fixes
 - Fix ReadBytes use negative number argument cuase slice outofbound. ([#327]https://github.com/CloudDectective-Harmonycloud/kindling/pull/327)
 
@@ -12,7 +15,7 @@
 - When processing Redis' Requests, add additional labels to describe the key information of the message. Check [Metrics Document](https://github.com/CloudDectective-Harmonycloud/kindling/blob/main/docs/prometheus_metrics.md) for more details. ([#321](https://github.com/CloudDectective-Harmonycloud/kindling/pull/321))
 
 ### Bug fixes
-- Fix the bug when the kernel does not support some kprobe, the probe crashes.
+- Fix the bug when the kernel does not support some kprobe, the probe crashes. ([#320](https://github.com/CloudDectective-Harmonycloud/kindling/pull/320))
 
 ## v0.4.0 - 2022-09-19
 ### Enhancements

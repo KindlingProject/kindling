@@ -54,7 +54,7 @@ func parseHttpRequest(urlClusteringMethod urlclustering.ClusteringMethod) protoc
 
 		message.AddStringAttribute(constlabels.HttpMethod, string(method))
 		message.AddByteArrayUtf8Attribute(constlabels.HttpUrl, url)
-		message.AddByteArrayUtf8Attribute(constlabels.HttpRequestPayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
+		message.AddByteArrayUtf8Attribute(constlabels.RequestPayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 
 		contentKey := urlClusteringMethod.Clustering(string(url))
 		if len(contentKey) == 0 {

@@ -19,7 +19,7 @@ func parseDubboRequest() protocol.ParsePkgFn {
 		}
 
 		message.AddStringAttribute(constlabels.ContentKey, contentKey)
-		message.AddStringAttribute(constlabels.DubboRequestPayload, getAsciiString(message.GetData(16, protocol.GetDubboPayLoadLength())))
+		message.AddStringAttribute(constlabels.RequestPayload, getAsciiString(message.GetData(16, protocol.GetDubboPayLoadLength())))
 		return true, true
 	}
 }
