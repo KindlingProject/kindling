@@ -26,6 +26,8 @@ type CpuAnalyzer struct {
 	lock                 sync.Mutex
 	esClient             *esclient.EsClient
 	telemetry            *component.TelemetryTools
+
+	enableProfile bool
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -39,8 +41,9 @@ func (ca *CpuAnalyzer) ConsumableEvents() []string {
 func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
 	ca := &CpuAnalyzer{
-		cfg:       config,
-		telemetry: telemetry,
+		cfg:           config,
+		telemetry:     telemetry,
+		enableProfile: false,
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]TimeSegments, 100000)
 	return ca
@@ -58,6 +61,9 @@ func (ca *CpuAnalyzer) Start() error {
 }
 
 func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
+	if !ca.enableProfile {
+		return nil
+	}
 	switch event.Name {
 	case constnames.CpuEvent:
 		ca.ConsumeCpuEvent(event)

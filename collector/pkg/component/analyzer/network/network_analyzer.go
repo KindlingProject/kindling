@@ -49,6 +49,8 @@ type NetworkAnalyzer struct {
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
 	telemetry          *component.TelemetryTools
+
+	enableProfile bool
 }
 
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
@@ -58,6 +60,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		dataGroupPool: NewDataGroupPool(),
 		nextConsumers: consumers,
 		telemetry:     telemetry,
+		enableProfile: false,
 	}
 	if config.EnableConntrack {
 		connConfig := &conntracker2.Config{
@@ -354,7 +357,9 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		}
 		netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
 
-		checkSendSignalToCpuAnalyzer(record)
+		if na.enableProfile {
+			checkSendSignalToCpuAnalyzer(record)
+		}
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}

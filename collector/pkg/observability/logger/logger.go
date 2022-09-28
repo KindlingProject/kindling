@@ -63,7 +63,7 @@ func InitLogger(config Config) *zap.Logger {
 
 func CreateDefaultLogger() *zap.Logger {
 	core := ConfigConsoleOutput(ConsoleEncodingConfig, zapcore.InfoLevel)
-	return zap.New(core).WithOptions(zap.AddCaller())
+	return zap.New(core).WithOptions(zap.AddCallerSkip(1))
 }
 
 func toLogLevel(level string) zapcore.Level {

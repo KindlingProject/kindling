@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/cpuanalyzer"
+	"github.com/Kindling-project/kindling/collector/pkg/component/controller"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
@@ -26,6 +27,7 @@ import (
 
 type Application struct {
 	viper             *viper.Viper
+	controllerFactory *controller.ControllerFactory
 	componentsFactory *ComponentsFactory
 	telemetry         *component.TelemetryManager
 	receiver          receiver.Receiver
@@ -97,6 +99,7 @@ func (a *Application) readInConfig(path string) error {
 	}
 	a.telemetry.ConstructConfig(a.viper)
 	err = a.componentsFactory.ConstructConfig(a.viper)
+	a.controllerFactory.ConstructConfig(a.viper, a.telemetry.GetGlobalTelemetryTools())
 	if err != nil {
 		return fmt.Errorf("error happened while constructing config: %w", err)
 	}
@@ -145,5 +148,12 @@ func (a *Application) buildPipeline() error {
 	cgoReceiverFactory := a.componentsFactory.Receivers[cgoreceiver.Cgo]
 	cgoReceiver := cgoReceiverFactory.NewFunc(cgoReceiverFactory.Config, a.telemetry.GetTelemetryTools(cgoreceiver.Cgo), analyzerManager)
 	a.receiver = cgoReceiver
+
+	a.controllerFactory.RegistModule("profile",
+		networkAnalyzer.(*network.NetworkAnalyzer).ProfileModule,
+		cpuAnalyzer.(*cpuanalyzer.CpuAnalyzer).ProfileModule,
+		cgoReceiver.(*cgoreceiver.CgoReceiver).ProfileModule,
+	)
+
 	return nil
 }
