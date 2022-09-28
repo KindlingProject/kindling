@@ -45,12 +45,9 @@ type ControllerConfig struct {
 }
 
 func (cf *ControllerFactory) ConstructConfig(viper *viper.Viper, tools *component.TelemetryTools) error {
-	if cf == nil {
-		cf = &ControllerFactory{}
-	}
-	var controllerConfig *ControllerConfig
+	var controllerConfig ControllerConfig
 	key := ControllerComponent
-	err := viper.UnmarshalKey(key, controllerConfig)
+	err := viper.UnmarshalKey(key, &controllerConfig)
 	if err != nil {
 		tools.Logger.Errorf("Error happened when reading controller config, will disable all controller: %v", err)
 	}
@@ -63,10 +60,7 @@ func (cf *ControllerFactory) ConstructConfig(viper *viper.Viper, tools *componen
 				httpAPI.RegistController(profileController)
 			}
 		}
-		err := http.ListenAndServe(controllerConfig.Http.Port, httpAPI)
-		if err != nil {
-			return err
-		}
+		go http.ListenAndServe(controllerConfig.Http.Port, httpAPI)
 		cf.Controller = httpAPI
 	}
 	return nil

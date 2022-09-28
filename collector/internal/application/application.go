@@ -39,6 +39,7 @@ func New() (*Application, error) {
 		viper:             viper.New(),
 		componentsFactory: NewComponentsFactory(),
 		telemetry:         component.NewTelemetryManager(),
+		controllerFactory: &controller.ControllerFactory{},
 	}
 	app.registerFactory()
 	// Initialize flags
