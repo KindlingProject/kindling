@@ -22,7 +22,6 @@ target_link_libraries(kindling
 		sinsp
 		Qt5::Core
 		${PERF_LIB}
-		${PERF_API_LIB}
-		${BCC_LIB})
+		${PERF_API_LIB})
 install(TARGETS kindling
 		DESTINATION bin)

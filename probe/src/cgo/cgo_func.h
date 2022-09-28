@@ -9,9 +9,6 @@
 extern "C" {
 #endif
 int runForGo();
-void startPerf();
-void stopPerf();
-void expireWindowCache();
 int getKindlingEvent(void **kindlingEvent);
 void subEventForGo(char* eventName, char* category);
 #ifdef __cplusplus

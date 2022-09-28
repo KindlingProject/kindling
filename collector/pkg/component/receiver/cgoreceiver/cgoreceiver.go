@@ -68,8 +68,6 @@ func (r *CgoReceiver) Start() error {
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
 	go r.startGetEvent()
-	go r.startPerf()
-	go r.expireWindowCache()
 	return nil
 }
 
@@ -91,33 +89,6 @@ func (r *CgoReceiver) startGetEvent() {
 		}
 	}
 }
-
-func (r *CgoReceiver) startPerf() {
-	for {
-		select {
-		case <-r.stopCh:
-			C.stopPerf()
-			return
-		default:
-			r.telemetry.Logger.Info("Start Perf")
-			C.startPerf()
-			r.telemetry.Logger.Info("Finish Perf")
-		}
-	}
-}
-
-func (r *CgoReceiver) expireWindowCache() {
-	for {
-		select {
-		case <-r.stopCh:
-			return
-		default:
-			time.Sleep(1 * time.Second)
-			C.expireWindowCache()
-		}
-	}
-}
-
 
 func (r *CgoReceiver) consumeEvents() {
 	r.shutdownWG.Add(1)

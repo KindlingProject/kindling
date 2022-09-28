@@ -72,8 +72,6 @@ find_package(Qt5 COMPONENTS
 		Widgets
 		REQUIRED)
 
-include(bcc)
-include(perf)
 include(agent-libs)
 add_subdirectory(src)
 

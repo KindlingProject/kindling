@@ -1,7 +1,5 @@
 #ifndef CPU_CONVERTER_H
 #define CPU_CONVERTER_H
-#include "profile/profiler.h"
-#include "log/log_info.h"
 #include <string>
 #include <map>
 #include "sinsp.h"
@@ -22,7 +20,6 @@ class cpu_converter
 {
 public:
     cpu_converter(sinsp *inspector);
-    cpu_converter(sinsp *inspector, Profiler *prof, LogCache *log);
     ~cpu_converter();
 
     int convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *evt, vector<QObject *> qls);
@@ -38,7 +35,7 @@ private:
     int32_t set_boot_time(uint64_t *boot_time);
 
     sinsp *m_inspector;
-    vector<QObject *> qls;
+//    vector<QObject *> qls;
     uint64_t sample_interval;
 };
 

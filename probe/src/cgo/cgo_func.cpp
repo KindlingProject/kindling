@@ -10,18 +10,6 @@ int runForGo(){
 	return init_probe();
 }
 
-void startPerf() {
-	start_perf();
-}
-
-void stopPerf() {
-	stop_perf();
-}
-
-void expireWindowCache() {
-	exipre_window_cache();
-}
-
 int getKindlingEvent(void **kindlingEvent){
 	return getEvent(kindlingEvent);
 }
