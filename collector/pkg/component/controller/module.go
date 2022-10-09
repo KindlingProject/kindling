@@ -42,16 +42,17 @@ type DefaultModule struct {
 
 	tools *component.TelemetryTools
 
-	check sync.Locker
+	check sync.Mutex
 }
 
-func NewModule(name string, tools *component.TelemetryTools) *DefaultModule {
+func NewModule(name string, tools *component.TelemetryTools, status ModuleStatus) *DefaultModule {
 	return &DefaultModule{
 		name:        name,
 		subStarts:   make(map[string]StartModule),
 		subStops:    make(map[string]StopModule),
 		tools:       tools,
 		clearSignal: make(chan struct{}),
+		status:      status,
 	}
 }
 

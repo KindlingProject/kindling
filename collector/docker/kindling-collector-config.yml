@@ -1,3 +1,9 @@
+controller:
+  http:
+    enable: true
+    port: :9503
+  modules: ["profile"]
+
 receivers:
   cgoreceiver:
     subscribe:

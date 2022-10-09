@@ -38,7 +38,7 @@ type FileWatchOption struct {
 type ExportSubModule func() (name string, start func() error, stop func() error)
 
 func NewProfileController(tools *component.TelemetryTools) *Profile {
-	profile := NewModule(ProfileModule, tools)
+	profile := NewModule(ProfileModule, tools, Stopped)
 	return &Profile{
 		Module: profile,
 	}
@@ -82,7 +82,8 @@ func (p *Profile) GetModuleKey() string {
 func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 	switch req.Operation {
 	case "start":
-		if err := p.Start(p.GetOptions(req.Options)...); err != nil {
+		opts := p.GetOptions(req.Options)
+		if err := p.Start(opts...); err != nil {
 			return &ControlResponse{
 				Code: StartWithError,
 				Msg:  err.Error(),
