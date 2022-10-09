@@ -8,7 +8,7 @@ import (
 )
 
 func TestModule(t *testing.T) {
-	sample := NewModule("profile", component.NewTelemetryManager().GetGlobalTelemetryTools())
+	sample := NewModule("profile", component.NewTelemetryManager().GetGlobalTelemetryTools(), Stopped)
 
 	stopSignal := make(chan struct{})
 	go sample.Start(
