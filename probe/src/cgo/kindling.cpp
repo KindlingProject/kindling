@@ -66,6 +66,7 @@ void sub_event(char *eventName, char *category)
 		for(int j = 0; j < 16; j++) {
 			event_filters[it_type->second][j] = 1;
 		}
+        inspector->set_eventmask(it_type->second);
 		cout << "sub event name: " << eventName << endl;
 	} else {
 		auto it_category = m_categories.find(category);
@@ -74,6 +75,7 @@ void sub_event(char *eventName, char *category)
 			return;
 		}
 		event_filters[it_type->second][it_category->second] = 1;
+        inspector->set_eventmask(it_type->second);
 		cout << "sub event name: " << eventName << "  &&  category:" << category << endl;
 	}
 }
@@ -91,21 +93,7 @@ void suppress_events_comm(sinsp *inspector) {
 void set_eventmask(sinsp *inspector) {
 	inspector->clear_eventmask();
 	const enum ppm_event_type enables[] = {
-			PPME_SYSCALL_WRITEV_X,
-			PPME_SYSCALL_WRITEV_E,
-			PPME_SYSCALL_WRITE_X,
-			PPME_SYSCALL_WRITE_E,
-			PPME_SYSCALL_READ_X,
-			PPME_SYSCALL_READ_E,
-			PPME_SYSCALL_FUTEX_E,
-			PPME_SYSCALL_FUTEX_X,
-			PPME_SYSCALL_OPEN_E,
-			PPME_SYSCALL_OPEN_X,
-			PPME_SYSCALL_CLOSE_E,
-			PPME_SYSCALL_CLOSE_X,
-			PPME_SYSCALL_EPOLLWAIT_E,
-			PPME_SYSCALL_EPOLLWAIT_X,
-			PPME_CPU_ANALYSIS_E,
+        // add event type (no sub_event trigger) here to collect
 	};
 	for (auto event : enables) {
 		inspector->set_eventmask(event);
