@@ -108,6 +108,9 @@ const (
 	SpanRedisRequestPayload  = "redis.request_payload"
 	SpanRedisResponsePayload = "redis.request_payload"
 
+	SpanRocketMQRequestMsg = "rocketmq.request_msg"
+	SpanRocketMQErrMsg     = "rocketmq.error_msg"
+
 	NetWorkAnalyzeMetricGroup = "netAnalyzeMetrics"
 )
 const (

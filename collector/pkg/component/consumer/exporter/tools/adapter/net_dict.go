@@ -18,6 +18,7 @@ const (
 	GRPC
 	DUBBO
 	REDIS
+	ROCKETMQ
 	UNSUPPORTED
 )
 
@@ -212,6 +213,10 @@ var entityProtocol = []extraLabelsParam{
 		{constlabels.ResponseContent, constlabels.STR_EMPTY, FromProtoclErrorToString},
 	}, extraLabelsKey{REDIS}},
 	{[]dictionary{
+		{constlabels.RequestContent, constlabels.ContentKey, String},
+		{constlabels.ResponseContent, constlabels.RocketMQErrCode, FromInt64ToString},
+	}, extraLabelsKey{ROCKETMQ}},
+	{[]dictionary{
 		{constlabels.RequestContent, constlabels.STR_EMPTY, StrEmpty},
 		{constlabels.ResponseContent, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{UNSUPPORTED}},
@@ -249,6 +254,10 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanRedisRequestPayload, constlabels.RequestPayload, String},
 		{constlabels.SpanRedisResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{REDIS}},
+	{[]dictionary{
+		{constlabels.SpanRocketMQRequestMsg, constlabels.RocketMQRequestMsg, String},
+		{constlabels.SpanRocketMQErrMsg, constlabels.RocketMQErrMsg, String},
+	}, extraLabelsKey{ROCKETMQ}},
 	{
 		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
 	},
@@ -277,6 +286,9 @@ var topologyProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.STR_EMPTY, FromProtocolErrorToStatus},
 	}, extraLabelsKey{REDIS}},
+	{[]dictionary{
+		{constlabels.StatusCode, constlabels.RocketMQErrCode, FromInt64ToString},
+	}, extraLabelsKey{ROCKETMQ}},
 	{[]dictionary{
 		{constlabels.StatusCode, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{UNSUPPORTED}},
