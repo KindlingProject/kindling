@@ -793,3 +793,21 @@ uint16_t get_kindling_source(uint16_t etype) {
 		}
 	}
 }
+
+int start_profile() {
+    if (!inspector) {
+        return -1;
+    }
+    inspector->set_eventmask(PPME_CPU_ANALYSIS_E);
+
+    return 0;
+}
+
+int stopProfile() {
+    if (!inspector) {
+        return -1;
+    }
+    inspector->unset_eventmask(PPME_CPU_ANALYSIS_E);
+
+    return 0;
+}

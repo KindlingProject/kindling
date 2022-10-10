@@ -29,6 +29,10 @@ void init_sub_label();
 
 void sub_event(char *eventName, char *category);
 
+int start_profile();
+
+int stop_profile();
+
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);
