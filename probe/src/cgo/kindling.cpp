@@ -803,7 +803,7 @@ int start_profile() {
     return 0;
 }
 
-int stopProfile() {
+int stop_profile() {
     if (!inspector) {
         return -1;
     }

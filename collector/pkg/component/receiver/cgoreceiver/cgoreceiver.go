@@ -60,7 +60,7 @@ func (r *CgoReceiver) Start() error {
 	r.telemetry.Logger.Info("Start CgoReceiver")
 	res := int(C.runForGo())
 	if res == 1 {
-	    return fmt.Errorf("fail to init probe")
+		return fmt.Errorf("fail to init probe")
 	}
 	time.Sleep(2 * time.Second)
 	r.subEvent()
@@ -181,4 +181,26 @@ func (r *CgoReceiver) subEvent() {
 	for _, value := range r.cfg.SubscribeInfo {
 		C.subEventForGo(C.CString(value.Name), C.CString(value.Category))
 	}
+}
+
+func (r *CgoReceiver) StartProfile() error {
+	if C.startProfile() == 0 {
+		return nil
+	} else {
+		return fmt.Errorf("start Profile failed")
+	}
+	return nil
+}
+
+func (r *CgoReceiver) StopProfile() error {
+	if C.stopProfile() == 0 {
+		return nil
+	} else {
+		return fmt.Errorf("stop Profile failed")
+	}
+	return nil
+}
+
+func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, stop func() error) {
+	return "cgoreceiver", r.StartProfile, r.StopProfile
 }
