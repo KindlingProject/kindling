@@ -30,4 +30,9 @@ const (
 	KafkaErrorCode     = "kafka_error_code"
 
 	DubboErrorCode = "dubbo_error_code"
+
+	RocketMQOpaque     = "rocketmq_opaque"
+	RocketMQRequestMsg = "rocketmq_request_msg"
+	RocketMQErrMsg     = "rocketmq_error_msg"
+	RocketMQErrCode    = "rocketmq_error_code"
 )

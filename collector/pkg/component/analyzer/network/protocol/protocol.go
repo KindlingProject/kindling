@@ -7,6 +7,7 @@ const (
 	MYSQL     = "mysql"
 	REDIS     = "redis"
 	DUBBO     = "dubbo"
+	ROCKETMQ  = "rocketmq"
 	NOSUPPORT = "NOSUPPORT"
 )
 

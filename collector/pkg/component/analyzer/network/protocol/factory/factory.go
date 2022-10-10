@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/rocketmq"
 	"sync"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
@@ -36,6 +37,7 @@ func NewParserFactory(options ...Option) *ParserFactory {
 	factory.protocolParsers[protocol.REDIS] = redis.NewRedisParser()
 	factory.protocolParsers[protocol.DUBBO] = dubbo.NewDubboParser()
 	factory.protocolParsers[protocol.DNS] = dns.NewDnsParser()
+	factory.protocolParsers[protocol.ROCKETMQ] = rocketmq.NewRocketMQParser()
 	factory.protocolParsers[protocol.NOSUPPORT] = generic.NewGenericParser()
 
 	return factory

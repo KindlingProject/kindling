@@ -44,7 +44,7 @@ analyzers:
     proc_root: /proc
     # The protocol parsers which is enabled
     # When dissectors are enabled, agent will analyze the payload and enrich metric/trace with its content.
-    protocol_parser: [ http, mysql, dns, redis, kafka ]
+    protocol_parser: [ http, mysql, dns, redis, kafka, rocketmq ]
     # Which URL clustering method should be used to shorten the URL of HTTP request.
     # This is useful for decrease the cardinality of URLs.
     # Valid values: ["noparam", "alphabet"]
@@ -79,6 +79,9 @@ analyzers:
       - key: "dns"
         ports: [ 53 ]
         slow_threshold: 100
+      - key: "rocketmq"
+        ports: [ 9876, 10911 ]
+        slow_threshold: 500
 
 processors:
   k8smetadataprocessor:
