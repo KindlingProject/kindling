@@ -66,7 +66,10 @@ void sub_event(char *eventName, char *category)
 		for(int j = 0; j < 16; j++) {
 			event_filters[it_type->second][j] = 1;
 		}
-        inspector->set_eventmask(it_type->second);
+		inspector->set_eventmask(it_type->second);
+		if (PPME_IS_EXIT(it_type->second)) {
+			inspector->set_eventmask(it_type->second - 1);
+		}
 		cout << "sub event name: " << eventName << endl;
 	} else {
 		auto it_category = m_categories.find(category);
@@ -75,7 +78,10 @@ void sub_event(char *eventName, char *category)
 			return;
 		}
 		event_filters[it_type->second][it_category->second] = 1;
-        inspector->set_eventmask(it_type->second);
+		inspector->set_eventmask(it_type->second);
+		if (PPME_IS_EXIT(it_type->second)) {
+			inspector->set_eventmask(it_type->second - 1);
+		}
 		cout << "sub event name: " << eventName << "  &&  category:" << category << endl;
 	}
 }
