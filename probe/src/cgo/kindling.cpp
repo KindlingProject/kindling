@@ -425,7 +425,6 @@ void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_g
     memcpy(p_kindling_event->userAttributes[userAttNumber].value, data_val, data_param.m_len);
     p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
     p_kindling_event->userAttributes[userAttNumber].len = data_param.m_len;
-    cout<<data_param.m_len<<endl;
     userAttNumber++;
     strcpy(p_kindling_event->name, "java_futex_info");
     p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
