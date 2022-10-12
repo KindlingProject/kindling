@@ -89,7 +89,8 @@ func (m *DefaultModule) Start(opts ...Option) error {
 func (m *DefaultModule) Stop(msg string) error {
 	m.check.Lock()
 	defer m.check.Unlock()
-	if m.status != Stopped {
+	if m.status == Stopped {
+		m.tools.Logger.Infof("received a stop signal, while the module already stopped")
 		return fmt.Errorf("module is stopped now")
 	}
 	defer close(m.clearSignal)

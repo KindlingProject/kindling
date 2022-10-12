@@ -20,8 +20,8 @@ void subEventForGo(char* eventName, char* category){
 }
 
 int startProfile() {
-    start_profile();
+    return start_profile();
 }
 int stopProfile() {
-    stop_profile();
+    return stop_profile();
 }

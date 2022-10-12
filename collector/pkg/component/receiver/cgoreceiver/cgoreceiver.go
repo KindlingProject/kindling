@@ -184,21 +184,21 @@ func (r *CgoReceiver) subEvent() {
 }
 
 func (r *CgoReceiver) StartProfile() error {
+	r.telemetry.Logger.Infof("Start Profile")
 	if C.startProfile() == 0 {
 		return nil
 	} else {
 		return fmt.Errorf("start Profile failed")
 	}
-	return nil
 }
 
 func (r *CgoReceiver) StopProfile() error {
+	r.telemetry.Logger.Infof("Stop Profile")
 	if C.stopProfile() == 0 {
 		return nil
 	} else {
 		return fmt.Errorf("stop Profile failed")
 	}
-	return nil
 }
 
 func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, stop func() error) {

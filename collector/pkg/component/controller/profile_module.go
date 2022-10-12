@@ -113,6 +113,9 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 }
 
 func (p *Profile) GetOptions(raw_opts *json.RawMessage) []Option {
+	if raw_opts == nil {
+		return nil
+	}
 	var pOption ProfileOption
 	var opts []Option
 	json.Unmarshal(*raw_opts, &pOption)
