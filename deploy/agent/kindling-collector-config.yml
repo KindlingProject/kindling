@@ -1,3 +1,9 @@
+controller:
+  http:
+    enable: true
+    port: :9503
+  modules: ["profile"]
+
 receivers:
   cgoreceiver:
     subscribe:
@@ -29,7 +35,7 @@ receivers:
 analyzers:
   cpuanalyzer:
     es_host: http://10.10.103.96:9200
-    es_index: cpu_event_dev
+    es_index: cpu_event_dev_comp
   tcpconnectanalyzer:
     channel_size: 10000
     wait_event_second: 10
@@ -125,7 +131,7 @@ processors:
 exporters:
   esexporter:
     es_host: http://10.10.103.96:9200
-    es_index: kindling_trace_dev
+    es_index: kindling_trace_dev_comp
   otelexporter:
     adapter_config:
       need_trace_as_metric: true
