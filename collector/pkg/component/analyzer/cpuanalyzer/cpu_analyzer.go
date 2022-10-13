@@ -1,17 +1,13 @@
 package cpuanalyzer
 
 import (
-	"strconv"
-	"sync"
-	"time"
-
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
-	"github.com/Kindling-project/kindling/collector/pkg/esclient"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"go.uber.org/zap"
+	"strconv"
+	"sync"
 )
 
 const (
@@ -24,8 +20,9 @@ type CpuAnalyzer struct {
 	// { pid: routine }
 	sendEventsRoutineMap sync.Map
 	lock                 sync.Mutex
-	esClient             *esclient.EsClient
 	telemetry            *component.TelemetryTools
+
+	nextConsumers []consumer.Consumer
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -39,20 +36,18 @@ func (ca *CpuAnalyzer) ConsumableEvents() []string {
 func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
 	config, _ := cfg.(*Config)
 	ca := &CpuAnalyzer{
-		cfg:       config,
-		telemetry: telemetry,
+		cfg:           config,
+		telemetry:     telemetry,
+		nextConsumers: consumers,
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]TimeSegments, 100000)
 	return ca
 }
 
 func (ca *CpuAnalyzer) Start() error {
-	client, err := esclient.NewEsClient(ca.cfg.GetEsHost())
-	if err != nil {
-		ca.telemetry.Logger.Errorf("Fail to create elasticsearch client: ", zap.Error(err))
-	}
-	ca.esClient = client
-	// go ca.SendCircle()
+	// Note that these two variables belongs to the package
+	sendChannel = make(chan SendTriggerEvent, 3e5)
+	isAnalyzerInit = true
 	go ca.ReceiveSendSignal()
 	return nil
 }
@@ -196,20 +191,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		segment := val.(*Segment)
 		segment.putTimedEvent(event)
 		tidCpuEvents[tid] = newTimeSegments
-	}
-}
-
-func (ca *CpuAnalyzer) sendEventDirectly(pid uint32, tid uint32, threadName string, event TimedEvent) {
-	ca.lock.Lock()
-	defer ca.lock.Unlock()
-	baseTime := event.StartTimestamp() / nanoToSeconds
-	segment := newSegment(pid, tid, threadName, (baseTime)*nanoToSeconds, (baseTime+1)*nanoToSeconds)
-	segment.putTimedEvent(event)
-	segment.IndexTimestamp = time.Now().String()
-	if ca.esClient != nil {
-		ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
-	} else {
-		ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
 	}
 }
 

@@ -1,9 +1,10 @@
 package cpuanalyzer
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 	"os"
 	"strconv"
 	"time"
@@ -12,53 +13,79 @@ import (
 )
 
 var eventsWindowsDuration = 6 * time.Second
-var SendChannel chan SendTriggerEvent
+var (
+	isAnalyzerInit bool
+	sendChannel    chan SendTriggerEvent
+)
 
-func init() {
-	SendChannel = make(chan SendTriggerEvent, 3e5)
+// ReceiveSendSignal receives SendTriggerEvent to trigger to send CPU on/off events
+func ReceiveSendSignal(event SendTriggerEvent) {
+	if !isAnalyzerInit {
+		return
+	}
+	sendChannel <- event
 }
 
-func ReceiveSendSignal(event SendTriggerEvent) {
-	SendChannel <- event
+// ReceiveDataGroupAsSignal receives model.DataGroup as a signal.
+// Signal is used to trigger to send CPU on/off events
+func ReceiveDataGroupAsSignal(data *model.DataGroup) {
+	if data.Labels.GetBoolValue(constlabels.IsError) ||
+		data.Labels.GetBoolValue(constlabels.IsSlow) {
+		duration, ok := data.GetMetric(constvalues.RequestTotalTime)
+		if !ok {
+			return
+		}
+		event := SendTriggerEvent{
+			Pid:          uint32(data.Labels.GetIntValue("pid")),
+			StartTime:    data.Timestamp,
+			SpendTime:    uint64(duration.GetInt().Value),
+			OriginalData: data.Clone(),
+		}
+		ReceiveSendSignal(event)
+	}
 }
 
 type SendTriggerEvent struct {
-	Pid       uint32 `json:"pid"`
-	StartTime uint64 `json:"startTime"`
-	SpendTime uint64 `json:"spendTime"`
+	Pid          uint32           `json:"pid"`
+	StartTime    uint64           `json:"startTime"`
+	SpendTime    uint64           `json:"spendTime"`
+	OriginalData *model.DataGroup `json:"originalData"`
 }
 
-func (ca *CpuAnalyzer) SendCircle() {
-	for {
-		sendContent := <-SendChannel
-		if sendContent.StartTime+sendContent.SpendTime+uint64(10*nanoToSeconds) > uint64(time.Now().UnixNano()) {
-			SendChannel <- sendContent
-			time.Sleep(300 * time.Millisecond)
-			continue
-		}
-		profilePid := os.Getenv("profilepid")
-		if profilePid != "" {
-			pidInt, _ := strconv.ParseInt(profilePid, 10, 32)
-			if pidInt != int64(sendContent.Pid) {
-				continue
-			}
-		}
-		data, _ := json.Marshal(sendContent)
-		ca.telemetry.Logger.Infof("Receive a trace signal: %s", string(data))
-		fmt.Println("start send ::" + strconv.Itoa(int(sendContent.StartTime/nanoToSeconds)) + "spend:" + strconv.Itoa(int(sendContent.SpendTime/nanoToSeconds)) + "now time: " + strconv.Itoa(int(time.Now().UnixNano()/int64(nanoToSeconds))))
-		ca.SendCpuEvent(sendContent.Pid, sendContent.StartTime, sendContent.SpendTime)
+func (s *SendTriggerEvent) triggerKey() string {
+	timestamp := s.OriginalData.Timestamp
+	isServer := s.OriginalData.Labels.GetBoolValue(constlabels.IsServer)
+	var podName string
+	if isServer {
+		podName = s.OriginalData.Labels.GetStringValue(constlabels.DstPod)
+	} else {
+		podName = s.OriginalData.Labels.GetStringValue(constlabels.SrcPod)
 	}
+	if len(podName) == 0 {
+		podName = "null"
+	}
+	var isServerString string
+	if isServer {
+		isServerString = "true"
+	} else {
+		isServerString = "false"
+	}
+	protocol := s.OriginalData.Labels.GetStringValue(constlabels.Protocol)
+	return podName + "_" + isServerString + "_" + protocol + "_" + strconv.FormatUint(timestamp, 10)
 }
 
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	for {
-		sendContent := <-SendChannel
+		sendContent := <-sendChannel
 		profilePid := os.Getenv("PROFILE_PID")
 		if profilePid != "" {
 			pidInt, _ := strconv.ParseInt(profilePid, 10, 32)
 			if pidInt != int64(sendContent.Pid) {
 				continue
 			}
+		}
+		for _, nexConsumer := range ca.nextConsumers {
+			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
 		task := &SendEventsTask{0, ca, &sendContent}
 		// "Load" and "Delete" could be executed concurrently
@@ -87,54 +114,6 @@ func (ca *CpuAnalyzer) putNewRoutine(task *SendEventsTask) {
 	// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
 	routine := NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
 	ca.sendEventsRoutineMap.Store(task.triggerEvent.Pid, routine)
-}
-
-func (ca *CpuAnalyzer) SendSegment(segment Segment) {
-	if ca.esClient != nil {
-		ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
-	} else {
-		ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
-	}
-}
-
-func (ca *CpuAnalyzer) SendCpuEvent(pid uint32, startTime uint64, spendTime uint64) error {
-	ca.lock.Lock()
-	defer ca.lock.Unlock()
-	ca.telemetry.Logger.Infof("Will send cpu events for pid=%d, start_time=%d, duration=%d", pid, startTime, spendTime)
-
-	tidCpuEvents, exist := ca.cpuPidEvents[pid]
-	if !exist {
-		fmt.Println("send data0")
-		ca.telemetry.Logger.Infof("Not found the cpu events with the pid=%d", pid)
-		return nil
-	}
-	for _, timeSegments := range tidCpuEvents {
-		if timeSegments.BaseTime+uint64(ca.cfg.GetSegmentSize()) < startTime/nanoToSeconds || timeSegments.BaseTime > startTime/nanoToSeconds {
-			continue
-		}
-		for i := 0; i < int(spendTime/nanoToSeconds)+1+2; i++ {
-			index := int(startTime/nanoToSeconds-timeSegments.BaseTime) + i - 2
-			if index < 0 {
-				index = 0
-			}
-			val := timeSegments.Segments.GetByIndex(index)
-			if val == nil {
-				continue
-			}
-			segment := val.(*Segment)
-
-			if len(segment.CpuEvents) != 0 && segment.IsSend != 1 {
-				segment.IsSend = 1
-				segment.IndexTimestamp = time.Now().String()
-				if ca.esClient != nil {
-					ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
-				} else {
-					ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
-				}
-			}
-		}
-	}
-	return nil
 }
 
 type ScheduledTask interface {
@@ -245,10 +224,10 @@ func (t *SendEventsTask) run() {
 	currentWindowsStartTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime - uint64(eventsWindowsDuration)
 	currentWindowsEndTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime + t.triggerEvent.SpendTime
 	t.tickerCount++
-	t.cpuAnalyzer.sendEvents(t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
+	t.cpuAnalyzer.sendEvents(t.triggerEvent.triggerKey(), t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
 }
 
-func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) {
+func (ca *CpuAnalyzer) sendEvents(key string, pid uint32, startTime uint64, endTime uint64) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
 
@@ -283,12 +262,13 @@ func (ca *CpuAnalyzer) sendEvents(pid uint32, startTime uint64, endTime uint64) 
 			}
 			segment := val.(*Segment)
 			if len(segment.CpuEvents) != 0 && segment.IsSend != 1 {
-				segment.IsSend = 1
+				// Don't remove the duplicated one
+				//segment.IsSend = 1
 				segment.IndexTimestamp = time.Now().String()
-				if ca.esClient != nil {
-					ca.esClient.AddIndexRequestWithParams(ca.cfg.GetEsIndexName(), segment)
-				} else {
-					ca.telemetry.Logger.Infof("EsClient is nil, the segment should have been sent: %v", segment)
+				dataGroup := segment.toDataGroup()
+				dataGroup.Labels.AddStringValue("trigger_key", key)
+				for _, nexConsumer := range ca.nextConsumers {
+					_ = nexConsumer.Consume(dataGroup)
 				}
 			}
 		}

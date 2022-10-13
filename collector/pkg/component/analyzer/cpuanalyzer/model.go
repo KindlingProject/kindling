@@ -1,11 +1,24 @@
 package cpuanalyzer
 
+import (
+	"encoding/json"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
+)
+
 type TimedEventKind int
 
 const (
 	TimedCpuEventKind TimedEventKind = iota
 	TimedJavaFutexEventKind
 	TimedTransactionIdEventKind
+)
+
+const (
+	CpuEventLabel           = "cpuEvents"
+	JavaFutexEventLabel     = "javaFutexEvents"
+	TransactionIdEventLabel = "transactionIds"
 )
 
 type TimedEvent interface {
@@ -59,6 +72,28 @@ func (s *Segment) putTimedEvent(event TimedEvent) {
 	}
 }
 
+func (s *Segment) toDataGroup() *model.DataGroup {
+	labels := model.NewAttributeMap()
+	labels.AddIntValue(constlabels.Pid, int64(s.Pid))
+	labels.AddIntValue(constlabels.Tid, int64(s.Tid))
+	labels.AddStringValue("threadName", s.ThreadName)
+	labels.AddIntValue("startTime", int64(s.StartTime))
+	labels.AddIntValue("endTime", int64(s.EndTime))
+	cpuEventString, err := json.Marshal(s.CpuEvents)
+	if err == nil {
+		labels.AddStringValue(CpuEventLabel, string(cpuEventString))
+	}
+	javaFutexEventString, err := json.Marshal(s.JavaFutexEvents)
+	if err == nil {
+		labels.AddStringValue(JavaFutexEventLabel, string(javaFutexEventString))
+	}
+	transactionIdEventString, err := json.Marshal(s.TransactionIds)
+	if err == nil {
+		labels.AddStringValue(TransactionIdEventLabel, string(transactionIdEventString))
+	}
+	return model.NewDataGroup(constnames.CameraEventGroupName, labels, s.StartTime)
+}
+
 type CpuEvent struct {
 	StartTime   uint64 `json:"startTime"`
 	EndTime     uint64 `json:"endTime"`
@@ -97,7 +132,7 @@ func (j *JavaFutexEvent) EndTimestamp() uint64 {
 	return j.EndTime
 }
 
-func (c *JavaFutexEvent) Kind() TimedEventKind {
+func (j *JavaFutexEvent) Kind() TimedEventKind {
 	return TimedJavaFutexEventKind
 }
 

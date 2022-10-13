@@ -9,10 +9,10 @@ import (
 // DataGroup describes the result of analyzers.
 // Notice: Currently the definition of DataGroup is not stable.
 type DataGroup struct {
-	Name      string
-	Metrics   []*Metric
-	Labels    *AttributeMap
-	Timestamp uint64
+	Name      string        `json:"name"`
+	Metrics   []*Metric     `json:"metrics"`
+	Labels    *AttributeMap `json:"labels"`
+	Timestamp uint64        `json:"timestamp"`
 }
 
 func NewDataGroup(name string, labels *AttributeMap, timestamp uint64, values ...*Metric) *DataGroup {
@@ -47,7 +47,7 @@ func (g *DataGroup) AddMetric(metric *Metric) {
 // UpdateAddIntMetric overwrite the metric with the key of 'name' if existing, or adds the metric if not existing.
 func (g *DataGroup) UpdateAddIntMetric(name string, value int64) {
 	if metric, ok := g.GetMetric(name); ok {
-		metric.Data = &Metric_Int{Int: &Int{Value: value}}
+		metric.Data = &Int{Value: value}
 	} else {
 		g.AddIntMetricWithName(name, value)
 	}
@@ -94,4 +94,12 @@ func (g *DataGroup) Reset() {
 	}
 	g.Labels.ResetValues()
 	g.Timestamp = 0
+}
+
+func (g *DataGroup) Clone() *DataGroup {
+	metrics := make([]*Metric, len(g.Metrics))
+	for i, v := range g.Metrics {
+		metrics[i] = v.Clone()
+	}
+	return NewDataGroup(g.Name, g.Labels.Clone(), g.Timestamp, metrics...)
 }
