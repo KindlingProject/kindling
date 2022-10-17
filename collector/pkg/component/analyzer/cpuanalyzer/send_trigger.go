@@ -2,10 +2,10 @@ package cpuanalyzer
 
 import (
 	"errors"
+	"github.com/Kindling-project/kindling/collector/pkg/filepathhelper"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
-	"os"
 	"strconv"
 	"time"
 
@@ -77,13 +77,6 @@ func (s *SendTriggerEvent) triggerKey() string {
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	for {
 		sendContent := <-sendChannel
-		profilePid := os.Getenv("PROFILE_PID")
-		if profilePid != "" {
-			pidInt, _ := strconv.ParseInt(profilePid, 10, 32)
-			if pidInt != int64(sendContent.Pid) {
-				continue
-			}
-		}
 		for _, nexConsumer := range ca.nextConsumers {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
@@ -224,10 +217,12 @@ func (t *SendEventsTask) run() {
 	currentWindowsStartTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime - uint64(eventsWindowsDuration)
 	currentWindowsEndTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime + t.triggerEvent.SpendTime
 	t.tickerCount++
-	t.cpuAnalyzer.sendEvents(t.triggerEvent.triggerKey(), t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
+	// keyElements are used to correlate the cpuEvents with the trace.
+	keyElements := filepathhelper.GetFilePathElements(t.triggerEvent.OriginalData, t.triggerEvent.StartTime)
+	t.cpuAnalyzer.sendEvents(keyElements.ToAttributes(), t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
 }
 
-func (ca *CpuAnalyzer) sendEvents(key string, pid uint32, startTime uint64, endTime uint64) {
+func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
 
@@ -266,7 +261,7 @@ func (ca *CpuAnalyzer) sendEvents(key string, pid uint32, startTime uint64, endT
 				//segment.IsSend = 1
 				segment.IndexTimestamp = time.Now().String()
 				dataGroup := segment.toDataGroup()
-				dataGroup.Labels.AddStringValue("trigger_key", key)
+				dataGroup.Labels.Merge(keyElements)
 				for _, nexConsumer := range ca.nextConsumers {
 					_ = nexConsumer.Consume(dataGroup)
 				}

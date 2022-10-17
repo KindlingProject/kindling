@@ -1,9 +1,11 @@
 package cameraexporter
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/Kindling-project/kindling/collector/pkg/filepathhelper"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
@@ -44,43 +46,33 @@ func (fw *fileWriter) write(group *model.DataGroup) {
 	}
 }
 
-func (fw *fileWriter) pidFilePath(pid int64) string {
-	return path.Join(fw.config.StoragePath, strconv.FormatInt(pid, 10))
+func (fw *fileWriter) pidFilePath(workloadName string, podName string, containerName string, pid int64) string {
+	dirName := workloadName + "_" + podName + "_" + containerName + "_" + strconv.FormatInt(pid, 10)
+	return path.Join(fw.config.StoragePath, dirName)
 }
 
-func fileName(podName string, isServer bool, timestamp uint64, protocol string) string {
-	if len(podName) == 0 {
-		podName = "null"
-	}
+func getFileName(protocol string, contentKey string, timestamp uint64, isServer bool) string {
 	var isServerString string
 	if isServer {
 		isServerString = "true"
 	} else {
 		isServerString = "false"
 	}
-	return podName + "_" + isServerString + "_" + protocol + "_" + strconv.FormatUint(timestamp, 10)
+	encodedContent := base64.URLEncoding.EncodeToString([]byte(contentKey))
+	return protocol + "_" + encodedContent + "_" + strconv.FormatUint(timestamp, 10) + "_" + isServerString
 }
 
 func (fw *fileWriter) writeTrace(group *model.DataGroup) {
-	pid := group.Labels.GetIntValue(constlabels.Pid)
+	pathElements := filepathhelper.GetFilePathElements(group, group.Timestamp)
 	// Create the directory first for saving its profile files.
 	// If there has been such a directory, it will do nothing and return nil.
-	baseDir := fw.pidFilePath(pid)
+	baseDir := fw.pidFilePath(pathElements.WorkloadName, pathElements.PodName, pathElements.ContainerName, pathElements.Pid)
 	if err := os.MkdirAll(baseDir, os.ModePerm); err != nil {
 		fw.logger.Errorf("Failed to create pid directory: %v", err)
 		return
 	}
-
-	timestamp := group.Timestamp
-	isServer := group.Labels.GetBoolValue(constlabels.IsServer)
-	var podName string
-	if isServer {
-		podName = group.Labels.GetStringValue(constlabels.DstPod)
-	} else {
-		podName = group.Labels.GetStringValue(constlabels.SrcPod)
-	}
-	protocol := group.Labels.GetStringValue(constlabels.Protocol)
-	fileName := fileName(podName, isServer, timestamp, protocol)
+	// /$path/podName_containerName_pid/protocol_contentKey_timestamp_isServer
+	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
 	// Check whether we need to roll over the files
 	err := fw.writeFile(baseDir, fileName, group)
 	if err != nil {
@@ -147,15 +139,11 @@ func getFilesName(path string) ([]string, error) {
 const dividingLine = "\n---\n"
 
 func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
-	// triggerKey is the file name of trace file
-	triggerKey := group.Labels.GetStringValue("trigger_key")
-	if triggerKey == "" {
-		fw.logger.Infof("Trigger_key of cpu_events is empty")
-		return
-	}
-	pid := group.Labels.GetIntValue(constlabels.Pid)
-	baseDir := fw.pidFilePath(pid)
-	filePath := filepath.Join(baseDir, triggerKey)
+	traceTimestamp := group.Labels.GetIntValue(constlabels.Timestamp)
+	pathElements := filepathhelper.GetFilePathElements(group, uint64(traceTimestamp))
+	baseDir := fw.pidFilePath(pathElements.WorkloadName, pathElements.PodName, pathElements.ContainerName, pathElements.Pid)
+	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
+	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0)
 	defer f.Close()
 	if err != nil {
