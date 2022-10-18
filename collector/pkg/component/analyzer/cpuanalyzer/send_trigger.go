@@ -26,7 +26,9 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		once.Do(func() {
 			// We must close the channel at the sender-side.
 			// Otherwise, we need complex codes to handle it.
-			close(sendChannel)
+			if sendChannel != nil {
+				close(sendChannel)
+			}
 		})
 		return
 	}
