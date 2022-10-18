@@ -6,6 +6,7 @@
 #include "scap_open_exception.h"
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
+#include <cstdlib>
 #include <thread>
 
 #include "converter/cpu_converter.h"
@@ -858,4 +859,22 @@ void attach_pid(char* pid, bool is_new_start) {
         cout<<"------end attach for pid "<<pid<<"------"<<endl;
     }
 
+}
+
+int start_profile() {
+    if (!inspector) {
+        return -1;
+    }
+    inspector->set_eventmask(PPME_CPU_ANALYSIS_E);
+
+    return 0;
+}
+
+int stop_profile() {
+    if (!inspector) {
+        return -1;
+    }
+    inspector->unset_eventmask(PPME_CPU_ANALYSIS_E);
+
+    return 0;
 }

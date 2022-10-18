@@ -32,6 +32,10 @@ void init_sub_label();
 
 void sub_event(char *eventName, char *category);
 
+int start_profile();
+
+int stop_profile();
+
 void attach_pid(char* pid, bool is_new_start);
 
 uint16_t get_protocol(scap_l4_proto proto);

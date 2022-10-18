@@ -45,14 +45,19 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 }
 
 func (ca *CpuAnalyzer) Start() error {
-	// Note that these two variables belongs to the package
-	sendChannel = make(chan SendTriggerEvent, 3e5)
-	isAnalyzerInit = true
-	go ca.ReceiveSendSignal()
+	// Disable receiving and sending the profiling data by default.
+	return nil
+}
+
+func (ca *CpuAnalyzer) Shutdown() error {
+	ca.StopProfile()
 	return nil
 }
 
 func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
+	if !enableProfile {
+		return nil
+	}
 	switch event.Name {
 	case constnames.CpuEvent:
 		ca.ConsumeCpuEvent(event)
@@ -192,11 +197,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		segment.putTimedEvent(event)
 		tidCpuEvents[tid] = newTimeSegments
 	}
-}
-
-func (ca *CpuAnalyzer) Shutdown() error {
-	// TODO: implement
-	return nil
 }
 
 func (ca *CpuAnalyzer) trimExitedThread(pid uint32, tid uint32) {

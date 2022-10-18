@@ -6,7 +6,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
-	"strconv"
+	"sync"
 	"time"
 
 	"go.uber.org/atomic"
@@ -14,21 +14,24 @@ import (
 
 var eventsWindowsDuration = 6 * time.Second
 var (
-	isAnalyzerInit bool
-	sendChannel    chan SendTriggerEvent
+	enableProfile bool
+	once          sync.Once
+	sendChannel   chan SendTriggerEvent
 )
-
-// ReceiveSendSignal receives SendTriggerEvent to trigger to send CPU on/off events
-func ReceiveSendSignal(event SendTriggerEvent) {
-	if !isAnalyzerInit {
-		return
-	}
-	sendChannel <- event
-}
 
 // ReceiveDataGroupAsSignal receives model.DataGroup as a signal.
 // Signal is used to trigger to send CPU on/off events
 func ReceiveDataGroupAsSignal(data *model.DataGroup) {
+	if !enableProfile {
+		once.Do(func() {
+			// We must close the channel at the sender-side.
+			// Otherwise, we need complex codes to handle it.
+			if sendChannel != nil {
+				close(sendChannel)
+			}
+		})
+		return
+	}
 	if data.Labels.GetBoolValue(constlabels.IsError) ||
 		data.Labels.GetBoolValue(constlabels.IsSlow) {
 		duration, ok := data.GetMetric(constvalues.RequestTotalTime)
@@ -41,7 +44,7 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 			SpendTime:    uint64(duration.GetInt().Value),
 			OriginalData: data.Clone(),
 		}
-		ReceiveSendSignal(event)
+		sendChannel <- event
 	}
 }
 
@@ -52,31 +55,9 @@ type SendTriggerEvent struct {
 	OriginalData *model.DataGroup `json:"originalData"`
 }
 
-func (s *SendTriggerEvent) triggerKey() string {
-	timestamp := s.OriginalData.Timestamp
-	isServer := s.OriginalData.Labels.GetBoolValue(constlabels.IsServer)
-	var podName string
-	if isServer {
-		podName = s.OriginalData.Labels.GetStringValue(constlabels.DstPod)
-	} else {
-		podName = s.OriginalData.Labels.GetStringValue(constlabels.SrcPod)
-	}
-	if len(podName) == 0 {
-		podName = "null"
-	}
-	var isServerString string
-	if isServer {
-		isServerString = "true"
-	} else {
-		isServerString = "false"
-	}
-	protocol := s.OriginalData.Labels.GetStringValue(constlabels.Protocol)
-	return podName + "_" + isServerString + "_" + protocol + "_" + strconv.FormatUint(timestamp, 10)
-}
-
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
-	for {
-		sendContent := <-sendChannel
+	// Break the for loop if the channel is closed
+	for sendContent := range sendChannel {
 		for _, nexConsumer := range ca.nextConsumers {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}

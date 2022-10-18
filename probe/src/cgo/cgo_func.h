@@ -11,6 +11,8 @@ extern "C" {
 int runForGo();
 int getKindlingEvent(void **kindlingEvent);
 void subEventForGo(char* eventName, char* category);
+int startProfile();
+int stopProfile();
 #ifdef __cplusplus
 }
 #endif

@@ -17,6 +17,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/otelexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/aggregateprocessor"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/k8sprocessor"
+	"github.com/Kindling-project/kindling/collector/pkg/component/controller"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver/cgoreceiver"
 	"github.com/spf13/viper"
@@ -25,6 +26,7 @@ import (
 
 type Application struct {
 	viper             *viper.Viper
+	controllerFactory *controller.ControllerFactory
 	componentsFactory *ComponentsFactory
 	telemetry         *component.TelemetryManager
 	receiver          receiver.Receiver
@@ -36,6 +38,7 @@ func New() (*Application, error) {
 		viper:             viper.New(),
 		componentsFactory: NewComponentsFactory(),
 		telemetry:         component.NewTelemetryManager(),
+		controllerFactory: &controller.ControllerFactory{},
 	}
 	app.registerFactory()
 	// Initialize flags
@@ -96,6 +99,7 @@ func (a *Application) readInConfig(path string) error {
 	}
 	a.telemetry.ConstructConfig(a.viper)
 	err = a.componentsFactory.ConstructConfig(a.viper)
+	a.controllerFactory.ConstructConfig(a.viper, a.telemetry.GetGlobalTelemetryTools())
 	if err != nil {
 		return fmt.Errorf("error happened while constructing config: %w", err)
 	}
@@ -144,5 +148,11 @@ func (a *Application) buildPipeline() error {
 	cgoReceiverFactory := a.componentsFactory.Receivers[cgoreceiver.Cgo]
 	cgoReceiver := cgoReceiverFactory.NewFunc(cgoReceiverFactory.Config, a.telemetry.GetTelemetryTools(cgoreceiver.Cgo), analyzerManager)
 	a.receiver = cgoReceiver
+
+	a.controllerFactory.RegistModule("profile",
+		cpuAnalyzer.(*cpuanalyzer.CpuAnalyzer).ProfileModule,
+		cgoReceiver.(*cgoreceiver.CgoReceiver).ProfileModule,
+	)
+
 	return nil
 }
