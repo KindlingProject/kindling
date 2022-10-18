@@ -3,15 +3,16 @@ FROM centos:7
 WORKDIR /app/
 COPY kindling-falcolib-probe.tar.gz  ./
 
-COPY libso/* /lib64/
+COPY libso/libkindling.so /lib64/
+COPY libso/* /usr/lib64/
 RUN ldconfig
+RUN yum install -y qt5-qtbase-devel
 
 COPY kindling-probe-loader /usr/bin/kindling-probe-loader
 RUN chmod +x  /usr/bin/kindling-probe-loader
 COPY kindling-collector-config.yml /etc/kindling/config/
 COPY kindling-collector /usr/bin/kindling-collector
 COPY libkindling-plugin.so /usr/bin/
-
 COPY start.sh /app/
 
 CMD ["sh", "start.sh"]

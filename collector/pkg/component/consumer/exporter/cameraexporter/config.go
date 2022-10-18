@@ -1,0 +1,34 @@
+package cameraexporter
+
+const (
+	storageFile          = "file"
+	storageElasticsearch = "elasticsearch"
+)
+
+type Config struct {
+	Storage    string      `mapstructure:"storage"`
+	EsConfig   *esConfig   `mapstructure:"es_config"`
+	FileConfig *fileConfig `mapstructure:"file_config"`
+}
+
+type esConfig struct {
+	EsHost      string `mapstructure:"es_host"`
+	IndexSuffix string `mapstructure:"index_suffix"`
+}
+
+type fileConfig struct {
+	// StoragePath is the ABSOLUTE path of the directory where the profile file should be saved
+	StoragePath string `mapstructure:"storage_path"`
+	// Storage constrains
+	MaxFileCount int `mapstructure:"max_file_count"`
+}
+
+func NewDefaultConfig() *Config {
+	return &Config{
+		Storage: storageFile,
+		FileConfig: &fileConfig{
+			StoragePath:  "/tmp/kindling/",
+			MaxFileCount: 50,
+		},
+	}
+}

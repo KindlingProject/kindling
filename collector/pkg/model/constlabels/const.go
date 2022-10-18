@@ -10,6 +10,7 @@ const (
 const (
 	Comm            = "comm"
 	Pid             = "pid"
+	Tid             = "tid"
 	Protocol        = "protocol"
 	IsError         = "is_error"
 	ErrorType       = "error_type"

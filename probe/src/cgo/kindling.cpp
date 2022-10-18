@@ -66,7 +66,10 @@ void sub_event(char *eventName, char *category)
 		for(int j = 0; j < 16; j++) {
 			event_filters[it_type->second][j] = 1;
 		}
-        inspector->set_eventmask(it_type->second);
+		inspector->set_eventmask(it_type->second);
+		if (PPME_IS_EXIT(it_type->second)) {
+			inspector->set_eventmask(it_type->second - 1);
+		}
 		cout << "sub event name: " << eventName << endl;
 	} else {
 		auto it_category = m_categories.find(category);
@@ -75,7 +78,10 @@ void sub_event(char *eventName, char *category)
 			return;
 		}
 		event_filters[it_type->second][it_category->second] = 1;
-        inspector->set_eventmask(it_type->second);
+		inspector->set_eventmask(it_type->second);
+		if (PPME_IS_EXIT(it_type->second)) {
+			inspector->set_eventmask(it_type->second - 1);
+		}
 		cout << "sub event name: " << eventName << "  &&  category:" << category << endl;
 	}
 }
@@ -419,7 +425,6 @@ void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_g
     memcpy(p_kindling_event->userAttributes[userAttNumber].value, data_val, data_param.m_len);
     p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
     p_kindling_event->userAttributes[userAttNumber].len = data_param.m_len;
-    cout<<data_param.m_len<<endl;
     userAttNumber++;
     strcpy(p_kindling_event->name, "java_futex_info");
     p_kindling_event->context.tinfo.tid = threadInfo->m_tid;

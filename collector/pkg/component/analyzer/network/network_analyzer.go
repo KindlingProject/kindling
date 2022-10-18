@@ -8,8 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/cpuanalyzer"
-
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
@@ -49,8 +47,6 @@ type NetworkAnalyzer struct {
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
 	telemetry          *component.TelemetryTools
-
-	enableProfile bool
 }
 
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
@@ -60,7 +56,6 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		dataGroupPool: NewDataGroupPool(),
 		nextConsumers: consumers,
 		telemetry:     telemetry,
-		enableProfile: false,
 	}
 	if config.EnableConntrack {
 		connConfig := &conntracker2.Config{
@@ -207,31 +202,6 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 	}
 }
 
-func (na *NetworkAnalyzer) consumerUnFinishTrace() {
-	timer := time.NewTicker(1 * time.Second)
-	for {
-		select {
-		case <-timer.C:
-			na.requestMonitor.Range(func(k, v interface{}) bool {
-				mps := v.(*messagePairs)
-				if mps.requests.event.Ctx.ThreadInfo.Pid == 7795 {
-					var timeoutTs = mps.getTimeoutTs()
-					if timeoutTs != 0 && (time.Now().UnixNano()/1000000000-int64(mps.requests.getFirstTimestamp())/1000000000) >= 2 {
-						sc := &cpuanalyzer.SendTriggerEvent{
-							Pid:       mps.requests.event.Ctx.ThreadInfo.Pid,
-							StartTime: mps.requests.getFirstTimestamp(),
-							SpendTime: uint64(4000000000),
-						}
-						cpuanalyzer.SendChannel <- *sc
-					}
-				}
-
-				return true
-			})
-		}
-	}
-}
-
 func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 	mps := &messagePairs{
 		connects:  newEvents(evt),
@@ -356,10 +326,6 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 			na.telemetry.Logger.Debug("NetworkAnalyzer To NextProcess:\n" + record.String())
 		}
 		netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
-
-		if na.enableProfile {
-			checkSendSignalToCpuAnalyzer(record)
-		}
 		for _, nexConsumer := range na.nextConsumers {
 			nexConsumer.Consume(record)
 		}
