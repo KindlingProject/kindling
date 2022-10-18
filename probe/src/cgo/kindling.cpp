@@ -6,7 +6,7 @@
 #include "scap_open_exception.h"
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
-#include <cstdlib>
+#include <thread>
 
 #include "converter/cpu_converter.h"
 
@@ -22,7 +22,7 @@ map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
 vector<QObject *> qls;
 
-
+bool first_attach = true;
 char *traceId = new char[128];
 char *isEnter = new char[16];
 char *start_time_char = new char[32];
@@ -138,6 +138,8 @@ int init_probe() {
 		set_eventmask(inspector);
 
 		cpuConverter = new cpu_converter(inspector);
+
+        attach_pid(nullptr, false);
 	}
 	catch(const exception &e)
 	{
@@ -159,7 +161,20 @@ int getEvent(void **pp_kindling_event)
         return -1;
     }
     auto threadInfo = ev->get_thread_info();
-
+    if((ev->get_type() == PPME_SYSCALL_EXECVE_8_X || ev->get_type() == PPME_SYSCALL_EXECVE_13_X || ev->get_type() == PPME_SYSCALL_EXECVE_15_X
+            || ev->get_type() == PPME_SYSCALL_EXECVE_16_X || ev->get_type() == PPME_SYSCALL_EXECVE_17_X || ev->get_type() == PPME_SYSCALL_EXECVE_18_X
+            || ev->get_type() == PPME_SYSCALL_EXECVE_19_X || ev->get_type() == PPME_SYSCALL_CLONE_11_X || ev->get_type() == PPME_SYSCALL_CLONE_16_X
+            || ev->get_type() == PPME_SYSCALL_CLONE_17_X || ev->get_type() == PPME_SYSCALL_CLONE_20_X || ev->get_type() == PPME_SYSCALL_FORK_X
+            || ev->get_type() == PPME_SYSCALL_FORK_17_X || ev->get_type() == PPME_SYSCALL_FORK_20_X || ev->get_type() == PPME_SYSCALL_VFORK_X
+            || ev->get_type() == PPME_SYSCALL_VFORK_17_X || ev->get_type() == PPME_SYSCALL_VFORK_20_X) && threadInfo->is_main_thread()
+    ){
+        if(strstr(threadInfo->m_comm.c_str(), "java") != NULL){
+            string pid_str = std::to_string(threadInfo->m_pid);
+            char* temp_char = (char *)pid_str.data();
+            thread attach(attach_pid, temp_char, true);
+            attach.join();
+        }
+    }
 	uint16_t kindling_category = get_kindling_category(ev);
 	uint16_t ev_type = ev->get_type();
 
@@ -785,4 +800,62 @@ uint16_t get_kindling_source(uint16_t etype) {
 				return SYSCALL_EXIT;
 		}
 	}
+}
+
+void attach_pid(char* pid, bool is_new_start) {
+    char result_buf[1024], command[1024];
+    int rc = 0;
+    FILE *fp;
+    bool isPs = false;
+    if(is_new_start){
+        sleep(10);
+    }
+    if(first_attach){
+        const char * ps_command = "ps -ef | grep \"java\" | grep -v \"grep\" | awk '{print $2}' \0";
+        snprintf(command, sizeof(command), "%s", ps_command);
+        first_attach = false;
+        isPs = true;
+    }else{
+        const char* attach_command_prefix = "./async-profiler/profiler.sh start ";
+        strcpy(command,attach_command_prefix);
+
+        strcat(command,pid);
+    }
+
+    fp = popen(command, "r");
+    if (NULL == fp) {
+        perror("popen execute failed!\n");
+        return;
+    }
+    if(!isPs){
+        chrono::system_clock::time_point t = chrono::system_clock::now();
+        time_t c = chrono::system_clock::to_time_t(t);
+        //cout<< "------"  << put_time(localtime(&c), "%F %T") << " start attach for pid "<< pid << "------" << endl;
+    }
+
+    while (fgets(result_buf, sizeof(result_buf), fp) != NULL) {
+        if ('\n' == result_buf[strlen(result_buf) - 1]){
+            result_buf[strlen(result_buf) - 1] = '\0';
+        }
+        if(isPs){
+            attach_pid(result_buf, false);
+
+        }else {
+            printf("%s\r\n", result_buf);
+        }
+    }
+
+
+    rc = pclose(fp);
+    if (-1 == rc) {
+        perror("close command fp failed!\n");
+        exit(1);
+    } else {
+        printf("command:【%s】command process status:【%d】command return value:【%d】\r\n", command, rc, WEXITSTATUS(rc));
+    }
+
+    if(!isPs){
+        cout<<"------end attach for pid "<<pid<<"------"<<endl;
+    }
+
 }

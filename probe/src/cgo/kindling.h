@@ -12,6 +12,9 @@
 #include <QCoreApplication>
 #include <QString>
 #include <QtDebug>
+#include <cstdlib>
+#include <chrono>
+#include <iomanip>
 
 int init_probe();
 
@@ -28,6 +31,8 @@ uint16_t get_kindling_category(sinsp_evt *sEvt);
 void init_sub_label();
 
 void sub_event(char *eventName, char *category);
+
+void attach_pid(char* pid, bool is_new_start);
 
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
