@@ -23,6 +23,7 @@ map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
 vector<QObject *> qls;
 
+bool is_start_profile = false;
 bool first_attach = true;
 char *traceId = new char[128];
 char *isEnter = new char[16];
@@ -139,8 +140,6 @@ int init_probe() {
 		set_eventmask(inspector);
 
 		cpuConverter = new cpu_converter(inspector);
-
-        attach_pid(nullptr, false);
 	}
 	catch(const exception &e)
 	{
@@ -162,7 +161,7 @@ int getEvent(void **pp_kindling_event)
         return -1;
     }
     auto threadInfo = ev->get_thread_info();
-    if((ev->get_type() == PPME_SYSCALL_EXECVE_8_X || ev->get_type() == PPME_SYSCALL_EXECVE_13_X || ev->get_type() == PPME_SYSCALL_EXECVE_15_X
+    if(is_start_profile && (ev->get_type() == PPME_SYSCALL_EXECVE_8_X || ev->get_type() == PPME_SYSCALL_EXECVE_13_X || ev->get_type() == PPME_SYSCALL_EXECVE_15_X
             || ev->get_type() == PPME_SYSCALL_EXECVE_16_X || ev->get_type() == PPME_SYSCALL_EXECVE_17_X || ev->get_type() == PPME_SYSCALL_EXECVE_18_X
             || ev->get_type() == PPME_SYSCALL_EXECVE_19_X || ev->get_type() == PPME_SYSCALL_CLONE_11_X || ev->get_type() == PPME_SYSCALL_CLONE_16_X
             || ev->get_type() == PPME_SYSCALL_CLONE_17_X || ev->get_type() == PPME_SYSCALL_CLONE_20_X || ev->get_type() == PPME_SYSCALL_FORK_X
@@ -865,6 +864,8 @@ int start_profile() {
     if (!inspector) {
         return -1;
     }
+    is_start_profile = true;
+    attach_pid(nullptr, false);
     inspector->set_eventmask(PPME_CPU_ANALYSIS_E);
 
     return 0;
@@ -874,6 +875,7 @@ int stop_profile() {
     if (!inspector) {
         return -1;
     }
+    is_start_profile = false;
     inspector->unset_eventmask(PPME_CPU_ANALYSIS_E);
 
     return 0;
