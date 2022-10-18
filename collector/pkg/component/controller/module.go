@@ -47,12 +47,11 @@ type DefaultModule struct {
 
 func NewModule(name string, tools *component.TelemetryTools, status ModuleStatus) *DefaultModule {
 	return &DefaultModule{
-		name:        name,
-		subStarts:   make(map[string]StartModule),
-		subStops:    make(map[string]StopModule),
-		tools:       tools,
-		clearSignal: make(chan struct{}),
-		status:      status,
+		name:      name,
+		subStarts: make(map[string]StartModule),
+		subStops:  make(map[string]StopModule),
+		tools:     tools,
+		status:    status,
 	}
 }
 
@@ -72,6 +71,7 @@ func (m *DefaultModule) Start(opts ...Option) error {
 	if m.status != Stopped {
 		return fmt.Errorf("module is running now")
 	}
+	m.clearSignal = make(chan struct{})
 	var err error
 	for _, start := range m.subStarts {
 		if perr := start(); perr != nil {
