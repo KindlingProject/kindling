@@ -11,13 +11,13 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpconnectanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpmetricanalyzer"
-	"github.com/Kindling-project/kindling/collector/pkg/component/controller"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/cameraexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/logexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/otelexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/aggregateprocessor"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/k8sprocessor"
+	"github.com/Kindling-project/kindling/collector/pkg/component/controller"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver/cgoreceiver"
 	"github.com/spf13/viper"
@@ -150,7 +150,6 @@ func (a *Application) buildPipeline() error {
 	a.receiver = cgoReceiver
 
 	a.controllerFactory.RegistModule("profile",
-		networkAnalyzer.(*network.NetworkAnalyzer).ProfileModule,
 		cpuAnalyzer.(*cpuanalyzer.CpuAnalyzer).ProfileModule,
 		cgoReceiver.(*cgoreceiver.CgoReceiver).ProfileModule,
 	)

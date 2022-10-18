@@ -30,7 +30,6 @@ receivers:
       - name: syscall_exit-connect
       - name: kretprobe-tcp_connect
       - name: kprobe-tcp_set_state
-      - name: tracepoint-cpu_analysis
       - name: tracepoint-procexit
 analyzers:
   cpuanalyzer:

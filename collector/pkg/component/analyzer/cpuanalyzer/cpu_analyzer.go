@@ -23,8 +23,6 @@ type CpuAnalyzer struct {
 	telemetry            *component.TelemetryTools
 
 	nextConsumers []consumer.Consumer
-
-	enableProfile bool
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -41,22 +39,23 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		cfg:           config,
 		telemetry:     telemetry,
 		nextConsumers: consumers,
-		enableProfile: false,
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]TimeSegments, 100000)
 	return ca
 }
 
 func (ca *CpuAnalyzer) Start() error {
-	// Note that these two variables belongs to the package
-	sendChannel = make(chan SendTriggerEvent, 3e5)
-	isAnalyzerInit = true
-	go ca.ReceiveSendSignal()
+	// Disable receiving and sending the profiling data by default.
+	return nil
+}
+
+func (ca *CpuAnalyzer) Shutdown() error {
+	ca.StopProfile()
 	return nil
 }
 
 func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
-	if !ca.enableProfile {
+	if !enableProfile {
 		return nil
 	}
 	switch event.Name {
@@ -198,11 +197,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		segment.putTimedEvent(event)
 		tidCpuEvents[tid] = newTimeSegments
 	}
-}
-
-func (ca *CpuAnalyzer) Shutdown() error {
-	// TODO: implement
-	return nil
 }
 
 func (ca *CpuAnalyzer) trimExitedThread(pid uint32, tid uint32) {
