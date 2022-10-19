@@ -219,6 +219,8 @@ func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, s
 
 	for _, timeSegments := range tidCpuEvents {
 		if endTimeSecond < timeSegments.BaseTime || startTimeSecond > timeSegments.BaseTime+uint64(maxSegmentSize) {
+			ca.telemetry.Logger.Debugf("pid=%d tid=%d events are beyond the time windows. BaseTimeSecond=%d, "+
+				"startTimeSecond=%d, endTimeSecond=%d", pid, timeSegments.Tid, timeSegments.BaseTime, startTimeSecond, endTimeSecond)
 			continue
 		}
 		startIndex := int(startTimeSecond - timeSegments.BaseTime)

@@ -1,11 +1,13 @@
 package cpuanalyzer
 
 import (
+	"fmt"
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
+	"go.uber.org/zap/zapcore"
 	"strconv"
 	"sync"
 )
@@ -16,7 +18,7 @@ const (
 
 type CpuAnalyzer struct {
 	cfg          *Config
-	cpuPidEvents map[uint32]map[uint32]TimeSegments
+	cpuPidEvents map[uint32]map[uint32]*TimeSegments
 	// { pid: routine }
 	sendEventsRoutineMap sync.Map
 	lock                 sync.Mutex
@@ -40,7 +42,7 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		telemetry:     telemetry,
 		nextConsumers: consumers,
 	}
-	ca.cpuPidEvents = make(map[uint32]map[uint32]TimeSegments, 100000)
+	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	return ca
 }
 
@@ -125,6 +127,10 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 			ev.Stack = string(userAttributes.GetValue())
 		}
 	}
+	if ce := ca.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
+		ca.telemetry.Logger.Debug(fmt.Sprintf("Receive CpuEvent: pid=%d, tid=%d, comm=%s, %+v", event.GetPid(),
+			event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev))
+	}
 	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
@@ -136,7 +142,7 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 	defer ca.lock.Unlock()
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
-		tidCpuEvents = make(map[uint32]TimeSegments)
+		tidCpuEvents = make(map[uint32]*TimeSegments)
 		ca.cpuPidEvents[pid] = tidCpuEvents
 	}
 	timeSegments, exist := tidCpuEvents[tid]
@@ -144,15 +150,22 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 	if exist {
 		endOffset := int(event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime)
 		if endOffset < 0 {
+			ca.telemetry.Logger.Debugf("EndOffset of the event is negative. EndTimestamp=%d, BaseTime=%d",
+				event.EndTimestamp(), timeSegments.BaseTime)
 			return
 		}
 		startOffset := int(event.StartTimestamp()/nanoToSeconds - timeSegments.BaseTime)
 		if startOffset < 0 {
 			startOffset = 0
 		}
-		// The current segment is full
+		// If the timeSegment is full, we clear half of its elements.
+		// Note the offset will be times of maxSegmentSize when no events with this tid come for long time,
+		// so the timeSegment will be cleared multiple times until it can accommodate the events.
+		// TODO: clear the whole elements if startOffset>=1.5*maxSegmentSize
 		if startOffset >= maxSegmentSize || endOffset > maxSegmentSize {
 			clearSize := maxSegmentSize / 2
+			ca.telemetry.Logger.Debugf("pid=%d, tid=%d, comm=%s, update BaseTime from %d to %d", pid, tid,
+				threadName, timeSegments.BaseTime, timeSegments.BaseTime+uint64(clearSize))
 			timeSegments.BaseTime = timeSegments.BaseTime + uint64(clearSize)
 			startOffset -= clearSize
 			if startOffset < 0 {
@@ -176,11 +189,10 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 			segment.putTimedEvent(event)
 			segment.IsSend = 0
 			timeSegments.Segments.UpdateByIndex(i, segment)
-			tidCpuEvents[tid] = timeSegments
 		}
 
 	} else {
-		newTimeSegments := TimeSegments{
+		newTimeSegments := &TimeSegments{
 			Pid:      pid,
 			Tid:      tid,
 			BaseTime: event.StartTimestamp() / nanoToSeconds,
@@ -206,5 +218,6 @@ func (ca *CpuAnalyzer) trimExitedThread(pid uint32, tid uint32) {
 	if tidEventsMap == nil {
 		return
 	}
+	ca.telemetry.Logger.Debugf("Receive a procexit pid=%d, tid=%d, which will be deleted from map", pid, tid)
 	delete(tidEventsMap, tid)
 }

@@ -22,6 +22,6 @@ func (ca *CpuAnalyzer) StopProfile() error {
 	defer ca.lock.Unlock()
 	enableProfile = false
 	// Clear the old events even if they are not sent
-	ca.cpuPidEvents = make(map[uint32]map[uint32]TimeSegments, 100000)
+	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	return nil
 }
