@@ -36,7 +36,7 @@ int start_profile();
 
 int stop_profile();
 
-void attach_pid(char* pid, bool is_new_start);
+void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps);
 
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);

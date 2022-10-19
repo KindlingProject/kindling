@@ -24,7 +24,7 @@ map<string, Category> m_categories;
 vector<QObject *> qls;
 
 bool is_start_profile = false;
-bool first_attach = true;
+bool all_attach = true;
 char *traceId = new char[128];
 char *isEnter = new char[16];
 char *start_time_char = new char[32];
@@ -171,7 +171,7 @@ int getEvent(void **pp_kindling_event)
         if(strstr(threadInfo->m_comm.c_str(), "java") != NULL){
             string pid_str = std::to_string(threadInfo->m_pid);
             char* temp_char = (char *)pid_str.data();
-            thread attach(attach_pid, temp_char, true);
+            thread attach(attach_pid, temp_char, true, true, false, false);
             attach.join();
         }
     }
@@ -802,24 +802,25 @@ uint16_t get_kindling_source(uint16_t etype) {
 	}
 }
 
-void attach_pid(char* pid, bool is_new_start) {
+void attach_pid(char* pid, bool is_new_start, bool is_attach , bool is_all_attach, bool is_ps) {
     char result_buf[1024], command[1024];
     int rc = 0;
     FILE *fp;
-    bool isPs = false;
     if(is_new_start){
         sleep(10);
     }
-    if(first_attach){
+    if(is_all_attach && is_ps){
         const char * ps_command = "ps -ef | grep \"java\" | grep -v \"grep\" | awk '{print $2}' \0";
         snprintf(command, sizeof(command), "%s", ps_command);
-        first_attach = false;
-        isPs = true;
     }else{
-        const char* attach_command_prefix = "./async-profiler/profiler.sh start ";
-        strcpy(command,attach_command_prefix);
-
-        strcat(command,pid);
+        string attach_command_prefix;
+        if(is_attach){
+            attach_command_prefix = "./async-profiler/profiler.sh start ";
+        }else {
+            attach_command_prefix = "./async-profiler/profiler.sh stop ";
+        }
+        attach_command_prefix.append(pid);
+        strcpy(command ,attach_command_prefix.c_str());
     }
 
     fp = popen(command, "r");
@@ -827,18 +828,19 @@ void attach_pid(char* pid, bool is_new_start) {
         perror("popen execute failed!\n");
         return;
     }
-    if(!isPs){
-        chrono::system_clock::time_point t = chrono::system_clock::now();
-        time_t c = chrono::system_clock::to_time_t(t);
-        //cout<< "------"  << put_time(localtime(&c), "%F %T") << " start attach for pid "<< pid << "------" << endl;
+    if(!is_ps && is_attach){
+        cout<< "------" << " start attach for pid "<< pid << "------" << endl;
+    }
+    if(!is_ps && !is_attach){
+        cout<< "------" << " start detach for pid "<< pid << "------" << endl;
     }
 
     while (fgets(result_buf, sizeof(result_buf), fp) != NULL) {
         if ('\n' == result_buf[strlen(result_buf) - 1]){
             result_buf[strlen(result_buf) - 1] = '\0';
         }
-        if(isPs){
-            attach_pid(result_buf, false);
+        if(is_ps){
+            attach_pid(result_buf, false, is_attach, is_all_attach, false);
 
         }else {
             printf("%s\r\n", result_buf);
@@ -854,8 +856,11 @@ void attach_pid(char* pid, bool is_new_start) {
         printf("command:【%s】command process status:【%d】command return value:【%d】\r\n", command, rc, WEXITSTATUS(rc));
     }
 
-    if(!isPs){
+    if(!is_ps && is_attach){
         cout<<"------end attach for pid "<<pid<<"------"<<endl;
+    }
+    if(!is_ps && !is_attach){
+        cout<<"------end detach for pid "<<pid<<"------"<<endl;
     }
 
 }
@@ -865,7 +870,7 @@ int start_profile() {
         return -1;
     }
     is_start_profile = true;
-    attach_pid(nullptr, false);
+    attach_pid(nullptr, false, true, true, true);
     inspector->set_eventmask(PPME_CPU_ANALYSIS_E);
 
     return 0;
@@ -876,6 +881,7 @@ int stop_profile() {
         return -1;
     }
     is_start_profile = false;
+    attach_pid(nullptr, false, false, true, true);
     inspector->unset_eventmask(PPME_CPU_ANALYSIS_E);
 
     return 0;
