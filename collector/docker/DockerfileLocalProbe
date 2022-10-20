@@ -2,6 +2,8 @@ FROM centos:7
 
 WORKDIR /app/
 COPY kindling-falcolib-probe.tar.gz  ./
+RUN  curl -O https://k8s-bpf-probes-public.oss-cn-hangzhou.aliyuncs.com/async-profiler-kindling-v1.0.0.tar.gz
+RUN tar -zvxf async-profiler-kindling-v1.0.0.tar.gz
 
 COPY libso/libkindling.so /lib64/
 COPY libso/* /usr/lib64/
@@ -10,9 +12,9 @@ RUN yum install -y qt5-qtbase-devel
 
 COPY kindling-probe-loader /usr/bin/kindling-probe-loader
 RUN chmod +x  /usr/bin/kindling-probe-loader
-COPY kindling-collector-config.yml /etc/kindling/config/
-COPY kindling-collector /usr/bin/kindling-collector
-COPY libkindling-plugin.so /usr/bin/
+COPY kindling-collector-config.yml /app/config/
+COPY kindling-collector /app/kindling-collector
+COPY libkindling-plugin.so /app/
 COPY start.sh /app/
 
 CMD ["sh", "start.sh"]
