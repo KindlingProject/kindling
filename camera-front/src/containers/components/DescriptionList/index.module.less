@@ -1,0 +1,46 @@
+.container {
+  @keylen: 100px;
+  font-size: 12px;
+  height: auto;
+  overflow: auto;
+  .title {
+    font-family: PingFangSC-Semibold, PingFang SC;
+    font-weight: 600;
+    font-size: 12px;
+    color: #333333;
+    display: block;
+  }
+
+  .key {
+    white-space: nowrap;
+  }
+  .value {
+    margin-left: 10px;
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow: hidden;
+    color: rgba(0, 0, 0, 0.65);
+  }
+
+  .item {
+    display: inline-block;
+    vertical-align: text-top;
+    padding: 5px 10px 0 0;
+    color: rgba(0, 0, 0, 0.65);
+  }
+
+  .quater {
+    width: 25%;
+    display: inline-flex;
+  }
+
+  .half {
+    width: 50%;
+    display: inline-flex;
+  }
+
+  .full {
+    width: 100%;
+    display: inline-flex;
+  }
+}
