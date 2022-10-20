@@ -104,6 +104,18 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 			Code: NoError,
 			Msg:  "stop success",
 		}
+	case "status":
+		var status string
+		switch p.Status() {
+		case Started:
+			status = "running"
+		case Stopped:
+			status = "stopped"
+		}
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  status,
+		}
 	default:
 		return &ControlResponse{
 			Code: NoOperation,
