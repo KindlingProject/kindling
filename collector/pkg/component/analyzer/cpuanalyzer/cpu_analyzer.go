@@ -163,23 +163,34 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		// so the timeSegment will be cleared multiple times until it can accommodate the events.
 		// TODO: clear the whole elements if startOffset>=1.5*maxSegmentSize
 		if startOffset >= maxSegmentSize || endOffset > maxSegmentSize {
-			clearSize := maxSegmentSize / 2
-			ca.telemetry.Logger.Debugf("pid=%d, tid=%d, comm=%s, update BaseTime from %d to %d", pid, tid,
-				threadName, timeSegments.BaseTime, timeSegments.BaseTime+uint64(clearSize))
-			timeSegments.BaseTime = timeSegments.BaseTime + uint64(clearSize)
-			startOffset -= clearSize
-			if startOffset < 0 {
+			if startOffset*2 >= 3*maxSegmentSize {
+				// clear all elements
+				ca.telemetry.Logger.Debugf("pid=%d, tid=%d, comm=%s, reset BaseTime from %d to %d", pid, tid,
+					threadName, timeSegments.BaseTime, event.StartTimestamp()/nanoToSeconds)
+				timeSegments.Segments.Clear()
+				timeSegments.BaseTime = event.StartTimestamp() / nanoToSeconds
+				endOffset = endOffset - startOffset
 				startOffset = 0
-			}
-			endOffset -= clearSize
-			for i := 0; i < clearSize; i++ {
-				movedIndex := i + clearSize
-				val := timeSegments.Segments.GetByIndex(movedIndex)
-				timeSegments.Segments.UpdateByIndex(i, val)
-				segmentTmp := newSegment(pid, tid, threadName,
-					(timeSegments.BaseTime+uint64(movedIndex))*nanoToSeconds,
-					(timeSegments.BaseTime+uint64(movedIndex+1))*nanoToSeconds)
-				timeSegments.Segments.UpdateByIndex(movedIndex, segmentTmp)
+			} else {
+				// Clear half of the elements
+				clearSize := maxSegmentSize / 2
+				ca.telemetry.Logger.Debugf("pid=%d, tid=%d, comm=%s, update BaseTime from %d to %d", pid, tid,
+					threadName, timeSegments.BaseTime, timeSegments.BaseTime+uint64(clearSize))
+				timeSegments.BaseTime = timeSegments.BaseTime + uint64(clearSize)
+				startOffset -= clearSize
+				if startOffset < 0 {
+					startOffset = 0
+				}
+				endOffset -= clearSize
+				for i := 0; i < clearSize; i++ {
+					movedIndex := i + clearSize
+					val := timeSegments.Segments.GetByIndex(movedIndex)
+					timeSegments.Segments.UpdateByIndex(i, val)
+					segmentTmp := newSegment(pid, tid, threadName,
+						(timeSegments.BaseTime+uint64(movedIndex))*nanoToSeconds,
+						(timeSegments.BaseTime+uint64(movedIndex+1))*nanoToSeconds)
+					timeSegments.Segments.UpdateByIndex(movedIndex, segmentTmp)
+				}
 			}
 		}
 

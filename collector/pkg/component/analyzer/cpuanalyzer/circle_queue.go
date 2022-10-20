@@ -20,3 +20,7 @@ func (s *CircleQueue) UpdateByIndex(index int, val interface{}) {
 	s.data[index] = val
 	return
 }
+
+func (s *CircleQueue) Clear() {
+	s.data = make([]interface{}, s.length)
+}
