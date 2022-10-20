@@ -207,7 +207,7 @@ export default function EventDetail(props: Props) {
         data={newData}
         specifications={specifications}
       />
-      {
+      {/* {
         data.type === 'net' ? <div style={{ marginTop: '10px' }}>
           <DescriptionList
             title="相关请求信息"
@@ -215,7 +215,7 @@ export default function EventDetail(props: Props) {
             specifications={netColumnList}
           />
         </div> : null
-      }
+      } */}
     </div>
   );
 }
