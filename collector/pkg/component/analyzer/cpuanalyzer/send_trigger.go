@@ -32,8 +32,7 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		})
 		return
 	}
-	if data.Labels.GetBoolValue(constlabels.IsError) ||
-		data.Labels.GetBoolValue(constlabels.IsSlow) {
+	if data.Labels.GetBoolValue(constlabels.IsSlow) {
 		duration, ok := data.GetMetric(constvalues.RequestTotalTime)
 		if !ok {
 			return
