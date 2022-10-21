@@ -572,8 +572,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                 eventType: key,
                 color: sevent.color,
                 time,
-                timeRate: 100,
-                // timeRate: ((time / (requestEndTimestamp - requestStartTimestamp)) * 100).toFixed(2)
+                timeRate: ((time / (requestEndTimestamp - requestStartTimestamp)) * 100).toFixed(2)
             }
             if (timeObj.eventType === 'on') {
                 allInfo.unshift(timeObj);
