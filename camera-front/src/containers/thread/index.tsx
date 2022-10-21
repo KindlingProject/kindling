@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useSearchParams  } from "react-router-dom";
 import { Button, Input, Tag, Checkbox, Select, AutoComplete, message, Spin, Progress, TreeSelect, Tooltip} from 'antd';
 import { SyncOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, UpOutlined, ArrowLeftOutlined, ArrowRightOutlined, FilterOutlined, FullscreenOutlined, FullscreenExitOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
@@ -16,6 +17,7 @@ import { setStore, getStore, defaultTimeInfo, translateRecentTime } from '@/serv
 import moment from 'moment';
 
 function Thread() {
+    const [searchParams] = useSearchParams();
     const [showESQuery, setShowESQuery] = useState(false);
     // es的接口查询相关数据需要的参数
     const [pid, setPid] = useState(getStore('pid') || '');
@@ -246,9 +248,9 @@ function Thread() {
         });
     }
 
-    const toggleESQuery = () => {
-        setShowESQuery(!showESQuery);
-    }
+    useEffect(() => {
+        setShowESQuery((searchParams.get('query') && searchParams.get('query') === 'es') ? true : false);
+    }, [searchParams]);
 
     useEffect(() => {
         getAllFolderList();
@@ -442,7 +444,7 @@ function Thread() {
         <div className='thread_warp'>
             <header className='thread_header'>
                 <div className='thread_header_text'>
-                    <span onClick={toggleESQuery}>应用运行分析</span>
+                    <span>应用运行分析</span>
                     {
                         showESQuery ? <React.Fragment>
                             <Input type="number" style={{ width: 100 }} value={pid} onChange={changePid} />
