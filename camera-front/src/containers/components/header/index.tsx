@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, message, Switch } from 'antd';
-import { RadarChartOutlined } from '@ant-design/icons';
+import { RadarChartOutlined, LoadingOutlined } from '@ant-design/icons';
 import style from './header.module.less';
 
 import logo from '@/assets/images/logo.png';
@@ -18,6 +18,7 @@ function Header(props: any) {
     const navigate = useNavigate();
     const [activeMenuKey, setActiveMenuKey] = useState<string>('');
     const [profileStatus, setProfileStatus] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false);
 
     const clickMenu = ({ key }: {key: string}) => {
         let path = '';
@@ -38,7 +39,9 @@ function Header(props: any) {
         const params = {
             operation: operation
         };
+        setLoading(true);
         toggleProfile(params).then(res => {
+            setLoading(false);
             if (res.data.Code === 1) {
                 if (operation === 'status') {
                     setProfileStatus(res.data.Msg !== 'stopped');
@@ -69,14 +72,17 @@ function Header(props: any) {
                     <Menu.Item key="thread" icon={<RadarChartOutlined />}>
                         线程分析
                     </Menu.Item>
-                    <Menu.Item key="stack" icon={<RadarChartOutlined />}>
+                    {/* <Menu.Item key="stack" icon={<RadarChartOutlined />}>
                         堆栈分析
-                    </Menu.Item>
+                    </Menu.Item> */}
                 </Menu>
             </div>
             <div className={style.home_header_right}>
                 <span>启动Trace检测：</span>
                 <Switch checked={profileStatus} onChange={changeProfileStatus}></Switch>
+                {
+                    loading && <LoadingOutlined style={{ marginLeft: 10 }}/>
+                }
             </div>
         </div>
     );
