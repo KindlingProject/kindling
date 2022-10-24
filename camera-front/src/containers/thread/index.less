@@ -25,7 +25,7 @@
     .filter_panel {
         width: 320px;
         height: 100%;
-        box-shadow: 3px 0px 5px 0px #ddd;
+        box-shadow: 3px 0px 5px 0px var(--filter-panel-box-shadow-color);
         position: relative;
         z-index: 99;
         .toggle_btn {
@@ -33,11 +33,12 @@
             top: 22px;
             left: 100%;
             transform: translateX(-50%);
-            box-shadow: 2px 0px 5px 0px #ddd;
+            box-shadow: 2px 0px 5px 0px var(--filter-panel-box-shadow-color);
         }
         .header_title {
             font-size: large;
             font-weight: bold;
+            color: var(--body-text-color)
         }
         .filter_body {
             .mixin_wh(100%, calc(100% - 56px));
@@ -49,7 +50,7 @@
             .field_header {
                 .mixin_flex(flex, space-between, center);
                 font-size: 12px;
-                color: #232323;
+                color: var(--body-text-color);
                 span {
                     margin-right: 5px;
                 }
@@ -62,7 +63,7 @@
             }
             .field_body {
                 padding: 10px 0;
-                border-bottom: 1px solid #dcdcdc;
+                border-bottom: 1px solid var(--filter-panel-border-color);
                 // animation: field_body_animation 500ms ease;
                 .event_legend_list {
                     .mixin_ul();
@@ -87,7 +88,7 @@
             position: absolute;
             bottom: 0;
             padding: 10px 16px;
-            border-top: 1px solid #dcdcdc;
+            border-top: 1px solid var(--filter-panel-border-color);
         }
     }
     .thead_content {
@@ -127,11 +128,11 @@
                 display: flex;
                 align-items: center;
                 padding-left: 15px;
-                background-color: #eff8fc;
+                background-color: var(--process-inof-bg-color);
                 cursor: pointer;
                 margin-right: 12px;
                 &:hover {
-                    background-color: #D3E6F5;
+                    background-color: var(--process-inof-bg-hover-color);
                 }
                 .info_warp {
                     display: flex;
@@ -149,7 +150,7 @@
                     }
                     .event_time {
                         font-size: larger;
-                        color: #383838;
+                        color: var(--body-text-color);
                     }
                 }
                 .process_warp {
@@ -160,6 +161,7 @@
                         font-size: x-small;
                     }
                     .process_center_text {
+                        color: var(--body-text-color);
                         position: absolute;
                         top: 50%;
                         left: 50%;
@@ -195,9 +197,10 @@
                 .mixin_wh(100%, 36px);
                 .mixin_flex(flex, space-between, center);
                 padding: 0 12px;
-                background-color: #f2f2f2;
-                border-top: 1px solid #dedede;
-                border-bottom: 1px solid #dedede;
+                background-color: var(--event-panel-header-color);
+                border-top: 1px solid var(--event-panel-heade-border-color);
+                border-bottom: 1px solid var(--event-panel-heade-border-color);
+                color: var(--body-text-color);
                 .anticon {
                     cursor: pointer;
                     &.active, &:hover {

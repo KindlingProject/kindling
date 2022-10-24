@@ -653,7 +653,7 @@ function Thread() {
                                                 <span className='event_time'>{item.time}ms</span>
                                             </div>
                                             <div className='process_warp'>
-                                                <Progress type="circle" percent={item.timeRate} width={60} trailColor='#3790FF12' strokeColor='#3790FF' showInfo={false}/>
+                                                <Progress type="circle" percent={item.timeRate} width={60} trailColor={(getStore('theme') || 'light') === 'light' ? '#3790FF12' : '#696969'} strokeColor='#3790FF' showInfo={false}/>
                                                 <div className='process_center_text'>
                                                     <span>{item.timeRate}%</span>
                                                 </div>

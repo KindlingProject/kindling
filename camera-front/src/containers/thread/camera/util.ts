@@ -113,6 +113,93 @@ export const eventList: IEvent[] = [
         color: '#c0b81c'
     }
 ];
+export const darkEventList: IEvent[] = [
+    {
+        name: 'oncpu',
+        value: 'on',
+        type: 'on',
+        fillColor: '#881206',
+        activeColor: '#881206',
+        color: '#FFFFFF'
+    }, {
+        name: 'file-open',
+        value: 'fileopen',
+        type: 'file',
+        fillColor: '#5227A3',
+        activeColor: '#5227A3',
+        color: '#FFFFFF'
+    }, {
+        name: 'file-close',
+        value: 'fileclose',
+        type: 'file',
+        fillColor: '#5227A3',
+        activeColor: '#5227A3',
+        color: '#FFFFFF'
+    }, {
+        name: 'net-read',
+        value: 'netread',
+        type: 'net',
+        fillColor: '#623D14',
+        activeColor: '#623D14',
+        color: '#FFFFFF'
+    }, {
+        name: 'net-write',
+        value: 'netwrite',
+        type: 'net',
+        fillColor: '#623D14',
+        activeColor: '#623D14',
+        color: '#FFFFFF'
+    }, {
+        name: 'futex',
+        value: 'futex',
+        type: 'futex',
+        fillColor: '#3D5D0E',
+        activeColor: '#3D5D0E',
+        color: '#FFFFFF'
+    }, {
+        name: 'idle',
+        value: 'idle',
+        type: 'idle',
+        fillColor: '#0E5257',
+        activeColor: '#0E5257',
+        color: '#FFFFFF'
+    }, {
+        name: 'epoll',
+        value: 'epoll',
+        type: 'epoll',
+        fillColor: '#034D7C',
+        activeColor: '#034D7C',
+        color: '#FFFFFF'
+    }, {
+        name: 'other',
+        value: 'other',
+        type: 'other',
+        fillColor: '#5D5B5B',
+        activeColor: '#5D5B5B',
+        color: '#FFFFFF'
+    }, {
+        name: 'MonitorEnter(Java Lock)',
+        value: 'MonitorEnter',
+        type: 'lock',
+        fillColor: '#fffde280',
+        activeColor: '#EFEDCA',
+        color: '#c0b81c'
+    }, {
+        name: 'MonitorWait(Java Lock)',
+        value: 'MonitorWait',
+        type: 'lock',
+        fillColor: '#fffde280',
+        activeColor: '#EFEDCA',
+        color: '#c0b81c'
+    }, {
+        name: 'UnsafePark(Java Lock)',
+        value: 'UnsafePark',
+        type: 'lock',
+        fillColor: '#fffde280',
+        activeColor: '#EFEDCA',
+        color: '#c0b81c'
+    }
+];
 
 export const netReadTypes = ["read", "recvfrom", "recvmsg", "readv", "pread", "preadv"];
 export const netWriteTypes = ["write", "sendto", "sendmsg", "writev", "pwrite", "pwritev"];

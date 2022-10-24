@@ -7,17 +7,21 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/lib/locale/zh_CN';
 import { persistor, store } from './store/storeConfig';
+import { setStore } from './services/util';
 
 import './styles/index.less'
 import './styles/common.less';
 import './styles/theme/theme-color.less';
+import './styles/theme/antd-dark.less';
+
 
 const RootBody = () => {
 
   useEffect(() => {
     // window['eventListenerList'] = [];
     let body = document.getElementsByTagName('body')[0];
-    body.className = `light-theme`;
+    body.className = `dark-theme`;
+    setStore('theme', 'dark');
   }, []);
 
   return (

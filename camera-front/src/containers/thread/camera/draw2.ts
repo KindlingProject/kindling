@@ -3,7 +3,8 @@ import { D3BrushEvent } from 'd3';
 import { message, Modal } from 'antd';
 import _ from 'lodash';
 import { ILegend, IEvent, IOption, IThread, IEventTime, IJavaLock, ILogEvent, IFilterParams, ILineTime } from './types';
-import { eventList, textHandle, timeFormat, containTime } from './util';
+import { eventList as LEvent, darkEventList as DEvent, textHandle, timeFormat, containTime } from './util';
+import { getStore } from '@/services/util';
 
 
 type ILineType = 'requestTime' | 'cruxTime' | 'trace' | 'rt';
@@ -14,7 +15,9 @@ type ILineType = 'requestTime' | 'cruxTime' | 'trace' | 'rt';
 //     barPadding?: number;
 //     padding?: number;
 // }
+const eventList = (getStore('theme') || 'light') === 'light' ? LEvent : DEvent;
 class Camera {
+    theme: 'light' | 'dark' = 'light';
     data: IThread[] = [];
     lineTimeList: ILineTime[] = [];
     timeThreshold: number = 0.005;
@@ -58,6 +61,7 @@ class Camera {
     eventClick: (evt: any) => void;
 
     constructor (option: IOption) {
+        this.theme = (getStore('theme') as any) || 'light';
         this.data = option.data;
         this.lineTimeList = option.lineTimeList;
         this.traceId = option.traceId;
@@ -175,7 +179,7 @@ class Camera {
                 .attr('transform', `translate(0, ${threadHeight * idx})` );
             threadWarp.append('rect')
                 .attr('class', 'thread_rect_warp')
-                .attr('fill', () => idx % 2 === 0 ? '#FFFFFF' : '#F9F9F9')
+                .attr('fill', () => this.theme === 'light' ? (idx % 2 === 0 ? '#FFFFFF' : '#F9F9F9') : (idx % 2 === 0 ? '#212226' : '#333333'))
                 .attr('width', this.svgWidth)
                 .attr('height', threadHeight);
 
