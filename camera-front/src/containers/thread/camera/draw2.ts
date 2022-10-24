@@ -404,7 +404,7 @@ class Camera {
                 let sevent: IEvent = _.find(eventList, {type: 'file'}) as IEvent;
                 return sevent.color;
             } else {
-                return '#3d3d3d';
+                return this.theme === 'dark' ? '#dcdcdc' : '#3d3d3d';
             }
         } else {
             let sevent: IEvent = _.find(eventList, {type: list[0].type}) as IEvent;
@@ -448,8 +448,7 @@ class Camera {
                 .attr('x', parseInt(left) - 1)
                 .attr('y', this.barPadding - 2)
                 .attr('width', 3)
-                .attr('height', this.barWidth + 4)
-                .attr('fill', '#FFFFFF00');
+                .attr('height', this.barWidth + 4);
             lineWarp.append('line')
                 .attr('class', `event_dash ${list.length > 1 ? 'dash_line' : ''}`)
                 .attr('id', `line_id_${idx}_${left}`)

@@ -126,7 +126,8 @@
                     stroke-width: 4px;
                 }
                 .event_dash_rect {
-                    fill: #FFFFFFCC;
+                    // fill: #FFFFFFCC;
+                    fill: var(--event-dash-rect-hover-color);
                     stroke: #d9d9d9;
                     filter: drop-shadow(0px 0px 2px #cccccc);
                 }
@@ -176,7 +177,7 @@
         .tooltip_line_text {
             font-size: 10px;
             font-weight: 100;
-            stroke: #6a6a6a;
+            stroke: var(--body-text-color);
         }
         .tooltip_line {
             stroke-dasharray: 4, 3;
