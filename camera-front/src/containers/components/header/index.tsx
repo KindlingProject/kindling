@@ -93,7 +93,7 @@ function Header(props: any) {
                     loading && <LoadingOutlined style={{ marginLeft: 10 }}/>
                 }
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                <Switch checkedChildren='暗黑' unCheckedChildren='明亮' checked={theme ==='dark'} onChange={changeTheme}></Switch>
+                {/* <Switch checkedChildren='暗黑' unCheckedChildren='明亮' checked={theme ==='dark'} onChange={changeTheme}></Switch> */}
             </div>
         </div>
     );

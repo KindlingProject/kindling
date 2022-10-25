@@ -20,8 +20,8 @@ const RootBody = () => {
   useEffect(() => {
     // window['eventListenerList'] = [];
     let body = document.getElementsByTagName('body')[0];
-    body.className = `dark-theme`;
-    setStore('theme', 'dark');
+    body.className = `light-theme`;
+    setStore('theme', 'light');
   }, []);
 
   return (
