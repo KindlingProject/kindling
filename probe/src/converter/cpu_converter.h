@@ -35,7 +35,7 @@ private:
     int32_t set_boot_time(uint64_t *boot_time);
 
     sinsp *m_inspector;
-//    vector<QObject *> qls;
+
     uint64_t sample_interval;
 };
 
