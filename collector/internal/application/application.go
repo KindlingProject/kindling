@@ -6,15 +6,18 @@ import (
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/cpuanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/loganalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpconnectanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
+	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/cameraexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/logexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/otelexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/aggregateprocessor"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/k8sprocessor"
+	"github.com/Kindling-project/kindling/collector/pkg/component/controller"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver/cgoreceiver"
 	"github.com/spf13/viper"
@@ -23,6 +26,7 @@ import (
 
 type Application struct {
 	viper             *viper.Viper
+	controllerFactory *controller.ControllerFactory
 	componentsFactory *ComponentsFactory
 	telemetry         *component.TelemetryManager
 	receiver          receiver.Receiver
@@ -34,6 +38,7 @@ func New() (*Application, error) {
 		viper:             viper.New(),
 		componentsFactory: NewComponentsFactory(),
 		telemetry:         component.NewTelemetryManager(),
+		controllerFactory: &controller.ControllerFactory{},
 	}
 	app.registerFactory()
 	// Initialize flags
@@ -75,6 +80,7 @@ func initFlags() error {
 func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterReceiver(cgoreceiver.Cgo, cgoreceiver.NewCgoReceiver, &cgoreceiver.Config{})
 	a.componentsFactory.RegisterAnalyzer(network.Network.String(), network.NewNetworkAnalyzer, &network.Config{})
+	a.componentsFactory.RegisterAnalyzer(cpuanalyzer.CpuProfile.String(), cpuanalyzer.NewCpuAnalyzer, &cpuanalyzer.Config{})
 	a.componentsFactory.RegisterProcessor(k8sprocessor.K8sMetadata, k8sprocessor.NewKubernetesProcessor, &k8sprocessor.DefaultConfig)
 	a.componentsFactory.RegisterExporter(otelexporter.Otel, otelexporter.NewExporter, &otelexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(tcpmetricanalyzer.TcpMetric.String(), tcpmetricanalyzer.NewTcpMetricAnalyzer, &tcpmetricanalyzer.Config{})
@@ -82,6 +88,7 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterAnalyzer(loganalyzer.Type.String(), loganalyzer.New, &loganalyzer.Config{})
 	a.componentsFactory.RegisterProcessor(aggregateprocessor.Type, aggregateprocessor.New, aggregateprocessor.NewDefaultConfig())
 	a.componentsFactory.RegisterAnalyzer(tcpconnectanalyzer.Type.String(), tcpconnectanalyzer.New, tcpconnectanalyzer.NewDefaultConfig())
+	a.componentsFactory.RegisterExporter(cameraexporter.Type, cameraexporter.New, cameraexporter.NewDefaultConfig())
 }
 
 func (a *Application) readInConfig(path string) error {
@@ -92,6 +99,7 @@ func (a *Application) readInConfig(path string) error {
 	}
 	a.telemetry.ConstructConfig(a.viper)
 	err = a.componentsFactory.ConstructConfig(a.viper)
+	a.controllerFactory.ConstructConfig(a.viper, a.telemetry.GetGlobalTelemetryTools())
 	if err != nil {
 		return fmt.Errorf("error happened while constructing config: %w", err)
 	}
@@ -104,6 +112,8 @@ func (a *Application) buildPipeline() error {
 	// Initialize exporters
 	otelExporterFactory := a.componentsFactory.Exporters[otelexporter.Otel]
 	otelExporter := otelExporterFactory.NewFunc(otelExporterFactory.Config, a.telemetry.GetTelemetryTools(otelexporter.Otel))
+	cameraExporterFactory := a.componentsFactory.Exporters[cameraexporter.Type]
+	cameraExporter := cameraExporterFactory.NewFunc(cameraExporterFactory.Config, a.telemetry.GetTelemetryTools(cameraexporter.Type))
 	// Initialize all processors
 	// 1. DataGroup Aggregator
 	aggregateProcessorFactory := a.componentsFactory.Processors[aggregateprocessor.Type]
@@ -124,8 +134,12 @@ func (a *Application) buildPipeline() error {
 	tcpAnalyzer := tcpAnalyzerFactory.NewFunc(tcpAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(tcpconnectanalyzer.Type.String()), []consumer.Consumer{k8sMetadataProcessor2})
 	tcpConnectAnalyzerFactory := a.componentsFactory.Analyzers[tcpconnectanalyzer.Type.String()]
 	tcpConnectAnalyzer := tcpConnectAnalyzerFactory.NewFunc(tcpConnectAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(tcpconnectanalyzer.Type.String()), []consumer.Consumer{k8sMetadataProcessor})
+
+	cpuAnalyzerFactory := a.componentsFactory.Analyzers[cpuanalyzer.CpuProfile.String()]
+	cpuAnalyzer := cpuAnalyzerFactory.NewFunc(cpuAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(cpuanalyzer.CpuProfile.String()), []consumer.Consumer{cameraExporter})
+
 	// Initialize receiver packaged with multiple analyzers
-	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer, tcpConnectAnalyzer)
+	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer, tcpConnectAnalyzer, cpuAnalyzer)
 	if err != nil {
 		return fmt.Errorf("error happened while creating analyzer manager: %w", err)
 	}
@@ -134,5 +148,11 @@ func (a *Application) buildPipeline() error {
 	cgoReceiverFactory := a.componentsFactory.Receivers[cgoreceiver.Cgo]
 	cgoReceiver := cgoReceiverFactory.NewFunc(cgoReceiverFactory.Config, a.telemetry.GetTelemetryTools(cgoreceiver.Cgo), analyzerManager)
 	a.receiver = cgoReceiver
+
+	a.controllerFactory.RegistModule("profile",
+		cpuAnalyzer.(*cpuanalyzer.CpuAnalyzer).ProfileModule,
+		cgoReceiver.(*cgoreceiver.CgoReceiver).ProfileModule,
+	)
+
 	return nil
 }

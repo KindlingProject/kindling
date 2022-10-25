@@ -109,19 +109,52 @@ func TestParseHttpRequest_GetPayLoad(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestParseHttpResponse_GetPayLoad(t *testing.T) {
-	httpData := "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\nContent-Type: text/plain; charset=utf-8\r\nKey1: value1\r\n\r\nHello world"
-
 	tests := []struct {
 		name string
-		size int
-		want string
+		args args
+		want map[string]string
 	}{
-		{name: "substring", size: 10, want: "HTTP/1.1 2"},
-		{name: "equal", size: 107, want: httpData},
-		{name: "overflow", size: 200, want: httpData},
+		{
+			name: "normal case",
+			args: args{
+				message: protocol.NewRequestMessage([]byte("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nAPM-AgentID: TTXvC3EQS6KLwxx3eIqINFjAW2olRm+cr8M+yuvwhkY=\r\nTransfer-Encoding: chunked\r\nContent-Type: application/json\r\nAPM-TransactionID: 5e480579c718a4a6498a9")),
+			},
+			want: map[string]string{
+				"connection":        "keep-alive",
+				"apm-agentid":       "TTXvC3EQS6KLwxx3eIqINFjAW2olRm+cr8M+yuvwhkY=",
+				"transfer-encoding": "chunked",
+				"content-type":      "application/json",
+				"apm-transactionid": "5e480579c718a4a6498a9",
+			},
+		},
+		{
+			name: "no values",
+			args: args{
+				protocol.NewRequestMessage([]byte("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nTransfer-Encoding: ")),
+			},
+			want: map[string]string{
+				"connection": "keep-alive",
+			},
+		},
+		{
+
+			name: "no spaces",
+			args: args{
+				protocol.NewRequestMessage([]byte("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nTransfer-Encoding:")),
+			},
+			want: map[string]string{
+				"connection": "keep-alive",
+			},
+		},
+		{
+			name: "no colon",
+			args: args{
+				protocol.NewRequestMessage([]byte("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nTransfer-Encoding")),
+			},
+			want: map[string]string{
+				"connection": "keep-alive",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

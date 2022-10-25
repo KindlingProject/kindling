@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
 	"log"
 	"os"
 	"os/signal"
@@ -13,7 +15,9 @@ import (
 func main() {
 	// Print version information
 	log.Printf("GitCommitInfo:%s\n", version.Version())
-
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
 	app, err := application.New()
 	if err != nil {
 		log.Fatalf("Failed to create application: %v", err)

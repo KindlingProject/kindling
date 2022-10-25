@@ -169,6 +169,24 @@ func (attributes *AttributeMap) String() string {
 	return string(json)
 }
 
+func (attributes *AttributeMap) Clone() *AttributeMap {
+	ret := NewAttributeMap()
+	for k, v := range attributes.values {
+		switch v.Type() {
+		case StringAttributeValueType:
+			stringValue := v.(*stringValue).value
+			ret.AddStringValue(k, stringValue)
+		case IntAttributeValueType:
+			intValue := v.(*intValue).value
+			ret.AddIntValue(k, intValue)
+		case BooleanAttributeValueType:
+			boolValue := v.(*boolValue).value
+			ret.AddBoolValue(k, boolValue)
+		}
+	}
+	return ret
+}
+
 type AttributeValue interface {
 	Type() AttributeValueType
 	ToString() string

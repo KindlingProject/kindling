@@ -60,7 +60,7 @@ func (r *CgoReceiver) Start() error {
 	r.telemetry.Logger.Info("Start CgoReceiver")
 	res := int(C.runForGo())
 	if res == 1 {
-	    return fmt.Errorf("fail to init probe")
+		return fmt.Errorf("fail to init probe")
 	}
 	time.Sleep(2 * time.Second)
 	r.subEvent()
@@ -160,7 +160,7 @@ func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
 	}
 	analyzers := r.analyzerManager.GetConsumableAnalyzers(evt.Name)
 	if analyzers == nil || len(analyzers) == 0 {
-		r.telemetry.Logger.Info("analyzer not found for event ", zap.String("eventName", evt.Name))
+		//r.telemetry.Logger.Info("analyzer not found for event ", zap.String("eventName", evt.Name))
 		return nil
 	}
 	for _, analyzer := range analyzers {
@@ -181,4 +181,26 @@ func (r *CgoReceiver) subEvent() {
 	for _, value := range r.cfg.SubscribeInfo {
 		C.subEventForGo(C.CString(value.Name), C.CString(value.Category))
 	}
+}
+
+func (r *CgoReceiver) StartProfile() error {
+	r.telemetry.Logger.Infof("Start Profile")
+	if C.startProfile() == 0 {
+		return nil
+	} else {
+		return fmt.Errorf("start Profile failed")
+	}
+}
+
+func (r *CgoReceiver) StopProfile() error {
+	r.telemetry.Logger.Infof("Stop Profile")
+	if C.stopProfile() == 0 {
+		return nil
+	} else {
+		return fmt.Errorf("stop Profile failed")
+	}
+}
+
+func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, stop func() error) {
+	return "cgoreceiver", r.StartProfile, r.StopProfile
 }

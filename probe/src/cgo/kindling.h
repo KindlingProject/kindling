@@ -4,17 +4,43 @@
 #pragma once
 #ifndef SYSDIG_KINDLING_H
 #define SYSDIG_KINDLING_H
+
 #include "sinsp.h"
+#include "KindlingInterface.h"
+#include <QtPlugin>
+#include <QPluginLoader>
+#include <QCoreApplication>
+#include <QString>
+#include <QtDebug>
+#include <cstdlib>
+#include <chrono>
+#include <iomanip>
 
 int init_probe();
+
+void start_perf();
+
+void stop_perf();
+
+void exipre_window_cache();
+
 int getEvent(void **kindlingEvent);
+
 uint16_t get_kindling_category(sinsp_evt *sEvt);
+
 void init_sub_label();
-void sub_event(char* eventName, char* category);
+
+void sub_event(char *eventName, char *category);
+
+int start_profile();
+
+int stop_profile();
+
+void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps);
+
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);
-
 struct event {
     string event_name;
     ppm_event_type event_type;
@@ -24,12 +50,13 @@ struct kindling_event_t_for_go{
 	char *name;
 	uint32_t category;
 	uint16_t paramsNumber;
+	uint64_t latency;
     struct KeyValue {
 	char *key;
 	char* value;
 	uint32_t len;
 	uint32_t valueType;
-    }userAttributes[8];
+    }userAttributes[16];
     struct event_context {
         struct thread_info {
             uint32_t pid;
@@ -55,6 +82,18 @@ struct kindling_event_t_for_go{
         }fdInfo;
     }context;
 };
+
+void parse_jf(char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber);
+
+void parse_xtid(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param, kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo, uint16_t &userAttNumber);
+
+void parse_tm(char *data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo);
+
+void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_kindling_event);
+
+void print_event(sinsp_evt *s_evt);
+
+int is_normal_event(int res, sinsp_evt *s_evt, ppm_event_category *category);
 
 int setTuple(kindling_event_t_for_go* kevt, const sinsp_evt_param *pTuple, int userAttNumber);
 
@@ -367,6 +406,8 @@ const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
 	{"kprobe-tcp_set_state",            PPME_TCP_SET_STATE_E},
 	{"tracepoint-tcp_send_reset",       PPME_TCP_SEND_RESET_E},
 	{"tracepoint-tcp_receive_reset",    PPME_TCP_RECEIVE_RESET_E},
+	{"tracepoint-cpu_analysis",         PPME_CPU_ANALYSIS_E},
+    {"tracepoint-procexit",             PPME_PROCEXIT_1_E},
 };
 
 struct event_category {
@@ -414,5 +455,7 @@ enum ValueType {
 	DOUBLE = 12, // 8 bytes
 	BOOL = 13 // 4 bytes
 };
+
+const static int EVENT_DATA_SIZE = 80960;
 
 #endif //SYSDIG_KINDLING_H

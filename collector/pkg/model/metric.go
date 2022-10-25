@@ -24,24 +24,24 @@ func (i *Metric) GetData() isMetricData {
 }
 
 func (i *Metric) GetInt() *Int {
-	if x, ok := i.GetData().(*Metric_Int); ok {
-		return x.Int
+	if x, ok := i.GetData().(*Int); ok {
+		return x
 	}
 	return nil
 }
 
 func (i *Metric) GetHistogram() *Histogram {
-	if x, ok := i.GetData().(*Metric_Histogram); ok {
-		return x.Histogram
+	if x, ok := i.GetData().(*Histogram); ok {
+		return x
 	}
 	return nil
 }
 
 func (i *Metric) DataType() MetricType {
 	switch i.GetData().(type) {
-	case *Metric_Int:
+	case *Int:
 		return IntMetricType
-	case *Metric_Histogram:
+	case *Histogram:
 		return HistogramMetricType
 	default:
 		return NoneMetricType
@@ -61,12 +61,32 @@ func (i *Metric) Clear() {
 	}
 }
 
+func (i *Metric) Clone() *Metric {
+	ret := &Metric{
+		Name: i.Name,
+		Data: nil,
+	}
+	switch i.DataType() {
+	case IntMetricType:
+		ret.Data = &Int{Value: i.GetInt().Value}
+	case HistogramMetricType:
+		histogram := i.GetHistogram()
+		ret.Data = &Histogram{
+			Sum:                histogram.Sum,
+			Count:              histogram.Count,
+			ExplicitBoundaries: histogram.ExplicitBoundaries,
+			BucketCounts:       histogram.BucketCounts,
+		}
+	}
+	return ret
+}
+
 type Int struct {
 	Value int64
 }
 
 func NewIntMetric(name string, value int64) *Metric {
-	return &Metric{Name: name, Data: &Metric_Int{Int: &Int{Value: value}}}
+	return &Metric{Name: name, Data: &Int{Value: value}}
 }
 
 func NewMetric(name string, data isMetricData) *Metric {
@@ -81,20 +101,12 @@ type Histogram struct {
 }
 
 func NewHistogramMetric(name string, histogram *Histogram) *Metric {
-	return &Metric{Name: name, Data: &Metric_Histogram{Histogram: histogram}}
+	return &Metric{Name: name, Data: histogram}
 }
 
 type isMetricData interface {
 	isMetricData()
 }
 
-func (*Metric_Int) isMetricData()       {}
-func (*Metric_Histogram) isMetricData() {}
-
-type Metric_Int struct {
-	Int *Int
-}
-
-type Metric_Histogram struct {
-	Histogram *Histogram
-}
+func (*Int) isMetricData()       {}
+func (*Histogram) isMetricData() {}

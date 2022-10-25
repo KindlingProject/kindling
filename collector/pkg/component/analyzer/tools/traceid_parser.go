@@ -1,8 +1,20 @@
 package tools
 
-import "strings"
+import (
+	"encoding/base64"
+	"strings"
+)
 
-func ParseTraceHeader(headers map[string]string) (traceType string, traceId string) {
+func ParseTraceHeader(headers map[string]string) (string, string) {
+	if skywalking, ok := headers["sw8"]; ok {
+		traceId := parseSkyWalkingTraceId(skywalking)
+		return "skywalking", traceId
+	}
+
+	if harmonycloud, ok := headers["apm-transactionid"]; ok {
+		return "harmonycloud", harmonycloud
+	}
+
 	if zipkin, ok := headers["x-b3-traceid"]; ok {
 		return "zipkin", zipkin
 	}
@@ -22,4 +34,26 @@ func ParseTraceHeader(headers map[string]string) (traceType string, traceId stri
 	}
 
 	return "", ""
+}
+
+// See the doc
+// https://github.com/apache/skywalking/blob/master/docs/en/protocols/Skywalking-Cross-Process-Propagation-Headers-Protocol-v3.md
+func parseSkyWalkingTraceId(value string) string {
+	if len(value) < 3 {
+		return ""
+	}
+	valueBytes := []byte(value)
+	traceIdBase64 := make([]byte, 0)
+	// We traverse the string from the first '-'.
+	for i := 2; i < len(valueBytes); i++ {
+		if valueBytes[i] == '-' {
+			break
+		}
+		traceIdBase64 = append(traceIdBase64, valueBytes[i])
+	}
+	traceId, err := base64.StdEncoding.DecodeString(string(traceIdBase64))
+	if err != nil {
+		return ""
+	}
+	return string(traceId)
 }

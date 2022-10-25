@@ -52,11 +52,7 @@ func (x *KindlingEvent) GetResVal() int64 {
 }
 
 func (x *KindlingEvent) GetLatency() uint64 {
-	keyValue := x.GetUserAttribute("latency")
-	if keyValue != nil {
-		return byteOrder.Uint64(keyValue.Value)
-	}
-	return 0
+	return x.Latency
 }
 
 func (x *KindlingEvent) GetUintUserAttribute(key string) uint64 {

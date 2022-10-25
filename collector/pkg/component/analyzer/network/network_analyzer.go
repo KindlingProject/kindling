@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -90,7 +91,7 @@ func (na *NetworkAnalyzer) Start() error {
 	newSelfMetrics(na.telemetry.MeterProvider, na)
 
 	go na.consumerFdNoReusingTrace()
-
+	// go na.consumerUnFinishTrace()
 	na.staticPortMap = map[uint32]string{}
 	for _, config := range na.cfg.ProtocolConfigs {
 		for _, port := range config.Ports {
@@ -175,6 +176,9 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 		return err
 	}
 	if isRequest {
+		if evt.GetPid() == 13759 {
+			log.Printf("latency = %d", evt.GetLatency())
+		}
 		return na.analyseRequest(evt)
 	} else {
 		return na.analyseResponse(evt)
@@ -402,6 +406,8 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 		// Parse failure
 		return nil
 	}
+	requestMsg.AddByteArrayUtf8Attribute(constlabels.RequestPayload, mps.requests.getData())
+
 	if mps.responses == nil {
 		return na.getRecords(mps, parser.GetProtocol(), requestMsg.GetAttributes())
 	}
@@ -411,6 +417,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 		// Parse failure
 		return nil
 	}
+	responseMsg.AddByteArrayUtf8Attribute(constlabels.ResponsePayload, mps.responses.getData())
 
 	return na.getRecords(mps, parser.GetProtocol(), responseMsg.GetAttributes())
 }

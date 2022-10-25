@@ -144,8 +144,18 @@ func (t *TelemetryLogger) Panic(msg string, fields ...zap.Field) {
 	t.logger.Panic(msg, fields...)
 }
 
+func (t *TelemetryLogger) Debugf(template string, args ...interface{}) {
+	if t.EnableDebug {
+		t.sugar.Debugf(template, args...)
+	}
+}
+
 func (t *TelemetryLogger) Infof(template string, args ...interface{}) {
 	t.sugar.Infof(template, args...)
+}
+
+func (t *TelemetryLogger) Warnf(template string, args ...interface{}) {
+	t.sugar.Warnf(template, args...)
 }
 
 func (t *TelemetryLogger) Errorf(template string, args ...interface{}) {
