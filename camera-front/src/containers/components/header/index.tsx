@@ -6,6 +6,7 @@ import style from './header.module.less';
 
 import logo from '@/assets/images/logo.png';
 import { toggleProfile } from '@/request';
+import { getStore, setStore } from '@/services/util';
 
 interface IProps {
     history: any;
@@ -16,6 +17,7 @@ interface IState {
 }
 function Header(props: any) {
     const navigate = useNavigate();
+    const [theme, setTheme] = useState<string>(getStore('theme') as string | 'light');
     const [activeMenuKey, setActiveMenuKey] = useState<string>('');
     const [profileStatus, setProfileStatus] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
@@ -59,6 +61,13 @@ function Header(props: any) {
         let operation = value ? 'start' : 'stop';
         requestProfile(operation);
     }
+    const changeTheme = (value) => {
+        let t = value ? 'dark' : 'light';
+        setTheme(t);
+        setStore('theme', t);
+        let body = document.getElementsByTagName('body')[0];
+        body.className = `${t}-theme`;
+    }
 
     useEffect(() => {
         requestProfile('status');
@@ -83,6 +92,8 @@ function Header(props: any) {
                 {
                     loading && <LoadingOutlined style={{ marginLeft: 10 }}/>
                 }
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <Switch checkedChildren='暗黑' unCheckedChildren='明亮' checked={theme ==='dark'} onChange={changeTheme}></Switch>
             </div>
         </div>
     );
