@@ -2,7 +2,7 @@ script_dir="$(dirname "$0")"
 workspace_root=$(realpath "${script_dir}/../")
 
 # Docker image information.
-docker_image_with_tag="kindlingproject/agent-builder"
+docker_image_with_tag="kindlingproject/agent-builder:latest"
 
 configs=(-v "$HOME/.config:/root/.config" \
   -v "$HOME/.ssh:/root/.ssh" \
