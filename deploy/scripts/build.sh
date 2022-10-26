@@ -17,6 +17,6 @@ else
     echo "compiler collector failed! exit!"
   else
     cd docker
-    docker build -t kindling-collector . -f DockerfileLocalProbe
+    docker build -t kindling-agent . -f DockerfileLocalProbe
   fi
 fi
