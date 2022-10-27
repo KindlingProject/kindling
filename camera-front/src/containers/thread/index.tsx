@@ -208,6 +208,7 @@ function Thread() {
                 let {trace: traceData, cpuEvents} = res.data.data;
                 setTraceList([traceData]);
                 setNowTrace(traceData);
+                console.log('traceData', traceData);
                 if (traceData.labels?.trace_id) {
                     setTraceId(traceData.labels.trace_id);
                 }
@@ -250,6 +251,10 @@ function Thread() {
 
     useEffect(() => {
         setShowESQuery((searchParams.get('query') && searchParams.get('query') === 'es') ? true : false);
+        let theme: any = searchParams.get('theme') || 'light';
+        let body = document.getElementsByTagName('body')[0];
+        body.className = `${theme}-theme`;
+        setStore('theme', 'theme');
     }, [searchParams]);
 
     useEffect(() => {
@@ -398,6 +403,9 @@ function Thread() {
         //         }, 100);
         //     });
         // } else {
+            if (evt.active) {
+                evt.message = evt.eventType === "netread" ? nowTrace.labels.request_payload : nowTrace.labels.response_payload;
+            }
             setNowEvent(evt);
         // }
     }

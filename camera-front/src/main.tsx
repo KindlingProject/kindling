@@ -16,14 +16,6 @@ import './styles/theme/antd-dark.less';
 
 
 const RootBody = () => {
-
-  useEffect(() => {
-    // window['eventListenerList'] = [];
-    let body = document.getElementsByTagName('body')[0];
-    body.className = `light-theme`;
-    setStore('theme', 'light');
-  }, []);
-
   return (
       <ConfigProvider locale={zhCN}>
           <Provider store={store}>
