@@ -357,7 +357,7 @@ const onOffInfoHandle = (info, eventObj, timeRange) => {
                 }
             }
         });
-        console.log('带#解析的info结果：', result);
+        // console.log('带#解析的info结果：', result);
         return result;
     } else {
         let detailInfo = eventInfoHandle(info);
