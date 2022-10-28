@@ -235,6 +235,7 @@ function Thread() {
                     setEventList(eventlist);
                     setRequestEventInfo(requestInfo);
                     setTraceId(traceId);
+                    setNowEvent({});
                 } else {
                     setNowTraceData([]);
                     setThreadList([]);

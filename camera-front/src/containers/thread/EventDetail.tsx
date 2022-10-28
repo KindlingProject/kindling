@@ -103,7 +103,8 @@ function getDescList(data): Specification[] {
     }, {
       name: '操作大小',
       key: 'size',
-      space: 'quater'
+      space: 'quater',
+      render: (value) => `${value}byte`
     }, {
       name: '连接信息',
       key: 'file',
