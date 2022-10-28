@@ -235,6 +235,7 @@ function Thread() {
                     setEventList(eventlist);
                     setRequestEventInfo(requestInfo);
                     setTraceId(traceId);
+                    setNowEvent({});
                 } else {
                     setNowTraceData([]);
                     setThreadList([]);
@@ -254,7 +255,7 @@ function Thread() {
         let theme: any = searchParams.get('theme') || 'light';
         let body = document.getElementsByTagName('body')[0];
         body.className = `${theme}-theme`;
-        setStore('theme', 'theme');
+        setStore('theme', theme);
     }, [searchParams]);
 
     useEffect(() => {
