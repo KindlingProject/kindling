@@ -11,6 +11,7 @@
 - Add request and response payload of `Redis` protocol message to `Span` data. ([#325](https://github.com/CloudDectective-Harmonycloud/kindling/pull/325))
 
 ### Bug fixes
+- Fix the topology node naming error in the default namespace.([#346](https://github.com/CloudDectective-Harmonycloud/kindling/pull/346))
 - Fix the bug that if `ReadBytes` receives negative numbers as arguments, the program panics with the error of slice outofbound. ([#327](https://github.com/CloudDectective-Harmonycloud/kindling/pull/327))
 
 ## v0.4.1 - 2022-09-21
@@ -29,7 +30,6 @@
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
 
 ### Bug fixes
-- Fix the topology node naming error in the default namespace.([#346](https://github.com/CloudDectective-Harmonycloud/kindling/pull/346))
 - Avoid printing logs to console when both `observability.logger.file_level` and `observability.logger.console_level` are set to none([#316](https://github.com/CloudDectective-Harmonycloud/kindling/pull/316))
 - Fix the userAttributes array out of range error caused by userAttNumber exceeding 8
 - Fix the bug where no HTTP headers were got. ([#301](https://github.com/CloudDectective-Harmonycloud/kindling/pull/301))
