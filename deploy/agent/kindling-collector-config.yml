@@ -136,7 +136,7 @@ exporters:
       max_file_count: 50
     # Effective when storage is "elasticsearch"
     es_config:
-      es_host: http://10.10.103.96:9200
+      es_host: http://10.10.10.10:9200
       index_suffix: dev
   otelexporter:
     adapter_config:
