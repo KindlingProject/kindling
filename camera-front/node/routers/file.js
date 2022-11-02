@@ -108,7 +108,7 @@ router.get('/getTraceFile', function(req, res, next) {
             });
         }
         let result = buffer.toString();
-        let resList = result.split('---');
+        let resList = result.split('------');
         let traceData = JSON.parse(_.head(resList));
         let cpuEventStrs = _.slice(resList, 1);
         let cpuEventsList = [];

@@ -4,15 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"strconv"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/filepathhelper"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"os"
-	"path"
-	"path/filepath"
-	"strconv"
 )
 
 type fileWriter struct {
@@ -136,7 +137,7 @@ func getFilesName(path string) ([]string, error) {
 	return files, err
 }
 
-const dividingLine = "\n---\n"
+const dividingLine = "\n------\n"
 
 func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 	traceTimestamp := group.Labels.GetIntValue(constlabels.Timestamp)
