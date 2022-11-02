@@ -29,6 +29,7 @@
 - Declare the 9500 port in the agent's deployment file ([#282](https://github.com/CloudDectective-Harmonycloud/kindling/pull/282))
 
 ### Bug fixes
+- fix the topology node naming error in the default namespace。([#346]https://github.com/CloudDectective-Harmonycloud/kindling/pull/346). 
 - Avoid printing logs to console when both `observability.logger.file_level` and `observability.logger.console_level` are set to none([#316](https://github.com/CloudDectective-Harmonycloud/kindling/pull/316))
 - Fix the userAttributes array out of range error caused by userAttNumber exceeding 8
 - Fix the bug where no HTTP headers were got. ([#301](https://github.com/CloudDectective-Harmonycloud/kindling/pull/301))
