@@ -11,6 +11,7 @@
 - Add request and response payload of `Redis` protocol message to `Span` data. ([#325](https://github.com/CloudDectective-Harmonycloud/kindling/pull/325))
 
 ### Bug fixes
+- Fix the topology node naming error in the default namespace.([#346](https://github.com/CloudDectective-Harmonycloud/kindling/pull/346))
 - Fix the bug that if `ReadBytes` receives negative numbers as arguments, the program panics with the error of slice outofbound. ([#327](https://github.com/CloudDectective-Harmonycloud/kindling/pull/327))
 
 ## v0.4.1 - 2022-09-21
