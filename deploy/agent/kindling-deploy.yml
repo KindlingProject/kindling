@@ -28,7 +28,7 @@ spec:
         - containerPort: 9504
           protocol: TCP
         volumeMounts:
-        - mountPath: /app/camera-front/node
+        - mountPath: /app/camera-front/node/settings.js
           name: camera-front-config
           subPath: settings.js
         - name: shared-data
