@@ -114,12 +114,22 @@ router.get('/getTraceFile', function(req, res, next) {
         let cpuEventsList = [];
         let cpuEvents = [];
         
-        _.forEach(cpuEventStrs, (str) => cpuEventsList.push(JSON.parse(str)));
+        _.forEach(cpuEventStrs, (str) => {
+            try {
+                cpuEventsList.push(JSON.parse(str))
+            } catch (error) {
+                console.error(str);
+            }
+        });
         cpuEvents = _.map(cpuEventsList, 'labels');
         _.forEach(cpuEvents, item => {
-            item.cpuEvents = JSON.parse(item.cpuEvents);
-            item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
-            item.transactionIds = JSON.parse(item.transactionIds);
+            try {
+                item.cpuEvents = JSON.parse(item.cpuEvents);
+                item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
+                item.transactionIds = JSON.parse(item.transactionIds);
+            } catch (error) {
+                console.error(error, item);
+            }
         });
 
         let finalResult = {
