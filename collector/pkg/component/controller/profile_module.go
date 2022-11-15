@@ -117,6 +117,12 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 			Msg:  status,
 		}
 	case "start_debug":
+		if err := p.StartDebug(req.Pid, req.Tid); err != nil {
+			return &ControlResponse{
+				Code: StopWithError,
+				Msg:  err.Error(),
+			}
+		}
 		return &ControlResponse{
 			Code: NoError,
 			Msg:  "start debug success",

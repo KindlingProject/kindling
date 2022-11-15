@@ -188,7 +188,6 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
     p_kindling_event->userAttributes[userAttNumber].len = info.length();
     userAttNumber++;
     p_kindling_event->paramsNumber = userAttNumber;
-    cout<<"aaaaaaa"<<endl;
 
     if(is_profile_debug && s_tinfo->m_tid == debug_tid && s_tinfo->m_pid == debug_pid){
         if (!debug_file.is_open())

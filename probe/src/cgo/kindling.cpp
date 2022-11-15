@@ -895,13 +895,13 @@ int stop_profile() {
 }
 
 void start_profile_debug(int64_t pid, int64_t tid) {
-    is_start_profile = true;
+    is_profile_debug = true;
     debug_pid = pid;
     debug_tid = tid;
 }
 
-void stop_profile_debug(int64_t pid, int64_t tid) {
-    is_start_profile = false;
+void stop_profile_debug() {
+    is_profile_debug = false;
     debug_pid = 0;
     debug_tid = 0;
 }

@@ -38,7 +38,7 @@ int stop_profile();
 
 void start_profile_debug(int64_t pid, int64_t tid);
 
-void stop_profile_debug(int64_t pid, int64_t tid);
+void stop_profile_debug();
 
 void print_profile_debug_info(sinsp_evt *sevt);
 

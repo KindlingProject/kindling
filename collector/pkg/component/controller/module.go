@@ -1,5 +1,14 @@
 package controller
 
+/*
+#cgo LDFLAGS: -L ./ -lkindling  -lstdc++ -ldl
+#cgo CFLAGS: -I .
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
+#include "../receiver/cgoreceiver/cgo_func.h"
+*/
+import "C"
 import (
 	"fmt"
 	"sync"
@@ -17,7 +26,7 @@ type Module interface {
 	Start(...Option) error
 	Stop(msg string) error
 	Status() ModuleStatus
-	StartDebug() error
+	StartDebug(pid int, tid int) error
 	StopDebug() error
 	ClearSignal() <-chan struct{}
 }
@@ -113,11 +122,15 @@ func (m *DefaultModule) Status() ModuleStatus {
 	return m.status
 }
 
-func (m *DefaultModule) StartDebug() error {
+func (m *DefaultModule) StartDebug(pid int, tid int) error {
+	fmt.Println("---------------------------------------------")
+	fmt.Println(pid)
+	C.startProfileDebug(C.int(pid), C.int(tid))
 	return nil
 }
 
 func (m *DefaultModule) StopDebug() error {
+	C.stopProfileDebug()
 	return nil
 }
 
