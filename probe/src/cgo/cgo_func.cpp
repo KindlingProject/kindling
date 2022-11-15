@@ -25,3 +25,11 @@ int startProfile() {
 int stopProfile() {
     return stop_profile();
 }
+
+void startProfileDebug(int pid, int tid) {
+    start_profile_debug(pid, tid);
+}
+
+void stopProfileDebug(int pid, int tid) {
+    stop_profile_debug(pid, tid);
+}

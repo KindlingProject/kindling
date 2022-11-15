@@ -17,6 +17,8 @@ type Module interface {
 	Start(...Option) error
 	Stop(msg string) error
 	Status() ModuleStatus
+	StartDebug() error
+	StopDebug() error
 	ClearSignal() <-chan struct{}
 }
 
@@ -109,6 +111,14 @@ func (m *DefaultModule) Status() ModuleStatus {
 	m.check.Lock()
 	defer m.check.Unlock()
 	return m.status
+}
+
+func (m *DefaultModule) StartDebug() error {
+	return nil
+}
+
+func (m *DefaultModule) StopDebug() error {
+	return nil
 }
 
 func (m *DefaultModule) ClearSignal() <-chan struct{} {

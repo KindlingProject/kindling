@@ -6,6 +6,7 @@
 #include "scap_open_exception.h"
 #include "sinsp_capture_interrupt_exception.h"
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <thread>
 
@@ -13,6 +14,7 @@
 
 
 cpu_converter *cpuConverter;
+fstream debug_file_log;
 map<uint64_t, char *> ptid_comm;
 static sinsp *inspector = nullptr;
 sinsp_evt_formatter *formatter = nullptr;
@@ -25,6 +27,9 @@ vector<QObject *> qls;
 
 bool is_start_profile = false;
 bool all_attach = true;
+bool is_profile_debug = false;
+int64_t debug_pid = 0;
+int64_t debug_tid = 0;
 char *traceId = new char[128];
 char *isEnter = new char[16];
 char *start_time_char = new char[32];
@@ -179,7 +184,9 @@ int getEvent(void **pp_kindling_event)
 	uint16_t ev_type = ev->get_type();
 
     print_event(ev);
-
+    if(ev_type!=PPME_CPU_ANALYSIS_E && is_profile_debug && threadInfo->m_tid == debug_tid && threadInfo->m_pid == debug_pid){
+        print_profile_debug_info(ev);
+    }
     kindling_event_t_for_go *p_kindling_event;
     init_kindling_event(p_kindling_event, pp_kindling_event);
 
@@ -229,7 +236,7 @@ int getEvent(void **pp_kindling_event)
 		}
 
     	strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
-        return cpuConverter->convert(p_kindling_event, ev, qls);
+        return cpuConverter->convert(p_kindling_event, ev, qls, is_profile_debug, debug_pid, debug_tid);
 	}
 
     if(event_filters[ev_type][kindling_category] == 0)
@@ -885,4 +892,31 @@ int stop_profile() {
     inspector->unset_eventmask(PPME_CPU_ANALYSIS_E);
 
     return 0;
+}
+
+void start_profile_debug(int64_t pid, int64_t tid) {
+    is_start_profile = true;
+    debug_pid = pid;
+    debug_tid = tid;
+}
+
+void stop_profile_debug(int64_t pid, int64_t tid) {
+    is_start_profile = false;
+    debug_pid = 0;
+    debug_tid = 0;
+}
+
+void print_profile_debug_info(sinsp_evt *sevt){
+    if (!debug_file_log.is_open()){
+        debug_file_log.open("profile_debug.log",  ios::app|ios::out);
+    }
+    string line;
+    if (formatter->tostring(sevt, &line)) {
+        if (debug_file_log.is_open())
+        {
+            debug_file_log << sevt->get_ts() << "  ";
+            debug_file_log << line;
+            debug_file_log << "\n";
+        }
+    }
 }

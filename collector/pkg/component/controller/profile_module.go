@@ -116,6 +116,16 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 			Code: NoError,
 			Msg:  status,
 		}
+	case "start_debug":
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "start debug success",
+		}
+	case "stop_debug":
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "stop debug success",
+		}
 	default:
 		return &ControlResponse{
 			Code: NoOperation,
