@@ -26,6 +26,9 @@ type ControlRequest struct {
 	// start / stop
 	Operation string
 
+	Pid int
+	Tid int
+
 	// json Options
 	Options *json.RawMessage
 }
