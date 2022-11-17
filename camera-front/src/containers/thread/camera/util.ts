@@ -519,6 +519,12 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                     // if (eventObj.endTime > timeRange[0] && eventObj.startTime < timeRange[1]) {
                     //     threadObj.eventList.push(eventObj);
                     // }
+                } else {
+                    if (type === '0') {
+                        onFlag++;
+                    } else {
+                        offFlag++;
+                    }
                 }
                 startTime = endTime;
             });
