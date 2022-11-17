@@ -149,7 +149,7 @@ export default function EventDetail(props: Props) {
 
   const init = (data) => {
     let info: any = {};
-    if (data.type === 'net' && data.traceInfo) {
+    if (data.type === 'net' && !_.isEmpty(data.traceInfo)) {
       let netColumns = _.cloneDeep(netTraceList);
       let totalTime = _.find(data.traceInfo?.metrics, {Name: 'request_total_time'});
       let traceData: any = {
