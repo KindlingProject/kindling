@@ -349,8 +349,10 @@ function Thread() {
             fileList: selectFileList,
             eventList: selectEventList.length > 0 ? selectEventList : [..._.map(eventList, 'value'), 'net', 'file']
         };
+        (cameraRef.current as any).closeTraceAnaliysis();
         let camera = (cameraRef.current as any)?.camera;
         camera.reprintByFilter(filterParams);
+        camera.closeShowTrace();
     }
     // 清空重置所有的筛选条件
     const resetAllField = () => {

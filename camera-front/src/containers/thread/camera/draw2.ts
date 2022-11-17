@@ -17,6 +17,7 @@ type ILineType = 'requestTime' | 'cruxTime' | 'trace' | 'rt';
 // }
 const eventList = (getStore('theme') || 'light') === 'light' ? LEvent : DEvent;
 class Camera {
+    parentRef: any;
     theme: 'light' | 'dark' = 'light';
     data: IThread[] = [];
     lineTimeList: ILineTime[] = [];
@@ -61,6 +62,7 @@ class Camera {
     eventClick: (evt: any) => void;
 
     constructor (option: IOption) {
+        this.parentRef = option.parentRef;
         this.theme = (getStore('theme') as any) || 'light';
         this.data = option.data;
         this.lineTimeList = option.lineTimeList;
@@ -1133,6 +1135,7 @@ class Camera {
             }
             if (data.length === 0) {
                 data = _.concat([], this.data);
+                this.parentRef && this.parentRef.closeTraceAnaliysis();
             }
         } else {
             data = _.concat([], this.data);
@@ -1157,6 +1160,9 @@ class Camera {
             // 重新计算线程的Y轴坐标
             d3.select(`#thread_warp_${tid}`).attr('transform', `translate(0, ${this.threadHeight * idx})` );
         });
+    }
+    closeShowTrace() {
+        this.showTraceFlag = false;
     }
     
     /**

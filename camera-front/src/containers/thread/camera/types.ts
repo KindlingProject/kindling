@@ -10,6 +10,7 @@ export interface IOption {
     barWidth?: number;
     barPadding?: number;
     padding?: number;
+    parentRef?: any;
     eventClick: (evt: any) => void;
     nameClick: (tid: string) => void;
 }
