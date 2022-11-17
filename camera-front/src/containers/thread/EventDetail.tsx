@@ -9,6 +9,7 @@ import './index.less';
 const DateFormat = 'YYYY-MM-DD HH:mm:ss.SSS';
 interface Props {
   data: any;
+  showESQuery?: boolean;
 }
 
 const netTraceList: Specification[] = [
@@ -208,15 +209,15 @@ export default function EventDetail(props: Props) {
         data={newData}
         specifications={specifications}
       />
-      {/* {
-        data.type === 'net' ? <div style={{ marginTop: '10px' }}>
+      {
+        (data.type === 'net' && props.showESQuery) ? <div style={{ marginTop: '10px' }}>
           <DescriptionList
             title="相关请求信息"
             data={traceData}
             specifications={netColumnList}
           />
         </div> : null
-      } */}
+      }
     </div>
   );
 }
