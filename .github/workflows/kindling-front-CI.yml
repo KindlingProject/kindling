@@ -1,4 +1,4 @@
-name: Kindling-agent-CI
+name: Kindling-front-CI
 
 on:
   push:
@@ -15,12 +15,6 @@ jobs:
       - name: Set TAG
         run: echo "TAG=latesttest" >> $GITHUB_ENV
       - uses: actions/checkout@v3
-      - name: build-by-builder-container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: kindlingproject/agent-builder:latest
-          options: -v ${{ github.workspace }}:/kindling -w /kindling
-          run: make
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -29,6 +23,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: ${{ github.workspace }}/collector/docker
+          context: ${{ github.workspace }}/camera-front
+          file: ${{ github.workspace }}/camera-front/Dockerfile
           push: true
-          tags: kindlingproject/kindling-agent:${{ env.TAG }}
+          tags: kindlingproject/kindling-camera-front:${{ env.TAG }}
