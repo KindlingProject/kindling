@@ -100,8 +100,7 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
 	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
 	memcpy(p_kindling_event->userAttributes[userAttNumber].value, &end_time, 8);
 	p_kindling_event->userAttributes[userAttNumber].valueType = UINT64;
-	p_kindling_event->userAttributes[userAttNumber].len = 8;
-	userAttNumber++;
+x	userAttNumber++;
 
 	// time_specs
 	strcpy(p_kindling_event->userAttributes[userAttNumber].key, "type_specs");
@@ -197,17 +196,24 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
             for(int i= 0;i<on_time.size();i++){
                 string debug_info = to_string(on_time[i].first) + "  -  " + to_string(on_time[i].second) + "on, " + " onnumber: " + to_string(i+1) +"oninfo:"+on_info;
                 debug_file << debug_info<<"\n";
+                if(s_tinfo->m_tid == 4344){
+                    cout<<"isopen"<<debug_file.is_open()<<endl;
+                    cout<<debug_info<<endl;
+                }
             }
             for(int i= 0;i<off_time.size();i++){
                 string debug_info = to_string(off_time[i].first) + "  -  " + to_string(off_time[i].second) + "off, " + " ofnumber: " + to_string(i+1) +"offinfo:"+info;
                 debug_file << debug_info<<"\n";
+                if(s_tinfo->m_tid == 4344){
+                    cout<<debug_info<<endl;
+                }
             }
 
         }
     }
-   // printf("name: %s thread: %s(%d) userattNumber: %d\n", p_kindling_event->name, p_kindling_event->context.tinfo.comm,
-  //         p_kindling_event->context.tinfo.tid, userAttNumber);
-
+//    printf("name: %s thread: %s(%d) userattNumber: %d\n", p_kindling_event->name, p_kindling_event->context.tinfo.comm,
+//           p_kindling_event->context.tinfo.tid, userAttNumber);
+//
 //    printf("time: %lu, %lu, %lu, %lu\n", start_time, end_time, c_data.on_total_time, c_data.off_total_time);
 //    printf("user attributes: \n");
 //    for (int i = 5; i < userAttNumber; i++) {
