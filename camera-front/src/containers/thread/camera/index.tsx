@@ -29,7 +29,7 @@ class CameraWarp extends React.Component<IProps, IState> {
             showLog: true
         }
     }
-    camera = new Camera(this.props.option);
+    camera = new Camera({...this.props.option, parentRef: this});
     observer: any = null;
     
     componentDidMount() {
@@ -39,7 +39,7 @@ class CameraWarp extends React.Component<IProps, IState> {
     componentDidUpdate(prevProps: Readonly<IProps>): void {
         if (!_.isEqual(prevProps.option.data, this.props.option.data)) {
             this.clearSupport();
-            this.camera = new Camera(this.props.option);
+            this.camera = new Camera({...this.props.option, parentRef: this});
             this.print();
         }
     }
@@ -93,6 +93,11 @@ class CameraWarp extends React.Component<IProps, IState> {
                 this.camera.startTrace(this.state.supportTrace);
             })
         }
+    }
+    closeTraceAnaliysis = () => {
+        this.setState({
+            supportTrace: false
+        });
     }
     toggleChartBrush = () => {
         this.camera.addChartBrush();
