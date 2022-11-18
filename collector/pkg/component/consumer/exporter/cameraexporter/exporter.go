@@ -72,6 +72,12 @@ func newEsWriter(cfg *esConfig) (*esWriter, error) {
 }
 
 func (ew *esWriter) write(group *model.DataGroup) {
+	isSent := group.Labels.GetIntValue("isSent")
+	// The data has been sent before, so esExporter will not index it again.
+	// But fileExporter will.
+	if isSent == 1 {
+		return
+	}
 	index := group.Name
 	if ew.config.IndexSuffix != "" {
 		index = index + "_" + ew.config.IndexSuffix

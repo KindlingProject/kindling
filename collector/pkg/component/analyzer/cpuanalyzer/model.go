@@ -76,6 +76,7 @@ func (s *Segment) toDataGroup() *model.DataGroup {
 	labels := model.NewAttributeMap()
 	labels.AddIntValue(constlabels.Pid, int64(s.Pid))
 	labels.AddIntValue(constlabels.Tid, int64(s.Tid))
+	labels.AddIntValue("isSent", int64(s.IsSend))
 	labels.AddStringValue("threadName", s.ThreadName)
 	labels.AddIntValue("startTime", int64(s.StartTime))
 	labels.AddIntValue("endTime", int64(s.EndTime))
