@@ -123,8 +123,6 @@ func (m *DefaultModule) Status() ModuleStatus {
 }
 
 func (m *DefaultModule) StartDebug(pid int, tid int) error {
-	fmt.Println("---------------------------------------------")
-	fmt.Println(pid)
 	C.startProfileDebug(C.int(pid), C.int(tid))
 	return nil
 }
