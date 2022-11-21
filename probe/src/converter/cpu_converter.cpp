@@ -199,26 +199,12 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
                 debug_file << debug_info<<"\n";
             }
             for(int i= 0;i<off_time.size();i++){
-                string debug_info = to_string(off_time[i].first) + "  -  " + to_string(off_time[i].second) + "off, " + " ofnumber: " + to_string(i+1) +"offinfo:"+info;
+                string debug_info = to_string(off_time[i].first) + "  -  " + to_string(off_time[i].second) + "off, " + " offnumber: " + to_string(i+1) +"offinfo:"+info;
                 debug_file << debug_info<<"\n";
             }
 
         }
     }
-   // printf("name: %s thread: %s(%d) userattNumber: %d\n", p_kindling_event->name, p_kindling_event->context.tinfo.comm,
-  //         p_kindling_event->context.tinfo.tid, userAttNumber);
-
-//    printf("time: %lu, %lu, %lu, %lu\n", start_time, end_time, c_data.on_total_time, c_data.off_total_time);
-//    printf("user attributes: \n");
-//    for (int i = 5; i < userAttNumber; i++) {
-//        char* tmp;
-//        memcpy(tmp, p_kindling_event->userAttributes[i].value, p_kindling_event->userAttributes[i].len);
-//        printf("%s: %s\n", p_kindling_event->userAttributes[i].key, tmp);
-//    }
-//    printf("oninfo: %s\n", on_info.data());
-//    printf("offinfo: %s\n", info.data());
-//    printf("stack: %s\n", data.data());
-//    printf("log: %s\n", log_msg.data());
 
     return 0;
 }
