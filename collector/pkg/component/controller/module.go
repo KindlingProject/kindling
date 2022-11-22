@@ -1,6 +1,5 @@
 package controller
 
-import "C"
 import (
 	"fmt"
 	"sync"
