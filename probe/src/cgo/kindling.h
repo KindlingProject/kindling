@@ -36,6 +36,12 @@ int start_profile();
 
 int stop_profile();
 
+void start_profile_debug(int64_t pid, int64_t tid);
+
+void stop_profile_debug();
+
+void print_profile_debug_info(sinsp_evt *sevt);
+
 void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps);
 
 uint16_t get_protocol(scap_l4_proto proto);

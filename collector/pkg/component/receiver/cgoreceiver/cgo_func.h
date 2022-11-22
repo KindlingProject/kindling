@@ -13,6 +13,8 @@ int getKindlingEvent(void **kindlingEvent);
 int subEventForGo(char* eventName, char* category);
 int startProfile();
 int stopProfile();
+void startProfileDebug(int pid, int tid);
+void stopProfileDebug();
 #ifdef __cplusplus
 }
 

@@ -5,7 +5,10 @@
 #include "cpu_converter.h"
 #include <vector>
 #include "iostream"
+#include <fstream>
 
+
+fstream debug_file;
 using namespace std;
 
 cpu_converter::cpu_converter(sinsp *inspector) : m_inspector(inspector) {
@@ -16,11 +19,11 @@ cpu_converter::~cpu_converter() {
 }
 
 
-int cpu_converter::convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *cpu_evt, vector<QObject *> qls) {
+int cpu_converter::convert(kindling_event_t_for_go *p_kindling_event, sinsp_evt *cpu_evt, vector<QObject *> qls, bool is_profile_debug, int64_t debug_pid, int64_t debug_tid) {
     // convert
     init_kindling_event(p_kindling_event, cpu_evt);
     add_threadinfo(p_kindling_event, cpu_evt);
-    add_cpu_data(p_kindling_event, cpu_evt, qls);
+    add_cpu_data(p_kindling_event, cpu_evt, qls, is_profile_debug, debug_pid, debug_tid);
     return 1;
 }
 
@@ -43,7 +46,7 @@ int cpu_converter::add_threadinfo(kindling_event_t_for_go *p_kindling_event, sin
 	return 0;
 }
 
-int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt, vector<QObject *> qls) {
+int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp_evt *sevt, vector<QObject *> qls, bool is_profile_debug, int64_t debug_pid, int64_t debug_tid) {
     uint64_t start_time = *reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("start_ts")->m_val);
     uint64_t end_time = *reinterpret_cast<uint64_t *> (sevt->get_param_value_raw("end_ts")->m_val);
     uint32_t cnt = *reinterpret_cast<uint32_t *> (sevt->get_param_value_raw("cnt")->m_val);
@@ -185,5 +188,23 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
     p_kindling_event->userAttributes[userAttNumber].len = info.length();
     userAttNumber++;
     p_kindling_event->paramsNumber = userAttNumber;
+
+    if(is_profile_debug && s_tinfo->m_tid == debug_tid && s_tinfo->m_pid == debug_pid){
+        if (!debug_file.is_open())
+        {
+            debug_file.open("profile_debug_cpu.log", ios::app|ios::out);
+        }else {
+            for(int i= 0;i<on_time.size();i++){
+                string debug_info = to_string(on_time[i].first) + "  -  " + to_string(on_time[i].second) + "on, " + " onnumber: " + to_string(i+1) +"oninfo:"+on_info;
+                debug_file << debug_info<<"\n";
+            }
+            for(int i= 0;i<off_time.size();i++){
+                string debug_info = to_string(off_time[i].first) + "  -  " + to_string(off_time[i].second) + "off, " + " offnumber: " + to_string(i+1) +"offinfo:"+info;
+                debug_file << debug_info<<"\n";
+            }
+
+        }
+    }
+
     return 0;
 }

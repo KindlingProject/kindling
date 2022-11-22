@@ -1,5 +1,14 @@
 package controller
 
+/*
+#cgo LDFLAGS: -L ./ -lkindling  -lstdc++ -ldl
+#cgo CFLAGS: -I .
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
+#include "../receiver/cgoreceiver/cgo_func.h"
+*/
+import "C"
 import (
 	"encoding/json"
 	"errors"
@@ -79,6 +88,16 @@ func (p *Profile) GetModuleKey() string {
 	return p.Name()
 }
 
+func startDebug(pid int, tid int) error {
+	C.startProfileDebug(C.int(pid), C.int(tid))
+	return nil
+}
+
+func stopDebug() error {
+	C.stopProfileDebug()
+	return nil
+}
+
 func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 	switch req.Operation {
 	case "start":
@@ -116,6 +135,24 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 			Code: NoError,
 			Msg:  status,
 		}
+	case "start_debug":
+		if err := startDebug(req.Pid, req.Tid); err != nil {
+			return &ControlResponse{
+				Code: StopWithError,
+				Msg:  err.Error(),
+			}
+		}
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "start debug success",
+		}
+	case "stop_debug":
+		stopDebug()
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "stop debug success",
+		}
+
 	default:
 		return &ControlResponse{
 			Code: NoOperation,
