@@ -2,14 +2,15 @@ package cpuanalyzer
 
 import (
 	"fmt"
+	"strconv"
+	"sync"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"go.uber.org/zap/zapcore"
-	"strconv"
-	"sync"
 )
 
 const (
@@ -221,9 +222,16 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				(newTimeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
 			newTimeSegments.Segments.UpdateByIndex(i, segment)
 		}
-		val := newTimeSegments.Segments.GetByIndex(0)
-		segment := val.(*Segment)
-		segment.putTimedEvent(event)
+
+		endOffset := int(event.EndTimestamp()/nanoToSeconds - newTimeSegments.BaseTime)
+
+		for i := 0; i <= endOffset && i < maxSegmentSize; i++ {
+			val := newTimeSegments.Segments.GetByIndex(i)
+			segment := val.(*Segment)
+			segment.putTimedEvent(event)
+			segment.IsSend = 0
+		}
+
 		tidCpuEvents[tid] = newTimeSegments
 	}
 }
