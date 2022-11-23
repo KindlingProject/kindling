@@ -45,30 +45,40 @@ func (ca *CpuAnalyzer) AddTidToDeleteCache(curTime time.Time, pid uint32, tid ui
 	ca.tidExpiredQueue.Push(cacheElem)
 }
 
+func (ca *CpuAnalyzer) DeleteTid(tidEventsMap map[uint32]*TimeSegments, tid uint32) {
+	ca.lock.Lock()
+	defer ca.lock.Unlock()
+	delete(tidEventsMap, tid)
+}
+
 func (ca *CpuAnalyzer) TidDelete(interval time.Duration, expiredDuration time.Duration) {
 	for {
 		select {
 		case <-time.After(interval):
 			now := time.Now()
-			ca.tidExpiredQueue.queueMutex.Lock()
-			for {
-				elem := ca.tidExpiredQueue.GetFront()
-				if elem == nil {
-					break
-				}
-				if elem.exitTime.Add(expiredDuration).Before(now) {
-					tidEventsMap := ca.cpuPidEvents[elem.pid]
-					if tidEventsMap == nil {
-						continue
+			func() {
+				ca.tidExpiredQueue.queueMutex.Lock()
+				defer ca.tidExpiredQueue.queueMutex.Unlock()
+				for {
+					elem := ca.tidExpiredQueue.GetFront()
+					if elem == nil {
+						break
 					}
-					ca.telemetry.Logger.Debugf("Delete expired thread... pid=%d, tid=%d", elem.pid, elem.tid)
-					delete(tidEventsMap, elem.tid)
-					ca.tidExpiredQueue.Pop()
-				} else {
-					break
+					if elem.exitTime.Add(expiredDuration).Before(now) {
+						tidEventsMap := ca.cpuPidEvents[elem.pid]
+						if tidEventsMap == nil {
+							ca.tidExpiredQueue.Pop()
+							continue
+						}
+						ca.telemetry.Logger.Debugf("Delete expired thread... pid=%d, tid=%d", elem.pid, elem.tid)
+
+						ca.DeleteTid(tidEventsMap, elem.tid)
+						ca.tidExpiredQueue.Pop()
+					} else {
+						break
+					}
 				}
-			}
-			ca.tidExpiredQueue.queueMutex.Unlock()
+			}()
 		}
 	}
 }
