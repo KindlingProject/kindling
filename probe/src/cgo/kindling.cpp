@@ -194,15 +194,17 @@ int getEvent(void **pp_kindling_event)
     p_kindling_event = (kindling_event_t_for_go *) *pp_kindling_event;
     uint16_t userAttNumber = 0;
     uint16_t source = get_kindling_source(ev->get_type());
-    for (auto it = qls.begin(); it != qls.end(); it++) {
-        KindlingInterface *plugin = qobject_cast<KindlingInterface *>(*it);
-        if (plugin) {
-            plugin->addCache(ev, inspector);
-        }
+    if(is_start_profile){
+        for (auto it = qls.begin(); it != qls.end(); it++) {
+            KindlingInterface *plugin = qobject_cast<KindlingInterface *>(*it);
+            if (plugin) {
+                plugin->addCache(ev, inspector);
+            }
 
+        }
     }
 
-    if (ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo != nullptr && fdInfo->is_file()) {
+    if (is_start_profile && ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo != nullptr && fdInfo->is_file()) {
         auto data_param = ev->get_param_value_raw("data");
         if (data_param != nullptr) {
             char *data_val = data_param->m_val;
@@ -224,7 +226,7 @@ int getEvent(void **pp_kindling_event)
 
 	}
 
-	if (ev_type == PPME_CPU_ANALYSIS_E) {
+	if (is_start_profile && ev_type == PPME_CPU_ANALYSIS_E) {
 		char* tmp_comm;
 
 		map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
