@@ -110,6 +110,12 @@ const (
 	SpanRedisResponsePayload = "redis.request_payload"
 
 	NetWorkAnalyzeMetricGroup = "netAnalyzeMetrics"
+
+	// IsSent is used by cpuAnalyzer to label whether an event has been sent.
+	IsSent     = "isSent"
+	ThreadName = "threadName"
+	StartTime  = "startTime"
+	EndTime    = "endTime"
 )
 const (
 	STR_EMPTY = ""
