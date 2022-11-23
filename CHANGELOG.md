@@ -3,12 +3,25 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
-## UnReleased
+## Unreleased
 ### New features
+- 
+- 
 - Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/CloudDectective-Harmonycloud/kindling/pull/363))
 
+
+### Enhancements
+- 
+- 
+- 
+
 ### Bug fixes
-- fix event-cache will cause oom.([#362](https://github.com/CloudDectective-Harmonycloud/kindling/pull/362))
+- 
+- 
+- 
+- Fix the bug that cpuEvent cache size continuously increases even if trace profiling is not enabled.([#362](https://github.com/CloudDectective-Harmonycloud/kindling/pull/362))
+- Fix the bug that duplicate CPU events are indexed into Elasticsearch. ([#359](https://github.com/KindlingProject/kindling/pull/359))
+- Fix the bug of incomplete records when threads arrive at the cpu analyzer for the first time. ([#364](https://github.com/CloudDectective-Harmonycloud/kindling/pull/364))
 
 ## v0.5.0 - 2022-11-02
 ### New features
