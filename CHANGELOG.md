@@ -8,7 +8,7 @@
 - Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/CloudDectective-Harmonycloud/kindling/pull/363))
 
 ### Bug fixes
-- Fix the bug of incomplete records when threads arrive at the cpu analyzer for the first time
+- Fix the bug of incomplete records when threads arrive at the cpu analyzer for the first time. ([#364](https://github.com/CloudDectective-Harmonycloud/kindling/pull/364))
 
 ## v0.5.0 - 2022-11-02
 ### New features
