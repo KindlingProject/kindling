@@ -6,6 +6,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/pkg/esclient"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"go.uber.org/zap"
 )
 
@@ -72,6 +73,12 @@ func newEsWriter(cfg *esConfig) (*esWriter, error) {
 }
 
 func (ew *esWriter) write(group *model.DataGroup) {
+	isSent := group.Labels.GetIntValue(constlabels.IsSent)
+	// The data has been sent before, so esExporter will not index it again.
+	// But fileExporter will.
+	if isSent == 1 {
+		return
+	}
 	index := group.Name
 	if ew.config.IndexSuffix != "" {
 		index = index + "_" + ew.config.IndexSuffix
