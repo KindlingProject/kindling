@@ -16,6 +16,10 @@ type deleteTid struct {
 	exitTime time.Time
 }
 
+func newTidDeleteQueue() *tidDeleteQueue {
+	return &tidDeleteQueue{queue: make([]deleteTid, 0)}
+}
+
 func (dq *tidDeleteQueue) GetFront() *deleteTid {
 	if len(dq.queue) > 0 {
 		return &dq.queue[0]
@@ -33,15 +37,11 @@ func (dq *tidDeleteQueue) Pop() {
 	}
 }
 
-func (ca *CpuAnalyzer) InitTidDeleteQueue() {
-	ca.tidExpiredQueue = &tidDeleteQueue{queue: make([]deleteTid, 0)}
-}
-
 //Add procexit tid
 func (ca *CpuAnalyzer) AddTidToDeleteCache(curTime time.Time, pid uint32, tid uint32) {
-	defer ca.tidExpiredQueue.queueMutex.Unlock()
 	cacheElem := deleteTid{pid: pid, tid: tid, exitTime: curTime}
 	ca.tidExpiredQueue.queueMutex.Lock()
+	defer ca.tidExpiredQueue.queueMutex.Unlock()
 	ca.tidExpiredQueue.Push(cacheElem)
 }
 

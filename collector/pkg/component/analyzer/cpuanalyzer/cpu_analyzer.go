@@ -45,8 +45,8 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		nextConsumers: consumers,
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
-	ca.InitTidDeleteQueue()
-	go ca.TidDelete(20*time.Second, 10*time.Second)
+	ca.tidExpiredQueue = newTidDeleteQueue()
+	go ca.TidDelete(30*time.Second, 10*time.Second)
 	return ca
 }
 
