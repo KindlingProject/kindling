@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
@@ -24,8 +25,8 @@ type CpuAnalyzer struct {
 	sendEventsRoutineMap sync.Map
 	lock                 sync.Mutex
 	telemetry            *component.TelemetryTools
-
-	nextConsumers []consumer.Consumer
+	tidExpiredQueue      *tidDeleteQueue
+	nextConsumers        []consumer.Consumer
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -44,6 +45,8 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		nextConsumers: consumers,
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
+	ca.InitTidDeleteQueue()
+	go ca.TidDelete(20*time.Second, 10*time.Second)
 	return ca
 }
 
@@ -243,6 +246,6 @@ func (ca *CpuAnalyzer) trimExitedThread(pid uint32, tid uint32) {
 	if tidEventsMap == nil {
 		return
 	}
-	ca.telemetry.Logger.Debugf("Receive a procexit pid=%d, tid=%d, which will be deleted from map", pid, tid)
-	delete(tidEventsMap, tid)
+	ca.telemetry.Logger.Debugf("Receive a procexit pid=%d, tid=%d, which will be deleted from map after 10 seconds. ", pid, tid)
+	ca.AddTidToDeleteCache(time.Now(), pid, tid)
 }
