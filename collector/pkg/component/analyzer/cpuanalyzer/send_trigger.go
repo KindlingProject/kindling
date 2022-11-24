@@ -238,15 +238,15 @@ func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, s
 				continue
 			}
 			segment := val.(*Segment)
-			if len(segment.CpuEvents) != 0 && segment.IsSend != 1 {
+			if len(segment.CpuEvents) != 0 {
 				// Don't remove the duplicated one
-				//segment.IsSend = 1
 				segment.IndexTimestamp = time.Now().String()
 				dataGroup := segment.toDataGroup()
 				dataGroup.Labels.Merge(keyElements)
 				for _, nexConsumer := range ca.nextConsumers {
 					_ = nexConsumer.Consume(dataGroup)
 				}
+				segment.IsSend = 1
 			}
 		}
 	}

@@ -76,9 +76,10 @@ func (s *Segment) toDataGroup() *model.DataGroup {
 	labels := model.NewAttributeMap()
 	labels.AddIntValue(constlabels.Pid, int64(s.Pid))
 	labels.AddIntValue(constlabels.Tid, int64(s.Tid))
-	labels.AddStringValue("threadName", s.ThreadName)
-	labels.AddIntValue("startTime", int64(s.StartTime))
-	labels.AddIntValue("endTime", int64(s.EndTime))
+	labels.AddIntValue(constlabels.IsSent, int64(s.IsSend))
+	labels.AddStringValue(constlabels.ThreadName, s.ThreadName)
+	labels.AddIntValue(constlabels.StartTime, int64(s.StartTime))
+	labels.AddIntValue(constlabels.EndTime, int64(s.EndTime))
 	cpuEventString, err := json.Marshal(s.CpuEvents)
 	if err == nil {
 		labels.AddStringValue(CpuEventLabel, string(cpuEventString))
