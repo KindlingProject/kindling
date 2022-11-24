@@ -71,7 +71,7 @@ func (ca *CpuAnalyzer) TidDelete(interval time.Duration, expiredDuration time.Du
 							continue
 						}
 						ca.telemetry.Logger.Debugf("Delete expired thread... pid=%d, tid=%d", elem.pid, elem.tid)
-
+						//fmt.Printf("Go Test: Delete expired thread... pid=%d, tid=%d\n", elem.pid, elem.tid)
 						ca.DeleteTid(tidEventsMap, elem.tid)
 						ca.tidExpiredQueue.Pop()
 					} else {
