@@ -6,12 +6,14 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/atomic"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -23,6 +25,7 @@ type CpuAnalyzer struct {
 	cpuPidEvents map[uint32]map[uint32]*TimeSegments
 	// { pid: routine }
 	sendEventsRoutineMap sync.Map
+	routineSize          *atomic.Int32
 	lock                 sync.Mutex
 	telemetry            *component.TelemetryTools
 	tidExpiredQueue      *tidDeleteQueue
@@ -43,10 +46,12 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		cfg:           config,
 		telemetry:     telemetry,
 		nextConsumers: consumers,
+		routineSize:   atomic.NewInt32(0),
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
 	go ca.TidDelete(30*time.Second, 10*time.Second)
+	newSelfMetrics(telemetry.MeterProvider, ca)
 	return ca
 }
 
@@ -56,7 +61,7 @@ func (ca *CpuAnalyzer) Start() error {
 }
 
 func (ca *CpuAnalyzer) Shutdown() error {
-	ca.StopProfile()
+	_ = ca.StopProfile()
 	return nil
 }
 

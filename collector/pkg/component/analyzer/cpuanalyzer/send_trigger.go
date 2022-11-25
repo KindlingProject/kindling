@@ -59,8 +59,12 @@ func (ca *CpuAnalyzer) ReceiveSendSignal() {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
 		task := &SendEventsTask{0, ca, &sendContent}
+		expiredCallback := func() {
+			ca.routineSize.Dec()
+		}
 		// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
-		NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, nil)
+		NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
+		ca.routineSize.Inc()
 	}
 }
 
