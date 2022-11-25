@@ -59,32 +59,9 @@ func (ca *CpuAnalyzer) ReceiveSendSignal() {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
 		task := &SendEventsTask{0, ca, &sendContent}
-		// "Load" and "Delete" could be executed concurrently
-		value, ok := ca.sendEventsRoutineMap.Load(sendContent.Pid)
-		if !ok {
-			ca.putNewRoutine(task)
-		} else {
-			// The routine may be found before but stopped and deleted after entering this branch.
-			// So we much check twice.
-			routine, _ := value.(*ScheduledTaskRoutine)
-			// TODO Always replacing the task may cause that some events are skipped when the "spendTime"
-			// becomes much smaller than before.
-			err := routine.ResetExpiredTimerWithNewTask(task)
-			if err != nil {
-				// The routine has been expired.
-				ca.putNewRoutine(task)
-			}
-		}
+		// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
+		NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, nil)
 	}
-}
-
-func (ca *CpuAnalyzer) putNewRoutine(task *SendEventsTask) {
-	expiredCallback := func() {
-		ca.sendEventsRoutineMap.Delete(task.triggerEvent.Pid)
-	}
-	// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
-	routine := NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
-	ca.sendEventsRoutineMap.Store(task.triggerEvent.Pid, routine)
 }
 
 type SendEventsTask struct {

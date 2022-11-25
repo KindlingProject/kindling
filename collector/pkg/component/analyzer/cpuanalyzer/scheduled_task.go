@@ -39,7 +39,7 @@ func NewAndStartScheduledTaskRoutine(
 		expiredCallback: expiredCallback,
 	}
 	// Start the routine once it is created.
-	ret.Start()
+	_ = ret.Start()
 	return ret
 }
 
@@ -70,24 +70,6 @@ func (s *ScheduledTaskRoutine) Start() error {
 		}
 	}()
 	return nil
-}
-
-// ResetExpiredTimer resets the timer to extend its expired time if it is running.
-// If the routine is not running, an error will be returned and nothing will happen.
-func (s *ScheduledTaskRoutine) ResetExpiredTimer() error {
-	if !s.isRunning.Load() {
-		return errors.New("the routine is not running, can't reset the timer")
-	}
-	if !s.timer.Stop() {
-		<-s.timer.C
-	}
-	s.timer.Reset(s.expiredDuration)
-	return nil
-}
-
-func (s *ScheduledTaskRoutine) ResetExpiredTimerWithNewTask(task ScheduledTask) error {
-	s.task = task
-	return s.ResetExpiredTimer()
 }
 
 func (s *ScheduledTaskRoutine) Stop() error {
