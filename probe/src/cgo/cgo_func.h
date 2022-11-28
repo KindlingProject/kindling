@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 int runForGo();
-int getKindlingEvent(void **kindlingEvent);
+int getKindlingEvent(void** kindlingEvent);
 void subEventForGo(char* eventName, char* category);
 int startProfile();
 int stopProfile();
@@ -19,4 +19,4 @@ void stopProfileDebug();
 }
 #endif
 
-#endif //SYSDIG_CGO_FUNC_H
+#endif  // SYSDIG_CGO_FUNC_H
