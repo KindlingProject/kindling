@@ -242,6 +242,8 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 func (ca *CpuAnalyzer) trimExitedThread(pid uint32, tid uint32) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
+	ca.tidExpiredQueue.queueMutex.Lock()
+	defer ca.tidExpiredQueue.queueMutex.Unlock()
 	tidEventsMap := ca.cpuPidEvents[pid]
 	if tidEventsMap == nil {
 		return

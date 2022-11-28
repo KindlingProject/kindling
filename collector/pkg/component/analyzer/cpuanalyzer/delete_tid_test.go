@@ -42,21 +42,16 @@ func TestDeleteQueue(t *testing.T) {
 		//check tid which exist in queue but not in the map
 		if i%4 != 0 {
 			ca.PutEventToSegments(uint32(i), uint32(i)+5, "threadname"+strconv.Itoa(i+100), ev)
+			time.Sleep(timeDuration)
 		}
 
-		var queueLen int
-
 		func() {
+			cacheElem := deleteTid{uint32(i), uint32(i) + 5, curTime.Add(timeDuration)}
+			ca.trimExitedThread(uint32(i), uint32(i)+5)
+
 			ca.tidExpiredQueue.queueMutex.Lock()
 			defer ca.tidExpiredQueue.queueMutex.Unlock()
-			queueLen = len(ca.tidExpiredQueue.queue)
-
-			cacheElem := deleteTid{uint32(i), uint32(i) + 5, curTime.Add(timeDuration)}
-			ca.tidExpiredQueue.Push(cacheElem)
 			visit = append(visit, cacheElem)
-			if len(ca.tidExpiredQueue.queue) != queueLen+1 {
-				t.Errorf("the length of queue is not added, expection: %d but: %d\n", queueLen+1, len(ca.tidExpiredQueue.queue))
-			}
 		}()
 
 		t.Logf("pid=%d, tid=%d enter time=%s\n", uint32(i), uint32(i)+5, curTime.Format("2006-01-02 15:04:05.000"))
