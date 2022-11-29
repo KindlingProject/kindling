@@ -20,6 +20,7 @@ type Config struct {
 	ProtocolParser      []string         `mapstructure:"protocol_parser"`
 	ProtocolConfigs     []ProtocolConfig `mapstructure:"protocol_config,omitempty"`
 	UrlClusteringMethod string           `mapstructure:"url_clustering_method"`
+	NoResponseThreshold int              `mapstructure:"no_response_threshold"`
 }
 
 func NewDefaultConfig() *Config {
@@ -68,6 +69,7 @@ func NewDefaultConfig() *Config {
 			},
 		},
 		UrlClusteringMethod: "alphabet",
+		NoResponseThreshold: 30,
 	}
 }
 
