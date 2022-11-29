@@ -298,11 +298,11 @@ func (evt *TraceEvent) exchange(common *EventCommon) *model.KindlingEvent {
 	modelEvt := &model.KindlingEvent{
 		Source:       model.Source(common.Source),
 		Timestamp:    evt.Timestamp,
+		Latency:      uint64(evt.UserAttributes.Latency),
 		Name:         evt.Name,
 		Category:     model.Category(common.Category),
 		ParamsNumber: 3,
 		UserAttributes: [16]model.KeyValue{
-			{Key: "latency", ValueType: model.ValueType_UINT64, Value: Int64ToBytes(evt.UserAttributes.Latency)},
 			{Key: "res", ValueType: model.ValueType_INT64, Value: Int64ToBytes(evt.UserAttributes.Res)},
 			{Key: "data", ValueType: model.ValueType_BYTEBUF, Value: byteData},
 		},
