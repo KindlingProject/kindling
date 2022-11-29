@@ -37,12 +37,6 @@ func (dq *tidDeleteQueue) Pop() {
 	}
 }
 
-//Add procexit tid
-func (ca *CpuAnalyzer) AddTidToDeleteCache(curTime time.Time, pid uint32, tid uint32) {
-	cacheElem := deleteTid{pid: pid, tid: tid, exitTime: curTime}
-	ca.tidExpiredQueue.Push(cacheElem)
-}
-
 func (ca *CpuAnalyzer) TidDelete(interval time.Duration, expiredDuration time.Duration) {
 	for {
 		select {
