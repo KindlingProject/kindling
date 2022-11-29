@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/factory"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
@@ -91,6 +92,17 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 			dataGroupPool: NewDataGroupPool(),
 			nextConsumers: []consumer.Consumer{&NopProcessor{}},
 			telemetry:     component.NewDefaultTelemetryTools(),
+		}
+		na.staticPortMap = map[uint32]string{}
+		for _, config := range na.cfg.ProtocolConfigs {
+			for _, port := range config.Ports {
+				na.staticPortMap[port] = config.Key
+			}
+		}
+		na.slowThresholdMap = map[string]int{}
+		for _, config := range na.cfg.ProtocolConfigs {
+			protocol.SetPayLoadLength(config.Key, config.PayloadLength)
+			na.slowThresholdMap[config.Key] = config.Threshold
 		}
 		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 		na.Start()

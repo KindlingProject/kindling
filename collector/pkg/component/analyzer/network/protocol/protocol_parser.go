@@ -495,3 +495,25 @@ func (parser *ProtocolParser) ResetPort(port uint32) {
 	key := strconv.Itoa(int(port))
 	parser.portCounter.Remove(key)
 }
+
+func GetPayloadString(data []byte, protocolName string) string {
+	switch protocolName {
+	case HTTP, REDIS:
+		return tools.FormatByteArrayToUtf8(getSubstrBytes(data, protocolName, 0))
+	case DUBBO:
+		return tools.GetAsciiString(getSubstrBytes(data, protocolName, 16))
+	default:
+		return tools.GetAsciiString(getSubstrBytes(data, protocolName, 0))
+	}
+}
+
+func getSubstrBytes(data []byte, protocolName string, offset int) []byte {
+	length := GetPayLoadLength(protocolName)
+	if offset >= length {
+		return data[0:0]
+	}
+	if offset+length > len(data) {
+		return data[offset:]
+	}
+	return data[offset : offset+length]
+}

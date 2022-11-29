@@ -84,6 +84,9 @@ func TestHttpParser_getContentKey(t *testing.T) {
 }
 
 func TestParseHttpRequest_GetPayLoad(t *testing.T) {
+	type args struct {
+		message *protocol.PayloadMessage
+	}
 	httpData := "POST /test?sleep=0&respbyte=1000&statusCode=200 HTTP/1.1\r\nKey1: value1\r\n\r\nHello world"
 
 	tests := []struct {
@@ -109,9 +112,11 @@ func TestParseHttpRequest_GetPayLoad(t *testing.T) {
 			}
 		})
 	}
-	tests := []struct {
+
+	tests2 := []struct {
 		name string
 		args args
+		size int
 		want map[string]string
 	}{
 		{
@@ -156,7 +161,7 @@ func TestParseHttpRequest_GetPayLoad(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range tests2 {
 		t.Run(tt.name, func(t *testing.T) {
 			protocol.SetPayLoadLength(protocol.HTTP, tt.size)
 
@@ -166,7 +171,7 @@ func TestParseHttpRequest_GetPayLoad(t *testing.T) {
 			if !message.HasAttribute(constlabels.ResponsePayload) {
 				t.Errorf("Fail to parse HttpResponse()")
 			}
-			if got := message.GetStringAttribute(constlabels.ResponsePayload); got != tt.want {
+			if got := message.GetStringAttribute(constlabels.ResponsePayload); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetHttpPayload() = %v, want %v", got, tt.want)
 			}
 		})

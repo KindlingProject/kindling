@@ -63,3 +63,5 @@ trace:
         kafka_error_code: 0
         is_error: false
         error_type: 0
+        request_payload: "...........@..rdkafka......u0......container-monitor...........O...........C...."
+        response_payload: "...A...@......container-monitor.................u...................."
