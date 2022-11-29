@@ -253,6 +253,7 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 
 	// Delay delete the pod using the difference between the old pod and the new one
 	deletedPodInfo := &deletedPodInfo{
+		uid:          string(oldPod.UID),
 		name:         "",
 		namespace:    oldPod.Namespace,
 		containerIds: nil,
@@ -324,7 +325,7 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 func onDelete(obj interface{}) {
 	pod := obj.(*corev1.Pod)
 	podInfo := &deletedPodInfo{
-		UID:          string(pod.UID),
+		uid:          string(pod.UID),
 		name:         pod.Name,
 		namespace:    pod.Namespace,
 		containerIds: make([]string, 0),
