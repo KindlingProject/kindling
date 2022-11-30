@@ -6,7 +6,7 @@
 ## Unreleased
 ### New features
 - 
-- 
+- Support the protocol RocketMQ.([#328](https://github.com/KindlingProject/kindling/pull/328))
 - Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/CloudDectective-Harmonycloud/kindling/pull/363))
 
 

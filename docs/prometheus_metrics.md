@@ -75,6 +75,13 @@ Service metrics are generated from the server-side events, which are used to sho
 | `request_content` | GET | The command of the Redis request. |
 | `response_content` | noerror | The value is either `error` or `noerror`. |
 
+- When protocol is `rocketmq`:
+
+| **Label** | **Example** | **Notes**                                                         |
+| --- |-------------|-------------------------------------------------------------------|
+| `request_content` | TopicTest   | Topic of RocketMQ request.                                        |
+| `response_content` | 0           | response code of RocketMQ. 0 means OK, others mean Error [docs](https://github.com/apache/rocketmq/blob/fcfe26e4443dd24b1055899266d1bd81060ee118/common/src/main/java/org/apache/rocketmq/common/protocol/ResponseCode.java) |
+
 - For other cases, the `request_content` and `response_content` are both empty.
 
 **Note 3**: The histogram metric `kindling_entity_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
@@ -140,6 +147,7 @@ These two terms are composed of two parts.
 - **mysql**: `Error Code` of the error response.
 - **dubbo**: `Error Code` of Dubbo request.
 - **redis**: `0` if there is no error; `1` otherwise.
+- **rocketmq**: `Response Code` of RocketMQ response.
 - **others**: empty temporarily.
 
 **Note 3**: The histogram metric `kindling_topology_request_average_duration_nanoseconds_*` is disabled by default as it could be high-cardinality. If this metric is needed, please add a new line to the `exporters.otelexporter.metric_aggregation_map` section of the configuration file.
