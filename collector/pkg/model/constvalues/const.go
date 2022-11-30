@@ -22,12 +22,13 @@ const (
 )
 
 const (
-	ProtocolHttp  = "http"
-	ProtocolHttp2 = "http2"
-	ProtocolGrpc  = "grpc"
-	ProtocolDubbo = "dubbo"
-	ProtocolDns   = "dns"
-	ProtocolKafka = "kafka"
-	ProtocolMysql = "mysql"
-	ProtocolRedis = "redis"
+	ProtocolHttp     = "http"
+	ProtocolHttp2    = "http2"
+	ProtocolGrpc     = "grpc"
+	ProtocolDubbo    = "dubbo"
+	ProtocolDns      = "dns"
+	ProtocolKafka    = "kafka"
+	ProtocolMysql    = "mysql"
+	ProtocolRedis    = "redis"
+	ProtocolRocketMQ = "rocketmq"
 )

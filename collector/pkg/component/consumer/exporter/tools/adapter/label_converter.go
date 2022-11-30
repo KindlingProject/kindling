@@ -83,6 +83,8 @@ func updateProtocolKey(key *extraLabelsKey, labels *model.AttributeMap) *extraLa
 		key.protocol = DUBBO
 	case constvalues.ProtocolRedis:
 		key.protocol = REDIS
+	case constvalues.ProtocolRocketMQ:
+		key.protocol = ROCKETMQ
 	default:
 		key.protocol = UNSUPPORTED
 	}

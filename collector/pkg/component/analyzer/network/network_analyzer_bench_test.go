@@ -21,6 +21,7 @@ const (
 	BENCH_CASE_KAFKA_PRODUCER = "kafka_producer"
 	BENCH_CASE_KAFKA_FETCHER  = "kafka_fetcher"
 	BENCH_CASE_DUBBO          = "dubbo"
+	BENCH_CASE_ROCKETMQ       = "rocketmq"
 )
 
 var benchCaseMap = map[string]benchCase{
@@ -31,6 +32,7 @@ var benchCaseMap = map[string]benchCase{
 	BENCH_CASE_KAFKA_PRODUCER: {protocol.KAFKA, "kafka/provider-event.yml", "kafka/1k-provider-trace.yml"},
 	BENCH_CASE_KAFKA_FETCHER:  {protocol.KAFKA, "kafka/consumer-event.yml", "kafka/1k-consumer-trace.yml"},
 	BENCH_CASE_DUBBO:          {protocol.DUBBO, "dubbo/server-event.yml", "dubbo/1k-trace.yml"},
+	BENCH_CASE_ROCKETMQ:       {protocol.ROCKETMQ, "rocketmq/server-event.yml", "rocketmq/1k-trace.yml"},
 }
 
 const (
@@ -63,6 +65,10 @@ func BenchmarkKafkaFetcher(b *testing.B) {
 
 func BenchmarkDubo(b *testing.B) {
 	testProtocolBench(b, b.N, SIZE_MESSAGE_PAIR, BENCH_CASE_DUBBO)
+}
+
+func BenchmarkRocketmq(b *testing.B) {
+	testProtocolBench(b, b.N, SIZE_MESSAGE_PAIR, BENCH_CASE_ROCKETMQ)
 }
 
 func testProtocolBench(b *testing.B, tps int, mpSize int, caseKey string) {

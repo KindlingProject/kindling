@@ -55,6 +55,15 @@ func TestDubboProtocol(t *testing.T) {
 		"dubbo/server-trace-short.yml")
 }
 
+func TestRocketMQProtocol(t *testing.T) {
+	testProtocol(t, "rocketmq/server-event.yml",
+		"rocketmq/server-trace-json.yml")
+	testProtocol(t, "rocketmq/server-event.yml",
+		"rocketmq/server-trace-rocketmq.yml")
+	testProtocol(t, "rocketmq/server-event.yml",
+		"rocketmq/server-trace-error.yml")
+}
+
 type NopProcessor struct {
 }
 
@@ -358,6 +367,9 @@ func getSplit(data string) int {
 	}
 	if len(data) >= 5 && data[4] == '|' {
 		return 4
+	}
+	if len(data) >= 9 && data[8] == '|' {
+		return 8
 	}
 	return 0
 }

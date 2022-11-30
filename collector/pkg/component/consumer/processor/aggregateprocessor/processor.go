@@ -176,6 +176,7 @@ func newNetRequestLabelSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.ContentKey, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.DnsDomain, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.KafkaTopic, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.RocketMQErrCode, VType: aggregator.IntType},
 	)
 }
 
