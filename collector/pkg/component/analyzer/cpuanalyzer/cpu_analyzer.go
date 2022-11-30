@@ -240,12 +240,10 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 }
 
 func (ca *CpuAnalyzer) trimExitedThread(pid uint32, tid uint32) {
-	ca.lock.Lock()
-	defer ca.lock.Unlock()
-	tidEventsMap := ca.cpuPidEvents[pid]
-	if tidEventsMap == nil {
-		return
-	}
+	ca.tidExpiredQueue.queueMutex.Lock()
+	defer ca.tidExpiredQueue.queueMutex.Unlock()
 	ca.telemetry.Logger.Debugf("Receive a procexit pid=%d, tid=%d, which will be deleted from map after 10 seconds. ", pid, tid)
-	ca.AddTidToDeleteCache(time.Now(), pid, tid)
+
+	cacheElem := deleteTid{pid: pid, tid: tid, exitTime: time.Now()}
+	ca.tidExpiredQueue.Push(cacheElem)
 }
