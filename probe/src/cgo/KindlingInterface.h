@@ -3,9 +3,10 @@
 #include <QtCore>
 #include "sinsp.h"
 class KindlingInterface {
-public:
-    virtual int addCache(sinsp_evt* sevt, sinsp *inspector)=0;
-    virtual string getCache(int64_t tid,  vector<pair<uint64_t, uint64_t>> &periods,vector<uint8_t> off_type, bool is_off, bool is_log, bool is_stack)=0;
+ public:
+  virtual int addCache(sinsp_evt* sevt, sinsp* inspector) = 0;
+  virtual string getCache(int64_t tid, vector<pair<uint64_t, uint64_t>>& periods,
+                          vector<uint8_t> off_type, bool is_off, bool is_log, bool is_stack) = 0;
 };
-Q_DECLARE_INTERFACE(KindlingInterface,"sdafasdfsadfsadfsadfsadf");
-#endif // MYINTERFACE_H
+Q_DECLARE_INTERFACE(KindlingInterface, "sdafasdfsadfsadfsadfsadf");
+#endif  // MYINTERFACE_H
