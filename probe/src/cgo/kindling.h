@@ -30,8 +30,6 @@ uint16_t get_kindling_category(sinsp_evt* sEvt);
 
 void init_sub_label();
 
-void sub_event(char* eventName, char* category);
-
 int start_profile();
 
 int stop_profile();
@@ -51,6 +49,11 @@ struct event {
   string event_name;
   ppm_event_type event_type;
 };
+struct event_params_for_subscribe {
+  char *name;
+  char *value;
+};
+void sub_event(char* eventName, char* category, event_params_for_subscribe params[]);
 struct kindling_event_t_for_go {
   uint64_t timestamp;
   char* name;

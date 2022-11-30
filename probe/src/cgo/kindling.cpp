@@ -55,7 +55,7 @@ void init_sub_label() {
   }
 }
 
-void sub_event(char* eventName, char* category) {
+void sub_event(char* eventName, char* category, event_params_for_subscribe params[]) {
   auto it_type = m_events.find(eventName);
   if (it_type == m_events.end()) {
     cout << "failed to find event " << eventName << endl;

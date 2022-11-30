@@ -8,6 +8,7 @@
 - 
 - Support the protocol RocketMQ.([#328](https://github.com/KindlingProject/kindling/pull/328))
 - Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/CloudDectective-Harmonycloud/kindling/pull/363))
+- Modify the configuration file structure and add parameter fields for subscription events. ([#368](https://github.com/CloudDectective-Harmonycloud/kindling/pull/368))
 
 
 ### Enhancements
