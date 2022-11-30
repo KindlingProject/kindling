@@ -50,7 +50,7 @@ if (BUILD_WARNINGS_AS_ERRORS)
 	set(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -Wextra -Werror ${CMAKE_SUPPRESSED_WARNINGS}")
 endif ()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_COMMON_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_COMMON_FLAGS} -std=gnu99")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_COMMON_FLAGS} -std=c++0x")
 
 set(CMAKE_C_FLAGS_DEBUG "${KINDLING_DEBUG_FLAGS}")
@@ -64,6 +64,13 @@ if (CMAKE_SYSTEM_NAME MATCHES "SunOS")
 else ()
 	set(CMD_MAKE make)
 endif ()
+
+##set(CMAKE_PREFIX_PATH "/opt/homebrew/Cellar/qt/6.3.1_3/bin/qt-cmake")
+find_package(Qt5 COMPONENTS
+		Core
+		Gui
+		Widgets
+		REQUIRED)
 
 include(agent-libs)
 add_subdirectory(src)

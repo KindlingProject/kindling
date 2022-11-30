@@ -30,7 +30,7 @@ export const showServiceOptions = [
 
 
 // externalTypes：The namespace enumeration value of the current external call
-const externalTypes: string[] = ['NOT_FOUND_EXTERNAL', 'NOT_FOUND_INTERNAL', 'EXTERNAL', 'external', 'default'];
+const externalTypes: string[] = ['NOT_FOUND_EXTERNAL', 'NOT_FOUND_INTERNAL', 'EXTERNAL', 'external'];
 // workloadTypes
 const workloadTypes: string[] = ['workload', 'deployment', 'daemonset', 'statefulset', 'node'];
 

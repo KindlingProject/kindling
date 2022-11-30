@@ -1,4 +1,4 @@
-name: KINDLING-CI
+name: Kindling-agent-CI
 
 on:
   push:

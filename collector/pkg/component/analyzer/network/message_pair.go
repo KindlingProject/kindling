@@ -131,7 +131,7 @@ type messagePairs struct {
 	requests  *events
 	responses *events
 	natTuple  *conntracker.IPTranslation
-
+	isSend    bool
 	mutex sync.RWMutex // only for update latency and resval now
 }
 

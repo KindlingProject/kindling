@@ -3,11 +3,36 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
-## Unreleased 
-## Enhancements
+## Unreleased
+### New features
+- 
+- 
+- Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/CloudDectective-Harmonycloud/kindling/pull/363))
+
+
+### Enhancements
+- 
+- 
+- 
+
+### Bug fixes
+- 
+- 
+- Fix potential deadlock of exited thread delay queue. ([#373](https://github.com/CloudDectective-Harmonycloud/kindling/pull/373))
+- Fix the bug that cpuEvent cache size continuously increases even if trace profiling is not enabled.([#362](https://github.com/CloudDectective-Harmonycloud/kindling/pull/362))
+- Fix the bug that duplicate CPU events are indexed into Elasticsearch. ([#359](https://github.com/KindlingProject/kindling/pull/359))
+- Implement the delay queue for exited thread, so as to avoid losing the data in the period before the thread exits. ([#365](https://github.com/CloudDectective-Harmonycloud/kindling/pull/365))
+- Fix the bug of incomplete records when threads arrive at the cpu analyzer for the first time. ([#364](https://github.com/CloudDectective-Harmonycloud/kindling/pull/364))
+
+## v0.5.0 - 2022-11-02
+### New features
+- Add a new feature: Trace Profiling. See more details about it on our [website](http://kindling.harmonycloud.cn). ([#335](https://github.com/CloudDectective-Harmonycloud/kindling/pull/335))
+
+### Enhancements
 - Add request and response payload of `Redis` protocol message to `Span` data. ([#325](https://github.com/CloudDectective-Harmonycloud/kindling/pull/325))
 
 ### Bug fixes
+- Fix the topology node naming error in the default namespace.([#346](https://github.com/CloudDectective-Harmonycloud/kindling/pull/346))
 - Fix the bug that if `ReadBytes` receives negative numbers as arguments, the program panics with the error of slice outofbound. ([#327](https://github.com/CloudDectective-Harmonycloud/kindling/pull/327))
 
 ## v0.4.1 - 2022-09-21

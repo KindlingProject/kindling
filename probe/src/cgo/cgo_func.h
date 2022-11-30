@@ -11,6 +11,10 @@ extern "C" {
 int runForGo();
 int getKindlingEvent(void **kindlingEvent);
 void subEventForGo(char* eventName, char* category);
+int startProfile();
+int stopProfile();
+void startProfileDebug(int pid, int tid);
+void stopProfileDebug();
 #ifdef __cplusplus
 }
 #endif

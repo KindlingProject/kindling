@@ -1,3 +1,9 @@
+controller:
+  http:
+    enable: true
+    port: :9503
+  modules: ["profile"]
+
 receivers:
   cgoreceiver:
     subscribe:
@@ -24,7 +30,10 @@ receivers:
       - name: syscall_exit-connect
       - name: kretprobe-tcp_connect
       - name: kprobe-tcp_set_state
+      - name: tracepoint-procexit
 analyzers:
+  cpuanalyzer:
+    segment_size: 40
   tcpconnectanalyzer:
     channel_size: 10000
     wait_event_second: 10
@@ -105,7 +114,7 @@ processors:
         - kind: sum
       response_io:
         - kind: sum
-      kindling_tcp_rtt_microseconds:
+      kindling_tcp_srtt_microseconds:
         - kind: last
       kindling_tcp_retransmit_total:
         - kind: sum
@@ -121,6 +130,17 @@ processors:
       error_data: 100
 
 exporters:
+  cameraexporter:
+    # Options: ["file", "elasticsearch"]
+    storage: file
+    # Effective when storage is "file"
+    file_config:
+      storage_path: /tmp/kindling
+      max_file_count: 50
+    # Effective when storage is "elasticsearch"
+    es_config:
+      es_host: http://10.10.10.10:9200
+      index_suffix: dev
   otelexporter:
     adapter_config:
       need_trace_as_metric: true

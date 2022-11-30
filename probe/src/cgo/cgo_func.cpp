@@ -18,3 +18,18 @@ int getKindlingEvent(void **kindlingEvent){
 void subEventForGo(char* eventName, char* category){
 	sub_event(eventName, category);
 }
+
+int startProfile() {
+    return start_profile();
+}
+int stopProfile() {
+    return stop_profile();
+}
+
+void startProfileDebug(int pid, int tid) {
+    start_profile_debug(pid, tid);
+}
+
+void stopProfileDebug() {
+    stop_profile_debug();
+}
