@@ -269,6 +269,10 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{ROCKETMQ}},
 	{[]dictionary{
+		/*
+		 * Currently we add payload span for all protocols everywhere as http\dubbo\redis has it's own key.
+		 * TODO Use unified way to set request/response payload.
+		 */
 		{constlabels.SpanRequestPayload, constlabels.RequestPayload, String},
 		{constlabels.SpanResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{UNSUPPORTED},
