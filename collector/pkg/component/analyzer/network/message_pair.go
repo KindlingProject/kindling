@@ -2,6 +2,7 @@ package network
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Kindling-project/kindling/collector/pkg/metadata/conntracker"
@@ -114,6 +115,10 @@ func (evts *events) IsTimeout(newEvt *model.KindlingEvent, timeout int) bool {
 	return false
 }
 
+func (evts *events) IsSportChanged(newEvt *model.KindlingEvent) bool {
+	return newEvt.GetSport() != evts.event.GetSport()
+}
+
 func (evts *events) getDuration() uint64 {
 	if evts == nil {
 		return 0
@@ -131,8 +136,13 @@ type messagePairs struct {
 	requests  *events
 	responses *events
 	natTuple  *conntracker.IPTranslation
-	isSend    bool
-	mutex sync.RWMutex // only for update latency and resval now
+	isSend    int32
+	mutex     sync.RWMutex // only for update latency and resval now
+}
+
+func (mps *messagePairs) checkSend() bool {
+	// Check Send Once.
+	return atomic.AddInt32(&mps.isSend, 1) == 1
 }
 
 func (mps *messagePairs) getKey() messagePairKey {

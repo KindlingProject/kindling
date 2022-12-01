@@ -42,8 +42,10 @@ analyzers:
   tcpmetricanalyzer:
   networkanalyzer:
     connect_timeout: 100
+    # How many seconds to wait until we consider a request as complete.
+    fd_reuse_timeout: 15
     # How many seconds to wait until we consider a request as no response.
-    request_timeout: 60
+    no_response_threshold: 120
     # How many milliseconds to wait until we consider a request-response as slow.
     response_slow_threshold: 500
     # Whether enable conntrack module to find pod's ip when calling service
