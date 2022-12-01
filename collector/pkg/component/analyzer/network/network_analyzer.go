@@ -195,7 +195,7 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 				var timeoutTs = mps.getTimeoutTs()
 				if timeoutTs != 0 {
 					var duration = (time.Now().UnixNano()/1000000000 - int64(timeoutTs)/1000000000)
-					if mps.responses != nil && duration >= int64(na.cfg.GetRequestTimeout()) {
+					if mps.responses != nil && duration >= int64(na.cfg.GetFdReuseTimeout()) {
 						// No New Request
 						na.distributeTraceMetric(mps, nil)
 					} else if duration >= int64(na.cfg.getNoResponseThreshold()) {
