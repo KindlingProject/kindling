@@ -14,7 +14,11 @@ const (
 var payloadLength map[string]int = map[string]int{}
 
 func SetPayLoadLength(protocol string, length int) {
-	payloadLength[protocol] = length
+	if length > 0 {
+		payloadLength[protocol] = length
+	} else {
+		payloadLength[protocol] = 200
+	}
 }
 
 func GetPayLoadLength(protocol string) int {
@@ -22,12 +26,4 @@ func GetPayLoadLength(protocol string) int {
 		return length
 	}
 	return 200
-}
-
-func GetHttpPayLoadLength() int {
-	return GetPayLoadLength(HTTP)
-}
-
-func GetDubboPayLoadLength() int {
-	return GetPayLoadLength(DUBBO)
 }

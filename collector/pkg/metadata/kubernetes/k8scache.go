@@ -14,6 +14,7 @@ type K8sContainerInfo struct {
 }
 
 type K8sPodInfo struct {
+	UID          string
 	Ip           string
 	PodName      string
 	Ports        []int32

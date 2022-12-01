@@ -18,12 +18,14 @@ func fastfailHttpRequest() protocol.FastFailFn {
 
 /*
 Request line
-    Method [GET/POST/PUT/DELETE/HEAD/TRACE/OPTIONS/CONNECT]
-	Blank
-	Request-URI [eg. /xxx/yyy?parm0=aaa&param1=bbb]
-	Blank
-	HTTP-Version [HTTP/1.0 | HTTP/1.2]
-	\r\n
+
+	    Method [GET/POST/PUT/DELETE/HEAD/TRACE/OPTIONS/CONNECT]
+		Blank
+		Request-URI [eg. /xxx/yyy?parm0=aaa&param1=bbb]
+		Blank
+		HTTP-Version [HTTP/1.0 | HTTP/1.2]
+		\r\n
+
 Request header
 Request body
 */
@@ -54,7 +56,6 @@ func parseHttpRequest(urlClusteringMethod urlclustering.ClusteringMethod) protoc
 
 		message.AddStringAttribute(constlabels.HttpMethod, string(method))
 		message.AddByteArrayUtf8Attribute(constlabels.HttpUrl, url)
-		message.AddByteArrayUtf8Attribute(constlabels.RequestPayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 
 		contentKey := urlClusteringMethod.Clustering(string(url))
 		if len(contentKey) == 0 {

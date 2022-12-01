@@ -8,15 +8,7 @@ import (
 )
 
 func NewHttpParser(urlClusteringMethod string) *protocol.ProtocolParser {
-	var method urlclustering.ClusteringMethod
-	switch urlClusteringMethod {
-	case "alphabet":
-		method = urlclustering.NewAlphabeticalClusteringMethod()
-	case "noparam":
-		method = urlclustering.NewNoParamClusteringMethod()
-	default:
-		method = urlclustering.NewAlphabeticalClusteringMethod()
-	}
+	method := urlclustering.NewMethod(urlClusteringMethod)
 	requestParser := protocol.CreatePkgParser(fastfailHttpRequest(), parseHttpRequest(method))
 	responseParser := protocol.CreatePkgParser(fastfailHttpResponse(), parseHttpResponse())
 

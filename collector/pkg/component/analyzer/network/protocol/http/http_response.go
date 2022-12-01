@@ -9,14 +9,17 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 )
 
-/**
+/*
+*
 Status line
+
 	HTTP-Version[HTTP/1.0 | HTTP/1.1]
 	Blank
 	Status-Code
 	Blank
 	Reason-Phrase
 	\r\n
+
 Response header
 Response body
 */
@@ -57,7 +60,6 @@ func parseHttpResponse() protocol.ParsePkgFn {
 		}
 
 		message.AddIntAttribute(constlabels.HttpStatusCode, statusCodeI)
-		message.AddByteArrayUtf8Attribute(constlabels.ResponsePayload, message.GetData(0, protocol.GetHttpPayLoadLength()))
 		if statusCodeI >= 400 {
 			message.AddBoolAttribute(constlabels.IsError, true)
 			message.AddIntAttribute(constlabels.ErrorType, int64(constlabels.ProtocolError))

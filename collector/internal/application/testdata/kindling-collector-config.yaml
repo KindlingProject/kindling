@@ -29,7 +29,7 @@ analyzers:
     num: 10
   networkanalyzer:
     connect_timeout: 100
-    request_timeout: 1
+    fd_reuse_timeout: 15
     response_slow_threshold: 500
     enable_conntrack: true
     conntrack_max_state_size: 131072

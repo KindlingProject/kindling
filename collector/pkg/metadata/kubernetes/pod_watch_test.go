@@ -148,6 +148,7 @@ func TestOnAddLowercaseWorkload(t *testing.T) {
 func CreatePod(hasPort bool) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			UID:       "0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba",
 			Name:      "deploy-1a2b3c4d-5e6f7",
 			Namespace: "CustomNamespace",
 			Labels: map[string]string{
@@ -197,8 +198,8 @@ func CreatePod(hasPort bool) *corev1.Pod {
 }
 
 func TestUpdateAndDelayDelete(t *testing.T) {
-	addObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"resourceVersion\":\"44895976\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
-	updateObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"resourceVersion\":\"44895977\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.212\",\"hostIP\":\"10.10.10.102\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d000f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	addObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895976\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	updateObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895977\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.212\",\"hostIP\":\"10.10.10.102\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d000f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
 	addObj := new(corev1.Pod)
 	err := json.Unmarshal([]byte(addObjJson), addObj)
 	if err != nil {
@@ -215,34 +216,20 @@ func TestUpdateAndDelayDelete(t *testing.T) {
 	_, ok := MetaDataCache.GetContainerByIpPort(podIp, uint32(port))
 	if !ok {
 		t.Fatalf("Not found container [%s:%d]", podIp, port)
-	} else {
-		t.Logf("Found container [%s:%d]", podIp, port)
 	}
 	stopCh := make(chan struct{})
 	go podDeleteLoop(100*time.Millisecond, 500*time.Millisecond, stopCh)
 	OnUpdate(addObj, updateObj)
 
-	// Check if new Container can be find
-	_, find := MetaDataCache.GetByContainerId(TruncateContainerId(updateObj.Status.ContainerStatuses[0].ContainerID))
-	assert.True(t, find, "NewContainerId did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByIpPort(updateObj.Status.PodIP, uint32(port))
-	assert.True(t, find, "NewContainer IP Port did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByHostIpPort(updateObj.Status.HostIP, uint32(port))
-	assert.True(t, find, "NewHostIp Port did't find in MetaDataCache")
-
-	// Wait for deletes
+	// Check if the new container can be found
+	assertFindPod(t, updateObj)
+	// Wait for the deleting
 	time.Sleep(1000 * time.Millisecond)
+	// Double check for the new container
+	assertFindPod(t, updateObj)
 
-	// Double Check for NewContainer
-	_, find = MetaDataCache.GetByContainerId(TruncateContainerId(updateObj.Status.ContainerStatuses[0].ContainerID))
-	assert.True(t, find, "NewContainerId did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByIpPort(updateObj.Status.PodIP, uint32(port))
-	assert.True(t, find, "NewContainer IP Port did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByHostIpPort(updateObj.Status.HostIP, uint32(port))
-	assert.True(t, find, "NewHostIp Port did't find in MetaDataCache")
-
-	// Check the old Container has been delete
-	_, find = MetaDataCache.GetByContainerId(TruncateContainerId(addObj.Status.ContainerStatuses[0].ContainerID))
+	// Check if the old container has been deleted
+	_, find := MetaDataCache.GetByContainerId(TruncateContainerId(addObj.Status.ContainerStatuses[0].ContainerID))
 	assert.False(t, find, "OldContainerId should be deletedin MetaDataCache")
 	_, find = MetaDataCache.GetContainerByIpPort(addObj.Status.PodIP, uint32(port))
 	assert.False(t, find, "OldContainer IP should be deleted in MetaDataCache")
@@ -253,40 +240,29 @@ func TestUpdateAndDelayDelete(t *testing.T) {
 }
 
 func TestUpdateAndDelayDeleteWhenOnlyPodIpChanged(t *testing.T) {
-	addObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"resourceVersion\":\"44895976\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
-	updateObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"resourceVersion\":\"44895977\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.212\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d000f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	addObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895976\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	updateObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895977\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.212\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d000f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
 	addObj := new(corev1.Pod)
-	json.Unmarshal([]byte(addObjJson), addObj)
+	_ = json.Unmarshal([]byte(addObjJson), addObj)
 	updateObj := new(corev1.Pod)
-	json.Unmarshal([]byte(updateObjJson), updateObj)
-	port := addObj.Spec.Containers[0].Ports[0].ContainerPort
+	_ = json.Unmarshal([]byte(updateObjJson), updateObj)
+
 	onAdd(addObj)
 	stopCh := make(chan struct{})
 	go podDeleteLoop(100*time.Millisecond, 500*time.Millisecond, stopCh)
 	OnUpdate(addObj, updateObj)
 
-	// Check if new Container can be find
-	_, find := MetaDataCache.GetByContainerId(TruncateContainerId(updateObj.Status.ContainerStatuses[0].ContainerID))
-	assert.True(t, find, "NewContainerId did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByIpPort(updateObj.Status.PodIP, uint32(port))
-	assert.True(t, find, "NewContainer IP Port did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByHostIpPort(updateObj.Status.HostIP, uint32(port))
-	assert.True(t, find, "NewHostIp Port did't find in MetaDataCache")
-
-	// Wait for deletes
+	// Check if the new container can be found
+	assertFindPod(t, updateObj)
+	// Wait for the deleting
 	time.Sleep(1000 * time.Millisecond)
+	// Double check for the new container
+	assertFindPod(t, updateObj)
 
-	// Double Check for NewContainer
-	_, find = MetaDataCache.GetByContainerId(TruncateContainerId(updateObj.Status.ContainerStatuses[0].ContainerID))
-	assert.True(t, find, "NewContainerId did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByIpPort(updateObj.Status.PodIP, uint32(port))
-	assert.True(t, find, "NewContainer IP Port did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByHostIpPort(updateObj.Status.HostIP, uint32(port))
-	assert.True(t, find, "NewHostIp Port did't find in MetaDataCache")
-
-	// Check the old Container has been delete
-	_, find = MetaDataCache.GetByContainerId(TruncateContainerId(addObj.Status.ContainerStatuses[0].ContainerID))
-	assert.False(t, find, "OldContainerId should be deletedin MetaDataCache")
+	// Check if the old container has been deleted
+	port := addObj.Spec.Containers[0].Ports[0].ContainerPort
+	_, find := MetaDataCache.GetByContainerId(TruncateContainerId(addObj.Status.ContainerStatuses[0].ContainerID))
+	assert.False(t, find, "OldContainerId should be deleted in MetaDataCache")
 	_, find = MetaDataCache.GetContainerByIpPort(addObj.Status.PodIP, uint32(port))
 	assert.False(t, find, "OldContainer IP should be deleted in MetaDataCache")
 
@@ -294,45 +270,71 @@ func TestUpdateAndDelayDeleteWhenOnlyPodIpChanged(t *testing.T) {
 }
 
 func TestUpdateAndDelayDeleteWhenOnlyPortChanged(t *testing.T) {
-	addObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"resourceVersion\":\"44895976\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
-	updateObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"resourceVersion\":\"44895977\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9002,\"protocol\":\"TCP\",\"hostPort\":9002}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d000f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	addObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895976\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	updateObjJson := "{\"metadata\":{\"name\":\"testdemo2-5c86748464-26crb\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895977\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9002,\"protocol\":\"TCP\",\"hostPort\":9002}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d000f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
 	addObj := new(corev1.Pod)
-	json.Unmarshal([]byte(addObjJson), addObj)
+	_ = json.Unmarshal([]byte(addObjJson), addObj)
 	updateObj := new(corev1.Pod)
-	json.Unmarshal([]byte(updateObjJson), updateObj)
-	port := addObj.Spec.Containers[0].Ports[0].ContainerPort
-	newPort := updateObj.Spec.Containers[0].Ports[0].ContainerPort
+	_ = json.Unmarshal([]byte(updateObjJson), updateObj)
+
 	onAdd(addObj)
 	stopCh := make(chan struct{})
 	go podDeleteLoop(100*time.Millisecond, 500*time.Millisecond, stopCh)
 	OnUpdate(addObj, updateObj)
 
-	// Check if new Container can be find
-	_, find := MetaDataCache.GetByContainerId(TruncateContainerId(updateObj.Status.ContainerStatuses[0].ContainerID))
-	assert.True(t, find, "NewContainerId did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByIpPort(updateObj.Status.PodIP, uint32(newPort))
-	assert.True(t, find, "NewContainer IP Port did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByHostIpPort(updateObj.Status.HostIP, uint32(newPort))
-	assert.True(t, find, "NewHostIp Port did't find in MetaDataCache")
-
-	// Wait for deletes
+	// Check if new container can be found
+	assertFindPod(t, updateObj)
+	// Wait for the deleting
 	time.Sleep(1000 * time.Millisecond)
+	// Double check for the new container
+	assertFindPod(t, updateObj)
 
-	// Double Check for NewContainer
-	_, find = MetaDataCache.GetByContainerId(TruncateContainerId(updateObj.Status.ContainerStatuses[0].ContainerID))
-	assert.True(t, find, "NewContainerId did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByIpPort(updateObj.Status.PodIP, uint32(newPort))
-	assert.True(t, find, "NewContainer IP Port did't find in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByHostIpPort(updateObj.Status.HostIP, uint32(newPort))
-	assert.True(t, find, "NewHostIp Port did't find in MetaDataCache")
-
-	// Check the old Container has been delete
-	_, find = MetaDataCache.GetByContainerId(TruncateContainerId(addObj.Status.ContainerStatuses[0].ContainerID))
-	assert.False(t, find, "OldContainerId should be deletedin MetaDataCache")
+	// Check the old Container has been deleted
+	port := addObj.Spec.Containers[0].Ports[0].ContainerPort
+	_, find := MetaDataCache.GetByContainerId(TruncateContainerId(addObj.Status.ContainerStatuses[0].ContainerID))
+	assert.False(t, find, "OldContainerId should be deleted in MetaDataCache")
 	_, find = MetaDataCache.GetContainerByIpPort(addObj.Status.PodIP, uint32(port))
-	assert.True(t, find, "If podIp is not changed , Old IP can still be found in MetaDataCache")
+	assert.True(t, find, "If podIp is not changed, Old IP can still be found in MetaDataCache")
 	_, find = MetaDataCache.GetContainerByHostIpPort(addObj.Status.HostIP, uint32(port))
 	assert.False(t, find, "OldHostIp Port should be deleted in MetaDataCache")
 
 	stopCh <- struct{}{}
+}
+
+func TestDelayDeleteThenAddWithSameIP(t *testing.T) {
+	addObjJson := "{\"metadata\":{\"name\":\"testdemo2-0\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895976\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:36Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	addObj := new(corev1.Pod)
+	_ = json.Unmarshal([]byte(addObjJson), addObj)
+
+	deletedObjJson := "{\"metadata\":{\"name\":\"testdemo2-0\",\"namespace\":\"test-ns\",\"uid\":\"0ae5c03d-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895977\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:37Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d505f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	deletedObj := new(corev1.Pod)
+	_ = json.Unmarshal([]byte(deletedObjJson), deletedObj)
+
+	// Note that uid is different
+	newAddObjJson := "{\"metadata\":{\"name\":\"testdemo2-0\",\"namespace\":\"test-ns\",\"uid\":\"00000000-5fb3-4eb9-9de8-2bd4b51606ba\",\"resourceVersion\":\"44895978\"},\"spec\":{\"containers\":[{\"name\":\"testdemo2\",\"ports\":[{\"containerPort\":9001,\"protocol\":\"TCP\",\"hostPort\":9001}]}]},\"status\":{\"phase\":\"Running\",\"podIP\":\"192.168.136.210\",\"hostIP\":\"10.10.10.101\",\"containerStatuses\":[{\"name\":\"testdemo2\",\"state\":{\"running\":{\"startedAt\":\"2022-05-25T08:55:38Z\"}},\"lastState\":{},\"ready\":true,\"restartCount\":5,\"image\":\"\",\"imageID\":\"docker-pullable://10.10.102.213:8443/cloudnevro-test/test-netserver@sha256:6720f648b74ed590f36094a1c7a58b01b6881396409784c17f471ecfe445e3fd\",\"containerID\":\"docker://d000f50edb4e204cf31840e3cb8d26d33f212d4ebef994d0c3fc151d57e17413\",\"started\":true}]}}"
+	newAddObj := new(corev1.Pod)
+	_ = json.Unmarshal([]byte(newAddObjJson), newAddObj)
+
+	stopCh := make(chan struct{})
+	go podDeleteLoop(20*time.Millisecond, 100*time.Millisecond, stopCh)
+
+	onAdd(addObj)
+	// Check if the container can be found
+	assertFindPod(t, addObj)
+
+	onDelete(deletedObj)
+	onAdd(newAddObj)
+	time.Sleep(200 * time.Millisecond)
+
+	// Check if the new container can be found
+	assertFindPod(t, newAddObj)
+}
+
+func assertFindPod(t *testing.T, pod *corev1.Pod) {
+	_, find := MetaDataCache.GetByContainerId(TruncateContainerId(pod.Status.ContainerStatuses[0].ContainerID))
+	assert.True(t, find, "Didn't find the new container ID in MetaDataCache")
+	_, find = MetaDataCache.GetContainerByIpPort(pod.Status.PodIP, uint32(pod.Spec.Containers[0].Ports[0].ContainerPort))
+	assert.True(t, find, "Didn't find the new container IP Port in MetaDataCache")
+	_, find = MetaDataCache.GetContainerByHostIpPort(pod.Status.HostIP, uint32(pod.Spec.Containers[0].Ports[0].HostPort))
+	assert.True(t, find, "Didn't find the new HostIP Port in MetaDataCache")
 }

@@ -1,14 +1,16 @@
 package network
 
 const (
-	defaultRequestTimeout        = 1
+	defaultFdReuseTimeout        = 15
+	defaultNoResponseThreshold   = 120
 	defaultConnectTimeout        = 1
 	defaultResponseSlowThreshold = 500
 )
 
 type Config struct {
-	ConnectTimeout int `mapstructure:"connect_timeout"`
-	RequestTimeout int `mapstructure:"request_timeout"`
+	ConnectTimeout      int `mapstructure:"connect_timeout"`
+	FdReuseTimeout      int `mapstructure:"fd_reuse_timeout"`
+	NoResponseThreshold int `mapstructure:"no_response_threshold"`
 	// unit is ms
 	ResponseSlowThreshold int `mapstructure:"response_slow_threshold"`
 
@@ -25,7 +27,8 @@ type Config struct {
 func NewDefaultConfig() *Config {
 	return &Config{
 		ConnectTimeout:        100,
-		RequestTimeout:        60,
+		FdReuseTimeout:        15,
+		NoResponseThreshold:   120,
 		ResponseSlowThreshold: 500,
 		EnableConntrack:       true,
 		ConntrackMaxStateSize: 131072,
@@ -87,11 +90,11 @@ func (cfg *Config) GetConnectTimeout() int {
 	}
 }
 
-func (cfg *Config) GetRequestTimeout() int {
-	if cfg.RequestTimeout > 0 {
-		return cfg.RequestTimeout
+func (cfg *Config) GetFdReuseTimeout() int {
+	if cfg.FdReuseTimeout > 0 {
+		return cfg.FdReuseTimeout
 	} else {
-		return defaultRequestTimeout
+		return defaultFdReuseTimeout
 	}
 }
 
@@ -100,5 +103,13 @@ func (cfg *Config) getResponseSlowThreshold() int {
 		return cfg.ResponseSlowThreshold
 	} else {
 		return defaultResponseSlowThreshold
+	}
+}
+
+func (cfg *Config) getNoResponseThreshold() int {
+	if cfg.NoResponseThreshold > 0 {
+		return cfg.NoResponseThreshold
+	} else {
+		return defaultNoResponseThreshold
 	}
 }
