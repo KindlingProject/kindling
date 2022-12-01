@@ -406,7 +406,6 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 		// Parse failure
 		return nil
 	}
-	requestMsg.AddByteArrayUtf8Attribute(constlabels.RequestPayload, mps.requests.getData())
 
 	if mps.responses == nil {
 		return na.getRecords(mps, parser.GetProtocol(), requestMsg.GetAttributes())
@@ -417,8 +416,6 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 		// Parse failure
 		return nil
 	}
-	responseMsg.AddByteArrayUtf8Attribute(constlabels.ResponsePayload, mps.responses.getData())
-
 	return na.getRecords(mps, parser.GetProtocol(), responseMsg.GetAttributes())
 }
 
@@ -537,6 +534,13 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	labels.UpdateAddStringValue(constlabels.Protocol, protocol)
 
 	labels.Merge(attributes)
+
+	if mps.responses == nil {
+		addProtocolPayload(protocol, labels, mps.requests.getData(), nil)
+	} else {
+		addProtocolPayload(protocol, labels, mps.requests.getData(), mps.responses.getData())
+	}
+
 	// If no protocol error found, we check other errors
 	if !labels.GetBoolValue(constlabels.IsError) && mps.responses == nil {
 		labels.AddBoolValue(constlabels.IsError, true)
@@ -586,6 +590,12 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	labels.UpdateAddStringValue(constlabels.Protocol, protocol)
 
 	labels.Merge(attributes)
+	if mp.response == nil {
+		addProtocolPayload(protocol, labels, evt.GetData(), nil)
+	} else {
+		addProtocolPayload(protocol, labels, evt.GetData(), mp.response.GetData())
+	}
+
 	// If no protocol error found, we check other errors
 	if !labels.GetBoolValue(constlabels.IsError) && mps.responses == nil {
 		labels.AddBoolValue(constlabels.IsError, true)
@@ -607,6 +617,13 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 
 	ret.Timestamp = evt.GetStartTime()
 	return ret
+}
+
+func addProtocolPayload(protocolName string, labels *model.AttributeMap, request []byte, response []byte) {
+	labels.UpdateAddStringValue(constlabels.RequestPayload, protocol.GetPayloadString(request, protocolName))
+	if response != nil {
+		labels.UpdateAddStringValue(constlabels.ResponsePayload, protocol.GetPayloadString(response, protocolName))
+	}
 }
 
 func (na *NetworkAnalyzer) isSlow(duration uint64, protocol string) bool {

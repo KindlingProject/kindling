@@ -56,5 +56,7 @@ trace:
         protocol: "mysql"
         content_key: "select dummy *"
         sql: "SELECT * FROM dummy"
+        request_payload: ".....SELECT * FROM dummy"
+        response_payload: ".....9....def.container-monitor.dummy.dummy.name.name.-...........;....def.conta"
         is_error: false
         error_type: 0

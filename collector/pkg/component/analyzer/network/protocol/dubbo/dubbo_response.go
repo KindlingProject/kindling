@@ -23,7 +23,6 @@ func parseDubboResponse() protocol.ParsePkgFn {
 			message.AddBoolAttribute(constlabels.IsError, true)
 			message.AddIntAttribute(constlabels.ErrorType, int64(constlabels.ProtocolError))
 		}
-		message.AddStringAttribute(constlabels.ResponsePayload, getAsciiString(message.GetData(16, protocol.GetDubboPayLoadLength())))
 		return true, true
 	}
 }

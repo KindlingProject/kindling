@@ -81,3 +81,5 @@ trace:
         rocketmq_opaque: 1062
         rocketmq_error_code: 0
         error_type: 0
+        request_payload: '...h...d{"code":106,"flag":0,"language":"JAVA","opaque":1062,"serializeTypeCurrentRPC":"JSON","version":393}'
+        response_payload: '...H...b{"code":0,"flag":1,"language":"JAVA","opaque":1062,"serializeTypeCurrentRPC":"JSON","version":401}{"brokerAddrTable":{"rocketmq-5668b48cd9-h6gbz":{"brokerAddrs":{0:"10.233.90.93:10911"},"broke'

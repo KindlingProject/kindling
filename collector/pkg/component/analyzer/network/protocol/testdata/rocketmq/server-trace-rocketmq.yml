@@ -91,3 +91,5 @@ trace:
         rocketmq_opaque: 2
         rocketmq_error_code: 0
         error_type: 0
+        request_payload: '...-...).i.....................topic....TopicTest'
+        response_payload: '...".........................{"brokerDatas":[{"brokerAddrs":{"0":"192.168.64.1:10911"},"brokerName":"broker-a","cluster":"DefaultCluster","enableActingMaster":false}],"filterServerTable":{},"queueData'

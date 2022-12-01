@@ -112,6 +112,9 @@ const (
 	SpanRocketMQRequestMsg = "rocketmq.request_msg"
 	SpanRocketMQErrMsg     = "rocketmq.error_msg"
 
+	SpanRequestPayload  = "request_payload"
+	SpanResponsePayload = "response_payload"
+
 	NetWorkAnalyzeMetricGroup = "netAnalyzeMetrics"
 
 	// IsSent is used by cpuAnalyzer to label whether an event has been sent.

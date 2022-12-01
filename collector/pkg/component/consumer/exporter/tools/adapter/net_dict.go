@@ -235,13 +235,21 @@ var spanProtocol = []extraLabelsParam{
 		{constlabels.SpanHttpResponseBody, constlabels.STR_EMPTY, StrEmpty},
 	}, extraLabelsKey{HTTP}},
 	{[]dictionary{
+		{constlabels.SpanRequestPayload, constlabels.RequestPayload, String},
+		{constlabels.SpanResponsePayload, constlabels.ResponsePayload, String},
+	}, extraLabelsKey{KAFKA}},
+	{[]dictionary{
 		{constlabels.SpanMysqlSql, constlabels.Sql, String},
 		{constlabels.SpanMysqlErrorCode, constlabels.SqlErrCode, Int64},
 		{constlabels.SpanMysqlErrorMsg, constlabels.SqlErrMsg, String},
+		{constlabels.SpanRequestPayload, constlabels.RequestPayload, String},
+		{constlabels.SpanResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{MYSQL}},
 	{[]dictionary{
 		{constlabels.SpanDnsDomain, constlabels.DnsDomain, String},
 		{constlabels.SpanDnsRCode, constlabels.DnsRcode, FromInt64ToString},
+		{constlabels.SpanRequestPayload, constlabels.RequestPayload, String},
+		{constlabels.SpanResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{DNS}},
 	{[]dictionary{
 		{constlabels.SpanDubboRequestBody, constlabels.RequestPayload, String},
@@ -257,9 +265,17 @@ var spanProtocol = []extraLabelsParam{
 	{[]dictionary{
 		{constlabels.SpanRocketMQRequestMsg, constlabels.RocketMQRequestMsg, String},
 		{constlabels.SpanRocketMQErrMsg, constlabels.RocketMQErrMsg, String},
+		{constlabels.SpanRequestPayload, constlabels.RequestPayload, String},
+		{constlabels.SpanResponsePayload, constlabels.ResponsePayload, String},
 	}, extraLabelsKey{ROCKETMQ}},
-	{
-		[]dictionary{}, extraLabelsKey{UNSUPPORTED},
+	{[]dictionary{
+		/*
+		 * Currently we add payload span for all protocols everywhere as http\dubbo\redis has it's own key.
+		 * TODO Use unified way to set request/response payload.
+		 */
+		{constlabels.SpanRequestPayload, constlabels.RequestPayload, String},
+		{constlabels.SpanResponsePayload, constlabels.ResponsePayload, String},
+	}, extraLabelsKey{UNSUPPORTED},
 	},
 }
 
