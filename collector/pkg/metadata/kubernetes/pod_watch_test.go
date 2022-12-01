@@ -335,6 +335,6 @@ func assertFindPod(t *testing.T, pod *corev1.Pod) {
 	assert.True(t, find, "Didn't find the new container ID in MetaDataCache")
 	_, find = MetaDataCache.GetContainerByIpPort(pod.Status.PodIP, uint32(pod.Spec.Containers[0].Ports[0].ContainerPort))
 	assert.True(t, find, "Didn't find the new container IP Port in MetaDataCache")
-	_, find = MetaDataCache.GetContainerByHostIpPort(pod.Status.HostIP, uint32(pod.Spec.Containers[0].Ports[0].ContainerPort))
+	_, find = MetaDataCache.GetContainerByHostIpPort(pod.Status.HostIP, uint32(pod.Spec.Containers[0].Ports[0].HostPort))
 	assert.True(t, find, "Didn't find the new HostIP Port in MetaDataCache")
 }
