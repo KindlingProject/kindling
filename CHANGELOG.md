@@ -11,7 +11,7 @@
 
 
 ### Enhancements
-- 
+- Add payload for all protocols.([#375](https://github.com/KindlingProject/kindling/pull/375))
 - 
 - 
 
