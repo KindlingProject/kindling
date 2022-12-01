@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kindling-project/kindling/collector/pkg/compare"
 	corev1 "k8s.io/api/core/v1"
 	_ "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -16,6 +15,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	_ "k8s.io/client-go/tools/clientcmd"
 	_ "k8s.io/client-go/util/homedir"
+
+	"github.com/Kindling-project/kindling/collector/pkg/compare"
 )
 
 type podMap struct {
@@ -141,6 +142,7 @@ func onAdd(obj interface{}) {
 	}
 
 	var cachePodInfo = &K8sPodInfo{
+		UID:           string(pod.UID),
 		Ip:            pod.Status.PodIP,
 		Namespace:     pod.Namespace,
 		PodName:       pod.Name,
@@ -251,6 +253,7 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 
 	// Delay delete the pod using the difference between the old pod and the new one
 	deletedPodInfo := &deletedPodInfo{
+		uid:          string(oldPod.UID),
 		name:         "",
 		namespace:    oldPod.Namespace,
 		containerIds: nil,
@@ -322,6 +325,7 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 func onDelete(obj interface{}) {
 	pod := obj.(*corev1.Pod)
 	podInfo := &deletedPodInfo{
+		uid:          string(pod.UID),
 		name:         pod.Name,
 		namespace:    pod.Namespace,
 		containerIds: make([]string, 0),

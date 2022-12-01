@@ -20,6 +20,7 @@ type deleteRequest struct {
 }
 
 type deletedPodInfo struct {
+	uid          string
 	name         string
 	namespace    string
 	containerIds []string
@@ -65,18 +66,32 @@ func deletePodInfo(podInfo *deletedPodInfo) {
 	}
 	if len(podInfo.containerIds) != 0 {
 		for i := 0; i < len(podInfo.containerIds); i++ {
+			// Assume that container id can't be reused in a few seconds
 			MetaDataCache.DeleteByContainerId(podInfo.containerIds[i])
 		}
 	}
 	if podInfo.ip != "" && len(podInfo.ports) != 0 {
 		for _, port := range podInfo.ports {
-			// Assume that PodIP:Port can't be reused in a few seconds
-			MetaDataCache.DeleteContainerByIpPort(podInfo.ip, uint32(port))
+			containerInfo, ok := MetaDataCache.GetContainerByIpPort(podInfo.ip, uint32(port))
+			if !ok {
+				continue
+			}
+			// PodIP:Port can be reused in a few seconds, so we check its UID
+			if containerInfo.RefPodInfo.UID == podInfo.uid {
+				MetaDataCache.DeleteContainerByIpPort(podInfo.ip, uint32(port))
+			}
 		}
 	}
 	if podInfo.hostIp != "" && len(podInfo.hostPorts) != 0 {
 		for _, port := range podInfo.hostPorts {
-			MetaDataCache.DeleteContainerByHostIpPort(podInfo.hostIp, uint32(port))
+			containerInfo, ok := MetaDataCache.GetContainerByHostIpPort(podInfo.hostIp, uint32(port))
+			if !ok {
+				continue
+			}
+			// PodIP:Port can be reused in a few seconds, so we check its UID
+			if containerInfo.RefPodInfo.UID == podInfo.uid {
+				MetaDataCache.DeleteContainerByHostIpPort(podInfo.hostIp, uint32(port))
+			}
 		}
 	}
 }
