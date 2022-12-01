@@ -56,10 +56,11 @@ analyzers:
     protocol_parser: [ http, mysql, dns, redis, kafka, rocketmq ]
     # Which URL clustering method should be used to shorten the URL of HTTP request.
     # This is useful for decrease the cardinality of URLs.
-    # Valid values: ["noparam", "alphabet"]
+    # Valid values: ["noparam", "alphabet", "blank"]
     # - noparam: Only trim the trailing parameters behind the character '?'
     # - alphabet: Trim the trailing parameters and Convert the segments
     #             containing non-alphabetical characters to star(*)
+    # - blank: Turn endpoints to empty. This is used to reduce the cardinality as much as possible.
     url_clustering_method: alphabet
     # If the destination port of data is one of the followings, the protocol of such network request
     # is set to the corresponding one. Note the program will try to identify the protocol automatically
