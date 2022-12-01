@@ -303,6 +303,11 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		return nil
 	}
 
+	if oldPairs.checkSend() == false {
+		// FIX send twice for request/response with 15s delay.
+		return nil
+	}
+
 	if newPairs != nil {
 		na.requestMonitor.Store(newPairs.getKey(), newPairs)
 	} else {
