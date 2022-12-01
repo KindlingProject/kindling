@@ -1,7 +1,8 @@
 package network
 
 const (
-	defaultRequestTimeout        = 1
+	defaultRequestTimeout        = 15
+	defaultNoResponseThreshold   = 120
 	defaultConnectTimeout        = 1
 	defaultResponseSlowThreshold = 500
 )
@@ -69,7 +70,7 @@ func NewDefaultConfig() *Config {
 			},
 		},
 		UrlClusteringMethod: "alphabet",
-		NoResponseThreshold: 30,
+		NoResponseThreshold: 120,
 	}
 }
 
@@ -102,5 +103,13 @@ func (cfg *Config) getResponseSlowThreshold() int {
 		return cfg.ResponseSlowThreshold
 	} else {
 		return defaultResponseSlowThreshold
+	}
+}
+
+func (cfg *Config) getNoResponseThreshold() int {
+	if cfg.NoResponseThreshold > 0 {
+		return cfg.NoResponseThreshold
+	} else {
+		return defaultNoResponseThreshold
 	}
 }

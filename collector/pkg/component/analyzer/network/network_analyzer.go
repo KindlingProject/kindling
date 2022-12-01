@@ -193,8 +193,15 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 			na.requestMonitor.Range(func(k, v interface{}) bool {
 				mps := v.(*messagePairs)
 				var timeoutTs = mps.getTimeoutTs()
-				if timeoutTs != 0 && (time.Now().UnixNano()/1000000000-int64(timeoutTs)/1000000000) >= int64(na.cfg.NoResponseThreshold) {
-					na.distributeTraceMetric(mps, nil)
+				if timeoutTs != 0 {
+					var duration = (time.Now().UnixNano()/1000000000 - int64(timeoutTs)/1000000000)
+					if mps.responses != nil && duration >= int64(na.cfg.GetRequestTimeout()) {
+						// No New Request
+						na.distributeTraceMetric(mps, nil)
+					} else if duration >= int64(na.cfg.getNoResponseThreshold()) {
+						// Request 498
+						na.distributeTraceMetric(mps, nil)
+					}
 				}
 				return true
 			})
@@ -259,7 +266,7 @@ func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
 			}
 		}
 
-		if oldPairs.responses != nil || oldPairs.requests.IsTimeout(evt, na.cfg.GetRequestTimeout()) {
+		if oldPairs.responses != nil || oldPairs.requests.IsSportChanged(evt) {
 			na.distributeTraceMetric(oldPairs, mps)
 		} else {
 			oldPairs.mergeRequest(evt)
