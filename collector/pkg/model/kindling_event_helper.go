@@ -126,6 +126,18 @@ func (x *KindlingEvent) GetPid() uint32 {
 	return threadInfo.Pid
 }
 
+func (x *KindlingEvent) GetTid() uint32 {
+	ctx := x.GetCtx()
+	if ctx == nil {
+		return 0
+	}
+	threadInfo := ctx.GetThreadInfo()
+	if threadInfo == nil {
+		return 0
+	}
+	return threadInfo.Tid
+}
+
 func (x *KindlingEvent) GetComm() string {
 	ctx := x.GetCtx()
 	if ctx == nil {
