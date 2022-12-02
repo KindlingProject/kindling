@@ -18,6 +18,7 @@
 
 ### Bug fixes
 - Fix the bug where the pod metadata with persistent IP in the map is deleted incorrectly due to the deleting mechanism with a delay. ([#374](https://github.com/KindlingProject/kindling/pull/374))
+- Fix the bug that when the response is nil, the NAT IP and port are not added to the labels of the "DataGroup". ([#378](https://github.com/KindlingProject/kindling/pull/378))
 - Fix potential deadlock of exited thread delay queue. ([#373](https://github.com/KindlingProject/kindling/pull/373))
 - Fix the bug that cpuEvent cache size continuously increases even if trace profiling is not enabled.([#362](https://github.com/KindlingProject/kindling/pull/362))
 - Fix the bug that duplicate CPU events are indexed into Elasticsearch. ([#359](https://github.com/KindlingProject/kindling/pull/359))
