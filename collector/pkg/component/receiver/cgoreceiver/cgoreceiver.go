@@ -29,6 +29,8 @@ const (
 
 type CKindlingEventForGo C.struct_kindling_event_t_for_go
 
+type CEventParamsForSubscribe C.struct_event_params_for_subscribe
+
 type CgoReceiver struct {
 	cfg             *Config
 	analyzerManager *analyzerpackage.Manager
@@ -172,15 +174,21 @@ func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
 	return nil
 }
 
-func (r *CgoReceiver) subEvent() {
+func (r *CgoReceiver) subEvent() error {
 	if len(r.cfg.SubscribeInfo) == 0 {
 		r.telemetry.Logger.Warn("No events are subscribed by cgoreceiver. Please check your configuration.")
 	} else {
 		r.telemetry.Logger.Infof("The subscribed events are: %v", r.cfg.SubscribeInfo)
 	}
 	for _, value := range r.cfg.SubscribeInfo {
-		C.subEventForGo(C.CString(value.Name), C.CString(value.Category))
+		//to do. analyze params filed in the value
+		paramsList := make([]CEventParamsForSubscribe, 0)
+		var temp CEventParamsForSubscribe
+		temp.name = C.CString("terminator")
+		paramsList = append(paramsList, temp)
+		C.subEventForGo(C.CString(value.Name), C.CString(value.Category), (unsafe.Pointer)(&paramsList[0]))
 	}
+	return nil
 }
 
 func (r *CgoReceiver) StartProfile() error {

@@ -8,14 +8,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/factory"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
-	conntracker2 "github.com/Kindling-project/kindling/collector/pkg/metadata/conntracker"
+	"github.com/Kindling-project/kindling/collector/pkg/metadata/conntracker"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"go.opentelemetry.io/otel/attribute"
 
 	"go.uber.org/zap/zapcore"
 
@@ -34,7 +35,7 @@ const (
 type NetworkAnalyzer struct {
 	cfg           *Config
 	nextConsumers []consumer.Consumer
-	conntracker   conntracker2.Conntracker
+	conntracker   conntracker.Conntracker
 
 	staticPortMap    map[uint32]string
 	slowThresholdMap map[string]int
@@ -58,7 +59,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		telemetry:     telemetry,
 	}
 	if config.EnableConntrack {
-		connConfig := &conntracker2.Config{
+		connConfig := &conntracker.Config{
 			Enabled:                      config.EnableConntrack,
 			ProcRoot:                     config.ProcRoot,
 			ConntrackInitTimeout:         30 * time.Second,
@@ -66,7 +67,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 			ConntrackMaxStateSize:        config.ConntrackMaxStateSize,
 			EnableConntrackAllNamespaces: true,
 		}
-		na.conntracker, _ = conntracker2.NewConntracker(connConfig)
+		na.conntracker, _ = conntracker.NewConntracker(connConfig)
 	}
 
 	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
@@ -562,7 +563,7 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 		labels.AddIntValue(constlabels.ErrorType, int64(constlabels.NoResponse))
 	}
 
-	if nil != mps.natTuple && mps.responses != nil {
+	if nil != mps.natTuple {
 		labels.UpdateAddStringValue(constlabels.DnatIp, mps.natTuple.ReplSrcIP.String())
 		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mps.natTuple.ReplSrcPort))
 	}
@@ -618,7 +619,7 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 		labels.AddIntValue(constlabels.ErrorType, int64(constlabels.NoResponse))
 	}
 
-	if nil != mps.natTuple && mps.responses != nil {
+	if nil != mps.natTuple {
 		labels.UpdateAddStringValue(constlabels.DnatIp, mps.natTuple.ReplSrcIP.String())
 		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mps.natTuple.ReplSrcPort))
 	}
