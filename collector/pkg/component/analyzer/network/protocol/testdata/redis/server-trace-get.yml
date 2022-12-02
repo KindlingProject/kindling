@@ -32,6 +32,8 @@ trace:
       Labels:
         comm: "redis-server"
         pid: 817
+        request_tid: 817
+        response_tid: 817
         src_ip: "127.0.0.1"
         src_port: 39130
         dst_ip: "127.0.0.1"

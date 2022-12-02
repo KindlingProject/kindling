@@ -105,6 +105,8 @@ var SpanDicList = []dictionary{
 	{constlabels.SrcNode, constlabels.SrcNode, String},
 	{constlabels.SrcPod, constlabels.SrcPod, String},
 	{constlabels.Pid, constlabels.Pid, Int64},
+	{constlabels.RequestTid, constlabels.RequestTid, Int64},
+	{constlabels.ResponseTid, constlabels.ResponseTid, Int64},
 	{constlabels.Comm, constlabels.Comm, String},
 }
 

@@ -51,6 +51,8 @@ trace:
       Labels:
         comm: "mysqld"
         pid: 903
+        request_tid: 2744
+        response_tid: 2744
         src_ip: "127.0.0.1"
         src_port: 49368
         dst_ip: "127.0.0.1"

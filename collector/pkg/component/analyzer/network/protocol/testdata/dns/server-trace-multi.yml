@@ -70,6 +70,8 @@ trace:
       Labels:
         comm: "systemd-resolve"
         pid: 577
+        request_tid: 577
+        response_tid: 577
         src_ip: "127.0.0.1"
         src_port: 60129
         dst_ip: "127.0.0.53"
@@ -101,6 +103,8 @@ trace:
       Labels:
         comm: "systemd-resolve"
         pid: 577
+        request_tid: 577
+        response_tid: 577
         src_ip: "127.0.0.1"
         src_port: 60129
         dst_ip: "127.0.0.53"

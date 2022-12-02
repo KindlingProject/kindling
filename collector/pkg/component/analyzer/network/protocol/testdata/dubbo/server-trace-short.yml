@@ -38,6 +38,8 @@ trace:
       Labels:
         comm: "java"
         pid: 942
+        request_tid: 954
+        response_tid: 954
         src_ip: "127.0.0.1"
         src_port: 41458
         dst_ip: "127.0.0.1"

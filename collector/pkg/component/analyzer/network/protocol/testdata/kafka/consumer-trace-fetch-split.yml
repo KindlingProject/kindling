@@ -47,6 +47,8 @@ trace:
       Labels:
         comm: "rdk:broker1"
         pid: 925
+        request_tid: 937
+        response_tid: 937
         src_ip: "127.0.0.1"
         src_port: 38970
         dst_ip: "127.0.0.1"

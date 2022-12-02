@@ -504,6 +504,8 @@ func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.Dat
 	ret.UpdateAddIntMetric(constvalues.ConnectTime, int64(mps.connects.getDuration()))
 	ret.UpdateAddIntMetric(constvalues.RequestTotalTime, int64(mps.connects.getDuration()))
 	ret.Labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
+	ret.Labels.UpdateAddIntValue(constlabels.RequestTid, 0)
+	ret.Labels.UpdateAddIntValue(constlabels.ResponseTid, 0)
 	ret.Labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	ret.Labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	ret.Labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
@@ -531,6 +533,7 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
+	addTid(labels, evt, mps.responses)
 	labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
@@ -587,6 +590,7 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
+	addTid(labels, evt, mps.responses)
 	labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
@@ -631,10 +635,21 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	return ret
 }
 
+func addTid(labels *model.AttributeMap, evt *model.KindlingEvent, responses *events) {
+	labels.UpdateAddIntValue(constlabels.RequestTid, int64(evt.GetTid()))
+	if responses != nil {
+		labels.UpdateAddIntValue(constlabels.ResponseTid, int64(responses.event.GetTid()))
+	} else {
+		labels.UpdateAddIntValue(constlabels.ResponseTid, 0)
+	}
+}
+
 func addProtocolPayload(protocolName string, labels *model.AttributeMap, request []byte, response []byte) {
 	labels.UpdateAddStringValue(constlabels.RequestPayload, protocol.GetPayloadString(request, protocolName))
 	if response != nil {
 		labels.UpdateAddStringValue(constlabels.ResponsePayload, protocol.GetPayloadString(response, protocolName))
+	} else {
+		labels.UpdateAddStringValue(constlabels.ResponsePayload, "")
 	}
 }
 

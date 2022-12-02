@@ -38,6 +38,8 @@ trace:
       Labels:
         comm: testdemo
         pid: 12345
+        request_tid: 12346
+        response_tid: 12346
         src_ip: "127.0.0.1"
         src_port: 56266
         dst_ip: "127.0.0.1"

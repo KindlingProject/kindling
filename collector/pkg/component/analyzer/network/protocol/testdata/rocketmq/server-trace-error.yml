@@ -34,6 +34,8 @@ trace:
       Labels:
         comm: "rocketmq-server"
         pid: 12346
+        request_tid: 12347
+        response_tid: 12347
         src_ip: "127.0.0.1"
         src_port: 45678
         dst_ip: "127.0.0.1"
