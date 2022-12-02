@@ -10,6 +10,7 @@
 
 
 ### Enhancements
+- Add request_tid and response_tid for trace labels.([#379](https://github.com/KindlingProject/kindling/pull/379))
 - Add no_response_threshold(120s) for No response requests. ([#376](https://github.com/KindlingProject/kindling/pull/376))
 - Add payload for all protocols.([#375](https://github.com/KindlingProject/kindling/pull/375))
 - Add a new clustering method "blank" that is used to reduce the cardinality of metrics as much as possible. ([#372](https://github.com/KindlingProject/kindling/pull/372))
