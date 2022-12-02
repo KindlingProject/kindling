@@ -54,7 +54,7 @@ func TestOnAdd(t *testing.T) {
 	t.Log(MetaDataCache)
 }
 
-// ISSUE https://github.com/CloudDectective-Harmonycloud/kindling/issues/229
+// ISSUE https://github.com/KindlingProject/kindling/issues/229
 func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
 	globalPodInfo = &podMap{
 		Info: make(map[string]map[string]*K8sPodInfo),
