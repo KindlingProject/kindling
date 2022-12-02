@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    if: github.repository == 'CloudDectective-Harmonycloud/kindling'
+    if: github.repository == 'KindlingProject/kindling'
     runs-on: ubuntu-latest
     permissions:
       contents: write
