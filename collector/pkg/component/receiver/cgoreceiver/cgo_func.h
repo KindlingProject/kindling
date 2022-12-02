@@ -10,7 +10,7 @@ extern "C" {
 #endif
 int runForGo();
 int getKindlingEvent(void **kindlingEvent);
-int subEventForGo(char* eventName, char* category);
+int subEventForGo(char* eventName, char* category, void *params);
 int startProfile();
 int stopProfile();
 void startProfileDebug(int pid, int tid);
@@ -21,6 +21,11 @@ void stopProfileDebug();
 #endif
 
 #endif //SYSDIG_CGO_FUNC_H
+
+struct event_params_for_subscribe {
+	char *name;
+	char *value;
+};
 
 struct kindling_event_t_for_go{
 	uint64_t timestamp;

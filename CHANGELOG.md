@@ -5,7 +5,6 @@
 
 ## Unreleased
 ### New features
-- 
 - Support the protocol RocketMQ.([#328](https://github.com/KindlingProject/kindling/pull/328))
 - Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/CloudDectective-Harmonycloud/kindling/pull/363))
 
@@ -14,11 +13,11 @@
 - Add no_response_threshold(120s) for No response requests. ([#376](https://github.com/KindlingProject/kindling/pull/376))
 - Add payload for all protocols.([#375](https://github.com/KindlingProject/kindling/pull/375))
 - Add a new clustering method "blank" that is used to reduce the cardinality of metrics as much as possible. ([#372](https://github.com/KindlingProject/kindling/pull/372))
+- Modify the configuration file structure and add parameter fields for subscription events. ([#368](https://github.com/CloudDectective-Harmonycloud/kindling/pull/368))
 
 
 ### Bug fixes
 - Fix the bug where the pod metadata with persistent IP in the map is deleted incorrectly due to the deleting mechanism with a delay. ([#374](https://github.com/KindlingProject/kindling/pull/374))
-- 
 - Fix potential deadlock of exited thread delay queue. ([#373](https://github.com/CloudDectective-Harmonycloud/kindling/pull/373))
 - Fix the bug that cpuEvent cache size continuously increases even if trace profiling is not enabled.([#362](https://github.com/CloudDectective-Harmonycloud/kindling/pull/362))
 - Fix the bug that duplicate CPU events are indexed into Elasticsearch. ([#359](https://github.com/KindlingProject/kindling/pull/359))
