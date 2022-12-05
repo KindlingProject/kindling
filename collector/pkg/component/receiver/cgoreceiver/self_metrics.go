@@ -6,9 +6,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
 var once sync.Once
@@ -26,11 +27,11 @@ func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 				for name, value := range receiver.stats.getStats() {
 					result.Observe(value, attribute.String("name", name))
 				}
-			})
+			}, metric.WithDescription("The total number of the events received by cgoreceiver"))
 		meter.NewInt64GaugeObserver(channelSizeMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(int64(len(receiver.eventChannel)))
-			})
+			}, metric.WithDescription("The current number of events contained in the channel. The maximum size is 300,000."))
 	})
 }
 

@@ -25,8 +25,9 @@ func newSelfMetrics(meterProvider metric.MeterProvider, na *NetworkAnalyzer) {
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(na.tcpMessagePairSize, attribute.String("type", "tcp"))
 				result.Observe(na.udpMessagePairSize, attribute.String("type", "udp"))
-			})
-		netanalyzerParsedRequestTotal = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(netanalyzerParsedRequestMetric)
+			}, metric.WithDescription("The size of the message pairs stored in the map"))
+		netanalyzerParsedRequestTotal = metric.Must(meterProvider.Meter("kindling")).NewInt64Counter(netanalyzerParsedRequestMetric,
+			metric.WithDescription("The count of traces that the agent has processed"))
 		// Suppress warnings of unused variables
 		_ = netanalyzerMessagePairSizeInstrument
 	})

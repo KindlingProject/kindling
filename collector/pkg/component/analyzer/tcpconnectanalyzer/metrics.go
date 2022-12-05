@@ -4,8 +4,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpconnectanalyzer/internal"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpconnectanalyzer/internal"
 )
 
 var once sync.Once
@@ -18,6 +19,6 @@ func newSelfMetrics(meterProvider metric.MeterProvider, monitor *internal.Connec
 		meter.NewInt64GaugeObserver(mapSizeMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(int64(monitor.GetMapSize()))
-			})
+			}, metric.WithDescription("The current number of the connections stored in the map."))
 	})
 }
