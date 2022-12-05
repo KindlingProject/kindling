@@ -370,7 +370,7 @@ func (message *PayloadMessage) ReadUntilCRLF(from int) (offset int, data []byte)
 }
 
 type FastFailFn func(message *PayloadMessage) bool
-type ParsePkgFn func(message *PayloadMessage) (bool, bool)
+type ParsePkgFn func(message *PayloadMessage) (success bool, complete bool)
 type PairMatch func(requests []*PayloadMessage, response *PayloadMessage) int
 
 type ProtocolParser struct {
