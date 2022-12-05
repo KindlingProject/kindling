@@ -56,5 +56,6 @@ trace:
         http_method: "GET"
         http_url: "/test?sleep=0&respbyte=10&statusCode=200"
         http_status_code: 200
+        end_timestamp: 101000000
         request_payload: "ET /test?sleep=0&respbyte=10&statusCode=200 HTTP/1.1\r\nHost: localhost:9001\r\nUs"
         response_payload: "HTTP/1.1 200 OK\r\nDate: Thu, 30 Dec 2021 10:42:17 GMT\r\nContent-Length: 18\r\nConten"

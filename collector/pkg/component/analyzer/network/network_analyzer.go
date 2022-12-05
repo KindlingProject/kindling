@@ -551,6 +551,11 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 
 	labels.Merge(attributes)
 
+	if mps.responses != nil {
+		endTimestamp := mps.responses.getLastTimestamp()
+		labels.UpdateAddIntValue(constlabels.EndTimestamp, int64(endTimestamp))
+	}
+
 	if mps.responses == nil {
 		addProtocolPayload(protocol, labels, mps.requests.getData(), nil)
 	} else {
@@ -607,6 +612,10 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	labels.UpdateAddStringValue(constlabels.Protocol, protocol)
 
 	labels.Merge(attributes)
+	if mps.responses != nil {
+		endTimestamp := mps.responses.getLastTimestamp()
+		labels.UpdateAddIntValue(constlabels.EndTimestamp, int64(endTimestamp))
+	}
 	if mp.response == nil {
 		addProtocolPayload(protocol, labels, evt.GetData(), nil)
 	} else {

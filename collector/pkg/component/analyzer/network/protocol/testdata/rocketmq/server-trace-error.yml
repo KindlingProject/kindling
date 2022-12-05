@@ -53,5 +53,6 @@ trace:
         rocketmq_error_msg: "TOPIC_NOT_EXIST"
         rocketmq_error_code: 17
         error_type: 3
+        end_timestamp: 101000000
         request_payload: '........{"code":105,"extFields":{"topic":"TopicTest"},"flag":0,"language":"JAVA","opaque":2,"serializeTypeCurrentRPC":"JSON","version":401}'
         response_payload: '........{"code":17,"flag":1,"language":"JAVA","opaque":2,"remark":"No topic route info in name server for the topic: TopicTest\nSee http://rocketmq.apache.org/docs/faq/ for further details.","serializ'

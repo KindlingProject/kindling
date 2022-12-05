@@ -56,5 +56,6 @@ trace:
         http_method: "POST"
         http_url: "/test?sleep=500&respbyte=10&statusCode=200"
         http_status_code: 200
+        end_timestamp: 601000000
         request_payload: "POST /test?sleep=500&respbyte=10&statusCode=200 HTTP/1.1\r\nHost: localhost:9001\r\n"
         response_payload: "HTTP/1.1 200 OK\r\nDate: Wed, 29 Dec 2021 09:32:43 GMT\r\nContent-Length: 18\r\nConten"

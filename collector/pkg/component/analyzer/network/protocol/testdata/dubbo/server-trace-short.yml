@@ -54,5 +54,6 @@ trace:
         error_type: 0
         content_key: "io.kindling.dubbo.api.service.OrderService#order"
         dubbo_error_code: 20
+        end_timestamp: 101000000
         request_payload: ".2.6.20*io.kindling.dubbo.api.service.OrderService.0.0.0.order0\"Ljava/l"
         response_payload: "..Thisisaresult."
