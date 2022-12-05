@@ -613,7 +613,7 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 
 	labels.Merge(attributes)
 	if mps.responses != nil {
-		endTimestamp := mps.responses.getLastTimestamp()
+		endTimestamp := mp.response.Timestamp
 		labels.UpdateAddIntValue(constlabels.EndTimestamp, int64(endTimestamp))
 	}
 	if mp.response == nil {
