@@ -53,6 +53,9 @@ const (
 	Ip              = "ip"
 	Port            = "port"
 
+	// EndTimestamp is the end timestamp of a trace
+	EndTimestamp = "end_timestamp"
+
 	Errno           = "errno"
 	Success         = "success"
 	RequestContent  = "request_content"

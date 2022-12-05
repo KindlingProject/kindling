@@ -88,6 +88,7 @@ trace:
         dns_ip: "121.227.7.33"
         is_error: false
         error_type: 0
+        end_timestamp: 101000000
         request_payload: ".............ss0.baidu.com.......)........"
         response_payload: ".............ss0.baidu.com..................sslbaidu.jomodns...+.......2..y..!.."
     -
@@ -120,5 +121,6 @@ trace:
         dns_rcode: 0
         is_error: false
         error_type: 0
+        end_timestamp: 101500000
         request_payload: "9............ss0.baidu.com.......)........"
         response_payload: "9............ss0.baidu.com..................sslbaidu.jomodns....)........"

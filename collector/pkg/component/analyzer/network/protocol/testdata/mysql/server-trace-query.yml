@@ -62,3 +62,4 @@ trace:
         response_payload: ".....9....def.container-monitor.dummy.dummy.name.name.-...........;....def.conta"
         is_error: false
         error_type: 0
+        end_timestamp: 100020000

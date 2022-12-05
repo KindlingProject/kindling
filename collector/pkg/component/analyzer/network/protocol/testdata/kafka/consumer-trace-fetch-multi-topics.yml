@@ -59,5 +59,6 @@ trace:
         kafka_error_code: 0
         is_error: false
         error_type: 0
+        end_timestamp: 100020000
         request_payload: "...\"..........consumer-merge-2............. .....(...=^......npm_request_trace.................tS...........................A...............npm_detail_topology_request...................:............."
         response_payload: "................(....."

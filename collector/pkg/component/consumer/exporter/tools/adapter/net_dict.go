@@ -1,10 +1,11 @@
 package adapter
 
 import (
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 type Protocol int
@@ -108,6 +109,7 @@ var SpanDicList = []dictionary{
 	{constlabels.RequestTid, constlabels.RequestTid, Int64},
 	{constlabels.ResponseTid, constlabels.ResponseTid, Int64},
 	{constlabels.Comm, constlabels.Comm, String},
+	{constlabels.EndTimestamp, constlabels.EndTimestamp, Int64},
 }
 
 var topologyMetricDicList = []dictionary{
