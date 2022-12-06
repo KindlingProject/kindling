@@ -2,6 +2,7 @@ package cpuanalyzer
 
 import (
 	"encoding/json"
+
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
@@ -28,16 +29,14 @@ type TimedEvent interface {
 }
 
 type TimeSegments struct {
-	Pid      uint32       `json:"pid"`
-	Tid      uint32       `json:"tid"`
-	BaseTime uint64       `json:"baseTime"`
-	Segments *CircleQueue `json:"segments"`
+	Pid        uint32       `json:"pid"`
+	Tid        uint32       `json:"tid"`
+	ThreadName string       `json:"threadName"`
+	BaseTime   uint64       `json:"baseTime"`
+	Segments   *CircleQueue `json:"segments"`
 }
 
 type Segment struct {
-	Pid             uint32       `json:"pid"`
-	Tid             uint32       `json:"tid"`
-	ThreadName      string       `json:"threadName"`
 	StartTime       uint64       `json:"startTime"`
 	EndTime         uint64       `json:"endTime"`
 	CpuEvents       []TimedEvent `json:"cpuEvents"`
@@ -47,11 +46,8 @@ type Segment struct {
 	IndexTimestamp  string `json:"indexTimestamp"`
 }
 
-func newSegment(pid uint32, tid uint32, threadName string, startTime uint64, endTime uint64) *Segment {
+func newSegment(startTime uint64, endTime uint64) *Segment {
 	return &Segment{
-		Pid:             pid,
-		Tid:             tid,
-		ThreadName:      threadName,
 		StartTime:       startTime,
 		EndTime:         endTime,
 		CpuEvents:       make([]TimedEvent, 0),
@@ -60,6 +56,9 @@ func newSegment(pid uint32, tid uint32, threadName string, startTime uint64, end
 		IsSend:          0,
 		IndexTimestamp:  "",
 	}
+}
+func (t *TimeSegments) updateThreadName(threadName string) {
+	t.ThreadName = threadName
 }
 func (s *Segment) putTimedEvent(event TimedEvent) {
 	switch event.Kind() {
@@ -72,12 +71,12 @@ func (s *Segment) putTimedEvent(event TimedEvent) {
 	}
 }
 
-func (s *Segment) toDataGroup() *model.DataGroup {
+func (s *Segment) toDataGroup(parent *TimeSegments) *model.DataGroup {
 	labels := model.NewAttributeMap()
-	labels.AddIntValue(constlabels.Pid, int64(s.Pid))
-	labels.AddIntValue(constlabels.Tid, int64(s.Tid))
+	labels.AddIntValue(constlabels.Pid, int64(parent.Pid))
+	labels.AddIntValue(constlabels.Tid, int64(parent.Tid))
 	labels.AddIntValue(constlabels.IsSent, int64(s.IsSend))
-	labels.AddStringValue(constlabels.ThreadName, s.ThreadName)
+	labels.AddStringValue(constlabels.ThreadName, parent.ThreadName)
 	labels.AddIntValue(constlabels.StartTime, int64(s.StartTime))
 	labels.AddIntValue(constlabels.EndTime, int64(s.EndTime))
 	cpuEventString, err := json.Marshal(s.CpuEvents)
