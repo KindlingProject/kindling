@@ -13,12 +13,14 @@ const (
 	TimedCpuEventKind TimedEventKind = iota
 	TimedJavaFutexEventKind
 	TimedTransactionIdEventKind
+	TimedApmSpanEventKind
 )
 
 const (
 	CpuEventLabel           = "cpuEvents"
 	JavaFutexEventLabel     = "javaFutexEvents"
 	TransactionIdEventLabel = "transactionIds"
+	SpanLabel               = "spans"
 )
 
 type TimedEvent interface {
@@ -43,6 +45,7 @@ type Segment struct {
 	CpuEvents       []TimedEvent `json:"cpuEvents"`
 	JavaFutexEvents []TimedEvent `json:"javaFutexEvents"`
 	TransactionIds  []TimedEvent `json:"transactionIds"`
+	Spans           []TimedEvent `json:"spans"`
 	IsSend          int
 	IndexTimestamp  string `json:"indexTimestamp"`
 }
@@ -57,6 +60,7 @@ func newSegment(pid uint32, tid uint32, threadName string, startTime uint64, end
 		CpuEvents:       make([]TimedEvent, 0),
 		JavaFutexEvents: make([]TimedEvent, 0),
 		TransactionIds:  make([]TimedEvent, 0),
+		Spans:           make([]TimedEvent, 0),
 		IsSend:          0,
 		IndexTimestamp:  "",
 	}
@@ -69,6 +73,8 @@ func (s *Segment) putTimedEvent(event TimedEvent) {
 		s.JavaFutexEvents = append(s.JavaFutexEvents, event)
 	case TimedTransactionIdEventKind:
 		s.TransactionIds = append(s.TransactionIds, event)
+	case TimedApmSpanEventKind:
+		s.Spans = append(s.Spans, event)
 	}
 }
 
@@ -91,6 +97,10 @@ func (s *Segment) toDataGroup() *model.DataGroup {
 	transactionIdEventString, err := json.Marshal(s.TransactionIds)
 	if err == nil {
 		labels.AddStringValue(TransactionIdEventLabel, string(transactionIdEventString))
+	}
+	spanEventString, err := json.Marshal(s.Spans)
+	if err == nil {
+		labels.AddStringValue(SpanLabel, string(spanEventString))
 	}
 	return model.NewDataGroup(constnames.CameraEventGroupName, labels, s.StartTime)
 }
@@ -153,4 +163,23 @@ func (t *TransactionIdEvent) EndTimestamp() uint64 {
 
 func (t *TransactionIdEvent) Kind() TimedEventKind {
 	return TimedTransactionIdEventKind
+}
+
+type ApmSpanEvent struct {
+	StartTime uint64 `json:"startTime"`
+	EndTime   uint64 `json:"endTime"`
+	TraceId   string `json:"traceId"`
+	Name      string `json:"name"`
+}
+
+func (j *ApmSpanEvent) StartTimestamp() uint64 {
+	return j.StartTime
+}
+
+func (j *ApmSpanEvent) EndTimestamp() uint64 {
+	return j.EndTime
+}
+
+func (j *ApmSpanEvent) Kind() TimedEventKind {
+	return TimedApmSpanEventKind
 }

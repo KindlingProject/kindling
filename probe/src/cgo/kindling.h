@@ -99,6 +99,10 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
                 kindling_event_t_for_go* p_kindling_event, sinsp_threadinfo* threadInfo,
                 uint16_t& userAttNumber);
 
+void parse_span(sinsp_evt *s_evt, char *data_val, sinsp_evt_param data_param,
+                kindling_event_t_for_go *p_kindling_event, sinsp_threadinfo* threadInfo,
+                uint16_t &userAttNumber);
+
 void parse_tm(char* data_val, sinsp_evt_param data_param, sinsp_threadinfo* threadInfo);
 
 void init_kindling_event(kindling_event_t_for_go* p_kindling_event, void** pp_kindling_event);
