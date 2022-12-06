@@ -7,10 +7,9 @@
 ### New features
 - Support the protocol RocketMQ.([#328](https://github.com/KindlingProject/kindling/pull/328))
 - Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/KindlingProject/kindling/pull/363))
-
+- Add tracing span data in cpu events. ([#384](https://github.com/KindlingProject/kindling/pull/384))
 
 ### Enhancements
-- Add Span Info in cpu datas. ([#384](https://github.com/KindlingProject/kindling/pull/384))
 - Add the field `end_timestamp` to the trace data to make it easier for querying. ([#380](https://github.com/KindlingProject/kindling/pull/380))
 - Add `request_tid` and `response_tid` for trace labels.([#379](https://github.com/KindlingProject/kindling/pull/379))
 - Add no_response_threshold(120s) for No response requests. ([#376](https://github.com/KindlingProject/kindling/pull/376))
