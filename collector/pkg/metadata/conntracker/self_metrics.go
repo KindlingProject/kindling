@@ -28,7 +28,7 @@ var (
 )
 
 // To avoid getting statistics multiple times, we cache the result in a global variable.
-// This can be done because the observation functions are executed in the order they were
+// This can be done because the observation functions are executed in the order as they were
 // registered. See go.opentelemetry.io/otel/internal/metric/async/AsyncInstrumentState.runners.
 var conntrackerStaticStates map[string]int64
 
@@ -40,11 +40,11 @@ func newSelfMetrics(meterProvider metric.MeterProvider, conntracker Conntracker)
 				conntrackerStaticStates = conntracker.GetStats()
 				result.Observe(conntrackerStaticStates["state_size"], attribute.String("type", "general"))
 				result.Observe(conntrackerStaticStates["orphan_size"], attribute.String("type", "orphan"))
-			})
+			}, metric.WithDescription("The current number of the conntrack records stored in the map"))
 		cacheMaxSizeInstrument = meter.NewInt64GaugeObserver(cacheMaxSizeMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(conntrackerStaticStates["cache_max_size"])
-			})
+			}, metric.WithDescription("The maximum size of the cache map"))
 		operationTimesInstrument = meter.NewInt64CounterObserver(operationTimesTotal,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(conntrackerStaticStates["registers_total"], attribute.String("op", "add"))
@@ -52,21 +52,21 @@ func newSelfMetrics(meterProvider metric.MeterProvider, conntracker Conntracker)
 				result.Observe(conntrackerStaticStates["unregisters_total"], attribute.String("op", "remove"))
 				result.Observe(conntrackerStaticStates["gets_total"], attribute.String("op", "get"))
 				result.Observe(conntrackerStaticStates["evicts_total"], attribute.String("op", "evict"))
-			})
+			}, metric.WithDescription("The total operation times the conntracker does to the cache map"))
 		errorsTotalInstrument = meter.NewInt64CounterObserver(errorsTotal,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(conntrackerStaticStates["enobufs"], attribute.String("type", "enobuf"))
 				result.Observe(conntrackerStaticStates["read_errors"], attribute.String("type", "read_errors"))
 				result.Observe(conntrackerStaticStates["msg_errors"], attribute.String("type", "msg_errors"))
-			})
+			}, metric.WithDescription("The total count of errors the conntracker encounters"))
 		samplingRateInstrument = meter.NewInt64GaugeObserver(samplingRate,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(conntrackerStaticStates["sampling_pct"])
-			})
+			}, metric.WithDescription("The sampling rate of the conntracker module"))
 		throttlesTotalInstrument = meter.NewInt64CounterObserver(throttlesTotal,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(conntrackerStaticStates["throttles"])
-			})
+			}, metric.WithDescription("The total count of the records being throttled due to the high load"))
 		// Suppress warnings of unused variables
 		_ = cacheSizeInstrument
 		_ = cacheMaxSizeInstrument

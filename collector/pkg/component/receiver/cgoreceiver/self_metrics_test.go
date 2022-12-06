@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/metric"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
 func runTest(counter eventCounter, workerNum int, loopNum int) {
@@ -70,22 +71,22 @@ func TestCounterIntCombination(t *testing.T) {
 
 func TestCounterRwAtomicMap(t *testing.T) {
 	counter := newDynamicStats([]SubEvent{
-		{"net", "syscall_exit-writev"},
-		{"net", "syscall_exit-readv"},
-		{"net", "syscall_exit-write"},
-		{"net", "syscall_exit-read"},
-		{"net", "syscall_exit-sendto"},
-		{"net", "syscall_exit-recvfrom"},
-		{"net", "syscall_exit-sendmsg"},
-		{"net", "syscall_exit-recvmsg"},
-		{"net", "grpc_uprobe"},
-		{"", "kprobe-tcp_close"},
-		{"", "kprobe-tcp_rcv_established"},
-		{"", "kprobe-tcp_drop"},
-		{"", "kprobe-tcp_retransmit_skb"},
-		{"", "syscall_exit-connect"},
-		{"", "kretprobe-tcp_connect"},
-		{"", "kprobe-tcp_set_state"},
+		{Category: "net", Name: "syscall_exit-writev"},
+		{Category: "net", Name: "syscall_exit-readv"},
+		{Category: "net", Name: "syscall_exit-write"},
+		{Category: "net", Name: "syscall_exit-read"},
+		{Category: "net", Name: "syscall_exit-sendto"},
+		{Category: "net", Name: "syscall_exit-recvfrom"},
+		{Category: "net", Name: "syscall_exit-sendmsg"},
+		{Category: "net", Name: "syscall_exit-recvmsg"},
+		{Category: "net", Name: "grpc_uprobe"},
+		{Name: "kprobe-tcp_close"},
+		{Name: "kprobe-tcp_rcv_established"},
+		{Name: "kprobe-tcp_drop"},
+		{Name: "kprobe-tcp_retransmit_skb"},
+		{Name: "syscall_exit-connect"},
+		{Name: "kretprobe-tcp_connect"},
+		{Name: "kprobe-tcp_set_state"},
 	})
 	assertTest(t, counter, 5, 100000)
 }
@@ -128,21 +129,21 @@ func BenchmarkCounterOtelCounter(b *testing.B) {
 
 func BenchmarkCounterRwAtomicMap(b *testing.B) {
 	counter := newDynamicStats([]SubEvent{
-		{"net", "syscall_exit-writev"},
-		{"net", "syscall_exit-readv"},
-		{"net", "syscall_exit-write"},
-		{"net", "syscall_exit-read"},
-		{"net", "syscall_exit-sendto"},
-		{"net", "syscall_exit-recvfrom"},
-		{"net", "syscall_exit-sendmsg"},
-		{"net", "syscall_exit-recvmsg"},
-		{"", "kprobe-tcp_close"},
-		{"", "kprobe-tcp_rcv_established"},
-		{"", "kprobe-tcp_drop"},
-		{"", "kprobe-tcp_retransmit_skb"},
-		{"", "syscall_exit-connect"},
-		{"", "kretprobe-tcp_connect"},
-		{"", "kprobe-tcp_set_state"},
+		{Category: "net", Name: "syscall_exit-writev"},
+		{Category: "net", Name: "syscall_exit-readv"},
+		{Category: "net", Name: "syscall_exit-write"},
+		{Category: "net", Name: "syscall_exit-read"},
+		{Category: "net", Name: "syscall_exit-sendto"},
+		{Category: "net", Name: "syscall_exit-recvfrom"},
+		{Category: "net", Name: "syscall_exit-sendmsg"},
+		{Category: "net", Name: "syscall_exit-recvmsg"},
+		{Name: "kprobe-tcp_close"},
+		{Name: "kprobe-tcp_rcv_established"},
+		{Name: "kprobe-tcp_drop"},
+		{Name: "kprobe-tcp_retransmit_skb"},
+		{Name: "syscall_exit-connect"},
+		{Name: "kretprobe-tcp_connect"},
+		{Name: "kprobe-tcp_set_state"},
 	})
 	initOtelCounterObserver(counter)
 	b.ResetTimer()
