@@ -1,15 +1,13 @@
 package cpuanalyzer
 
 import (
-	"errors"
+	"sync"
+	"time"
+
 	"github.com/Kindling-project/kindling/collector/pkg/filepathhelper"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
-	"sync"
-	"time"
-
-	"go.uber.org/atomic"
 )
 
 var eventsWindowsDuration = 6 * time.Second
@@ -61,124 +59,13 @@ func (ca *CpuAnalyzer) ReceiveSendSignal() {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
 		task := &SendEventsTask{0, ca, &sendContent}
-		// "Load" and "Delete" could be executed concurrently
-		value, ok := ca.sendEventsRoutineMap.Load(sendContent.Pid)
-		if !ok {
-			ca.putNewRoutine(task)
-		} else {
-			// The routine may be found before but stopped and deleted after entering this branch.
-			// So we much check twice.
-			routine, _ := value.(*ScheduledTaskRoutine)
-			// TODO Always replacing the task may cause that some events are skipped when the "spendTime"
-			// becomes much smaller than before.
-			err := routine.ResetExpiredTimerWithNewTask(task)
-			if err != nil {
-				// The routine has been expired.
-				ca.putNewRoutine(task)
-			}
+		expiredCallback := func() {
+			ca.routineSize.Dec()
 		}
+		// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
+		NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
+		ca.routineSize.Inc()
 	}
-}
-
-func (ca *CpuAnalyzer) putNewRoutine(task *SendEventsTask) {
-	expiredCallback := func() {
-		ca.sendEventsRoutineMap.Delete(task.triggerEvent.Pid)
-	}
-	// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
-	routine := NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
-	ca.sendEventsRoutineMap.Store(task.triggerEvent.Pid, routine)
-}
-
-type ScheduledTask interface {
-	run()
-}
-
-type ScheduledTaskRoutine struct {
-	expiredDuration time.Duration
-	ticker          *time.Ticker
-	timer           *time.Timer
-	stopCh          chan struct{}
-
-	task      ScheduledTask
-	isRunning *atomic.Bool
-
-	expiredCallback func()
-}
-
-// NewAndStartScheduledTaskRoutine creates a new routine and start it immediately.
-func NewAndStartScheduledTaskRoutine(
-	tickerDuration time.Duration,
-	expiredDuration time.Duration,
-	task ScheduledTask,
-	expiredCallback func()) *ScheduledTaskRoutine {
-	ret := &ScheduledTaskRoutine{
-		expiredDuration: expiredDuration,
-		ticker:          time.NewTicker(tickerDuration),
-		timer:           time.NewTimer(expiredDuration),
-		task:            task,
-		isRunning:       atomic.NewBool(false),
-		stopCh:          make(chan struct{}),
-		expiredCallback: expiredCallback,
-	}
-	// Start the routine once it is created.
-	ret.Start()
-	return ret
-}
-
-func (s *ScheduledTaskRoutine) Start() error {
-	swapped := s.isRunning.CAS(false, true)
-	if !swapped {
-		return errors.New("the routine has been started")
-	}
-	go func() {
-		if s.expiredCallback != nil {
-			defer s.expiredCallback()
-		}
-		for {
-			select {
-			case <-s.ticker.C:
-				// do some work
-				s.task.run()
-			case <-s.timer.C:
-				// The current task is expired.
-				s.isRunning.CAS(true, false)
-				s.ticker.Stop()
-				return
-			case <-s.stopCh:
-				s.timer.Stop()
-				s.ticker.Stop()
-				return
-			}
-		}
-	}()
-	return nil
-}
-
-// ResetExpiredTimer resets the timer to extend its expired time if it is running.
-// If the routine is not running, an error will be returned and nothing will happen.
-func (s *ScheduledTaskRoutine) ResetExpiredTimer() error {
-	if !s.isRunning.Load() {
-		return errors.New("the routine is not running, can't reset the timer")
-	}
-	if !s.timer.Stop() {
-		<-s.timer.C
-	}
-	s.timer.Reset(s.expiredDuration)
-	return nil
-}
-
-func (s *ScheduledTaskRoutine) ResetExpiredTimerWithNewTask(task ScheduledTask) error {
-	s.task = task
-	return s.ResetExpiredTimer()
-}
-
-func (s *ScheduledTaskRoutine) Stop() error {
-	swapped := s.isRunning.CAS(true, false)
-	if !swapped {
-		return errors.New("the routine is not running")
-	}
-	s.stopCh <- struct{}{}
-	return nil
 }
 
 type SendEventsTask struct {
