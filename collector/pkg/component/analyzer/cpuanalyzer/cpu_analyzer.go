@@ -218,10 +218,11 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 
 	} else {
 		newTimeSegments := &TimeSegments{
-			Pid:      pid,
-			Tid:      tid,
-			BaseTime: event.StartTimestamp() / nanoToSeconds,
-			Segments: NewCircleQueue(maxSegmentSize),
+			Pid:        pid,
+			Tid:        tid,
+			ThreadName: threadName,
+			BaseTime:   event.StartTimestamp() / nanoToSeconds,
+			Segments:   NewCircleQueue(maxSegmentSize),
 		}
 		for i := 0; i < maxSegmentSize; i++ {
 			segment := newSegment((newTimeSegments.BaseTime+uint64(i))*nanoToSeconds,
