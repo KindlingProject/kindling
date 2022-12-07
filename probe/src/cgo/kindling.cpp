@@ -107,15 +107,16 @@ void set_eventmask(sinsp* inspector) {
   }
 }
 
+#define DEFAULT_SNAPLEN 1000
 void set_snaplen(sinsp* inspector) {
-  uint32_t snaplen = 80;
+  uint32_t snaplen = DEFAULT_SNAPLEN;
 
   char* env_snaplen = getenv("SNAPLEN");
   if (env_snaplen != nullptr) {
     snaplen = atol(env_snaplen);
     if (snaplen == 0 || snaplen > RW_MAX_SNAPLEN) {
-      snaplen = RW_SNAPLEN;
-      cout << "Invalid snaplen value, reset to default " << RW_SNAPLEN << endl;
+      snaplen = DEFAULT_SNAPLEN;
+      cout << "Invalid snaplen value, reset to default " << DEFAULT_SNAPLEN << endl;
     }
   }
 
