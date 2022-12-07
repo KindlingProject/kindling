@@ -36,6 +36,10 @@ type TimeSegments struct {
 	Segments   *CircleQueue `json:"segments"`
 }
 
+func (t *TimeSegments) updateThreadName(threadName string) {
+	t.ThreadName = threadName
+}
+
 type Segment struct {
 	StartTime       uint64       `json:"startTime"`
 	EndTime         uint64       `json:"endTime"`
@@ -57,9 +61,7 @@ func newSegment(startTime uint64, endTime uint64) *Segment {
 		IndexTimestamp:  "",
 	}
 }
-func (t *TimeSegments) updateThreadName(threadName string) {
-	t.ThreadName = threadName
-}
+
 func (s *Segment) putTimedEvent(event TimedEvent) {
 	switch event.Kind() {
 	case TimedCpuEventKind:

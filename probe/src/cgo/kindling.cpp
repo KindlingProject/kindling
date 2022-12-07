@@ -430,8 +430,8 @@ void parse_jf(char* data_val, sinsp_evt_param data_param, kindling_event_t_for_g
       ptid_comm.find(threadInfo->m_pid << 32 | (threadInfo->m_tid & 0xFFFFFFFF));
   if (key != ptid_comm.end()) {
     strcpy(p_kindling_event->context.tinfo.comm, key->second);
-  }else{
-    strcpy(p_kindling_event->context.tinfo.comm,  (char*)threadInfo->m_comm.data());
+  } else {
+    strcpy(p_kindling_event->context.tinfo.comm, (char*)threadInfo->m_comm.data());
   }
   p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
   p_kindling_event->paramsNumber = userAttNumber;
@@ -480,8 +480,8 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
       ptid_comm.find(threadInfo->m_pid << 32 | (threadInfo->m_tid & 0xFFFFFFFF));
   if (key != ptid_comm.end()) {
     strcpy(p_kindling_event->context.tinfo.comm, key->second);
-  }else{
-    strcpy(p_kindling_event->context.tinfo.comm,  (char*)threadInfo->m_comm.data());
+  } else {
+    strcpy(p_kindling_event->context.tinfo.comm, (char*)threadInfo->m_comm.data());
   }
   p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
   p_kindling_event->paramsNumber = userAttNumber;
