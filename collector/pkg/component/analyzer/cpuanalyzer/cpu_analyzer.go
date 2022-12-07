@@ -200,8 +200,7 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				endOffset = endOffset - startOffset
 				startOffset = 0
 				for i := 0; i < maxSegmentSize; i++ {
-					segment := newSegment(pid, tid, threadName,
-						(timeSegments.BaseTime+uint64(i))*nanoToSeconds,
+					segment := newSegment((timeSegments.BaseTime+uint64(i))*nanoToSeconds,
 						(timeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
 					timeSegments.Segments.UpdateByIndex(i, segment)
 				}
@@ -220,14 +219,14 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 					movedIndex := i + clearSize
 					val := timeSegments.Segments.GetByIndex(movedIndex)
 					timeSegments.Segments.UpdateByIndex(i, val)
-					segmentTmp := newSegment(pid, tid, threadName,
-						(timeSegments.BaseTime+uint64(movedIndex))*nanoToSeconds,
+					segmentTmp := newSegment((timeSegments.BaseTime+uint64(movedIndex))*nanoToSeconds,
 						(timeSegments.BaseTime+uint64(movedIndex+1))*nanoToSeconds)
 					timeSegments.Segments.UpdateByIndex(movedIndex, segmentTmp)
 				}
 			}
 		}
 
+		timeSegments.updateThreadName(threadName) //update the thread name immediatly
 		for i := startOffset; i <= endOffset && i < maxSegmentSize; i++ {
 			val := timeSegments.Segments.GetByIndex(i)
 			segment := val.(*Segment)
@@ -238,14 +237,14 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 
 	} else {
 		newTimeSegments := &TimeSegments{
-			Pid:      pid,
-			Tid:      tid,
-			BaseTime: event.StartTimestamp() / nanoToSeconds,
-			Segments: NewCircleQueue(maxSegmentSize),
+			Pid:        pid,
+			Tid:        tid,
+			ThreadName: threadName,
+			BaseTime:   event.StartTimestamp() / nanoToSeconds,
+			Segments:   NewCircleQueue(maxSegmentSize),
 		}
 		for i := 0; i < maxSegmentSize; i++ {
-			segment := newSegment(pid, tid, threadName,
-				(newTimeSegments.BaseTime+uint64(i))*nanoToSeconds,
+			segment := newSegment((newTimeSegments.BaseTime+uint64(i))*nanoToSeconds,
 				(newTimeSegments.BaseTime+uint64(i+1))*nanoToSeconds)
 			newTimeSegments.Segments.UpdateByIndex(i, segment)
 		}

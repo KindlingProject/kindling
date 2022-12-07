@@ -128,7 +128,7 @@ func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, s
 			if len(segment.CpuEvents) != 0 {
 				// Don't remove the duplicated one
 				segment.IndexTimestamp = time.Now().String()
-				dataGroup := segment.toDataGroup()
+				dataGroup := segment.toDataGroup(timeSegments)
 				dataGroup.Labels.Merge(keyElements)
 				for _, nexConsumer := range ca.nextConsumers {
 					_ = nexConsumer.Consume(dataGroup)
