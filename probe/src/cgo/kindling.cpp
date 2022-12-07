@@ -115,10 +115,10 @@ void set_snaplen(sinsp* inspector) {
     snaplen = atol(env_snaplen);
     if (snaplen == 0 || snaplen > RW_MAX_SNAPLEN) {
       snaplen = RW_SNAPLEN;
-      cout << "Invalid snaplen value, reset to default " <<  RW_SNAPLEN << endl;
+      cout << "Invalid snaplen value, reset to default " << RW_SNAPLEN << endl;
     }
   }
-  
+
   cout << "Set snaplen to value: " << snaplen << endl;
   inspector->set_snaplen(snaplen);
 }
