@@ -107,16 +107,16 @@ void set_eventmask(sinsp* inspector) {
   }
 }
 
-#define DEFAULT_SNAPLEN 1000
+#define KINDLING_DEFAULT_SNAPLEN 1000
 void set_snaplen(sinsp* inspector) {
-  uint32_t snaplen = DEFAULT_SNAPLEN;
+  uint32_t snaplen = KINDLING_DEFAULT_SNAPLEN;
 
   char* env_snaplen = getenv("SNAPLEN");
   if (env_snaplen != nullptr) {
     snaplen = atol(env_snaplen);
     if (snaplen == 0 || snaplen > RW_MAX_SNAPLEN) {
-      snaplen = DEFAULT_SNAPLEN;
-      cout << "Invalid snaplen value, reset to default " << DEFAULT_SNAPLEN << endl;
+      snaplen = KINDLING_DEFAULT_SNAPLEN;
+      cout << "Invalid snaplen value, reset to default " << KINDLING_DEFAULT_SNAPLEN << endl;
     }
   }
 
