@@ -107,6 +107,23 @@ void set_eventmask(sinsp* inspector) {
   }
 }
 
+#define KINDLING_DEFAULT_SNAPLEN 1000
+void set_snaplen(sinsp* inspector) {
+  uint32_t snaplen = KINDLING_DEFAULT_SNAPLEN;
+
+  char* env_snaplen = getenv("SNAPLEN");
+  if (env_snaplen != nullptr) {
+    snaplen = atol(env_snaplen);
+    if (snaplen == 0 || snaplen > RW_MAX_SNAPLEN) {
+      snaplen = KINDLING_DEFAULT_SNAPLEN;
+      cout << "Invalid snaplen value, reset to default " << KINDLING_DEFAULT_SNAPLEN << endl;
+    }
+  }
+
+  cout << "Set snaplen to value: " << snaplen << endl;
+  inspector->set_snaplen(snaplen);
+}
+
 int init_probe() {
   int argc = 1;
   QCoreApplication app(argc, 0);
@@ -134,7 +151,7 @@ int init_probe() {
     inspector = new sinsp();
     formatter = new sinsp_evt_formatter(inspector, output_format);
     inspector->set_hostname_and_port_resolution_mode(false);
-    inspector->set_snaplen(1000);
+    set_snaplen(inspector);
     suppress_events_comm(inspector);
     inspector->open("");
     set_eventmask(inspector);
