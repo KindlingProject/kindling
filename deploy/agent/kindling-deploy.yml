@@ -54,7 +54,7 @@ spec:
         - name: SYSDIG_HOST_ROOT
           value: /host
         - name: SNAPLEN
-          value: 1000
+          value: "1000"
         - name: GOGC
           value: "400"
         - name: MY_NODE_IP
