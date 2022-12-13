@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
+	"sort"
 	"sync"
 	"testing"
 
@@ -21,7 +22,9 @@ func TestHttpProtocol(t *testing.T) {
 		"http/server-trace-slow.yml",
 		"http/server-trace-error.yml",
 		"http/server-trace-split.yml",
-		"http/server-trace-normal.yml")
+		"http/server-trace-normal.yml",
+		"http/server-trace-continue.yml",
+	)
 }
 
 func TestMySqlProtocol(t *testing.T) {
@@ -45,9 +48,7 @@ func TestKafkaProtocol(t *testing.T) {
 		"kafka/provider-trace-produce-split.yml")
 
 	testProtocol(t, "kafka/consumer-event.yml",
-		"kafka/consumer-trace-fetch-split.yml")
-
-	testProtocol(t, "kafka/consumer-event.yml",
+		"kafka/consumer-trace-fetch-split.yml",
 		"kafka/consumer-trace-fetch-multi-topics.yml")
 }
 
@@ -58,10 +59,8 @@ func TestDubboProtocol(t *testing.T) {
 
 func TestRocketMQProtocol(t *testing.T) {
 	testProtocol(t, "rocketmq/server-event.yml",
-		"rocketmq/server-trace-json.yml")
-	testProtocol(t, "rocketmq/server-event.yml",
-		"rocketmq/server-trace-rocketmq.yml")
-	testProtocol(t, "rocketmq/server-event.yml",
+		"rocketmq/server-trace-json.yml",
+		"rocketmq/server-trace-rocketmq.yml",
 		"rocketmq/server-trace-error.yml")
 }
 
@@ -70,10 +69,23 @@ type NopProcessor struct {
 
 func (n NopProcessor) Consume(dataGroup *model.DataGroup) error {
 	// fmt.Printf("Consume %v\n", dataGroup)
+	results = append(results, dataGroup)
 	return nil
 }
 
+type NoCacheDataGroupPool struct {
+}
+
+func (p *NoCacheDataGroupPool) Get() *model.DataGroup {
+	dataGroup := createDataGroup()
+	return dataGroup.(*model.DataGroup)
+}
+
+func (p *NoCacheDataGroupPool) Free(dataGroup *model.DataGroup) {
+}
+
 var na *NetworkAnalyzer
+var results []*model.DataGroup
 
 func prepareNetworkAnalyzer() *NetworkAnalyzer {
 	if na == nil {
@@ -89,7 +101,7 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 
 		na = &NetworkAnalyzer{
 			cfg:           config,
-			dataGroupPool: NewDataGroupPool(),
+			dataGroupPool: &NoCacheDataGroupPool{},
 			nextConsumers: []consumer.Consumer{&NopProcessor{}},
 			telemetry:     component.NewDefaultTelemetryTools(),
 		}
@@ -130,9 +142,16 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 		}
 
 		t.Run(trace.Key, func(t *testing.T) {
-			mps := trace.PrepareMessagePairs(eventCommon)
-			result := na.parseProtocols(mps)
-			trace.Validate(t, result)
+			results = []*model.DataGroup{}
+			events := trace.getSortedEvents(eventCommon)
+			for _, event := range events {
+				na.ConsumeEvent(event)
+			}
+			if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
+				var oldPairs = pairInterface.(*messagePairs)
+				na.distributeTraceMetric(oldPairs, nil)
+			}
+			trace.Validate(t, results)
 		})
 	}
 }
@@ -296,6 +315,30 @@ func checkSize(t *testing.T, key string, expect int, got int) {
 	if expect != got {
 		t.Errorf("[Check %s] want=%d, got=%d", key, expect, got)
 	}
+}
+
+func (trace *Trace) getSortedEvents(common *EventCommon) []*model.KindlingEvent {
+	events := []*model.KindlingEvent{}
+	if trace.Connects != nil {
+		for _, connect := range trace.Connects {
+			events = append(events, connect.exchange(common))
+		}
+	}
+	if trace.Requests != nil {
+		for _, request := range trace.Requests {
+			events = append(events, request.exchange(common))
+		}
+	}
+	if trace.Responses != nil {
+		for _, response := range trace.Responses {
+			events = append(events, response.exchange(common))
+		}
+	}
+	// Sort By Event Timestamp.
+	sort.SliceStable(events, func(i, j int) bool {
+		return events[i].Timestamp < events[j].Timestamp
+	})
+	return events
 }
 
 type TraceEvent struct {

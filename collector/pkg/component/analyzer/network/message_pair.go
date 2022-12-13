@@ -51,6 +51,13 @@ func (evts *events) getEvent(index int) *model.KindlingEvent {
 	return nil
 }
 
+func (evts *events) putEventBack(originEvts *events) {
+	newEvt := evts.event
+	evts.event = originEvts.event
+	evts.mergable = originEvts.mergable
+	evts.mergeEvent(newEvt)
+}
+
 func (evts *events) mergeEvent(evt *model.KindlingEvent) {
 	if evts.mergable == nil {
 		firstEvt := evts.event
@@ -162,6 +169,16 @@ func (mps *messagePairs) mergeConnect(evt *model.KindlingEvent) {
 		mps.connects = newEvents(evt)
 	} else {
 		mps.connects.mergeEvent(evt)
+	}
+	mps.mutex.Unlock()
+}
+
+func (mps *messagePairs) putRequestBack(evts *events) {
+	mps.mutex.Lock()
+	if mps.requests == nil {
+		mps.requests = evts
+	} else {
+		mps.requests.putEventBack(evts)
 	}
 	mps.mutex.Unlock()
 }

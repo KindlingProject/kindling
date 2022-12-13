@@ -50,6 +50,11 @@ func parseHttpResponse() protocol.ParsePkgFn {
 			statusCodeI = 0
 		}
 
+		if statusCodeI == 100 {
+			// Add http_continue for merge next request.
+			message.AddBoolAttribute(constlabels.HttpContinue, true)
+		}
+
 		if !message.HasAttribute(constlabels.HttpApmTraceType) {
 			headers := parseHeaders(message)
 			traceType, traceId := tools.ParseTraceHeader(headers)
