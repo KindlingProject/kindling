@@ -15,12 +15,13 @@ import (
 	"time"
 	"unsafe"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	analyzerpackage "github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -65,7 +66,7 @@ func (r *CgoReceiver) Start() error {
 		return fmt.Errorf("fail to init probe")
 	}
 	time.Sleep(2 * time.Second)
-	r.subEvent()
+	_ = r.subEvent()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
@@ -140,6 +141,7 @@ func convertEvent(cgoEvent *CKindlingEventForGo) *model.KindlingEvent {
 	ev.Ctx.FdInfo.Destination = uint64(cgoEvent.context.fdInfo.destination)
 
 	ev.ParamsNumber = uint16(cgoEvent.paramsNumber)
+	ev.Latency = uint64(cgoEvent.latency)
 	for i := 0; i < int(ev.ParamsNumber); i++ {
 		ev.UserAttributes[i].Key = C.GoString(cgoEvent.userAttributes[i].key)
 		userAttributesLen := cgoEvent.userAttributes[i].len
