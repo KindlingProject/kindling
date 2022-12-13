@@ -5,10 +5,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/Kindling-project/kindling/collector/pkg/component"
-	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 // ConnectMonitor reads in events related to TCP connect operations and updates its
@@ -98,6 +99,7 @@ func (c *ConnectMonitor) ReadSendRequestSyscall(event *model.KindlingEvent) (*Co
 	if !ok {
 		return nil, nil
 	}
+	connStats.EndTimestamp = event.Timestamp
 	connStats.Pid = event.GetPid()
 	connStats.Comm = event.GetComm()
 	connStats.ContainerId = event.GetContainerId()
