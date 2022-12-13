@@ -50,6 +50,12 @@ func parseHttpResponse() protocol.ParsePkgFn {
 			statusCodeI = 0
 		}
 
+		if statusCodeI == 100 {
+			// Add http_continue for merging the subsequent request.
+			// See the issue https://github.com/KindlingProject/kindling/issues/388 for details.
+			message.AddBoolAttribute(constlabels.HttpContinue, true)
+		}
+
 		if !message.HasAttribute(constlabels.HttpApmTraceType) {
 			headers := parseHeaders(message)
 			traceType, traceId := tools.ParseTraceHeader(headers)

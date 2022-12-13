@@ -10,6 +10,7 @@ const (
 	HttpApmTraceType = "trace_type"
 	HttpApmTraceId   = "trace_id"
 	HttpStatusCode   = "http_status_code"
+	HttpContinue     = "http_continue"
 
 	DnsId     = "dns_id"
 	DnsDomain = "dns_domain"

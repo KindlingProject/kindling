@@ -43,7 +43,7 @@ type NetworkAnalyzer struct {
 	parserFactory    *factory.ParserFactory
 	parsers          []*protocol.ProtocolParser
 
-	dataGroupPool      *DataGroupPool
+	dataGroupPool      DataGroupPool
 	requestMonitor     sync.Map
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
@@ -525,6 +525,14 @@ func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.Dat
 
 func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attributes *model.AttributeMap) []*model.DataGroup {
 	evt := mps.requests.event
+	// See the issue https://github.com/KindlingProject/kindling/issues/388 for details.
+	if attributes.HasAttribute(constlabels.HttpContinue) {
+		if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(evt)); ok {
+			var oldPairs = pairInterface.(*messagePairs)
+			oldPairs.putRequestBack(mps.requests)
+		}
+		return []*model.DataGroup{}
+	}
 
 	slow := false
 	if mps.responses != nil {
