@@ -28,19 +28,19 @@ type DataGroupPool interface {
 	Free(dataGroup *model.DataGroup)
 }
 
-type GaugeDataGroupPool struct {
+type SimpleDataGroupPool struct {
 	pool *sync.Pool
 }
 
 func NewDataGroupPool() DataGroupPool {
-	return &GaugeDataGroupPool{pool: &sync.Pool{New: createDataGroup}}
+	return &SimpleDataGroupPool{pool: &sync.Pool{New: createDataGroup}}
 }
 
-func (p *GaugeDataGroupPool) Get() *model.DataGroup {
+func (p *SimpleDataGroupPool) Get() *model.DataGroup {
 	return p.pool.Get().(*model.DataGroup)
 }
 
-func (p *GaugeDataGroupPool) Free(dataGroup *model.DataGroup) {
+func (p *SimpleDataGroupPool) Free(dataGroup *model.DataGroup) {
 	dataGroup.Reset()
 	dataGroup.Name = constnames.NetRequestMetricGroupName
 	p.pool.Put(dataGroup)
