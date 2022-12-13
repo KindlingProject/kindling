@@ -20,6 +20,7 @@
 
 
 ### Bug fixes
+- Fix http-100 request is detected as NOSUPPORT([393](https://github.com/KindlingProject/kindling/pull/393))
 - Fix the wrong thread name in the trace profiling function. ([#385])(https://github.com/KindlingProject/kindling/pull/385)
 - Remove "reset" method of ScheduledTaskRoutine to fix a potential dead-lock issue. ([#369])(https://github.com/KindlingProject/kindling/pull/369)
 - Fix the bug where the pod metadata with persistent IP in the map is deleted incorrectly due to the deleting mechanism with a delay. ([#374](https://github.com/KindlingProject/kindling/pull/374))
