@@ -15,7 +15,6 @@ int startProfile();
 int stopProfile();
 void startProfileDebug(int pid, int tid);
 void stopProfileDebug();
-void stopProfileDebug();
 void getCaptureStatistics();
 void catchSignalUp();
 #ifdef __cplusplus
