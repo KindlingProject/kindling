@@ -5,6 +5,7 @@
 
 ## Unreleased
 ### New features
+- Add self-monitor tool: include kernel event log and gdb information of exit.([#398](https://github.com/KindlingProject/kindling/pull/398))
 - Support to configure `snaplen` through startup args.([#387](https://github.com/KindlingProject/kindling/pull/387))
 - Add tracing span data in cpu events. ([#384](https://github.com/KindlingProject/kindling/pull/384))
 - Add a new tool: A debug tool for Trace Profiling is provided for developers to troubleshoot problems.([#363](https://github.com/KindlingProject/kindling/pull/363))
