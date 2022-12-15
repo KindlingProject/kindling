@@ -22,6 +22,7 @@ class Camera {
     data: IThread[] = [];
     lineTimeList: ILineTime[] = [];
     timeThreshold: number = 0.005;
+    trace: any;
     traceId: string;
     svgId: string;
     svg: any;
@@ -66,6 +67,7 @@ class Camera {
         this.theme = (getStore('theme') as any) || 'light';
         this.data = option.data;
         this.lineTimeList = option.lineTimeList;
+        this.trace = option.trace;
         this.traceId = option.traceId;
         this.svgId = option?.svgId || 'camera_svg';
         this.nameWidth = option?.nameWidth || 150; // 侧边轴上的名称宽度包括跟柱图的间隔20
@@ -218,7 +220,9 @@ class Camera {
             });
             _.forEach(item.eventList, (event, idx2: number) => {
                 if (event.timeRate && event.timeRate > this.timeThreshold) {
-                    let timeWidth = event.timeRate * (this.svgWidth - this.nameWidth - this.padding);
+                    // let timeWidth = event.timeRate * (this.svgWidth - this.nameWidth - this.padding);
+                    let right = this.xScale(new Date(event.endTime));
+                    let timeWidth = right - event.left!;
                     let sevent: IEvent = _.find(eventList, {type: event.type}) as IEvent;
                     const eventWarp = barWarp.append('g')
                         .attr('id', `id_${idx}_${idx2}`)
@@ -298,7 +302,11 @@ class Camera {
                 // .attr('style', 'display: none')
                 .style('visibility', 'hidden')
                 .attr('x', (lock: IJavaLock) => this.xScale(new Date(lock.startTime)))
-                .attr('y', this.barPadding - 4)
+                .attr('y', this.barPadding - 4);
+
+
+            item.traceStartTimestamp && this.drawTraceStar(barWarp, item.traceStartTimestamp, item.tid);
+            item.traceEndTimestamp && this.drawTraceStar(barWarp, item.traceEndTimestamp, item.tid);
 
         });
         // 绘制图标上的X轴时间轴用于时间映射，但是页面不显示
@@ -391,6 +399,37 @@ class Camera {
                 _this.nameClick(tid);
             });
     }
+    drawTraceStar(barWarp, timestamp, tid) {
+        const starSymbol = d3.symbol().size(50).type(d3.symbolStar);
+        let position = this.xScale(new Date(timestamp));
+        barWarp.append('path')
+            .attr('class', 'start_icon')
+            .attr('d', starSymbol)
+            .attr('data-tid', tid)
+            .attr('data-timestamp', timestamp)
+            // .attr('id', `star_${idx}_${event.idx}`)
+            .attr('cursor', 'pointer')
+            .attr('transform', `translate(${position}, ${this.barPadding - 8})`);
+    }
+    handleStarClick(tid, timestamp) {
+        let {src_ip, src_port, dst_ip, dst_port} = this.trace.labels;
+        let operateFile = `${src_ip}:${src_port}->${dst_ip}:${dst_port}`;
+        let threadObj: IThread = _.find(this.data, {tid: parseInt(tid)})!;
+        timestamp = parseInt(timestamp);
+        let netEvent: IEventTime | null = null;
+        if (threadObj) {
+            _.forEach(threadObj.eventList, event => {
+                if (event.type === 'net') {
+                    if (event.info && event.info.file === operateFile) {
+                        if (event.startTime > timestamp - 2 && event.startTime < timestamp + 2 ) {
+                            netEvent = event;
+                        }
+                    }
+                }
+            });
+            netEvent && this.eventClick(netEvent);
+        }
+    }
     /**
      * 根据合并的事件判断当前绘制的虚线的颜色
      * 1.若存在net类型事件，返回net的颜色；2.若存在file类型事件，返回file的颜色；3.否则直接范返回黑色代码合并事件
@@ -416,7 +455,6 @@ class Camera {
     // 每次渲染或者筛选brush时，对时间占比很小绘制虚线的事件进行group聚合并绘制对应的虚线
     drawThreadEventDashLine(idx: number, lineData: IEventTime[], barWarp: any) {
         const _this = this;
-        const starSymbol = d3.symbol().size(50).type(d3.symbolStar);
         const groupLineData = _.groupBy(lineData, (item: IEventTime) => Math.ceil(item.left as number));
         let leftList = _.keys(groupLineData).map(v => parseInt(v));
         let group2: any = {};
@@ -471,15 +509,6 @@ class Camera {
                         .attr('width', 4)
                         .attr('x', parseInt(left) - 2)
                 });
-            if (_.some(list, (event: IEventTime) => event.active)) {
-                let event: IEventTime = _.find(list, (event: IEventTime) => event.active) as IEventTime;
-                barWarp.append('path')
-                    .attr('class', 'start_icon')
-                    .attr('d', starSymbol)
-                    .attr('id', `star_${idx}_${event.idx}`)
-                    .attr('cursor', 'pointer')
-                    .attr('transform', `translate(${left}, ${this.barPadding - 8})`);
-            }
         });
     }
     // 绘制各线程对应trace的处理时间段
@@ -569,8 +598,10 @@ class Camera {
                 _this.eventClick(evt);
             }
         });
-        d3.selectAll('.start_icon').on('click', (e) => {
-            this.handleEventRectClick(e);
+        d3.selectAll('.start_icon').on('click', function(e) {
+            let tid = d3.select(this).attr('data-tid');
+            let timestamp = d3.select(this).attr('data-timestamp');
+            _this.handleStarClick(tid, timestamp);
         });
     }
     // 点击虚线时，显示tooltip，显示对应聚合的事件列表。点击对应事件展示事件详情
@@ -909,7 +940,9 @@ class Camera {
                     const timeRate = ftime / timeRangeDiff;
                     event.left = this.xScale(new Date(stime)) as number;
                     if (timeRate && timeRate > this.timeThreshold) {
-                        let timeWidth = timeRate * (this.svgWidth - this.nameWidth - this.padding);
+                        // let timeWidth = timeRate * (this.svgWidth - this.nameWidth - this.padding);
+                        let right = this.xScale(new Date(event.endTime));
+                        let timeWidth = right - event.left!;
                         let sevent: IEvent = _.find(eventList, {type: event.type}) as IEvent;
                         const eventWarp = barWarp.append('g')
                             .attr('id', `id_${idx}_${idx2}`)

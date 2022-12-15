@@ -452,6 +452,7 @@ function Thread() {
     }
     const option: IOption = {
         data: nowTraceData,
+        trace: nowTrace,
         traceId: nowTrace?.labels?.trace_id || '',
         lineTimeList: lineTimeList,
         timeRange: nowTraceTimeRange,
