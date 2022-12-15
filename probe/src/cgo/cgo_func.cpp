@@ -4,6 +4,7 @@
 
 #include "cgo_func.h"
 #include "kindling.h"
+#include "catch_sig.h"
 
 int runForGo() { return init_probe(); }
 
@@ -17,3 +18,6 @@ void subEventForGo(char* eventName, char* category, void *params) { sub_event(ev
 void startProfileDebug(int pid, int tid) { start_profile_debug(pid, tid); }
 
 void stopProfileDebug() { stop_profile_debug(); }
+
+void getCaptureStatistics() { get_capture_statistics(); }
+void catchSignalUp() { sig_set_up(); }
