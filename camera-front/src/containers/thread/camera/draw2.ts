@@ -1049,7 +1049,7 @@ class Camera {
                         if (position > _this.nameWidth && position < _this.svgWidth) {
                             return 'display: block';
                         } else {
-                            return 'display: block';
+                            return 'display: none';
                         }
                     });
             }); 
