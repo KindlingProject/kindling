@@ -31,6 +31,7 @@
 - Fix the bug that duplicate CPU events are indexed into Elasticsearch. ([#359](https://github.com/KindlingProject/kindling/pull/359))
 - Implement the delay queue for exited thread, so as to avoid losing the data in the period before the thread exits. ([#365](https://github.com/KindlingProject/kindling/pull/365))
 - Fix the bug of incomplete records when threads arrive at the cpu analyzer for the first time. ([#364](https://github.com/KindlingProject/kindling/pull/364))
+- Fix the bug that multiple events cannot be correlated when they are in one ON-CPU data. ([#395](https://github.com/KindlingProject/kindling/pull/395))
 
 ## v0.5.0 - 2022-11-02
 ### New features
