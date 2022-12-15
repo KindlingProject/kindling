@@ -305,8 +305,8 @@ class Camera {
                 .attr('y', this.barPadding - 4);
 
 
-            item.traceStartTimestamp && this.drawTraceStar(barWarp, item.traceStartTimestamp, item.tid);
-            item.traceEndTimestamp && this.drawTraceStar(barWarp, item.traceEndTimestamp, item.tid);
+            item.traceStartTimestamp && this.drawTraceStar(threadWarp, item.traceStartTimestamp, item.tid);
+            item.traceEndTimestamp && this.drawTraceStar(threadWarp, item.traceEndTimestamp, item.tid);
 
         });
         // 绘制图标上的X轴时间轴用于时间映射，但是页面不显示
@@ -399,10 +399,11 @@ class Camera {
                 _this.nameClick(tid);
             });
     }
-    drawTraceStar(barWarp, timestamp, tid) {
+    // 绘制关键IO线程的read/write事件的 ☆
+    drawTraceStar(threadWarp, timestamp, tid) {
         const starSymbol = d3.symbol().size(50).type(d3.symbolStar);
         let position = this.xScale(new Date(timestamp));
-        barWarp.append('path')
+        threadWarp.append('path')
             .attr('class', 'start_icon')
             .attr('d', starSymbol)
             .attr('data-tid', tid)
@@ -411,6 +412,7 @@ class Camera {
             .attr('cursor', 'pointer')
             .attr('transform', `translate(${position}, ${this.barPadding - 8})`);
     }
+    // 点击 ☆ 的事件处理
     handleStarClick(tid, timestamp) {
         let {src_ip, src_port, dst_ip, dst_port} = this.trace.labels;
         let operateFile = `${src_ip}:${src_port}->${dst_ip}:${dst_port}`;
@@ -427,7 +429,7 @@ class Camera {
                     }
                 }
             });
-            netEvent && this.eventClick(netEvent);
+            this.eventClick(netEvent);
         }
     }
     /**
@@ -1034,6 +1036,20 @@ class Camera {
                             return _this.showLogFlag ? 'visibility: visible' : 'visibility: hidden';
                         } else {
                             return 'display: none';
+                        }
+                    });
+            }); 
+            d3.selectAll('.start_icon').each(function() {
+                let timestamp = d3.select(this).attr('data-timestamp');
+                let position = _this.xScale(new Date(parseInt(timestamp)));
+                console.log(position);
+                d3.select(this)
+                    .attr('transform', `translate(${position}, ${_this.barPadding - 8})`)
+                    .attr('style', () => {
+                        if (position > _this.nameWidth && position < _this.svgWidth) {
+                            return 'display: block';
+                        } else {
+                            return 'display: block';
                         }
                     });
             }); 
