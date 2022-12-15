@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"math/rand"
+	"os"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -48,6 +50,10 @@ type NetworkAnalyzer struct {
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
 	telemetry          *component.TelemetryTools
+
+	// snaplen is the maximum data size the event could accommodate bytes.
+	// It is set by setting the environment variable SNAPLEN. See https://github.com/KindlingProject/kindling/pull/387.
+	snaplen int
 }
 
 func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consumers []consumer.Consumer) analyzer.Analyzer {
@@ -71,7 +77,18 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 	}
 
 	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
+	na.snaplen = getSnaplenEnv()
 	return na
+}
+
+func getSnaplenEnv() int {
+	snaplen := os.Getenv("SNAPLEN")
+	snaplenInt, err := strconv.Atoi(snaplen)
+	if err != nil {
+		// Set 1000 bytes by default.
+		return 1000
+	}
+	return snaplenInt
 }
 
 func (na *NetworkAnalyzer) ConsumableEvents() []string {
@@ -110,13 +127,13 @@ func (na *NetworkAnalyzer) Start() error {
 
 	na.protocolMap = map[string]*protocol.ProtocolParser{}
 	parsers := make([]*protocol.ProtocolParser, 0)
-	for _, protocol := range na.cfg.ProtocolParser {
-		protocolparser := na.parserFactory.GetParser(protocol)
-		if protocolparser != nil {
-			na.protocolMap[protocol] = protocolparser
-			disableDisern, ok := disableDisernProtocols[protocol]
-			if !ok || !disableDisern {
-				parsers = append(parsers, protocolparser)
+	for _, protocolName := range na.cfg.ProtocolParser {
+		protocolParser := na.parserFactory.GetParser(protocolName)
+		if protocolParser != nil {
+			na.protocolMap[protocolName] = protocolParser
+			disableDiscern, ok := disableDisernProtocols[protocolName]
+			if !ok || !disableDiscern {
+				parsers = append(parsers, protocolParser)
 			}
 		}
 	}
@@ -195,13 +212,13 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 				mps := v.(*messagePairs)
 				var timeoutTs = mps.getTimeoutTs()
 				if timeoutTs != 0 {
-					var duration = (time.Now().UnixNano()/1000000000 - int64(timeoutTs)/1000000000)
+					var duration = time.Now().UnixNano()/1000000000 - int64(timeoutTs)/1000000000
 					if mps.responses != nil && duration >= int64(na.cfg.GetFdReuseTimeout()) {
 						// No FdReuse Request
-						na.distributeTraceMetric(mps, nil)
+						_ = na.distributeTraceMetric(mps, nil)
 					} else if duration >= int64(na.cfg.getNoResponseThreshold()) {
 						// No Response Request
-						na.distributeTraceMetric(mps, nil)
+						_ = na.distributeTraceMetric(mps, nil)
 					}
 				}
 				return true
@@ -212,10 +229,11 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 
 func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 	mps := &messagePairs{
-		connects:  newEvents(evt),
-		requests:  nil,
-		responses: nil,
-		mutex:     sync.RWMutex{},
+		connects:         newEvents(evt, na.snaplen),
+		requests:         nil,
+		responses:        nil,
+		mutex:            sync.RWMutex{},
+		maxPayloadLength: na.snaplen,
 	}
 	if pairInterface, exist := na.requestMonitor.LoadOrStore(mps.getKey(), mps); exist {
 		// There is an old message pair
@@ -223,14 +241,14 @@ func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 		// TODO: is there any need to check old connect event?
 		if oldPairs.requests == nil && oldPairs.connects != nil {
 			if oldPairs.connects.IsTimeout(evt, na.cfg.GetConnectTimeout()) {
-				na.distributeTraceMetric(oldPairs, mps)
+				_ = na.distributeTraceMetric(oldPairs, mps)
 			} else {
 				oldPairs.mergeConnect(evt)
 			}
 			return nil
 		}
 
-		na.distributeTraceMetric(oldPairs, mps)
+		_ = na.distributeTraceMetric(oldPairs, mps)
 	} else {
 		na.recordMessagePairSize(evt, 1)
 	}
@@ -247,10 +265,12 @@ func (na *NetworkAnalyzer) recordMessagePairSize(evt *model.KindlingEvent, count
 
 func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
 	mps := &messagePairs{
-		connects:  nil,
-		requests:  newEvents(evt),
-		responses: nil,
-		mutex:     sync.RWMutex{}}
+		connects:         nil,
+		requests:         newEvents(evt, na.snaplen),
+		responses:        nil,
+		mutex:            sync.RWMutex{},
+		maxPayloadLength: na.snaplen,
+	}
 	if pairInterface, exist := na.requestMonitor.LoadOrStore(mps.getKey(), mps); exist {
 		// There is an old message pair
 		var oldPairs = pairInterface.(*messagePairs)
@@ -268,7 +288,7 @@ func (na *NetworkAnalyzer) analyseRequest(evt *model.KindlingEvent) error {
 		}
 
 		if oldPairs.responses != nil || oldPairs.requests.IsSportChanged(evt) {
-			na.distributeTraceMetric(oldPairs, mps)
+			_ = na.distributeTraceMetric(oldPairs, mps)
 		} else {
 			oldPairs.mergeRequest(evt)
 		}
@@ -340,7 +360,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		}
 		netanalyzerParsedRequestTotal.Add(context.Background(), 1, attribute.String("protocol", record.Labels.GetStringValue(constlabels.Protocol)))
 		for _, nexConsumer := range na.nextConsumers {
-			nexConsumer.Consume(record)
+			_ = nexConsumer.Consume(record)
 		}
 		na.dataGroupPool.Free(record)
 	}
