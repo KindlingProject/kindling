@@ -144,6 +144,7 @@ function Thread() {
                 setloading(false);
                 message.warning('暂无数据');
                 setTraceList([]);
+                setNowTraceData([]);
                 setNowTrace({});
             }
         });
@@ -370,42 +371,49 @@ function Thread() {
     }
     const handleEventClick = (evt: any) => {
         console.log('event', evt);
-        if (showESQuery) {
-            if (evt.type === 'net' && evt.info) {
-                setInfoloading(true);
-                const tempIp = evt.info.file.split('->');
-                const [srcIp, srcPort] = tempIp[0].split(':');
-                const [dstIp, dstPort] = tempIp[1].split(':');
-                let type = '';
-                if (netReadTypes.indexOf(evt.info.operate) > -1) {
-                    type = parseInt(evt.info.requestType) === 1 ? 'request' : 'response'
-                }
-                if (netWriteTypes.indexOf(evt.info.operate) > -1) {
-                    type = parseInt(evt.info.requestType) === 1 ? 'response' : 'request'
-                }
-                const params = {
-                    pid: nowTrace.labels.pid,
-                    type: type,
-                    startTimestamp: parseInt(evt.endTime) - 2,
-                    endTimestamp: parseInt(evt.endTime) + 2,
-                    srcIp, 
-                    srcPort, 
-                    dstIp, 
-                    dstPort
-                };
-                getTracePayload(params).then(res => {
-                    const event: any = {
-                        ...evt,
-                        message: type === 'request' ? res.data.labels?.request_payload : res.data.labels?.response_payload,
-                        requestType: type,
-                        traceInfo: res.data
+        if (evt) {
+            if (showESQuery) {
+                if (evt.type === 'net' && evt.info) {
+                    setInfoloading(true);
+                    const tempIp = evt.info.file.split('->');
+                    const [srcIp, srcPort] = tempIp[0].split(':');
+                    const [dstIp, dstPort] = tempIp[1].split(':');
+                    let type = '';
+                    if (netReadTypes.indexOf(evt.info.operate) > -1) {
+                        type = parseInt(evt.info.requestType) === 1 ? 'request' : 'response'
+                    }
+                    if (netWriteTypes.indexOf(evt.info.operate) > -1) {
+                        type = parseInt(evt.info.requestType) === 1 ? 'response' : 'request'
+                    }
+                    const params = {
+                        pid: nowTrace.labels.pid,
+                        type: type,
+                        startTimestamp: parseInt(evt.endTime) - 2,
+                        endTimestamp: parseInt(evt.endTime) + 2,
+                        srcIp, 
+                        srcPort, 
+                        dstIp, 
+                        dstPort
                     };
-                    console.log('net event: ', event);
-                    setNowEvent(event);
-                    setTimeout(() => {
-                        setInfoloading(false);
-                    }, 100);
-                });
+                    getTracePayload(params).then(res => {
+                        const event: any = {
+                            ...evt,
+                            message: type === 'request' ? res.data.labels?.request_payload : res.data.labels?.response_payload,
+                            requestType: type,
+                            traceInfo: res.data
+                        };
+                        console.log('net event: ', event);
+                        setNowEvent(event);
+                        setTimeout(() => {
+                            setInfoloading(false);
+                        }, 100);
+                    });
+                } else {
+                    if (evt.active) {
+                        evt.message = evt.eventType === "netread" ? nowTrace.labels.request_payload : nowTrace.labels.response_payload;
+                    }
+                    setNowEvent(evt);
+                }
             } else {
                 if (evt.active) {
                     evt.message = evt.eventType === "netread" ? nowTrace.labels.request_payload : nowTrace.labels.response_payload;
@@ -413,10 +421,7 @@ function Thread() {
                 setNowEvent(evt);
             }
         } else {
-            if (evt.active) {
-                evt.message = evt.eventType === "netread" ? nowTrace.labels.request_payload : nowTrace.labels.response_payload;
-            }
-            setNowEvent(evt);
+            setNowEvent({});
         }
     }
 
@@ -452,6 +457,7 @@ function Thread() {
     }
     const option: IOption = {
         data: nowTraceData,
+        trace: nowTrace,
         traceId: nowTrace?.labels?.trace_id || '',
         lineTimeList: lineTimeList,
         timeRange: nowTraceTimeRange,

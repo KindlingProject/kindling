@@ -1,6 +1,7 @@
 // 绘制图表时配置option 
 export interface IOption {
     data: IThread[];
+    trace: any;
     traceId: string;
     requestTime?: Date[];
     lineTimeList: any[];
@@ -35,9 +36,6 @@ export type IEvent = {
     count?: number;
 }
 
-export type IEventInfo = {
-    
-}
 export type IEventTime  = {
     startTime: number;
     endTime: number;
@@ -76,9 +74,11 @@ export interface IThread {
     tid: number;
     name: string;
     active?: boolean;
-    transactionId: string;
+    transactionId?: string;
     startTime: number;
     endTime: number;
+    traceStartTimestamp?: number;
+    traceEndTimestamp?: number;
     eventList: IEventTime[];
     javaLockList: IJavaLock[];
     logList: ILogEvent[];
