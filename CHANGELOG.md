@@ -20,6 +20,7 @@
 
 
 ### Bug fixes
+- Fix the bug that multiple events cannot be correlated when they are in one ON-CPU data. ([#395](https://github.com/KindlingProject/kindling/pull/395))
 - Add the missed latency field for `cgoEvent` to fix the bug where the `request_sent_time` in `single_net_request_metric_group` is always 0. ([#394](https://github.com/KindlingProject/kindling/pull/394))
 - Fix http-100 request is detected as NOSUPPORT([393](https://github.com/KindlingProject/kindling/pull/393))
 - Fix the wrong thread name in the trace profiling function. ([#385])(https://github.com/KindlingProject/kindling/pull/385)
