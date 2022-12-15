@@ -697,7 +697,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         traceTimes = [minStart, maxEnd];
     }
 
-    return {data: result, eventlist, traceTimes, requestInfo: allInfo, traceId: trace_id};
+    return {data: result, eventlist, traceTimes, requestInfo: allInfo, traceId};
 }
 
 export const getLineTimesList = (requestTimes, traceTimes) => {
