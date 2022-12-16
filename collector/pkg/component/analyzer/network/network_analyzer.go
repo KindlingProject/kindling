@@ -456,8 +456,9 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 			mp := &messagePair{
 				request:  req,
 				response: nil,
+				natTuple: mps.natTuple,
 			}
-			records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
+			records = append(records, na.getRecordWithSinglePair(mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
 		}
 		return records
 	} else {
@@ -480,8 +481,9 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 			mp := &messagePair{
 				request:  mps.requests.getEvent(matchIdx),
 				response: resp,
+				natTuple: mps.natTuple,
 			}
-			records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), responseMsg.GetAttributes()))
+			records = append(records, na.getRecordWithSinglePair(mp, parser.GetProtocol(), responseMsg.GetAttributes()))
 		}
 		// 498 Case
 		reqSize := mps.requests.size()
@@ -491,8 +493,9 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 				mp := &messagePair{
 					request:  req,
 					response: nil,
+					natTuple: mps.natTuple,
 				}
-				records = append(records, na.getRecordWithSinglePair(mps, mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
+				records = append(records, na.getRecordWithSinglePair(mp, parser.GetProtocol(), parsedReqMsgs[i].GetAttributes()))
 			}
 		}
 		return records
@@ -542,7 +545,7 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
-	addTid(labels, evt, mps.responses)
+	addMessagePairsTid(labels, mps)
 	labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
@@ -597,14 +600,14 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 // getRecordWithSinglePair generates a record whose metrics are copied from the input messagePair,
 // instead of messagePairs. This is used only when there could be multiple real requests in messagePairs.
 // For now, only messagePairs with DNS protocol would run into this method.
-func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messagePair, protocol string, attributes *model.AttributeMap) *model.DataGroup {
+func (na *NetworkAnalyzer) getRecordWithSinglePair(mp *messagePair, protocol string, attributes *model.AttributeMap) *model.DataGroup {
 	evt := mp.request
 
 	slow := na.isSlow(mp.getDuration(), protocol)
 	ret := na.dataGroupPool.Get()
 	labels := ret.Labels
 	labels.UpdateAddIntValue(constlabels.Pid, int64(evt.GetPid()))
-	addTid(labels, evt, mps.responses)
+	addMessagePairTid(labels, mp)
 	labels.UpdateAddStringValue(constlabels.Comm, evt.GetComm())
 	labels.UpdateAddStringValue(constlabels.SrcIp, evt.GetSip())
 	labels.UpdateAddStringValue(constlabels.DstIp, evt.GetDip())
@@ -620,9 +623,8 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	labels.UpdateAddStringValue(constlabels.Protocol, protocol)
 
 	labels.Merge(attributes)
-	if mps.responses != nil && mp.response != nil {
-		endTimestamp := mp.response.Timestamp
-		labels.UpdateAddIntValue(constlabels.EndTimestamp, int64(endTimestamp))
+	if mp.response != nil {
+		labels.UpdateAddIntValue(constlabels.EndTimestamp, int64(mp.response.Timestamp))
 	}
 	if mp.response == nil {
 		addProtocolPayload(protocol, labels, evt.GetData(), nil)
@@ -631,14 +633,14 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	}
 
 	// If no protocol error found, we check other errors
-	if !labels.GetBoolValue(constlabels.IsError) && mps.responses == nil {
+	if !labels.GetBoolValue(constlabels.IsError) && mp.response == nil {
 		labels.AddBoolValue(constlabels.IsError, true)
 		labels.AddIntValue(constlabels.ErrorType, int64(constlabels.NoResponse))
 	}
 
-	if nil != mps.natTuple {
-		labels.UpdateAddStringValue(constlabels.DnatIp, mps.natTuple.ReplSrcIP.String())
-		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mps.natTuple.ReplSrcPort))
+	if nil != mp.natTuple {
+		labels.UpdateAddStringValue(constlabels.DnatIp, mp.natTuple.ReplSrcIP.String())
+		labels.UpdateAddIntValue(constlabels.DnatPort, int64(mp.natTuple.ReplSrcPort))
 	}
 
 	ret.UpdateAddIntMetric(constvalues.ConnectTime, 0)
@@ -653,10 +655,27 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	return ret
 }
 
-func addTid(labels *model.AttributeMap, evt *model.KindlingEvent, responses *events) {
-	labels.UpdateAddIntValue(constlabels.RequestTid, int64(evt.GetTid()))
-	if responses != nil {
-		labels.UpdateAddIntValue(constlabels.ResponseTid, int64(responses.event.GetTid()))
+func addMessagePairTid(labels *model.AttributeMap, mp *messagePair) {
+	if mp.request != nil {
+		labels.UpdateAddIntValue(constlabels.RequestTid, int64(mp.request.GetTid()))
+	} else {
+		labels.UpdateAddIntValue(constlabels.RequestTid, 0)
+	}
+	if mp.response != nil {
+		labels.UpdateAddIntValue(constlabels.ResponseTid, int64(mp.response.GetTid()))
+	} else {
+		labels.UpdateAddIntValue(constlabels.ResponseTid, 0)
+	}
+}
+
+func addMessagePairsTid(labels *model.AttributeMap, mps *messagePairs) {
+	if mps.requests != nil {
+		labels.UpdateAddIntValue(constlabels.RequestTid, int64(mps.requests.event.GetTid()))
+	} else {
+		labels.UpdateAddIntValue(constlabels.RequestTid, 0)
+	}
+	if mps.responses != nil {
+		labels.UpdateAddIntValue(constlabels.ResponseTid, int64(mps.responses.event.GetTid()))
 	} else {
 		labels.UpdateAddIntValue(constlabels.ResponseTid, 0)
 	}
