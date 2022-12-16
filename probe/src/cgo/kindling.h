@@ -42,6 +42,8 @@ void print_profile_debug_info(sinsp_evt* sevt);
 
 void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps);
 
+void get_capture_statistics();
+
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);

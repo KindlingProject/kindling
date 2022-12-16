@@ -65,6 +65,8 @@ func (r *CgoReceiver) Start() error {
 	if res == 1 {
 		return fmt.Errorf("fail to init probe")
 	}
+	go r.getCaptureStatistics()
+	go r.catchSignalUp()
 	time.Sleep(2 * time.Second)
 	_ = r.subEvent()
 	// Wait for the C routine running
@@ -213,4 +215,12 @@ func (r *CgoReceiver) StopProfile() error {
 
 func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, stop func() error) {
 	return "cgoreceiver", r.StartProfile, r.StopProfile
+}
+
+func (r *CgoReceiver) getCaptureStatistics() {
+	C.getCaptureStatistics()
+}
+
+func (r *CgoReceiver) catchSignalUp() {
+	C.catchSignalUp()
 }
