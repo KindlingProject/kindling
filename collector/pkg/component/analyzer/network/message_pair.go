@@ -291,6 +291,7 @@ func (mps *messagePairs) getResponseSize() uint64 {
 type messagePair struct {
 	request  *model.KindlingEvent
 	response *model.KindlingEvent
+	natTuple *conntracker.IPTranslation
 }
 
 func (mp *messagePair) getSentTime() int64 {
