@@ -23,19 +23,24 @@ func createDataGroup() interface{} {
 	return dataGroup
 }
 
-type DataGroupPool struct {
+type DataGroupPool interface {
+	Get() *model.DataGroup
+	Free(dataGroup *model.DataGroup)
+}
+
+type SimpleDataGroupPool struct {
 	pool *sync.Pool
 }
 
-func NewDataGroupPool() *DataGroupPool {
-	return &DataGroupPool{pool: &sync.Pool{New: createDataGroup}}
+func NewDataGroupPool() DataGroupPool {
+	return &SimpleDataGroupPool{pool: &sync.Pool{New: createDataGroup}}
 }
 
-func (p *DataGroupPool) Get() *model.DataGroup {
+func (p *SimpleDataGroupPool) Get() *model.DataGroup {
 	return p.pool.Get().(*model.DataGroup)
 }
 
-func (p *DataGroupPool) Free(dataGroup *model.DataGroup) {
+func (p *SimpleDataGroupPool) Free(dataGroup *model.DataGroup) {
 	dataGroup.Reset()
 	dataGroup.Name = constnames.NetRequestMetricGroupName
 	p.pool.Put(dataGroup)

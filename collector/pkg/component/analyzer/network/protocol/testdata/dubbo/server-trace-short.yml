@@ -2,7 +2,7 @@ trace:
   key: shortData
   requests:
     -
-      name: "read"
+      name: "write"
       timestamp: 100000000
       user_attributes:
         latency: 5000
@@ -16,7 +16,7 @@ trace:
           - "3022|Ljava/l"
   responses:
     -
-      name: "write"
+      name: "read"
       timestamp: 101000000
       user_attributes:
         latency: 40000
