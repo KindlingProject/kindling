@@ -11,6 +11,7 @@
 - Support the protocol RocketMQ.([#328](https://github.com/KindlingProject/kindling/pull/328))
 
 ### Enhancements
+- Add self-monitor tool: include kernel event log and gdb information of exit.([#398](https://github.com/KindlingProject/kindling/pull/398))
 - Adjust max depth of stack trace to 20. ([#399](https://github.com/KindlingProject/kindling/pull/399))
 - Add the field `end_timestamp` to the trace data to make it easier for querying. ([#380](https://github.com/KindlingProject/kindling/pull/380))
 - Add `request_tid` and `response_tid` for trace labels.([#379](https://github.com/KindlingProject/kindling/pull/379))

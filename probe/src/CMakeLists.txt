@@ -10,7 +10,7 @@ set(SOURCE_FILES
 		cgo/cgo_func.cpp
 		cgo/kindling.cpp
 		converter/cpu_converter.cpp
-	)
+        cgo/catch_sig.cpp cgo/catch_sig.h)
 
 add_library(kindling SHARED ${SOURCE_FILES})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
