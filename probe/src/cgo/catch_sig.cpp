@@ -14,7 +14,7 @@
 
 static size_t get_executable_path(char* processdir, char* processname, size_t len) {
   char* path_end;
-  if (readlink("/host/proc/self/exe", processdir, len) <= 0) return -1;
+  if (readlink("/proc/self/exe", processdir, len) <= 0) return -1;
   printf("process dir: %s\n", processdir);
   fflush(stdout);
   path_end = strrchr(processdir, '/');
@@ -41,7 +41,7 @@ static void print_core(int signum, siginfo_t* info, void* secret, struct sigacti
   fflush(stdout);
   get_executable_path(path, processname, sizeof(path));
   // TODO!!!!
-  sprintf(cmd, "./pl/gdb_print.sh ./pl/%s ./core.%u", processname, getpid());
+  sprintf(cmd, "sh ./gdb_print.sh ./%s ./core.%u", processname, getpid());
   system(cmd);
   oldact->sa_sigaction(signum, info, secret);
 }
