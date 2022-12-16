@@ -179,6 +179,9 @@ export default function EventDetail(props: Props) {
       }
       setNetColumnList(netColumns);
       setTraceData(traceData);
+    } else {
+      setNetColumnList(netTraceList);
+      setTraceData({});
     }
     if (data.info) {
       info = {
@@ -199,6 +202,9 @@ export default function EventDetail(props: Props) {
   useEffect(() => {
     if (data) {
       init(data);
+    } else {
+      setSpecifications([]);
+      setNetColumnList([]);
     }
   }, [data]);
 

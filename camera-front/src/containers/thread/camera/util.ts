@@ -391,14 +391,14 @@ const BigType = {
     '6': 'epoll'
 }
 export const dataHandle = (data: any, timeRange, trace: any) => {
-    let {trace_id, src_ip, src_port, dst_ip, dst_port} = trace.labels;
+    let {trace_id, request_tid, response_tid, end_timestamp} = trace.labels;
     let requestStartTimestamp = Math.floor(trace.timestamp / 1000000);
     let totalTime: any = _.find(trace.metrics, {Name: 'request_total_time'});
     let requestEndTimestamp = Math.floor((trace.timestamp + totalTime.Data.Value) / 1000000);
-    // let requestEndTimestamp = Math.floor((trace.timestamp + trace.metrics.request_total_time) / 1000000);
     let result: IThread[] = [];
     const groupData = _.groupBy(data, 'tid');
     const eventlist = _.cloneDeep(eventList);
+    let requestTraceId, responseTraceId;
     _.forEach(groupData, (list, key) => {
         let threadObj:IThread = {
             pid: list[0].pid,
@@ -412,6 +412,16 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
             logList: [],
             traceList: []
         };
+        /**
+         * 根据trace中的timestamp、end_timestamp、request_tid response_tid标识trace开始跟结束的标志 ☆
+         * 点击 ☆ 的时候需要根据这个trace时间戳去找时间附近对应的net事件
+         */
+        if (threadObj.tid === request_tid) {
+            threadObj.traceStartTimestamp = requestStartTimestamp;
+        }
+        if (threadObj.tid === response_tid) {
+            threadObj.traceEndTimestamp = Math.floor(end_timestamp / 1000000);
+        }
         // cpuEvents 和 javaFutexEvents中存在不同数据段内返回startTime完全一致的数据，需要对重复数据进行过滤
         let cpuEvents = _.chain(list).map('cpuEvents').flatten().uniqBy('startTime').value();
         let javaFutexEvents = _.chain(list).map('javaFutexEvents').flatten().uniqBy('startTime').value();
@@ -529,59 +539,25 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                 startTime = endTime;
             });
         });
-        // 判断trace中两个trace时间段内与当前trace的src_ip，src_port, dst_ip，dst_port相同的操作地址
-        let operateFile = `${src_ip}:${src_port}->${dst_ip}:${dst_port}`;
-        let netEventList = _.filter(threadObj.eventList, event => event.type === 'net');
-        let activeNetTime: any = null;
-        let activeNetType: any = null;
-        if (netEventList.length > 0) {
-            _.forEach(threadObj.eventList, event => {
-                if (event.type === 'net') {
-                    if (event.info && event.info.file === operateFile) {
-                        console.log(operateFile, requestStartTimestamp, requestEndTimestamp);
-                        // console.log('current event', event);
-                        if (netReadTypes.indexOf(event.info.operate) > -1 && event.startTime > requestStartTimestamp - 2 && event.startTime < requestStartTimestamp + 2 ) {
-                            // console.log('current event read', event);
-                            event.active = true;
-                            activeNetTime = event.startTime;
-                            activeNetType = 1;
-                        }
-                        if (netWriteTypes.indexOf(event.info.operate) > -1 && event.startTime > requestEndTimestamp - 10 && event.startTime < requestEndTimestamp + 10 ) {
-                            // console.log('current event write', event);
-                            event.active = true;
-                            activeNetTime = event.startTime;
-                            activeNetType = 0;
-                        }
-                    }
-                }
-            });
-        }
 
-        if (activeNetTime && !trace_id) {
-            _.forEach(transactionIdsList, item => {
-                let tempTime = formatTimsToMS(item.timestamp);
-                if (tempTime < activeNetTime + 1 && activeNetTime - 1 < tempTime && activeNetType === item.isEntry) {
-                    trace_id = item.traceId;
+        /**
+         * 若返回trace没有traceId的时候，根据 request_tid 和 response_tid 在对应的线程 transactionIds 中在trace timestamp 和end_timestamp内的trace数据
+         * 当 response_tid 时，timestamp越靠近end_timestamp trace的优先级越高，反之request_tid时，越靠近timestamp优先级越高
+         * response_tid找出的traceId的优先级更高（即 requestTraceId != responseTraceId 时，traceId = responseTraceId）
+         */
+        if (!trace_id && transactionIdsList.length > 0) {
+            threadObj.traceList = transactionIdsList;
+            if (threadObj.tid === request_tid || threadObj.tid === response_tid) {
+                let traceList = _.filter(transactionIdsList, item => item.timestamp < end_timestamp && item.timestamp > trace.timestamp);
+                if (traceList.length > 0 && threadObj.tid === request_tid) {
+                    requestTraceId = traceList.sort((a, b) => a.timestamp - b.timestamp)[0].traceId
                 }
-            });
-        }
-
-        // traceList处理
-        if (transactionIdsList.length > 0) {
-            const sameTraceList = _.uniqBy(_.filter(transactionIdsList, item => item.traceId === trace_id), 'timestamp');
-            console.log('sameTraceList', sameTraceList);
-            for(let i = 0;i< sameTraceList.length; i++) {
-                if (i % 2 === 0 && sameTraceList[i+1]) {
-                    threadObj.traceList.push({
-                        traceId: sameTraceList[i].traceId,
-                        startTime: formatTimsToMS(sameTraceList[i].timestamp),
-                        endTime: formatTimsToMS(sameTraceList[i + 1].timestamp),
-                        time: formatTimsToMS(sameTraceList[i + 1].timestamp - sameTraceList[i].timestamp),
-                    });
+                if (traceList.length > 0 && threadObj.tid === response_tid) {
+                    responseTraceId = traceList.sort((a, b) => b.timestamp - a.timestamp)[0].traceId;
                 }
             }
-            // console.log(threadObj.name, threadObj.traceList);
         }
+
         // java lock数据处理
         if (javaFutexEvents && javaFutexEvents.length > 0) {
             _.forEach(javaFutexEvents, lockEvent => {
@@ -620,6 +596,27 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         });
         result.push(threadObj);
     });
+
+    // console.log('requestTraceId', 'responseTraceId', requestTraceId, responseTraceId);
+    let traceId = trace_id;
+    if (!trace_id) {
+        traceId = responseTraceId;
+    }
+    _.forEach(result, item => {
+        const sameTraceList = _.uniqBy(_.filter(item.traceList, item => item.traceId === traceId), 'timestamp');
+        item.traceList = [];
+        for(let i = 0;i < sameTraceList.length; i++) {
+            if (i % 2 === 0 && sameTraceList[i+1]) {
+                item.traceList.push({
+                    traceId: sameTraceList[i].traceId,
+                    startTime: formatTimsToMS(sameTraceList[i].timestamp),
+                    endTime: formatTimsToMS(sameTraceList[i + 1].timestamp),
+                    time: formatTimsToMS(sameTraceList[i + 1].timestamp - sameTraceList[i].timestamp),
+                });
+            }
+        }
+    });
+    
     // 判断当前线程日志中解析的traceId是否包含trace数据中traceId
     _.forEach(result, item => {
         let logTraceIdList = _.chain(item.logList).map('traceId').compact().value();
@@ -699,8 +696,8 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         let maxEnd = _.max(_.map(allTraceList, 'endTime'));
         traceTimes = [minStart, maxEnd];
     }
-    // console.log(traceTimes);
-    return {data: result, eventlist, traceTimes, requestInfo: allInfo, traceId: trace_id};
+
+    return {data: result, eventlist, traceTimes, requestInfo: allInfo, traceId};
 }
 
 export const getLineTimesList = (requestTimes, traceTimes) => {
