@@ -620,7 +620,7 @@ func (na *NetworkAnalyzer) getRecordWithSinglePair(mps *messagePairs, mp *messag
 	labels.UpdateAddStringValue(constlabels.Protocol, protocol)
 
 	labels.Merge(attributes)
-	if mps.responses != nil {
+	if mps.responses != nil && mp.response != nil {
 		endTimestamp := mp.response.Timestamp
 		labels.UpdateAddIntValue(constlabels.EndTimestamp, int64(endTimestamp))
 	}
