@@ -3,6 +3,9 @@ package tcpconnectanalyzer
 import (
 	"time"
 
+	"github.com/hashicorp/go-multierror"
+	"go.uber.org/zap"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpconnectanalyzer/internal"
@@ -11,8 +14,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"github.com/hashicorp/go-multierror"
-	"go.uber.org/zap"
 )
 
 const Type analyzer.Type = "tcpconnectanalyzer"
@@ -123,7 +124,7 @@ func (a *TcpConnectAnalyzer) consumeChannelEvent(event *model.KindlingEvent) {
 		return
 	}
 	// Connection is not established yet
-	if connectStats == nil {
+	if connectStats == nil || connectStats.ConnKey.SrcPort == 0 {
 		return
 	}
 
