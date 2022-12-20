@@ -8,7 +8,7 @@ trace:
         latency: 5000
         res: 398
         data:
-          - "dabbc20000000000000001d20000017e"
+          - "hex|dabbc20000000000000001d20000017e"
           - "05|2.6.2"
           - "302a|io.kindling.dubbo.api.service.OrderService"
           - "05|0.0.0"
@@ -22,7 +22,7 @@ trace:
         latency: 40000
         res: 35
         data:
-          - "dabb021400000000000001d200000013"
+          - "hex|dabb021400000000000001d200000013"
           - "9111|Thisisaresult."
   expects:
     -

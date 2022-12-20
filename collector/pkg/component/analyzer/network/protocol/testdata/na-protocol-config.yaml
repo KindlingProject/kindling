@@ -1,7 +1,8 @@
 analyzers:
   networkanalyzer:
     connect_timeout: 100
-    fd_reuse_timeout: 15
+    fd_reuse_timeout: 60
+    no_response_threshold: 120
     response_slow_threshold: 500
     enable_conntrack: false
     conntrack_max_state_size: 131072
@@ -12,7 +13,7 @@ analyzers:
     protocol_config:
       - key: "http"
         ports: [ 80 ]
-        payload_length: 80
+        payload_length: 200
       - key: "dubbo"
         payload_length: 80
       - key: "mysql"

@@ -9,11 +9,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
-const (
-	LOWER32 = 0x00000000FFFFFFFF
-	LOWER16 = 0x000000000000FFFF
-)
-
 type mergableEvent struct {
 	events []*model.KindlingEvent // Keep No more than 10 events.
 
@@ -24,13 +19,15 @@ type mergableEvent struct {
 }
 
 type events struct {
-	event    *model.KindlingEvent
-	mergable *mergableEvent
+	event            *model.KindlingEvent
+	mergable         *mergableEvent
+	maxPayloadLength int
 }
 
-func newEvents(evt *model.KindlingEvent) *events {
+func newEvents(evt *model.KindlingEvent, maxPayloadSize int) *events {
 	return &events{
-		event: evt,
+		event:            evt,
+		maxPayloadLength: maxPayloadSize,
 	}
 }
 
@@ -78,15 +75,29 @@ func (evts *events) mergeEvent(evt *model.KindlingEvent) {
 	evts.mergable.resVal += evt.GetResVal()
 	evts.mergable.ts = evt.Timestamp
 
-	if len(evts.mergable.data) < 80 {
-		var appendLength int
-		newData := evt.GetData()
-		if 80-len(evts.mergable.data) > len(newData) {
-			appendLength = len(newData)
-		} else {
-			appendLength = 80 - len(evts.mergable.data)
-		}
-		evts.mergable.data = append(evts.mergable.data, newData[0:appendLength]...)
+	// We have a constraint on the payload size. The merged data can accommodate a maximum payload size
+	// as same as SANPLEN that is also the maximum size of the syscall data.
+	// If the previous data size is smaller than maxPayloadLength, the later one would fill that gap.
+	appendLength := evts.getAppendLength(len(evt.GetData()))
+	if appendLength == 0 {
+		return
+	}
+	evts.mergable.data = append(evts.mergable.data, evt.GetData()[0:appendLength]...)
+}
+
+// getAppendLength returns the length to accommodate the new event according to the remaining size and
+// the new event's size.
+func (evts *events) getAppendLength(newEventLength int) int {
+	remainingSize := evts.maxPayloadLength - len(evts.mergable.data)
+	// If the merged data is full
+	if remainingSize <= 0 {
+		return 0
+	}
+	// If the merged data is not full, return the smaller size
+	if remainingSize > newEventLength {
+		return newEventLength
+	} else {
+		return remainingSize
 	}
 }
 
@@ -139,12 +150,13 @@ func (evts *events) getDuration() uint64 {
 }
 
 type messagePairs struct {
-	connects  *events
-	requests  *events
-	responses *events
-	natTuple  *conntracker.IPTranslation
-	isSend    int32
-	mutex     sync.RWMutex // only for update latency and resval now
+	connects         *events
+	requests         *events
+	responses        *events
+	natTuple         *conntracker.IPTranslation
+	isSend           int32
+	mutex            sync.RWMutex // only for update latency and resval now
+	maxPayloadLength int
 }
 
 func (mps *messagePairs) checkSend() bool {
@@ -166,7 +178,7 @@ func (mps *messagePairs) getKey() messagePairKey {
 func (mps *messagePairs) mergeConnect(evt *model.KindlingEvent) {
 	mps.mutex.Lock()
 	if mps.requests == nil {
-		mps.connects = newEvents(evt)
+		mps.connects = newEvents(evt, mps.maxPayloadLength)
 	} else {
 		mps.connects.mergeEvent(evt)
 	}
@@ -186,7 +198,7 @@ func (mps *messagePairs) putRequestBack(evts *events) {
 func (mps *messagePairs) mergeRequest(evt *model.KindlingEvent) {
 	mps.mutex.Lock()
 	if mps.requests == nil {
-		mps.requests = newEvents(evt)
+		mps.requests = newEvents(evt, mps.maxPayloadLength)
 	} else {
 		mps.requests.mergeEvent(evt)
 	}
@@ -196,7 +208,7 @@ func (mps *messagePairs) mergeRequest(evt *model.KindlingEvent) {
 func (mps *messagePairs) mergeResponse(evt *model.KindlingEvent) {
 	mps.mutex.Lock()
 	if mps.responses == nil {
-		mps.responses = newEvents(evt)
+		mps.responses = newEvents(evt, mps.maxPayloadLength)
 	} else {
 		mps.responses.mergeEvent(evt)
 	}
