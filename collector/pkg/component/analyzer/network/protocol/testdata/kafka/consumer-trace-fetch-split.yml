@@ -8,11 +8,11 @@ trace:
         latency: 40000
         res: 107
         data:
-          - "000000670001000b00001a91"
+          - "hex|000000670001000b00001a91"
           - "0007|rdkafka"
-          - "ffffffff000001f400000001000fa0000100000000ffffffff00000001"
+          - "hex|ffffffff000001f400000001000fa0000100000000ffffffff00000001"
           - "0011|container-monitor"
-          - "0000000100000000ffffff"
+          - "hex|0000000100000000ffffff"
 
   responses:
     -
@@ -22,7 +22,7 @@ trace:
         latency: 7000
         res: 8
         data:
-          - "0000005300001a91"
+          - "hex|0000005300001a91"
     -
       name: "recvmsg"
       timestamp: 100020000
@@ -30,9 +30,9 @@ trace:
         latency: 3000
         res: 61
         data:
-          - "0000000000000000000000000001"
+          - "hex|0000000000000000000000000001"
           - "0011|container-monitor"
-          - "000000010000000000000000000000000e840000000000000e84000000000000000000000000ffffffff00000000"
+          - "hex|000000010000000000000000000000000e840000000000000e84000000000000000000000000ffffffff00000000"
   expects:
     -
       Timestamp: 99960000
@@ -68,4 +68,4 @@ trace:
         error_type: 0
         end_timestamp: 100020000
         request_payload: "...g..........rdkafka...............................container-monitor..........."
-        response_payload: "...S....................container-monitor......................................."
+        response_payload: "...S....................container-monitor.............................................."

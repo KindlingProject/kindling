@@ -6,15 +6,17 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
+
+	"github.com/spf13/viper"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/factory"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
-	"github.com/spf13/viper"
 )
 
 func TestHttpProtocol(t *testing.T) {
@@ -117,6 +119,7 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 			na.slowThresholdMap[config.Key] = config.Threshold
 		}
 		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
+		na.snaplen = 200
 		na.Start()
 	}
 	return na
@@ -348,7 +351,11 @@ type TraceEvent struct {
 }
 
 func (evt *TraceEvent) exchange(common *EventCommon) *model.KindlingEvent {
-	var byteData = getData(evt.UserAttributes.Data)
+	byteData, err := getData(evt.UserAttributes.Data)
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		return nil
+	}
 
 	modelEvt := &model.KindlingEvent{
 		Source:       model.Source(common.Source),
@@ -384,49 +391,64 @@ func (evt *TraceEvent) exchange(common *EventCommon) *model.KindlingEvent {
 	return modelEvt
 }
 
-/**
-* Convert Following format to byte array.
-* size + | + ASCII string
-* Hex string
-* ASCII string
- */
-func getData(datas []string) []byte {
+// getData converts the following format to byte array.
+//
+// There are the following formats supported:
+// 1. {hex number}|{string}
+//    The first part is a number in hexadecimal which is part of the original data.
+//    It holds different meanings in different protocols.
+// 2. (hex)|{hex value}
+//    The first part is the constant "hex" and the second part is its value
+// 3. (string)|{string value}
+//    The first part is the constant "string" and the second part is its value
+// 4. {string value}
+//    If there are no the separator "|" existing, the data is considered as a string
+// See the files under the "testdata" directory for how to write your data.
+func getData(datas []string) ([]byte, error) {
 	dataBytes := make([]byte, 0)
-
 	for _, data := range datas {
-		if len(data) > 0 {
-			dataSplit := getSplit(data)
-			if dataSplit > 0 {
-				sizeArray, _ := hex.DecodeString(data[0:dataSplit])
-				dataBytes = append(dataBytes, sizeArray...)
-
-				dataLen := len(data)
-				for i := dataSplit + 1; i < dataLen; i++ {
-					dataBytes = append(dataBytes, data[i])
-				}
-			} else if isHex(data[0]) {
-				hexArray, _ := hex.DecodeString(data)
-				dataBytes = append(dataBytes, hexArray...)
-			} else {
-				byteArray := []byte(data)
-				dataBytes = append(dataBytes, byteArray...)
+		if len(data) <= 0 {
+			continue
+		}
+		splitIndex := getSplitIndex(data)
+		// If no separator exists, the data is a string
+		if splitIndex == 0 {
+			byteArray := []byte(data)
+			dataBytes = append(dataBytes, byteArray...)
+			continue
+		}
+		// If there is a separator.
+		prefix := strings.TrimSpace(data[0:splitIndex])
+		suffix := strings.TrimSpace(data[splitIndex+1:])
+		switch prefix {
+		case "hex":
+			hexArray, err := hex.DecodeString(suffix)
+			if err != nil {
+				return []byte{}, fmt.Errorf("the second part is not a hexadecimal number: %w", err)
 			}
+			dataBytes = append(dataBytes, hexArray...)
+		case "string":
+			byteArray := []byte(suffix)
+			dataBytes = append(dataBytes, byteArray...)
+		default:
+			// The first part should be a hexadecimal number
+			hexArray, err := hex.DecodeString(prefix)
+			if err != nil {
+				return []byte{}, fmt.Errorf("the first part of data is not correct: %w", err)
+			}
+			dataBytes = append(dataBytes, hexArray...)
+			dataBytes = append(dataBytes, suffix...)
 		}
 	}
-	return dataBytes
+	return dataBytes, nil
 }
 
-func getSplit(data string) int {
-	if len(data) >= 3 && data[2] == '|' {
-		return 2
+func getSplitIndex(data string) int {
+	index := strings.Index(data, "|")
+	if index == -1 {
+		return 0
 	}
-	if len(data) >= 5 && data[4] == '|' {
-		return 4
-	}
-	if len(data) >= 9 && data[8] == '|' {
-		return 8
-	}
-	return 0
+	return index
 }
 
 func isHex(b byte) bool {

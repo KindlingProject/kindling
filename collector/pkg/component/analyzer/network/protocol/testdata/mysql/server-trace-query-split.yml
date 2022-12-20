@@ -8,7 +8,7 @@ trace:
         latency: 2000
         res: 4
         data:
-          - "14000000"
+          - "hex|14000000"
     -
       name: "recvfrom"
       timestamp: 100002000
@@ -25,16 +25,16 @@ trace:
         latency: 15000
         res: 160
         data:
-          - "0100000102"
-          - "39000002"
+          - "hex|0100000102"
+          - "hex|39000002"
           - "03|def"
           - "11|container-monitor"
           - "05|dummy"
           - "05|dummy"
           - "04|name"
           - "04|name"
-          - "0c2d00b4000000fd0110000000"
-          - "3b000003"
+          - "hex|0c2d00b4000000fd0110000000"
+          - "hex|3b000003"
           - "03|def"
           - "11|conta"
   expects:

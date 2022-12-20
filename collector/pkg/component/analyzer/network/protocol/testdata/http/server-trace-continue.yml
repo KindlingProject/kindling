@@ -79,7 +79,7 @@ trace:
           - "Date: Mon, 12 Dec 2022 09:18:27 GMT\r\n"
           - "\r\n"
           - "35\r\n"
-          - '{"success":true,"data":"sleep=1, body size is 16082"}\r\n'
+          - "{\"success\":true,\"data\":\"sleep=1, body size is 16082\"}\r\n"
     # Response Body[5]
     -
       name: "write"
@@ -123,5 +123,5 @@ trace:
         http_url: "/io/bigBody?sleep=1"
         http_status_code: 200
         end_timestamp: 601100000
-        request_payload: "POST /io/bigBody?sleep=1 HTTP/1.1\r\nUser-Agent: curl/7.29.0\r\nHost: 10.0.2.4:19999"
-        response_payload: "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\nContent-Typ"
+        request_payload: "POST /io/bigBody?sleep=1 HTTP/1.1\r\nUser-Agent: curl/7.29.0\r\nHost: 10.0.2.4:19999\r\naccept: */*\r\nContent-Type: application/json\r\nContent-Length: 16082\r\nExpect: 100-continue\r\n\r\naaaaaaaaaaaaaaaaaaaaaaaaaa"
+        response_payload: "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\nContent-Type: application/json\r\nDate: Mon, 12 Dec 2022 09:18:27 GMT\r\n\r\n35\r\n{\"success\":true,\"data\":\"sleep=1, body size is 16082\"}\r\n0"
