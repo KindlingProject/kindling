@@ -21,7 +21,7 @@ spec:
         imagePullPolicy: Always
         resources:
           limits:
-            memory: 100Mi
+            memory: 300Mi
           requests:
             memory: 30Mi
         ports:
@@ -40,7 +40,7 @@ spec:
           privileged: true
         resources:
           limits:
-            memory: 1Gi
+            memory: 1500Mi
           requests:
             memory: 300Mi
         ports:
@@ -56,7 +56,9 @@ spec:
         - name: SNAPLEN
           value: "1000"
         - name: GOGC
-          value: "400"
+          value: "200"
+        - name: switch_agg_num
+          value: "2"
         - name: MY_NODE_IP
           valueFrom:
             fieldRef:
