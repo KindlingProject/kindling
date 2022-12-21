@@ -3,7 +3,7 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
-## Unreleased
+## v0.6.0 - 2022-12-21
 ### New features
 - Support to configure `snaplen` through startup args.([#387](https://github.com/KindlingProject/kindling/pull/387))
 - Add tracing span data in cpu events. ([#384](https://github.com/KindlingProject/kindling/pull/384))
