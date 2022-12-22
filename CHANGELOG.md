@@ -7,7 +7,8 @@
 ### New features
 
 ### Enhancements
-- Add mysql statement commit/set autocommit. ([#417](https://github.com/KindlingProject/kindling/pull/417))
+- Support to identify the MySQL protocol with statements `commit` and `set`. ([#417](https://github.com/KindlingProject/kindling/pull/417))
+
 
 ### Bug fixes
 
