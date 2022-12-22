@@ -320,7 +320,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 		return nil
 	}
 
-	if oldPairs.checkSend() == false {
+	if !oldPairs.checkSend() {
 		// FIX send twice for request/response with 15s delay.
 		return nil
 	}
@@ -545,7 +545,7 @@ func (na *NetworkAnalyzer) getConnectFailRecords(mps *messagePairs) []*model.Dat
 func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attributes *model.AttributeMap) []*model.DataGroup {
 	evt := mps.requests.event
 	// See the issue https://github.com/KindlingProject/kindling/issues/388 for details.
-	if attributes.HasAttribute(constlabels.HttpContinue) {
+	if attributes != nil && attributes.HasAttribute(constlabels.HttpContinue) {
 		if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(evt)); ok {
 			var oldPairs = pairInterface.(*messagePairs)
 			oldPairs.putRequestBack(mps.requests)
