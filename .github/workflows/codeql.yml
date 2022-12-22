@@ -37,7 +37,11 @@ jobs:
         # Use only 'java' to analyze code written in Java, Kotlin or both
         # Use only 'javascript' to analyze code written in JavaScript, TypeScript or both
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
-
+    container:
+      image: kindlingproject/agent-builder:latest
+      volumes:
+        - ${{ github.workspace }}:/kindling
+  
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -55,11 +59,7 @@ jobs:
         # queries: security-extended,security-and-quality
 
     - name: Build the agent using Builder Image
-      uses: addnab/docker-run-action@v3
-      with: 
-        image: kindlingproject/agent-builder:latest
-        options: -v ${{ github.workspace }}:/kindling -w /kindling
-        run: echo "Build the agent using make" && make
+      run: make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
