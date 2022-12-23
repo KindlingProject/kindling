@@ -56,7 +56,8 @@ jobs:
         # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
 
-    - name: Build the agent using Builder Image
+    - if: matrix.language != 'javascript' 
+      name: Build the agent using Builder Image
       run: make
 
     - name: Perform CodeQL Analysis
