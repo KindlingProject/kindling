@@ -52,7 +52,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Add safe directory
-      run: git config --global --add safe.directory ${{ github.workspace }}
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
