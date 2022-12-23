@@ -52,7 +52,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Add safe directory
-      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      run: git config --global --add safe.directory ${{ github.workspace }}
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -69,6 +69,11 @@ jobs:
     - if: matrix.language != 'javascript' 
       name: Build the agent using Builder Image
       run: make
+      
+    - if: matrix.language == 'javascript'
+      name: Install javascript dependencies
+      run: |
+        yum install -y nodejs
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
