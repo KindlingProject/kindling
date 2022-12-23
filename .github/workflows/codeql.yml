@@ -43,6 +43,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+  
+    - name: List all files
+      run: ls -la
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
