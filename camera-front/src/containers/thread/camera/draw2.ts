@@ -429,6 +429,10 @@ class Camera {
                     }
                 }
             });
+            if (netEvent) {
+                // @ts-ignore
+                netEvent.message = netEvent.eventType === "netread" ? this.trace.labels.request_payload : this.trace.labels.response_payload;
+            }
             this.eventClick(netEvent);
         }
     }
