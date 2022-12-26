@@ -67,9 +67,9 @@ function Thread() {
     let cameraRef = useRef();
 
     const getTraceDetail = (trace: any) => {
-        let traceStartTimestamp = Math.ceil(trace.timestamp / 1000000);
+        let traceStartTimestamp = Math.floor(trace.timestamp / 1000000);
         let totalTime = _.find(trace.metrics, {Name: 'request_total_time'});
-        let traceEndTimestamp = Math.ceil((trace.timestamp + totalTime.Data.Value) / 1000000);
+        let traceEndTimestamp = Math.floor((trace.timestamp + totalTime.Data.Value) / 1000000);
         const requestTimes = [traceStartTimestamp, traceEndTimestamp];
         let startTimestamp = traceStartTimestamp - 5 * 1000;
         let endTimestamp = traceEndTimestamp + 5 * 1000;
@@ -369,6 +369,7 @@ function Thread() {
         let camera = (cameraRef.current as any)?.camera;
         camera.shiningEvent(e.type);
     }
+    // 点击事件查看事件详情
     const handleEventClick = (evt: any) => {
         console.log('event', evt);
         if (evt) {
@@ -415,9 +416,6 @@ function Thread() {
                     setNowEvent(evt);
                 }
             } else {
-                if (evt.active) {
-                    evt.message = evt.eventType === "netread" ? nowTrace.labels.request_payload : nowTrace.labels.response_payload;
-                }
                 setNowEvent(evt);
             }
         } else {

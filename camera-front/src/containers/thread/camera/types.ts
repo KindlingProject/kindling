@@ -46,6 +46,7 @@ export type IEventTime  = {
     info?: any;
     stackList: any[];
     active?: boolean;
+    message?: any;
     // 后续处理数据判断虚线是否需要合并
     idx?: number;
     timeRate?: number;

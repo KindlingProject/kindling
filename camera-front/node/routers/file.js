@@ -98,16 +98,19 @@ router.get('/getTraceFile', function(req, res, next) {
     let fileName = req.query.fileName;
     let folderName = req.query.folderName;
     const filePath = basicFloder + '/' + folderName + '/' + fileName;
-    console.log(fileName, filePath)
-    fs.readFile(filePath, function(err, buffer) {
-        if (err) {
-            console.error("Error: ", err);
-            res.status(500).json({
-                success: false,
-                message: err
-            });
-        }
-        let result = buffer.toString();
+    console.log(fileName, filePath);
+
+    let output = '';
+    const readStream = fs.createReadStream(filePath);
+
+    readStream.on('data', function(chunk) {
+        output += chunk.toString('utf8');
+    });
+
+    readStream.on('end', function() {
+        console.log('finished reading');
+        // write to file here.
+        let result = output;
         let resList = result.split('------');
         let traceData = JSON.parse(_.head(resList));
         let cpuEventStrs = _.slice(resList, 1);
@@ -118,7 +121,7 @@ router.get('/getTraceFile', function(req, res, next) {
             try {
                 cpuEventsList.push(JSON.parse(str))
             } catch (error) {
-                console.error(str);
+                console.error('1', error);
             }
         });
         cpuEvents = _.map(cpuEventsList, 'labels');
@@ -128,10 +131,10 @@ router.get('/getTraceFile', function(req, res, next) {
                 item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
                 item.transactionIds = JSON.parse(item.transactionIds);
             } catch (error) {
-                console.error(error, item);
+                console.error('2', error, item);
             }
         });
-
+        
         let finalResult = {
             trace: traceData,
             cpuEvents: cpuEvents
@@ -142,6 +145,50 @@ router.get('/getTraceFile', function(req, res, next) {
             "data": finalResult
         });
     });
+
+    // fs.readFile(filePath, function(err, buffer) {
+    //     if (err) {
+    //         console.error("Error: ", err);
+    //         res.status(500).json({
+    //             success: false,
+    //             message: err
+    //         });
+    //     }
+    //     let result = buffer.toString('utf-8');
+    //     let resList = result.split('------');
+    //     let traceData = JSON.parse(_.head(resList));
+    //     let cpuEventStrs = _.slice(resList, 1);
+    //     let cpuEventsList = [];
+    //     let cpuEvents = [];
+        
+    //     _.forEach(cpuEventStrs, (str) => {
+    //         try {
+    //             cpuEventsList.push(JSON.parse(str))
+    //         } catch (error) {
+    //             console.error('1', error);
+    //         }
+    //     });
+    //     cpuEvents = _.map(cpuEventsList, 'labels');
+    //     _.forEach(cpuEvents, item => {
+    //         try {
+    //             item.cpuEvents = JSON.parse(item.cpuEvents);
+    //             item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
+    //             item.transactionIds = JSON.parse(item.transactionIds);
+    //         } catch (error) {
+    //             console.error('2', error, item);
+    //         }
+    //     });
+        
+    //     let finalResult = {
+    //         trace: traceData,
+    //         cpuEvents: cpuEvents
+    //     };
+
+    //     res.status(200).json({
+    //         "success": true,
+    //         "data": finalResult
+    //     });
+    // });
 });
 
 module.exports = router;
