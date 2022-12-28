@@ -90,10 +90,16 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 	}
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.Create(filePath)
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fw.logger.Warnf("Failed to close the file %s", filePath)
+		}
+	}(f)
 	if err != nil {
 		return fmt.Errorf("can't create new file: %w", err)
 	}
+	fw.logger.Infof("Create a trace file at [%s]", filePath)
 	bytes, err := json.Marshal(group)
 	if err != nil {
 		return fmt.Errorf("can't marshal DataGroup: %w", err)
@@ -122,6 +128,7 @@ func (fw *fileWriter) rotateFiles(baseDir string) error {
 	go func() {
 		for _, file := range toBeRotated {
 			_ = os.Remove(filepath.Join(baseDir, file))
+			fw.logger.Infof("Rotate trace files [%s]", file)
 		}
 	}()
 	return nil
@@ -132,7 +139,12 @@ func getFilesName(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			return
+		}
+	}(f)
 	files, err := f.Readdirnames(-1)
 	return files, err
 }
@@ -146,22 +158,28 @@ func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0)
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fw.logger.Warnf("Failed to close the file %s", filePath)
+		}
+	}(f)
 	if err != nil {
-		// Just return if we can't find the exported file
+		fw.logger.Warnf("Couldn't open the trace file %s when append CpuEvents: %v", filePath, err)
 		return
 	}
 	_, err = f.Write([]byte(dividingLine))
 	if err != nil {
-		fw.logger.Infof("Failed to append CpuEvents to the file %s: %v", filePath, err)
+		fw.logger.Warnf("Failed to append CpuEvents to the file %s: %v", filePath, err)
 		return
 	}
 	eventsBytes, _ := json.Marshal(group)
 	_, err = f.Write(eventsBytes)
 	if err != nil {
-		fw.logger.Infof("Failed to append CpuEvents to the file %s: %v", filePath, err)
+		fw.logger.Warnf("Failed to append CpuEvents to the file %s: %v", filePath, err)
 		return
 	}
+	fw.logger.Infof("Write CpuEvents to trace files [%s]", filePath)
 }
 
 func (fw *fileWriter) name() string {
