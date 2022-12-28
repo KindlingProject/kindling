@@ -34,9 +34,9 @@ func TestWriteTrace(t *testing.T) {
 	}
 	pathElements := filepathhelper.GetFilePathElements(traceData(int64(pid), uint64(timestamp)), uint64(timestamp))
 	filePath := writer.pidFilePath(pathElements.WorkloadName, pathElements.PodName, pathElements.ContainerName, pathElements.Pid)
-	filesName, err := getFilesName(filePath)
+	filesName, err := getDirEntryInTimeOrder(filePath)
 	assert.NoError(t, err)
-	assert.Equal(t, fileConfig.MaxFileCount, len(filesName))
+	assert.Equal(t, fileConfig.MaxFileCount/2+2, len(filesName))
 }
 
 func traceData(pid int64, timestamp uint64) *model.DataGroup {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
@@ -114,7 +115,7 @@ func (fw *fileWriter) rotateFiles(baseDir string) error {
 		return nil
 	}
 	// Get all files path
-	toBeRotated, err := getFilesName(baseDir)
+	toBeRotated, err := getDirEntryInTimeOrder(baseDir)
 	if err != nil {
 		return fmt.Errorf("can't get files list: %w", err)
 	}
@@ -122,19 +123,20 @@ func (fw *fileWriter) rotateFiles(baseDir string) error {
 	if len(toBeRotated) < fw.config.MaxFileCount {
 		return nil
 	}
-	// TODO Remove the older files
-	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCount+1]
+	// Remove the older files and remove half of them one time to decrease the frequency
+	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCount/2+1]
 	// Remove the stale files asynchronously
 	go func() {
-		for _, file := range toBeRotated {
-			_ = os.Remove(filepath.Join(baseDir, file))
-			fw.logger.Infof("Rotate trace files [%s]", file)
+		for _, dirEntry := range toBeRotated {
+			_ = os.Remove(filepath.Join(baseDir, dirEntry.Name()))
+			fw.logger.Infof("Rotate trace files [%s]", dirEntry.Name())
 		}
 	}()
 	return nil
 }
 
-func getFilesName(path string) ([]string, error) {
+// getDirEntryInTimeOrder returns the directory entries slice in chronological order
+func getDirEntryInTimeOrder(path string) ([]os.DirEntry, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -145,8 +147,19 @@ func getFilesName(path string) ([]string, error) {
 			return
 		}
 	}(f)
-	files, err := f.Readdirnames(-1)
-	return files, err
+	dirs, err := f.ReadDir(-1)
+	sort.Slice(dirs, func(i, j int) bool {
+		fileInfoA, err := dirs[i].Info()
+		if err != nil {
+			return false
+		}
+		fileInfoB, err := dirs[j].Info()
+		if err != nil {
+			return false
+		}
+		return fileInfoA.ModTime().Before(fileInfoB.ModTime())
+	})
+	return dirs, err
 }
 
 const dividingLine = "\n------\n"
@@ -165,7 +178,8 @@ func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 		}
 	}(f)
 	if err != nil {
-		fw.logger.Warnf("Couldn't open the trace file %s when append CpuEvents: %v", filePath, err)
+		fw.logger.Infof("Couldn't open the trace file %s when append CpuEvents: %v. "+
+			"Maybe the file has been rotated.", filePath, err)
 		return
 	}
 	_, err = f.Write([]byte(dividingLine))
