@@ -87,7 +87,7 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 	// Check whether the count of files is greater than MaxCount
 	err := fw.rotateFiles(baseDir)
 	if err != nil {
-		fw.logger.Infof("can't rotate files in %s: %v", baseDir, err)
+		fw.logger.Warnf("can't rotate files in %s: %v", baseDir, err)
 	}
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.Create(filePath)
@@ -100,7 +100,7 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 	if err != nil {
 		return fmt.Errorf("can't create new file: %w", err)
 	}
-	fw.logger.Infof("Create a trace file at [%s]", filePath)
+	fw.logger.Debugf("Create a trace file at [%s]", filePath)
 	bytes, err := json.Marshal(group)
 	if err != nil {
 		return fmt.Errorf("can't marshal DataGroup: %w", err)
@@ -184,16 +184,16 @@ func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 	}
 	_, err = f.Write([]byte(dividingLine))
 	if err != nil {
-		fw.logger.Warnf("Failed to append CpuEvents to the file %s: %v", filePath, err)
+		fw.logger.Errorf("Failed to append CpuEvents to the file %s: %v", filePath, err)
 		return
 	}
 	eventsBytes, _ := json.Marshal(group)
 	_, err = f.Write(eventsBytes)
 	if err != nil {
-		fw.logger.Warnf("Failed to append CpuEvents to the file %s: %v", filePath, err)
+		fw.logger.Errorf("Failed to append CpuEvents to the file %s: %v", filePath, err)
 		return
 	}
-	fw.logger.Infof("Write CpuEvents to trace files [%s]", filePath)
+	fw.logger.Debugf("Write CpuEvents to trace files [%s]", filePath)
 }
 
 func (fw *fileWriter) name() string {
