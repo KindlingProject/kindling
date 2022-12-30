@@ -22,6 +22,9 @@ export const protoclList = [
         field: 'dubbo',
         value: 'dubbo'
     }, {
+        field: 'grpc',
+        value: 'grpc'
+    }, {
         field: 'NOSUPPORT',
         value: 'NOSUPPORT'
     }
@@ -329,6 +332,9 @@ const timeHandle = (startTime, endTime, timeNum, timeRange, transform = true) =>
 const onOffInfoHandle = (info, eventObj, timeRange) => {
     if (info.indexOf('#') > -1) {
         let result: IEventTime[] = [];
+        let event: IEventTime = _.cloneDeep(eventObj);
+        event.eventType = event.type;
+        result.push(event);
         let infoList = info.split('#');
         _.forEach(infoList, infos => {
             let detailInfo = eventInfoHandle(infos);
@@ -361,22 +367,27 @@ const onOffInfoHandle = (info, eventObj, timeRange) => {
         return result;
     } else {
         let detailInfo = eventInfoHandle(info);
-        let result: IEventTime = _.cloneDeep(eventObj);
+        let result: IEventTime[] = [];
+        let event: IEventTime = _.cloneDeep(eventObj);
+        // event.type = detailInfo.type;
+        event.eventType = event.type;
+        // event.info = detailInfo;
+        result.push(event);
         if (['file', 'net'].indexOf(detailInfo.type) > -1) {
+            let subEvent = _.cloneDeep(event);
             let endTime = detailInfo.startTime + detailInfo.duration;
             let { stime, etime, time } = timeHandle(detailInfo.startTime, endTime, detailInfo.duration, timeRange);
-            result.startTime = stime;
-            result.endTime = etime;
-            result.time = time;
-            result.type = detailInfo.type;
-            result.eventType = detailInfo.type + detailInfo.operate;
-        } else {
-            result.type = detailInfo.type;
-            result.eventType = detailInfo.type;
-        }
+            subEvent.startTime = stime;
+            subEvent.endTime = etime;
+            subEvent.time = time;
+            subEvent.type = detailInfo.type;
+            subEvent.eventType = detailInfo.type + detailInfo.operate;
+            subEvent.info = detailInfo;
+            result.push(subEvent);
+        } 
         detailInfo.startTime = formatTimsToMS(detailInfo.startTime);
         detailInfo.duration = formatTimsToMS(detailInfo.duration);
-        result.info = detailInfo;
+
         return result;
     }
 }

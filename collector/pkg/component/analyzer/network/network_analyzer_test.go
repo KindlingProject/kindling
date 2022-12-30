@@ -31,6 +31,7 @@ func TestHttpProtocol(t *testing.T) {
 
 func TestMySqlProtocol(t *testing.T) {
 	testProtocol(t, "mysql/server-event.yml",
+		"mysql/server-trace-commit.yml",
 		"mysql/server-trace-query-split.yml",
 		"mysql/server-trace-query.yml")
 }

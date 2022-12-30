@@ -22,7 +22,7 @@ type SqlParser struct {
 }
 
 func NewSqlMerger() SqlMerger {
-	factory := make([]SqlParser, 7)
+	factory := make([]SqlParser, 9)
 	factory[0] = newSqlParser("select", "from")
 	factory[1] = newSqlParser("insert", "into")
 	factory[2] = newSqlParser("update", "update")
@@ -30,6 +30,8 @@ func NewSqlMerger() SqlMerger {
 	factory[4] = newSqlParser("drop", "index|table|database")
 	factory[5] = newSqlParser("create", "index|table|database")
 	factory[6] = newSqlParser("alter", "table")
+	factory[7] = newSqlParser("set", "set")
+	factory[8] = newSqlParser("commit", "commit")
 
 	return SqlMerger{
 		factory: factory,

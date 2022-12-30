@@ -74,6 +74,23 @@ func TestSqlMerger_InsertSql(t *testing.T) {
 				},
 			},
 		},
+		{
+			operator: "commit",
+			datas: map[string][]string{
+				"commit *": {
+					"commit",
+				},
+			},
+		},
+		{
+			operator: "set",
+			datas: map[string][]string{
+				"set *": {
+					"SET autocommit=0",
+					"SET autocommit=1",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

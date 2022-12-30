@@ -80,6 +80,8 @@ var sqlPrefixs = []string{
 	"drop",
 	"create",
 	"alter",
+	"set",
+	"commit",
 }
 
 func isSql(sql string) bool {
