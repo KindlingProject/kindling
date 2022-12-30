@@ -111,7 +111,7 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 
 func (fw *fileWriter) rotateFiles(baseDir string) error {
 	// No constrains set
-	if fw.config.MaxFileCount <= 0 {
+	if fw.config.MaxFileCountEachProcess <= 0 {
 		return nil
 	}
 	// Get all files path
@@ -120,14 +120,14 @@ func (fw *fileWriter) rotateFiles(baseDir string) error {
 		return fmt.Errorf("can't get files list: %w", err)
 	}
 	// No need to rotate
-	if len(toBeRotated) < fw.config.MaxFileCount {
+	if len(toBeRotated) < fw.config.MaxFileCountEachProcess {
 		return nil
 	}
 	// Remove the older files and remove half of them one time to decrease the frequency
 	// of deleting files. Note this is different from rotating log files. We could delete
 	// one file at a time for log files because the action "rotate" is in a low frequency
 	// in that case.
-	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCount/2+1]
+	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCountEachProcess/2+1]
 	// Remove the stale files asynchronously
 	go func() {
 		for _, dirEntry := range toBeRotated {

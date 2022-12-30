@@ -140,7 +140,8 @@ exporters:
     # Effective when storage is "file"
     file_config:
       storage_path: /tmp/kindling
-      max_file_count: 50
+      # Max file count for each process
+      max_file_count_each_process: 50
     # Effective when storage is "elasticsearch"
     es_config:
       es_host: http://10.10.10.10:9200
