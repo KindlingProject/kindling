@@ -7,6 +7,7 @@
 ### New features
 
 ### Enhancements
+- When using the file writer in `cameraexporter`, we rotate files in chronological order now and rotate half of files one time. ([#420](https://github.com/KindlingProject/kindling/pull/420))
 - Support to identify the MySQL protocol with statements `commit` and `set`. ([#417](https://github.com/KindlingProject/kindling/pull/417))
 
 
