@@ -9,6 +9,7 @@ const _ = require('lodash');
 const async = require('async');
 const path = require('path');
 const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const history = require('connect-history-api-fallback');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
@@ -44,6 +45,11 @@ const profileProxy = createProxyMiddleware('/profile', {
 });
 app.use(profileProxy);
 
+const limiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 1 minute
+    max: 20
+});
+app.use(limiter);
 
 app.use(
     bodyParser.urlencoded({
