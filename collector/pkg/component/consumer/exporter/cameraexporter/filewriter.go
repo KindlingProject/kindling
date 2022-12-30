@@ -124,8 +124,9 @@ func (fw *fileWriter) rotateFiles(baseDir string) error {
 		return nil
 	}
 	// Remove the older files and remove half of them one time to decrease the frequency
-	// of deleting files. Note this is different from rotating log files. For log files,
-	// we could delete one file at a time because the action "rotate" is in a low frequency.
+	// of deleting files. Note this is different from rotating log files. We could delete
+	// one file at a time for log files because the action "rotate" is in a low frequency
+	// in that case.
 	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCount/2+1]
 	// Remove the stale files asynchronously
 	go func() {
@@ -152,7 +153,7 @@ func getDirEntryInTimeOrder(path string) ([]os.DirEntry, error) {
 	}(f)
 	dirs, err := f.ReadDir(-1)
 	// Sort the files based on their modification time. We don't sort them based on the
-	// timestamp in the file name because they are similar but the later one costs more CPU
+	// timestamp in the file name because they are similar but the latter one costs more CPU
 	// considering that we have to split the file name first.
 	sort.Slice(dirs, func(i, j int) bool {
 		fileInfoA, err := dirs[i].Info()
