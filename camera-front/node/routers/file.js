@@ -5,6 +5,7 @@ const _ = require('lodash');
 const fs = require('fs');
 
 const settings = require('../settings');
+const path = require('path');
 const basicFloder = settings.traceFilePath;
 
 router.get("/getFolders", function(req, res, next) {
@@ -18,7 +19,7 @@ router.get("/getFolders", function(req, res, next) {
             })
         }
         _.forEach(files, file => {
-            let fileStats = fs.statSync(basicFloder + "/" + file);
+            let fileStats = fs.statSync(path.join(basicFloder, file));
             if (fileStats.isDirectory()) {
                 let fileNameList = file.split('_');
                 if (fileNameList.length === 4) {
@@ -62,12 +63,12 @@ router.get("/getFolders", function(req, res, next) {
 
 router.get("/getAllTraceFileList", function(req, res, next) {
     let folderName = req.query.folderName;
-    const filePath = basicFloder + "/" + folderName;
+    const filePath = path.join(basicFloder, folderName);
     let list = [];
 	try {
         let files = fs.readdirSync(filePath);
         _.forEach(files, function(file) {
-            let fileStats = fs.statSync(filePath + "/" + file);
+            let fileStats = fs.statSync(path.join(filePath, file));
             if (fileStats.isFile) {
                 let fileNameList = file.split('_');
                 let contentKeyBuffer = new Buffer.from(fileNameList[1], 'base64')
@@ -97,7 +98,7 @@ router.get("/getAllTraceFileList", function(req, res, next) {
 router.get('/getTraceFile', function(req, res, next) {
     let fileName = req.query.fileName;
     let folderName = req.query.folderName;
-    const filePath = basicFloder + '/' + folderName + '/' + fileName;
+    const filePath = path.join(basicFloder, folderName, fileName);
     console.log(fileName, filePath);
 
     let output = '';
@@ -130,6 +131,7 @@ router.get('/getTraceFile', function(req, res, next) {
                 item.cpuEvents = JSON.parse(item.cpuEvents);
                 item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
                 item.transactionIds = JSON.parse(item.transactionIds);
+                item.spans = JSON.parse(item.spans);
             } catch (error) {
                 console.error('2', error, item);
             }
