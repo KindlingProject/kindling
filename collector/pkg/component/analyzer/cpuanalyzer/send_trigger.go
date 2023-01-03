@@ -90,8 +90,8 @@ func (t *SendEventsTask) run() {
 }
 
 func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {
-	ca.lock.Lock()
-	defer ca.lock.Unlock()
+	ca.lock.RLock()
+	defer ca.lock.RUnlock()
 
 	maxSegmentSize := ca.cfg.GetSegmentSize()
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
@@ -105,7 +105,7 @@ func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, s
 
 	for _, timeSegments := range tidCpuEvents {
 		if endTimeSecond < timeSegments.BaseTime || startTimeSecond > timeSegments.BaseTime+uint64(maxSegmentSize) {
-			ca.telemetry.Logger.Debugf("pid=%d tid=%d events are beyond the time windows. BaseTimeSecond=%d, "+
+			ca.telemetry.Logger.Infof("pid=%d tid=%d events are beyond the time windows. BaseTimeSecond=%d, "+
 				"startTimeSecond=%d, endTimeSecond=%d", pid, timeSegments.Tid, timeSegments.BaseTime, startTimeSecond, endTimeSecond)
 			continue
 		}

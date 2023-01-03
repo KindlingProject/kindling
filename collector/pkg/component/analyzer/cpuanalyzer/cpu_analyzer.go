@@ -26,7 +26,7 @@ type CpuAnalyzer struct {
 	// { pid: routine }
 	sendEventsRoutineMap sync.Map
 	routineSize          *atomic.Int32
-	lock                 sync.Mutex
+	lock                 sync.RWMutex
 	telemetry            *component.TelemetryTools
 	tidExpiredQueue      *tidDeleteQueue
 	nextConsumers        []consumer.Consumer
