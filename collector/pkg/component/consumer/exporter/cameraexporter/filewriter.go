@@ -91,15 +91,15 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 	}
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("can't create new file: %w", err)
+	}
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
 			fw.logger.Warnf("Failed to close the file %s", filePath)
 		}
 	}(f)
-	if err != nil {
-		return fmt.Errorf("can't create new file: %w", err)
-	}
 	fw.logger.Debugf("Create a trace file at [%s]", filePath)
 	bytes, err := json.Marshal(group)
 	if err != nil {
@@ -178,17 +178,17 @@ func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0)
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			fw.logger.Warnf("Failed to close the file %s", filePath)
-		}
-	}(f)
 	if err != nil {
 		fw.logger.Infof("Couldn't open the trace file %s when append CpuEvents: %v. "+
 			"Maybe the file has been rotated.", filePath, err)
 		return
 	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fw.logger.Warnf("Failed to close the file %s, %v", filePath, err)
+		}
+	}(f)
 	_, err = f.Write([]byte(dividingLine))
 	if err != nil {
 		fw.logger.Errorf("Failed to append CpuEvents to the file %s: %v", filePath, err)

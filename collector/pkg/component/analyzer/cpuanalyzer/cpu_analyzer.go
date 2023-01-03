@@ -225,8 +225,8 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				}
 			}
 		}
-
-		timeSegments.updateThreadName(threadName) //update the thread name immediatly
+		//update the thread name immediately
+		timeSegments.updateThreadName(threadName)
 		for i := startOffset; i <= endOffset && i < maxSegmentSize; i++ {
 			val := timeSegments.Segments.GetByIndex(i)
 			segment := val.(*Segment)
