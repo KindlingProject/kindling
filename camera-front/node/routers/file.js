@@ -3,6 +3,7 @@
 const router = require('express').Router();
 const _ = require('lodash');
 const fs = require('fs');
+const sanitize = require("sanitize-filename");
 
 const settings = require('../settings');
 const path = require('path');
@@ -12,7 +13,7 @@ router.get("/getFolders", function(req, res, next) {
     let list = [], result = [];
     fs.readdir(basicFloder, function(err, files) {
         if (err) {
-            console.error("Error: ", err);
+            console.error("Error: %s", err);
             res.status(500).json({
                 success: false,
                 message: err
@@ -62,7 +63,7 @@ router.get("/getFolders", function(req, res, next) {
 }); 
 
 router.get("/getAllTraceFileList", function(req, res, next) {
-    let folderName = req.query.folderName;
+    let folderName = sanitize(req.query.folderName);
     const filePath = path.join(basicFloder, folderName);
     let list = [];
 	try {
@@ -96,10 +97,10 @@ router.get("/getAllTraceFileList", function(req, res, next) {
 });
 
 router.get('/getTraceFile', function(req, res, next) {
-    let fileName = req.query.fileName;
-    let folderName = req.query.folderName;
+    let fileName = sanitize(req.query.fileName);
+    let folderName = sanitize(req.query.folderName);
     const filePath = path.join(basicFloder, folderName, fileName);
-    console.log(fileName, filePath);
+    console.log('filePath: %s', filePath);
 
     let output = '';
     const readStream = fs.createReadStream(filePath);
@@ -122,7 +123,7 @@ router.get('/getTraceFile', function(req, res, next) {
             try {
                 cpuEventsList.push(JSON.parse(str))
             } catch (error) {
-                console.error('1', error);
+                console.error('error: %s', error);
             }
         });
         cpuEvents = _.map(cpuEventsList, 'labels');
@@ -133,7 +134,7 @@ router.get('/getTraceFile', function(req, res, next) {
                 item.transactionIds = JSON.parse(item.transactionIds);
                 item.spans = JSON.parse(item.spans);
             } catch (error) {
-                console.error('2', error, item);
+                console.error('error: %s', error, item);
             }
         });
         
