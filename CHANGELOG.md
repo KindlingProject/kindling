@@ -10,9 +10,8 @@
 - When using the file writer in `cameraexporter`, we rotate files in chronological order now and rotate half of files one time. ([#420](https://github.com/KindlingProject/kindling/pull/420))
 - Support to identify the MySQL protocol with statements `commit` and `set`. ([#417](https://github.com/KindlingProject/kindling/pull/417))
 
-
 ### Bug fixes
-
+- Fix the bug that cpuanalyzer missed some trigger events due to the incorrect variable reference. This may cause some traces can't correlate with on/off CPU data. ([#424](https://github.com/KindlingProject/kindling/pull/424))
 
 ## v0.6.0 - 2022-12-21
 ### New features
