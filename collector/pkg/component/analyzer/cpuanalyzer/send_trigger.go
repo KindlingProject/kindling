@@ -58,7 +58,9 @@ func (ca *CpuAnalyzer) ReceiveSendSignal() {
 		for _, nexConsumer := range ca.nextConsumers {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
-		task := &SendEventsTask{0, ca, &sendContent}
+		// Copy the value and then get its pointer to create a new task
+		triggerEvent := sendContent
+		task := &SendEventsTask{0, ca, &triggerEvent}
 		expiredCallback := func() {
 			ca.routineSize.Dec()
 		}
