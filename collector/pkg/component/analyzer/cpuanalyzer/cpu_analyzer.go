@@ -87,7 +87,7 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 }
 
 func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
-	isEntry, _ := strconv.Atoi(event.GetStringUserAttribute("is_enter"))
+	isEntry, _ := strconv.ParseUint(event.GetStringUserAttribute("is_enter"), 10, 32)
 	ev := &TransactionIdEvent{
 		Timestamp: event.Timestamp,
 		TraceId:   event.GetStringUserAttribute("trace_id"),

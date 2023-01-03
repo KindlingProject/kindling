@@ -3,22 +3,24 @@
 const router = require('express').Router();
 const _ = require('lodash');
 const fs = require('fs');
+const sanitize = require("sanitize-filename");
 
 const settings = require('../settings');
+const path = require('path');
 const basicFloder = settings.traceFilePath;
 
 router.get("/getFolders", function(req, res, next) {
     let list = [], result = [];
     fs.readdir(basicFloder, function(err, files) {
         if (err) {
-            console.error("Error: ", err);
+            console.error("Error: %s", err);
             res.status(500).json({
                 success: false,
                 message: err
             })
         }
         _.forEach(files, file => {
-            let fileStats = fs.statSync(basicFloder + "/" + file);
+            let fileStats = fs.statSync(path.join(basicFloder, file));
             if (fileStats.isDirectory()) {
                 let fileNameList = file.split('_');
                 if (fileNameList.length === 4) {
@@ -61,13 +63,13 @@ router.get("/getFolders", function(req, res, next) {
 }); 
 
 router.get("/getAllTraceFileList", function(req, res, next) {
-    let folderName = req.query.folderName;
-    const filePath = basicFloder + "/" + folderName;
+    let folderName = sanitize(req.query.folderName);
+    const filePath = path.join(basicFloder, folderName);
     let list = [];
 	try {
         let files = fs.readdirSync(filePath);
         _.forEach(files, function(file) {
-            let fileStats = fs.statSync(filePath + "/" + file);
+            let fileStats = fs.statSync(path.join(filePath, file));
             if (fileStats.isFile) {
                 let fileNameList = file.split('_');
                 let contentKeyBuffer = new Buffer.from(fileNameList[1], 'base64')
@@ -95,10 +97,10 @@ router.get("/getAllTraceFileList", function(req, res, next) {
 });
 
 router.get('/getTraceFile', function(req, res, next) {
-    let fileName = req.query.fileName;
-    let folderName = req.query.folderName;
-    const filePath = basicFloder + '/' + folderName + '/' + fileName;
-    console.log(fileName, filePath);
+    let fileName = sanitize(req.query.fileName);
+    let folderName = sanitize(req.query.folderName);
+    const filePath = path.join(basicFloder, folderName, fileName);
+    console.log('filePath: %s', filePath);
 
     let output = '';
     const readStream = fs.createReadStream(filePath);
@@ -121,7 +123,7 @@ router.get('/getTraceFile', function(req, res, next) {
             try {
                 cpuEventsList.push(JSON.parse(str))
             } catch (error) {
-                console.error('1', error);
+                console.error('error: %s', error);
             }
         });
         cpuEvents = _.map(cpuEventsList, 'labels');
@@ -130,8 +132,9 @@ router.get('/getTraceFile', function(req, res, next) {
                 item.cpuEvents = JSON.parse(item.cpuEvents);
                 item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
                 item.transactionIds = JSON.parse(item.transactionIds);
+                item.spans = JSON.parse(item.spans);
             } catch (error) {
-                console.error('2', error, item);
+                console.error('error: %s', error, item);
             }
         });
         
