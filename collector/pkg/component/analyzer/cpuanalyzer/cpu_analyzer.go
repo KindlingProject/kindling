@@ -26,7 +26,7 @@ type CpuAnalyzer struct {
 	// { pid: routine }
 	sendEventsRoutineMap sync.Map
 	routineSize          *atomic.Int32
-	lock                 sync.Mutex
+	lock                 sync.RWMutex
 	telemetry            *component.TelemetryTools
 	tidExpiredQueue      *tidDeleteQueue
 	nextConsumers        []consumer.Consumer
@@ -189,7 +189,6 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		// If the timeSegment is full, we clear half of its elements.
 		// Note the offset will be times of maxSegmentSize when no events with this tid come for long time,
 		// so the timeSegment will be cleared multiple times until it can accommodate the events.
-		// TODO: clear the whole elements if startOffset>=1.5*maxSegmentSize
 		if startOffset >= maxSegmentSize || endOffset > maxSegmentSize {
 			if startOffset*2 >= 3*maxSegmentSize {
 				// clear all elements
@@ -225,8 +224,8 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 				}
 			}
 		}
-
-		timeSegments.updateThreadName(threadName) //update the thread name immediatly
+		// Update the thread name immediately
+		timeSegments.updateThreadName(threadName)
 		for i := startOffset; i <= endOffset && i < maxSegmentSize; i++ {
 			val := timeSegments.Segments.GetByIndex(i)
 			segment := val.(*Segment)

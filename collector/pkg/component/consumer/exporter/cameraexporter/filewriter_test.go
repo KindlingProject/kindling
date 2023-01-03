@@ -14,8 +14,8 @@ import (
 
 func TestWriteTrace(t *testing.T) {
 	fileConfig := &fileConfig{
-		StoragePath:  "/tmp/kindling/",
-		MaxFileCount: 20,
+		StoragePath:             "/tmp/kindling/",
+		MaxFileCountEachProcess: 20,
 	}
 	writer, err := newFileWriter(fileConfig, component.NewDefaultTelemetryTools().Logger)
 	if err != nil {
@@ -36,7 +36,7 @@ func TestWriteTrace(t *testing.T) {
 	filePath := writer.pidFilePath(pathElements.WorkloadName, pathElements.PodName, pathElements.ContainerName, pathElements.Pid)
 	filesName, err := getDirEntryInTimeOrder(filePath)
 	assert.NoError(t, err)
-	assert.Equal(t, fileConfig.MaxFileCount/2+2, len(filesName))
+	assert.Equal(t, fileConfig.MaxFileCountEachProcess/2+2, len(filesName))
 }
 
 func traceData(pid int64, timestamp uint64) *model.DataGroup {

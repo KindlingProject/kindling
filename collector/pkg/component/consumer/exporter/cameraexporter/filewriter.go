@@ -91,15 +91,15 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 	}
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("can't create new file: %w", err)
+	}
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
 			fw.logger.Warnf("Failed to close the file %s", filePath)
 		}
 	}(f)
-	if err != nil {
-		return fmt.Errorf("can't create new file: %w", err)
-	}
 	fw.logger.Debugf("Create a trace file at [%s]", filePath)
 	bytes, err := json.Marshal(group)
 	if err != nil {
@@ -111,7 +111,7 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 
 func (fw *fileWriter) rotateFiles(baseDir string) error {
 	// No constrains set
-	if fw.config.MaxFileCount <= 0 {
+	if fw.config.MaxFileCountEachProcess <= 0 {
 		return nil
 	}
 	// Get all files path
@@ -120,14 +120,14 @@ func (fw *fileWriter) rotateFiles(baseDir string) error {
 		return fmt.Errorf("can't get files list: %w", err)
 	}
 	// No need to rotate
-	if len(toBeRotated) < fw.config.MaxFileCount {
+	if len(toBeRotated) < fw.config.MaxFileCountEachProcess {
 		return nil
 	}
 	// Remove the older files and remove half of them one time to decrease the frequency
 	// of deleting files. Note this is different from rotating log files. We could delete
 	// one file at a time for log files because the action "rotate" is in a low frequency
 	// in that case.
-	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCount/2+1]
+	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCountEachProcess/2+1]
 	// Remove the stale files asynchronously
 	go func() {
 		for _, dirEntry := range toBeRotated {
@@ -178,17 +178,17 @@ func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0)
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			fw.logger.Warnf("Failed to close the file %s", filePath)
-		}
-	}(f)
 	if err != nil {
 		fw.logger.Infof("Couldn't open the trace file %s when append CpuEvents: %v. "+
 			"Maybe the file has been rotated.", filePath, err)
 		return
 	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fw.logger.Warnf("Failed to close the file %s, %v", filePath, err)
+		}
+	}(f)
 	_, err = f.Write([]byte(dividingLine))
 	if err != nil {
 		fw.logger.Errorf("Failed to append CpuEvents to the file %s: %v", filePath, err)

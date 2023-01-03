@@ -19,16 +19,16 @@ type esConfig struct {
 type fileConfig struct {
 	// StoragePath is the ABSOLUTE path of the directory where the profile file should be saved
 	StoragePath string `mapstructure:"storage_path"`
-	// Storage constrains
-	MaxFileCount int `mapstructure:"max_file_count"`
+	// Storage constrains for each process
+	MaxFileCountEachProcess int `mapstructure:"max_file_count_each_process"`
 }
 
 func NewDefaultConfig() *Config {
 	return &Config{
 		Storage: storageFile,
 		FileConfig: &fileConfig{
-			StoragePath:  "/tmp/kindling/",
-			MaxFileCount: 50,
+			StoragePath:             "/tmp/kindling/",
+			MaxFileCountEachProcess: 50,
 		},
 	}
 }
