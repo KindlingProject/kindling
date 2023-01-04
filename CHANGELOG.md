@@ -11,6 +11,7 @@
 - Support to identify the MySQL protocol with statements `commit` and `set`. ([#417](https://github.com/KindlingProject/kindling/pull/417))
 
 ### Bug fixes
+- Collector subscribes `sendmmsg` and `recvmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
 - Fix the bug that cpuanalyzer missed some trigger events due to the incorrect variable reference. This may cause some traces can't correlate with on/off CPU data. ([#424](https://github.com/KindlingProject/kindling/pull/424))
 
 ## v0.6.0 - 2022-12-21
