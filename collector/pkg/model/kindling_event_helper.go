@@ -5,11 +5,14 @@ import (
 	"errors"
 	"math"
 	"net"
+
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
 const (
 	LOWER32 = 0x00000000FFFFFFFF
 	LOWER16 = 0x000000000000FFFF
+	_       = LOWER16
 )
 
 var (
@@ -264,9 +267,13 @@ func (x *KindlingEvent) IsConnect() bool {
 func (x *KindlingEvent) IsRequest() (bool, error) {
 	if x.Category == Category_CAT_NET {
 		switch x.Name {
-		case "read", "recvfrom", "recvmsg", "readv", "pread", "preadv":
+		case constnames.ReadEvent, constnames.RecvFromEvent, constnames.RecvMsgEvent, constnames.ReadvEvent:
+			fallthrough
+		case constnames.RecvMMsgEvent, constnames.PReadEvent, constnames.PReadvEvent:
 			return x.isRequest(true)
-		case "write", "sendto", "sendmsg", "writev", "pwrite", "pwritev":
+		case constnames.WriteEvent, constnames.SendToEvent, constnames.SendMsgEvent, constnames.WritevEvent:
+			fallthrough
+		case constnames.SendMMsgEvent, constnames.PWriteEvent, constnames.PWritevEvent:
 			return x.isRequest(false)
 		default:
 			break

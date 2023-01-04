@@ -100,6 +100,8 @@ func (na *NetworkAnalyzer) ConsumableEvents() []string {
 		constnames.RecvFromEvent,
 		constnames.SendMsgEvent,
 		constnames.RecvMsgEvent,
+		constnames.SendMMsgEvent,
+		constnames.RecvMMsgEvent,
 	}
 }
 
