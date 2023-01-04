@@ -73,7 +73,7 @@ jobs:
     - if: matrix.language == 'javascript'
       name: Install javascript dependencies and Build
       run: |
-        yum install -y nodejs
+        yum install -y nodejs npm
         cd camera-front
         npm install && npm run build
         
