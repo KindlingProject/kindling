@@ -71,9 +71,12 @@ jobs:
       run: make
       
     - if: matrix.language == 'javascript'
-      name: Install javascript dependencies
+      name: Install javascript dependencies and Build
       run: |
-        yum install -y nodejs
+        yum install -y nodejs npm
+        cd camera-front
+        npm install && npm run build
+        
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
