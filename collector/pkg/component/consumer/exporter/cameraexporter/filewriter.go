@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
@@ -86,14 +87,20 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 	// Check whether the count of files is greater than MaxCount
 	err := fw.rotateFiles(baseDir)
 	if err != nil {
-		fw.logger.Infof("can't rotate files in %s: %v", baseDir, err)
+		fw.logger.Warnf("can't rotate files in %s: %v", baseDir, err)
 	}
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.Create(filePath)
-	defer f.Close()
 	if err != nil {
 		return fmt.Errorf("can't create new file: %w", err)
 	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fw.logger.Warnf("Failed to close the file %s", filePath)
+		}
+	}(f)
+	fw.logger.Debugf("Create a trace file at [%s]", filePath)
 	bytes, err := json.Marshal(group)
 	if err != nil {
 		return fmt.Errorf("can't marshal DataGroup: %w", err)
@@ -104,37 +111,62 @@ func (fw *fileWriter) writeFile(baseDir string, fileName string, group *model.Da
 
 func (fw *fileWriter) rotateFiles(baseDir string) error {
 	// No constrains set
-	if fw.config.MaxFileCount <= 0 {
+	if fw.config.MaxFileCountEachProcess <= 0 {
 		return nil
 	}
 	// Get all files path
-	toBeRotated, err := getFilesName(baseDir)
+	toBeRotated, err := getDirEntryInTimeOrder(baseDir)
 	if err != nil {
 		return fmt.Errorf("can't get files list: %w", err)
 	}
 	// No need to rotate
-	if len(toBeRotated) < fw.config.MaxFileCount {
+	if len(toBeRotated) < fw.config.MaxFileCountEachProcess {
 		return nil
 	}
-	// TODO Remove the older files
-	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCount+1]
+	// Remove the older files and remove half of them one time to decrease the frequency
+	// of deleting files. Note this is different from rotating log files. We could delete
+	// one file at a time for log files because the action "rotate" is in a low frequency
+	// in that case.
+	toBeRotated = toBeRotated[:len(toBeRotated)-fw.config.MaxFileCountEachProcess/2+1]
 	// Remove the stale files asynchronously
 	go func() {
-		for _, file := range toBeRotated {
-			_ = os.Remove(filepath.Join(baseDir, file))
+		for _, dirEntry := range toBeRotated {
+			_ = os.Remove(filepath.Join(baseDir, dirEntry.Name()))
+			fw.logger.Infof("Rotate trace files [%s]", dirEntry.Name())
 		}
 	}()
 	return nil
 }
 
-func getFilesName(path string) ([]string, error) {
+// getDirEntryInTimeOrder returns the directory entries slice in chronological order.
+// The result files are sorted based on their modification time.
+func getDirEntryInTimeOrder(path string) ([]os.DirEntry, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	files, err := f.Readdirnames(-1)
-	return files, err
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			return
+		}
+	}(f)
+	dirs, err := f.ReadDir(-1)
+	// Sort the files based on their modification time. We don't sort them based on the
+	// timestamp in the file name because they are similar but the latter one costs more CPU
+	// considering that we have to split the file name first.
+	sort.Slice(dirs, func(i, j int) bool {
+		fileInfoA, err := dirs[i].Info()
+		if err != nil {
+			return false
+		}
+		fileInfoB, err := dirs[j].Info()
+		if err != nil {
+			return false
+		}
+		return fileInfoA.ModTime().Before(fileInfoB.ModTime())
+	})
+	return dirs, err
 }
 
 const dividingLine = "\n------\n"
@@ -146,22 +178,29 @@ func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0)
-	defer f.Close()
 	if err != nil {
-		// Just return if we can't find the exported file
+		fw.logger.Infof("Couldn't open the trace file %s when append CpuEvents: %v. "+
+			"Maybe the file has been rotated.", filePath, err)
 		return
 	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fw.logger.Warnf("Failed to close the file %s, %v", filePath, err)
+		}
+	}(f)
 	_, err = f.Write([]byte(dividingLine))
 	if err != nil {
-		fw.logger.Infof("Failed to append CpuEvents to the file %s: %v", filePath, err)
+		fw.logger.Errorf("Failed to append CpuEvents to the file %s: %v", filePath, err)
 		return
 	}
 	eventsBytes, _ := json.Marshal(group)
 	_, err = f.Write(eventsBytes)
 	if err != nil {
-		fw.logger.Infof("Failed to append CpuEvents to the file %s: %v", filePath, err)
+		fw.logger.Errorf("Failed to append CpuEvents to the file %s: %v", filePath, err)
 		return
 	}
+	fw.logger.Debugf("Write CpuEvents to trace files [%s]", filePath)
 }
 
 func (fw *fileWriter) name() string {

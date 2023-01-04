@@ -30,3 +30,5 @@ analyzers:
         slow_threshold: 100
       - key: "rocketmq"
         slow_threshold: 500
+      - key: "NOSUPPORT"
+        ports: [ 1111 ]

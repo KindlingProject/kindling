@@ -1,20 +1,21 @@
 package cameraexporter
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/filepathhelper"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
 )
 
 func TestWriteTrace(t *testing.T) {
 	fileConfig := &fileConfig{
-		StoragePath:  "/tmp/kindling/",
-		MaxFileCount: 20,
+		StoragePath:             "/tmp/kindling/",
+		MaxFileCountEachProcess: 20,
 	}
 	writer, err := newFileWriter(fileConfig, component.NewDefaultTelemetryTools().Logger)
 	if err != nil {
@@ -33,9 +34,9 @@ func TestWriteTrace(t *testing.T) {
 	}
 	pathElements := filepathhelper.GetFilePathElements(traceData(int64(pid), uint64(timestamp)), uint64(timestamp))
 	filePath := writer.pidFilePath(pathElements.WorkloadName, pathElements.PodName, pathElements.ContainerName, pathElements.Pid)
-	filesName, err := getFilesName(filePath)
+	filesName, err := getDirEntryInTimeOrder(filePath)
 	assert.NoError(t, err)
-	assert.Equal(t, fileConfig.MaxFileCount, len(filesName))
+	assert.Equal(t, fileConfig.MaxFileCountEachProcess/2+2, len(filesName))
 }
 
 func traceData(pid int64, timestamp uint64) *model.DataGroup {
@@ -61,26 +62,4 @@ func cpuEvent(startTime int64, extraLabels *model.AttributeMap) *model.DataGroup
 	labels.AddStringValue("transactionIds", "[]")
 	labels.Merge(extraLabels)
 	return model.NewDataGroup(constnames.CameraEventGroupName, labels, uint64(startTime))
-}
-
-func triggerKey(data *model.DataGroup) string {
-	timestamp := data.Timestamp
-	isServer := data.Labels.GetBoolValue(constlabels.IsServer)
-	var podName string
-	if isServer {
-		podName = data.Labels.GetStringValue(constlabels.DstPod)
-	} else {
-		podName = data.Labels.GetStringValue(constlabels.SrcPod)
-	}
-	if len(podName) == 0 {
-		podName = "null"
-	}
-	var isServerString string
-	if isServer {
-		isServerString = "true"
-	} else {
-		isServerString = "false"
-	}
-	protocol := data.Labels.GetStringValue(constlabels.Protocol)
-	return podName + "_" + isServerString + "_" + protocol + "_" + strconv.FormatUint(timestamp, 10)
 }

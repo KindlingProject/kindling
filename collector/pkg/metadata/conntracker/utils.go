@@ -28,10 +28,10 @@ func StringToUint32(ip string) uint32 {
 	if len(bytes) < 4 {
 		return 0
 	}
-	b0, _ := strconv.Atoi(bytes[0])
-	b1, _ := strconv.Atoi(bytes[1])
-	b2, _ := strconv.Atoi(bytes[2])
-	b3, _ := strconv.Atoi(bytes[3])
+	b0, _ := strconv.ParseUint(bytes[0], 10, 32)
+	b1, _ := strconv.ParseUint(bytes[1], 10, 32)
+	b2, _ := strconv.ParseUint(bytes[2], 10, 32)
+	b3, _ := strconv.ParseUint(bytes[3], 10, 32)
 
 	return uint32(b0) | uint32(b1)<<8 | uint32(b2)<<16 | uint32(b3)<<24
 }

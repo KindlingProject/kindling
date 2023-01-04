@@ -31,6 +31,7 @@ func TestHttpProtocol(t *testing.T) {
 
 func TestMySqlProtocol(t *testing.T) {
 	testProtocol(t, "mysql/server-event.yml",
+		"mysql/server-trace-commit.yml",
 		"mysql/server-trace-query-split.yml",
 		"mysql/server-trace-query.yml")
 }
@@ -64,6 +65,12 @@ func TestRocketMQProtocol(t *testing.T) {
 		"rocketmq/server-trace-json.yml",
 		"rocketmq/server-trace-rocketmq.yml",
 		"rocketmq/server-trace-error.yml")
+}
+
+func TestNoSupportProtocol(t *testing.T) {
+	testProtocol(t, "nosupport/server-event.yml",
+		"nosupport/server-trace-normal.yml",
+	)
 }
 
 type NopProcessor struct {
@@ -394,15 +401,16 @@ func (evt *TraceEvent) exchange(common *EventCommon) *model.KindlingEvent {
 // getData converts the following format to byte array.
 //
 // There are the following formats supported:
-// 1. {hex number}|{string}
-//    The first part is a number in hexadecimal which is part of the original data.
-//    It holds different meanings in different protocols.
-// 2. (hex)|{hex value}
-//    The first part is the constant "hex" and the second part is its value
-// 3. (string)|{string value}
-//    The first part is the constant "string" and the second part is its value
-// 4. {string value}
-//    If there are no the separator "|" existing, the data is considered as a string
+//  1. {hex number}|{string}
+//     The first part is a number in hexadecimal which is part of the original data.
+//     It holds different meanings in different protocols.
+//  2. (hex)|{hex value}
+//     The first part is the constant "hex" and the second part is its value
+//  3. (string)|{string value}
+//     The first part is the constant "string" and the second part is its value
+//  4. {string value}
+//     If there are no the separator "|" existing, the data is considered as a string
+//
 // See the files under the "testdata" directory for how to write your data.
 func getData(datas []string) ([]byte, error) {
 	dataBytes := make([]byte, 0)
