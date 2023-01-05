@@ -88,6 +88,22 @@ func (p *Profile) GetModuleKey() string {
 	return p.Name()
 }
 
+func startAttachAgent(pid int) error {
+	if C.startAttachAgent(C.int(pid)) == 0 {
+		return nil
+	} else {
+		return fmt.Errorf("start Attach Agent failed")
+	}
+}
+
+func stopAttachAgent(pid int) error {
+	if C.stopAttachAgent(C.int(pid)) == 0 {
+		return nil
+	} else {
+		return fmt.Errorf("stop Attach Agent failed")
+	}
+}
+
 func startDebug(pid int, tid int) error {
 	C.startProfileDebug(C.int(pid), C.int(tid))
 	return nil
@@ -114,6 +130,28 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 		}
 	case "stop":
 		if err := p.Stop("module stop by manual"); err != nil {
+			return &ControlResponse{
+				Code: StopWithError,
+				Msg:  err.Error(),
+			}
+		}
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "stop success",
+		}
+	case "start_attach_agent":
+		if err := startAttachAgent(req.Pid); err != nil {
+			return &ControlResponse{
+				Code: StartWithError,
+				Msg:  err.Error(),
+			}
+		}
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "start success",
+		}
+	case "stop_attach_agent":
+		if err := stopAttachAgent(req.Pid); err != nil {
 			return &ControlResponse{
 				Code: StopWithError,
 				Msg:  err.Error(),
