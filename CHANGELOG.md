@@ -121,7 +121,7 @@
 
 ## v0.2.0 - 2022-05-07
 ### Features
-- Provide a kindling Prometheus exporter that can support integration with Prometheus easily. See kindling's metrics from the kindling website[http://www.kindling.space:33215/project-1/doc-15/]
+- Provide a kindling Prometheus exporter that can support integration with Prometheus easily. See kindling's metrics from the kindling website[http://kindling.harmonycloud.cn/docs/usage/prometheus-metric/]
 - Support network performance, DNS performance, service network maps, and workload performance analysis.
 - Support HTTP, MySQL, and REDIS request analysis.
 - Provide a Grafana-plugin with four built-in dashboards to support basic analysis features.
