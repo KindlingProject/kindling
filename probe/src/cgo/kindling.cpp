@@ -512,11 +512,21 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
 void parse_span(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
                 kindling_event_t_for_go* p_kindling_event, sinsp_threadinfo* threadInfo,
                 uint16_t& userAttNumber) {
+  if (data_param.m_len < 10) {
+    return;
+  }
   int val_offset = 0;
   int tmp_offset = 0;
   int span_offset = 0;
   int traceId_offset = 0;
-  for (int i = 8; i < data_param.m_len; i++) {
+
+  bool version_new = false;
+  int fromIndex = 8;
+  if (data_val[8] == '1' && data_val[9] == '!') {
+    version_new = true;
+    fromIndex = 10;
+  }
+  for (int i = fromIndex; i < data_param.m_len; i++) {
     if (data_val[i] == '!') {
       if (val_offset == 0) {
         duration_char[tmp_offset] = '\0';
@@ -541,7 +551,13 @@ void parse_span(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
     }
     tmp_offset++;
   }
-  p_kindling_event->timestamp = s_evt->get_ts() - atol(duration_char);
+  if (version_new) {
+    // StartTime
+    p_kindling_event->timestamp = atol(duration_char);
+  } else {
+    // EndTime - Duration
+    p_kindling_event->timestamp = s_evt->get_ts() - atol(duration_char);
+  }
   strcpy(p_kindling_event->userAttributes[userAttNumber].key, "end_time");
   memcpy(p_kindling_event->userAttributes[userAttNumber].value, to_string(s_evt->get_ts()).data(),
          19);
