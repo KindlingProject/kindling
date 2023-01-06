@@ -1,6 +1,6 @@
 ## This Topology Plugin is desgin for project Kindling?
 This is a topology component based on ANTV developed specifically for the Kindling project. Prometheus data is queried using modified EBPF probes, so this topology is not a generic plugin.
-To use this component together with [Kindling](https://github.com/Kindling-project/kindling), you need to import a kindling customized dashboard([dashboard.json](https://github.com/Kindling-project/kindling/blob/main/grafana-plugins/dashboard-json/topology.json)) that goes back to Prometheus to query the data collected by the probe.
+To use this component together with [Kindling](https://github.com/KindlingProject/kindling), you need to import a kindling customized dashboard([dashboard.json](https://github.com/KindlingProject/kindling/blob/main/grafana-plugins/dashboard-json/topology.json)) that goes back to Prometheus to query the data collected by the probe.
 
 
 After integrating this Grafana plugin and adding the corresponding Prometheus data source, you will see the plugin as shown
@@ -12,7 +12,7 @@ Topology call relationships are generated based on data queried in Prometheus an
 
 ## How to build
 
-Clone the [kindling project](https://github.com/Kindling-project/kindling) and navigate to this directory.
+Clone the [kindling project](https://github.com/KindlingProject/kindling) and navigate to this directory.
 
 ### Build topo plugin with docker
 
