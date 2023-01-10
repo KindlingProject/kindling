@@ -61,7 +61,7 @@ func getFileName(protocol string, contentKey string, timestamp uint64, isServer 
 		isServerString = "false"
 	}
 	encodedContent := base64.URLEncoding.EncodeToString([]byte(contentKey))
-	return protocol + "_" + encodedContent + "_" + strconv.FormatUint(timestamp, 10) + "_" + isServerString
+	return getDateString(int64(timestamp)) + "_" + protocol + "_" + encodedContent + "_" + isServerString
 }
 
 func (fw *fileWriter) writeTrace(group *model.DataGroup) {
