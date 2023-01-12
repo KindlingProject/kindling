@@ -174,7 +174,7 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		ca.cpuPidEvents[pid] = tidCpuEvents
 	}
 	timeSegments, exist := tidCpuEvents[tid]
-	maxSegmentSize := ca.cfg.GetSegmentSize()
+	maxSegmentSize := ca.cfg.SegmentSize
 	if exist {
 		endOffset := int(event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime)
 		if endOffset < 0 {

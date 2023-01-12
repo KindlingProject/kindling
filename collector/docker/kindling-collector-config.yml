@@ -33,7 +33,12 @@ receivers:
       - name: tracepoint-procexit
 analyzers:
   cpuanalyzer:
+    # segment_size defines how many segments(seconds) can be cached to wait for sending.
+    # The elder segments will be overwritten by the newer ones, so don't set it too low.
     segment_size: 40
+    # edge_events_window_size is the size of the duration window that seats the edge events.
+    # The unit is seconds. The greater it is, the more data will be stored.
+    edge_events_window_size: 2
   tcpconnectanalyzer:
     channel_size: 10000
     wait_event_second: 10
