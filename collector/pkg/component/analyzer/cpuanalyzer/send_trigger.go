@@ -29,7 +29,7 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		})
 		return
 	}
-	if data.Labels.GetBoolValue(constlabels.IsSlow) {
+	if data.Labels.GetBoolValue(constlabels.IsSlow) || data.Labels.GetBoolValue(constlabels.IsError) {
 		duration, ok := data.GetMetric(constvalues.RequestTotalTime)
 		if !ok {
 			return
@@ -54,6 +54,12 @@ type SendTriggerEvent struct {
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	// Break the for loop if the channel is closed
 	for sendContent := range sendChannel {
+		// CpuAnalyzer consumes all traces to add them to TimeSegments
+		ca.ConsumeTraces(sendContent)
+		// Only send the slow trace as the signal
+		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsSlow) {
+			continue
+		}
 		for _, nexConsumer := range ca.nextConsumers {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
