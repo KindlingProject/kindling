@@ -37,7 +37,7 @@ analyzers:
 	  # The elder segments will be overwritten by the newer ones, so don't set it too low.
     segment_size: 40
     # edge_events_window_size is the size of the duration window that seats the edge events.
-	  # The unit is seconds. The greater it is, the more data will be stored.
+	  # The unit is second. The greater it is, the more data will be stored.
     edge_events_window_size: 2
   tcpconnectanalyzer:
     channel_size: 10000
