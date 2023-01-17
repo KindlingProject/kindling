@@ -23,7 +23,7 @@ const (
 	JavaFutexEventLabel     = "javaFutexEvents"
 	TransactionIdEventLabel = "transactionIds"
 	SpanLabel               = "spans"
-	InnerCallLabel          = "innerCall"
+	InnerCallLabel          = "innerCalls"
 )
 
 type TimedEvent interface {
