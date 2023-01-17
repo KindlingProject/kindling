@@ -132,7 +132,7 @@ func (ca *CpuAnalyzer) ConsumeSpanEvent(event *model.KindlingEvent) {
 }
 
 func (ca *CpuAnalyzer) ConsumeTraces(trace SendTriggerEvent) {
-	tid := trace.OriginalData.Labels.GetIntValue(constlabels.Tid)
+	tid := trace.OriginalData.Labels.GetIntValue(constlabels.RequestTid)
 	threadName := trace.OriginalData.Labels.GetStringValue(constlabels.Comm)
 	event := &InnerCall{
 		StartTime: trace.StartTime,

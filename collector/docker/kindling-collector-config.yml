@@ -48,7 +48,7 @@ analyzers:
   networkanalyzer:
     connect_timeout: 100
     # How many seconds to wait until we consider a request as complete.
-    fd_reuse_timeout: 15
+    fd_reuse_timeout: 2
     # How many seconds to wait until we consider a request as no response.
     no_response_threshold: 120
     # How many milliseconds to wait until we consider a request-response as slow.

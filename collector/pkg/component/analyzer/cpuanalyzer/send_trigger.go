@@ -54,8 +54,10 @@ type SendTriggerEvent struct {
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	// Break the for loop if the channel is closed
 	for sendContent := range sendChannel {
-		// CpuAnalyzer consumes all traces to add them to TimeSegments
-		ca.ConsumeTraces(sendContent)
+		// CpuAnalyzer consumes all traces from the client-side to add them to TimeSegments
+		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsServer) {
+			ca.ConsumeTraces(sendContent)
+		}
 		// Only send the slow trace as the signal
 		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsSlow) {
 			continue
