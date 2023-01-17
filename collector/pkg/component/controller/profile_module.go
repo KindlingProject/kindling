@@ -88,20 +88,20 @@ func (p *Profile) GetModuleKey() string {
 	return p.Name()
 }
 
-func startAttachAgent(pid int) error {
-	if C.startAttachAgent(C.int(pid)) == 0 {
-		return nil
-	} else {
-		return fmt.Errorf("start Attach Agent failed")
+func startAttachAgent(pid int) string {
+	errorMsg := C.GoString(C.startAttachAgent(C.int(pid)))
+	if len(errorMsg) > 0 {
+		return errorMsg
 	}
+	return ""
 }
 
-func stopAttachAgent(pid int) error {
-	if C.stopAttachAgent(C.int(pid)) == 0 {
-		return nil
-	} else {
-		return fmt.Errorf("stop Attach Agent failed")
+func stopAttachAgent(pid int) string {
+	errorMsg := C.GoString(C.stopAttachAgent(C.int(pid)))
+	if len(errorMsg) > 0 {
+		return errorMsg
 	}
+	return ""
 }
 
 func startDebug(pid int, tid int) error {
@@ -140,10 +140,10 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 			Msg:  "stop success",
 		}
 	case "start_attach_agent":
-		if err := startAttachAgent(req.Pid); err != nil {
+		if errMsg := startAttachAgent(req.Pid); errMsg != "" {
 			return &ControlResponse{
 				Code: StartWithError,
-				Msg:  err.Error(),
+				Msg:  errMsg,
 			}
 		}
 		return &ControlResponse{
@@ -151,10 +151,10 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 			Msg:  "start success",
 		}
 	case "stop_attach_agent":
-		if err := stopAttachAgent(req.Pid); err != nil {
+		if errMsg := stopAttachAgent(req.Pid); errMsg != "" {
 			return &ControlResponse{
 				Code: StopWithError,
-				Msg:  err.Error(),
+				Msg:  errMsg,
 			}
 		}
 		return &ControlResponse{

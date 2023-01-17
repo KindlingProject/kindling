@@ -42,11 +42,11 @@ void print_profile_debug_info(sinsp_evt* sevt);
 
 void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps);
 
-int start_attach_agent(int64_t pid);
+char* start_attach_agent(int64_t pid);
 
-int stop_attach_agent(int64_t pid);
+char* stop_attach_agent(int64_t pid);
 
-void attach_agent(int64_t pid, bool is_attach);
+char* attach_agent(int64_t pid, bool is_attach);
 
 void get_capture_statistics();
 

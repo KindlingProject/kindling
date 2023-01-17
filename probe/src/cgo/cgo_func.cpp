@@ -14,8 +14,8 @@ int getKindlingEvent(void** kindlingEvent) { return getEvent(kindlingEvent); }
 int startProfile() { return start_profile(); }
 int stopProfile() { return stop_profile(); }
 
-int startAttachAgent(int pid) { return start_attach_agent(pid); }
-int stopAttachAgent(int pid) { return stop_attach_agent(pid); }
+char* startAttachAgent(int pid) { return start_attach_agent(pid); }
+char* stopAttachAgent(int pid) { return stop_attach_agent(pid); }
 
 void subEventForGo(char* eventName, char* category, void *params) { sub_event(eventName, category, (event_params_for_subscribe *)params); }
 void startProfileDebug(int pid, int tid) { start_profile_debug(pid, tid); }

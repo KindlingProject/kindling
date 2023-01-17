@@ -918,8 +918,8 @@ void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach
   }
 }
 
-void attach_agent(int64_t pid, bool is_attach) {
-  char result_buf[1024], command[1024];
+char* attach_agent(int64_t pid, bool is_attach) {
+  char result_buf[1024], command[1024], error_message[1024];
   string attach_command_prefix;
   if (is_attach) {
     attach_command_prefix = "./async-profiler/jattach.sh start ";
@@ -933,7 +933,7 @@ void attach_agent(int64_t pid, bool is_attach) {
   fp = popen(command, "r");
   if (NULL == fp) {
     perror("popen execute failed!\n");
-    return;
+    return "popen execute failed";
   }
   if (is_attach) {
     cout << "------"
@@ -943,9 +943,14 @@ void attach_agent(int64_t pid, bool is_attach) {
          << " start detach agent for pid " << pid << "------" << endl;
   }
 
+  char* error_msg;
   while (fgets(result_buf, sizeof(result_buf), fp) != NULL) {
     if ('\n' == result_buf[strlen(result_buf) - 1]) {
       result_buf[strlen(result_buf) - 1] = '\0';
+    }
+    error_msg = strstr(result_buf, "[ERROR] ");
+    if (error_msg) {
+      strcpy(error_message, error_msg);
     }
     printf("%s\r\n", result_buf);
   }
@@ -953,7 +958,7 @@ void attach_agent(int64_t pid, bool is_attach) {
   int rc = pclose(fp);
   if (-1 == rc) {
     perror("close command fp failed!\n");
-    exit(1);
+    return "close command fp failed";
   } else {
     printf("command:【%s】command process status:【%d】command return value:【%d】\r\n", command,
            rc, WEXITSTATUS(rc));
@@ -964,24 +969,21 @@ void attach_agent(int64_t pid, bool is_attach) {
   } else {
     cout << "------end detach agent for pid " << pid << "------" << endl;
   }
+  return error_message;
 }
 
-int start_attach_agent(int64_t pid) {
+char* start_attach_agent(int64_t pid) {
   if (!inspector) {
-    return -1;
+    return "Please start profile first";
   }
-  attach_agent(pid, true);
-
-  return 0;
+  return attach_agent(pid, true);
 }
 
-int stop_attach_agent(int64_t pid) {
+char* stop_attach_agent(int64_t pid) {
   if (!inspector) {
-    return -1;
+    return "Please start profile first";
   }
-  attach_agent(pid, false);
-
-  return 0;
+  return attach_agent(pid, false);
 }
 
 int start_profile() {
