@@ -919,7 +919,7 @@ void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach
 }
 
 char* attach_agent(int64_t pid, bool is_attach) {
-  char result_buf[1024], command[1024], error_message[1024];
+  char result_buf[1024], command[1024];
   string attach_command_prefix;
   if (is_attach) {
     attach_command_prefix = "./async-profiler/jattach.sh start ";
@@ -943,6 +943,7 @@ char* attach_agent(int64_t pid, bool is_attach) {
          << " start detach agent for pid " << pid << "------" << endl;
   }
 
+  string error_message = "";
   char* error_msg;
   while (fgets(result_buf, sizeof(result_buf), fp) != NULL) {
     if ('\n' == result_buf[strlen(result_buf) - 1]) {
@@ -950,7 +951,7 @@ char* attach_agent(int64_t pid, bool is_attach) {
     }
     error_msg = strstr(result_buf, "[ERROR] ");
     if (error_msg) {
-      strcpy(error_message, error_msg);
+      error_message.append(error_msg);
     }
     printf("%s\r\n", result_buf);
   }
@@ -969,7 +970,7 @@ char* attach_agent(int64_t pid, bool is_attach) {
   } else {
     cout << "------end detach agent for pid " << pid << "------" << endl;
   }
-  return error_message;
+  return (char*) error_message.data();
 }
 
 char* start_attach_agent(int64_t pid) {
