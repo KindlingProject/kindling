@@ -5,6 +5,7 @@
 
 ## Unreleased
 ### New features
+- Support Attach Agent for NoAPM Java Application. ([#431](https://github.com/KindlingProject/kindling/pull/431))
 
 ### Enhancements
 - When using the file writer in `cameraexporter`, we rotate files in chronological order now and rotate half of files one time. ([#420](https://github.com/KindlingProject/kindling/pull/420))
