@@ -918,7 +918,7 @@ void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach
   }
 }
 
-char* attach_agent(int64_t pid, bool is_attach) {
+void attach_agent(int64_t pid, char* error_message, bool is_attach) {
   char result_buf[1024], command[1024];
   string attach_command_prefix;
   if (is_attach) {
@@ -933,7 +933,8 @@ char* attach_agent(int64_t pid, bool is_attach) {
   fp = popen(command, "r");
   if (NULL == fp) {
     perror("popen execute failed!\n");
-    return "popen execute failed";
+    strcpy(error_message, "popen execute failed");
+    return;
   }
   if (is_attach) {
     cout << "------"
@@ -943,7 +944,6 @@ char* attach_agent(int64_t pid, bool is_attach) {
          << " start detach agent for pid " << pid << "------" << endl;
   }
 
-  string error_message = "";
   char* error_msg;
   while (fgets(result_buf, sizeof(result_buf), fp) != NULL) {
     if ('\n' == result_buf[strlen(result_buf) - 1]) {
@@ -951,7 +951,7 @@ char* attach_agent(int64_t pid, bool is_attach) {
     }
     error_msg = strstr(result_buf, "[ERROR] ");
     if (error_msg) {
-      error_message.append(error_msg);
+      strcpy(error_message, error_msg);
     }
     printf("%s\r\n", result_buf);
   }
@@ -959,7 +959,8 @@ char* attach_agent(int64_t pid, bool is_attach) {
   int rc = pclose(fp);
   if (-1 == rc) {
     perror("close command fp failed!\n");
-    return "close command fp failed";
+    strcpy(error_message, "close command fp failed");
+    return;
   } else {
     printf("command:【%s】command process status:【%d】command return value:【%d】\r\n", command,
            rc, WEXITSTATUS(rc));
@@ -970,21 +971,28 @@ char* attach_agent(int64_t pid, bool is_attach) {
   } else {
     cout << "------end detach agent for pid " << pid << "------" << endl;
   }
-  return (char*) error_message.data();
 }
 
 char* start_attach_agent(int64_t pid) {
+  char* error_message = (char*) malloc(1024 * sizeof(char));
+  error_message[0] = '\0';
   if (!inspector) {
-    return "Please start profile first";
+    strcpy(error_message, "Please start profile first");
+  } else {
+    attach_agent(pid, error_message, true);
   }
-  return attach_agent(pid, true);
+  return error_message;
 }
 
 char* stop_attach_agent(int64_t pid) {
+  char* error_message = (char*) malloc(1024 * sizeof(char));
+  error_message[0] = '\0';
   if (!inspector) {
-    return "Please start profile first";
+    strcpy(error_message, "Please start profile first");
+  } else {
+    attach_agent(pid, error_message, false);
   }
-  return attach_agent(pid, false);
+  return error_message;
 }
 
 int start_profile() {

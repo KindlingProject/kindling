@@ -46,7 +46,7 @@ char* start_attach_agent(int64_t pid);
 
 char* stop_attach_agent(int64_t pid);
 
-char* attach_agent(int64_t pid, bool is_attach);
+void attach_agent(int64_t pid, char* error_message, bool is_attach);
 
 void get_capture_statistics();
 

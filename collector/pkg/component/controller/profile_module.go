@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"unsafe"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 )
@@ -89,7 +90,9 @@ func (p *Profile) GetModuleKey() string {
 }
 
 func startAttachAgent(pid int) string {
-	errorMsg := C.GoString(C.startAttachAgent(C.int(pid)))
+	result := C.startAttachAgent(C.int(pid))
+	errorMsg := C.GoString(result)
+	C.free(unsafe.Pointer(result))
 	if len(errorMsg) > 0 {
 		return errorMsg
 	}
@@ -97,7 +100,9 @@ func startAttachAgent(pid int) string {
 }
 
 func stopAttachAgent(pid int) string {
-	errorMsg := C.GoString(C.stopAttachAgent(C.int(pid)))
+	result := C.stopAttachAgent(C.int(pid))
+	errorMsg := C.GoString(result)
+	C.free(unsafe.Pointer(result))
 	if len(errorMsg) > 0 {
 		return errorMsg
 	}
