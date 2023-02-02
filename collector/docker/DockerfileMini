@@ -1,0 +1,16 @@
+FROM centos:7
+
+WORKDIR /app/
+COPY kindling-falcolib-probe.tar.gz  ./
+
+COPY libso/libkindling.so /lib64/
+RUN ldconfig
+
+COPY kindling-probe-loader /usr/bin/kindling-probe-loader
+RUN chmod +x  /usr/bin/kindling-probe-loader
+COPY kindling-collector-config.yml /app/config/
+COPY kindling-collector /app/kindling-collector
+COPY libkindling-plugin.so /app/
+COPY start.sh /app/
+
+CMD ["sh", "start.sh"]

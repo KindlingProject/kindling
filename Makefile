@@ -129,7 +129,7 @@ agent-libs: build-libs pack-libs
 
 .PHONY: build-collector
 build-collector:
-	@cd $(SCRIPTS_PATH) && sh ./build.sh
+	@cd $(SCRIPTS_PATH) && sh ./build.sh DokcerfileMini
 
 .PHONY: kindling-collector
 kindling-collector: ## build kindling collector in docker
