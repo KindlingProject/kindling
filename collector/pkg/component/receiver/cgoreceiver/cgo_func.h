@@ -13,6 +13,8 @@ int getKindlingEvent(void **kindlingEvent);
 int subEventForGo(char* eventName, char* category, void *params);
 int startProfile();
 int stopProfile();
+char* startAttachAgent(int pid);
+char* stopAttachAgent(int pid);
 void startProfileDebug(int pid, int tid);
 void stopProfileDebug();
 void getCaptureStatistics();
