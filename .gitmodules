@@ -1,0 +1,3 @@
+[submodule "agent-libs"]
+	path = agent-libs
+	url = https://github.com/KindlingProject/agent-libs.git
