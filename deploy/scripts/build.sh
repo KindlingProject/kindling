@@ -13,7 +13,7 @@ if [ ! -f "$libKindlingPath" ]; then
   echo "compiler libkindling failed! exit!"
 
 else
-  mkdir -p ../../collector/docker/libso &&  cp -rf ./src/libkindling.so ../../collector/docker/libso/
+  mkdir -p ../../collector/docker/libso && cp -rf ./src/libkindling.so ../../collector/docker/libso/
   cp -rf ./src/libkindling.so /usr/lib64/
   cd ../../collector/
   go mod tidy && go mod vendor
@@ -23,7 +23,7 @@ else
     echo "compiler collector failed! exit!"
   else
     cd docker
-    if [ $1 ];then
+    if [ $1 ]; then
       docker build -t kindling-agent . -f $1;
     else
       docker build -t kindling-agent . -f DockerfileLocalProbe;

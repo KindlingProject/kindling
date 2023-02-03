@@ -45,9 +45,11 @@ endif
 LIBS_IMAGE ?= kindlingproject/kernel-builder:latest
 KINDLING_IMAGE ?= kindlingproject/agent-builder:latest
 
+
+## Check if probe build image and collector build image exists or pull from dockerhub
 .PHONY: builder-images
 builder-images:
-	@echo "Check dependencies images...";
+	@echo "Checking builder images...";
 	@if [ -z "$(shell docker images -q $(LIBS_IMAGE))" ]; then \
 		echo "Downloading probe build image..."; \
 		docker pull $(LIBS_IMAGE); \
@@ -55,90 +57,100 @@ builder-images:
 		echo "Probe build image already exists"; \
 	fi
 	@if [ -z "$(shell docker images -q $(KINDLING_IMAGE))" ]; then \
-		echo "Downloading kindling build image..."; \
+		echo "Downloading collector build image..."; \
 		docker pull $(KINDLING_IMAGE); \
 	else \
-		echo "Kindling build image already exists"; \
+		echo "Collector build image already exists"; \
 	fi
 
+
+## Check kernel headers exists or download, support Ubuntu, CentOS
 .PHONY: kernel-headers
 kernel-headers:
-	@echo "Checking for kernel-headers...";
+	@echo "Checking kernel headers...";
 	@if [ "$(KernelName)" = "NotSupport" ]; then \
-  		echo "$(KernelName) install kernel header,try install local"; \
+		echo "System kernel is not the expected Ubuntu and CentOS.Try installing kernel headers locally"; \
 		$(ErrorExit); \
 	fi
 
-	if [ -z "$(shell exit 1)" ]; then \
+	@if [ -z "$(shell exit 1)" ]; then \
 		echo "Downloading $(KernelName)..."; \
 		$(InstallCommand); \
-    	else \
-    	echo "$(KernelName) already installed"; \
-    fi
+	else \
+		echo "$(KernelName) already installed"; \
+	fi
 
 AGENT_LIBS_COMMIT_ID=$(shell cd $(LIBS_SRC) && git rev-parse HEAD)
 
+## Check libs exists or download, patch cmake file
 .PHONY: patch-libs
 patch-libs:
+	@echo "Checking libs...";
 	@if [ ! -d "$(LIBS_SRC)" ]; then \
-  		echo "$(LIBS_SRC) not exist, download....."; \
+		echo "$(LIBS_SRC) not exist, downloading....."; \
 		git submodule update --init --recursive; \
 	else \
-	  echo "agent-libs: $(LIBS_SRC) exist"; \
+		echo "Libs src: $(LIBS_SRC) exist"; \
 	fi
-	@echo "Fetching agent-libs commit id: $(AGENT_LIBS_COMMIT_ID)";
+	@echo "Patching libs commit id: $(AGENT_LIBS_COMMIT_ID)";
 
-	@echo "patching $(PROBE_PATCH_FILE)";
+	@echo "Patching $(PROBE_PATCH_FILE)";
 	@sed 's/AGENT_LIBS_VERSION "[0-9a-zA-Z]*"/AGENT_LIBS_VERSION "${AGENT_LIBS_COMMIT_ID}"/g' $(PROBE_PATCH_FILE) > $(PROBE_PATCH_FILE).new && \
 	mv $(PROBE_PATCH_FILE).new $(PROBE_PATCH_FILE);
-	@echo "patching $(PROBE_PATCH_FILE) done"
+	@echo "Patching $(PROBE_PATCH_FILE) done"
 
+## Grant executable permissions to build.sh
 .PHONY: patch-scripts
 patch-scripts:
+	@echo "Grant executable permissions to build.sh";
 	@cd $(SCRIPTS_PATH) && chmod +x build.sh;
 
+## Check all depends
+.PHONY: depends
+depends: builder-images kernel-headers patch-libs patch-scripts
 
-.PHONY: dependencies
-dependencies: builder-images kernel-headers patch-libs patch-scripts
-
-.PHONY: build-libs
-build-libs: ## build libs in docker with /lib/modules
-	@echo "Building kindling libs..."
+## Build probe in docker with /lib/modules
+.PHONY: build-probe
+build-probe:
+	@echo "Building kindling probe..."
 	@docker run \
 		--env "ENV_HEADER_VERSION=$(kernelVersion)" \
 		--rm -it \
 		-v /usr:/host/usr \
 		-v /lib/modules:/host/lib/modules \
 		-v $(LIBS_SRC):/source \
-		$(PROBE_IMAGE);
+		$(LIBS_IMAGE);
 
-.PHONY: pack-libs
-pack-libs:
-	@echo "Packaging kindling libs...";
+.PHONY: pack-probe
+pack-probe:
+	@echo "Packaging kindling probe...";
 	@if [ ! -d "$(LIBS_SRC)/kindling-falcolib-probe/" ]; then \
-    		echo "The packaged probe does not exist.try again"; \
-    		exit 1; \
-    else \
+		echo "The packaged probe does not exist.try again"; \
+		exit 1; \
+	else \
 		cd $(LIBS_SRC) && \
 		tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/ && \
 		cp -f kindling-falcolib-probe.tar.gz $(COLLECTOR_PATH)/docker/.; \
 	fi
 
-.PHONY: agent-libs
-agent-libs: build-libs pack-libs
+## Build kindling probe in docker
+.PHONY: kindling-probe
+kindling-probe: build-probe pack-probe
 
-.PHONY: build-collector
-build-collector:
-	@cd $(SCRIPTS_PATH) && sh ./build.sh DokcerfileMini
+.PHONY: _build-collector
+_build-collector:
+	@cd $(SCRIPTS_PATH) && sh ./build.sh
 
+## Build kindling collector in docker
 .PHONY: kindling-collector
-kindling-collector: ## build kindling collector in docker
+kindling-collector:
 	@if [ ! -f "$(COLLECTOR_PATH)/docker/kindling-falcolib-probe.tar.gz" ]; then \
-			echo "The kindling-falcolib-probe.tar.gz does not exist. make probe-libs first"; \
-			exit 1; \
+		echo "The kindling-falcolib-probe.tar.gz does not exist. make probe-libs first"; \
+		exit 1; \
 	fi
-	@cd $(SCRIPTS_PATH) && bash -c "./run_docker.sh make build-collector";
+	@cd $(SCRIPTS_PATH) && bash -c "./run_docker.sh make _build-collector";
 	@exit ;
 
+## Install depends and build probe locally and build collector
 .PHONY: docker-build-all
-docker-build-all: dependencies agent-libs kindling-collector
+docker-build-all: depends kindling-probe kindling-collector
