@@ -5,7 +5,8 @@ const (
 )
 
 type Config struct {
-	SegmentSize int `mapstructure:"segment_size"`
+	SegmentSize       int `mapstructure:"segment_size"`
+	javaTraceSlowTime int `mapstructure:"java_trace_slow_time"`
 }
 
 func (cfg *Config) GetSegmentSize() int {

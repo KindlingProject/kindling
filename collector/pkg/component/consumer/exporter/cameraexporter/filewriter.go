@@ -53,7 +53,7 @@ func (fw *fileWriter) pidFilePath(workloadName string, podName string, container
 	return path.Join(fw.config.StoragePath, dirName)
 }
 
-func getFileName(protocol string, contentKey string, timestamp uint64, isServer bool) string {
+func getFileName(contentKey string, timestamp uint64, isServer bool) string {
 	var isServerString string
 	if isServer {
 		isServerString = "true"
@@ -61,7 +61,7 @@ func getFileName(protocol string, contentKey string, timestamp uint64, isServer 
 		isServerString = "false"
 	}
 	encodedContent := base64.URLEncoding.EncodeToString([]byte(contentKey))
-	return getDateString(int64(timestamp)) + "_" + protocol + "_" + encodedContent + "_" + isServerString
+	return getDateString(int64(timestamp)) + "_" + encodedContent + "_" + isServerString
 }
 
 func (fw *fileWriter) writeTrace(group *model.DataGroup) {
@@ -74,7 +74,7 @@ func (fw *fileWriter) writeTrace(group *model.DataGroup) {
 		return
 	}
 	// /$path/podName_containerName_pid/protocol_contentKey_timestamp_isServer
-	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
+	fileName := getFileName(pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
 	// Check whether we need to roll over the files
 	err := fw.writeFile(baseDir, fileName, group)
 	if err != nil {
@@ -175,7 +175,7 @@ func (fw *fileWriter) writeCpuEvents(group *model.DataGroup) {
 	traceTimestamp := group.Labels.GetIntValue(constlabels.Timestamp)
 	pathElements := filepathhelper.GetFilePathElements(group, uint64(traceTimestamp))
 	baseDir := fw.pidFilePath(pathElements.WorkloadName, pathElements.PodName, pathElements.ContainerName, pathElements.Pid)
-	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
+	fileName := getFileName(pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
 	filePath := filepath.Join(baseDir, fileName)
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0)
 	if err != nil {

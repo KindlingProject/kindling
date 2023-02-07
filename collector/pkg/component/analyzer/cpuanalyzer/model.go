@@ -152,6 +152,9 @@ type TransactionIdEvent struct {
 	Timestamp uint64 `json:"timestamp"`
 	TraceId   string `json:"traceId"`
 	IsEntry   uint32 `json:"isEntry"`
+	Protocol  string `json:"protocol"`
+	Url       string `json:"url"`
+	pidString string
 }
 
 func (t *TransactionIdEvent) StartTimestamp() uint64 {

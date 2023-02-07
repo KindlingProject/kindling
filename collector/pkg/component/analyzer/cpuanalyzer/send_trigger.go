@@ -15,6 +15,8 @@ var (
 	enableProfile bool
 	once          sync.Once
 	sendChannel   chan SendTriggerEvent
+	sampleMap     sync.Map
+	isInstallApm  map[uint64]bool
 )
 
 // ReceiveDataGroupAsSignal receives model.DataGroup as a signal.
@@ -30,18 +32,18 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		})
 		return
 	}
-	if data.Labels.GetBoolValue(constlabels.IsSlow) {
-		duration, ok := data.GetMetric(constvalues.RequestTotalTime)
-		if !ok {
+	if data.Labels.GetBoolValue("isInstallApm") {
+		isInstallApm[uint64(data.Labels.GetIntValue("pid"))] = true
+	} else {
+		if isInstallApm[uint64(data.Labels.GetIntValue("pid"))] {
 			return
 		}
-		event := SendTriggerEvent{
-			Pid:          uint32(data.Labels.GetIntValue("pid")),
-			StartTime:    data.Timestamp,
-			SpendTime:    uint64(duration.GetInt().Value),
-			OriginalData: data.Clone(),
+	}
+	if data.Labels.GetBoolValue(constlabels.IsSlow) {
+		url, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + string(data.Labels.GetIntValue("pid")))
+		if ok && url != nil {
+			sampleMap.Store(data.Labels.GetStringValue(constlabels.ContentKey)+string(data.Labels.GetIntValue("pid")), data)
 		}
-		sendChannel <- event
 	}
 }
 
@@ -89,6 +91,33 @@ func (t *SendEventsTask) run() {
 	// keyElements are used to correlate the cpuEvents with the trace.
 	keyElements := filepathhelper.GetFilePathElements(t.triggerEvent.OriginalData, t.triggerEvent.StartTime)
 	t.cpuAnalyzer.sendEvents(keyElements.ToAttributes(), t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
+}
+
+func (ca *CpuAnalyzer) sampleSend() {
+	timer := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-timer.C:
+			sampleMap.Range(func(k, v interface{}) bool {
+				data := v.(*model.DataGroup)
+				duration, ok := data.GetMetric(constvalues.RequestTotalTime)
+				if !ok {
+					return false
+				}
+				event := SendTriggerEvent{
+					Pid:          uint32(data.Labels.GetIntValue("pid")),
+					StartTime:    data.Timestamp,
+					SpendTime:    uint64(duration.GetInt().Value),
+					OriginalData: data.Clone(),
+				}
+				sendChannel <- event
+				sampleMap.Delete(k)
+				return true
+			})
+
+		}
+	}
+
 }
 
 func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {

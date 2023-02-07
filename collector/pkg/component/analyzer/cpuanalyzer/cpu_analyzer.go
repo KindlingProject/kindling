@@ -2,6 +2,8 @@ package cpuanalyzer
 
 import (
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 	"strconv"
 	"sync"
 	"time"
@@ -29,6 +31,7 @@ type CpuAnalyzer struct {
 	lock                 sync.RWMutex
 	telemetry            *component.TelemetryTools
 	tidExpiredQueue      *tidDeleteQueue
+	javaTraces           map[string]uint64
 	nextConsumers        []consumer.Consumer
 }
 
@@ -92,9 +95,31 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 		Timestamp: event.Timestamp,
 		TraceId:   event.GetStringUserAttribute("trace_id"),
 		IsEntry:   uint32(isEntry),
+		Protocol:  event.GetStringUserAttribute("protocol"),
+		Url:       event.GetStringUserAttribute("url"),
+		pidString: string(event.GetPid()),
 	}
 	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+}
+
+func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev TransactionIdEvent) {
+	if ev.IsEntry == 1 {
+		ca.javaTraces[ev.TraceId+ev.pidString] = ev.Timestamp
+	} else {
+		if ca.javaTraces[ev.TraceId+ev.pidString] > 0 && (ev.Timestamp-ca.javaTraces[ev.TraceId+ev.pidString]) > uint64(ca.cfg.javaTraceSlowTime)*uint64(time.Millisecond) {
+			labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				constlabels.IsSlow:     model.NewBoolValue(true),
+				constlabels.Pid:        model.NewStringValue(ev.pidString),
+				constlabels.Protocol:   model.NewStringValue(ev.Protocol),
+				constlabels.ContentKey: model.NewStringValue(ev.Url),
+				"isInstallApm":         model.NewBoolValue(true),
+			})
+			metric := model.NewIntMetric(constvalues.RequestTotalTime, int64(ev.Timestamp-ca.javaTraces[ev.TraceId+ev.pidString]))
+			dataGroup := model.NewDataGroup(constnames.SpanEvent, labels, ev.Timestamp, metric)
+			ReceiveDataGroupAsSignal(dataGroup)
+		}
+	}
 }
 
 func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
