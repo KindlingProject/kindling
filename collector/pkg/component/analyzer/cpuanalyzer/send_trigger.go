@@ -10,7 +10,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 )
 
-var eventsWindowsDuration = 6 * time.Second
 var (
 	enableProfile bool
 	once          sync.Once
@@ -62,31 +61,36 @@ func (ca *CpuAnalyzer) ReceiveSendSignal() {
 		}
 		// Copy the value and then get its pointer to create a new task
 		triggerEvent := sendContent
-		task := &SendEventsTask{0, ca, &triggerEvent}
+		task := &SendEventsTask{
+			cpuAnalyzer:              ca,
+			triggerEvent:             &triggerEvent,
+			edgeEventsWindowDuration: time.Duration(ca.cfg.EdgeEventsWindowSize) * time.Second,
+		}
 		expiredCallback := func() {
 			ca.routineSize.Dec()
 		}
 		// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
-		NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
+		NewAndStartScheduledTaskRoutine(1*time.Second, time.Duration(ca.cfg.EdgeEventsWindowSize)*time.Second+1, task, expiredCallback)
 		ca.routineSize.Inc()
 	}
 }
 
 type SendEventsTask struct {
-	tickerCount  int
-	cpuAnalyzer  *CpuAnalyzer
-	triggerEvent *SendTriggerEvent
+	tickerCount              int
+	cpuAnalyzer              *CpuAnalyzer
+	triggerEvent             *SendTriggerEvent
+	edgeEventsWindowDuration time.Duration
 }
 
 // |________________|______________|_________________|
-// 0      (5s)      1  (duration)  2      (5s)       3
+// 0  (edgeWindow)  1  (duration)  2  (edgeWindow)   3
 // 0: The start time of the windows where the events we need are.
 // 1: The start time of the "trace".
 // 2: The end time of the "trace". This is nearly equal to the creating time of the task.
 // 3: The end time of the windows where the events we need are.
 func (t *SendEventsTask) run() {
-	currentWindowsStartTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime - uint64(eventsWindowsDuration)
-	currentWindowsEndTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime + t.triggerEvent.SpendTime
+	currentWindowsStartTime := uint64(t.tickerCount)*uint64(time.Second) + t.triggerEvent.StartTime - uint64(t.edgeEventsWindowDuration)
+	currentWindowsEndTime := uint64(t.tickerCount)*uint64(time.Second) + t.triggerEvent.StartTime + t.triggerEvent.SpendTime
 	t.tickerCount++
 	// keyElements are used to correlate the cpuEvents with the trace.
 	keyElements := filepathhelper.GetFilePathElements(t.triggerEvent.OriginalData, t.triggerEvent.StartTime)
@@ -124,7 +128,7 @@ func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, s
 	ca.lock.RLock()
 	defer ca.lock.RUnlock()
 
-	maxSegmentSize := ca.cfg.GetSegmentSize()
+	maxSegmentSize := ca.cfg.SegmentSize
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
 		ca.telemetry.Logger.Infof("Not found the cpu events with the pid=%d, startTime=%d, endTime=%d",

@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"unsafe"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 )
@@ -88,6 +89,26 @@ func (p *Profile) GetModuleKey() string {
 	return p.Name()
 }
 
+func startAttachAgent(pid int) string {
+	result := C.startAttachAgent(C.int(pid))
+	errorMsg := C.GoString(result)
+	C.free(unsafe.Pointer(result))
+	if len(errorMsg) > 0 {
+		return errorMsg
+	}
+	return ""
+}
+
+func stopAttachAgent(pid int) string {
+	result := C.stopAttachAgent(C.int(pid))
+	errorMsg := C.GoString(result)
+	C.free(unsafe.Pointer(result))
+	if len(errorMsg) > 0 {
+		return errorMsg
+	}
+	return ""
+}
+
 func startDebug(pid int, tid int) error {
 	C.startProfileDebug(C.int(pid), C.int(tid))
 	return nil
@@ -117,6 +138,28 @@ func (p *Profile) HandRequest(req *ControlRequest) *ControlResponse {
 			return &ControlResponse{
 				Code: StopWithError,
 				Msg:  err.Error(),
+			}
+		}
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "stop success",
+		}
+	case "start_attach_agent":
+		if errMsg := startAttachAgent(req.Pid); errMsg != "" {
+			return &ControlResponse{
+				Code: StartWithError,
+				Msg:  errMsg,
+			}
+		}
+		return &ControlResponse{
+			Code: NoError,
+			Msg:  "start success",
+		}
+	case "stop_attach_agent":
+		if errMsg := stopAttachAgent(req.Pid); errMsg != "" {
+			return &ControlResponse{
+				Code: StopWithError,
+				Msg:  errMsg,
 			}
 		}
 		return &ControlResponse{

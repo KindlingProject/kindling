@@ -5,8 +5,9 @@ RUN yum install -y qt5-qtbase-devel
 RUN yum install -y gdb
 COPY gdb_print.sh /app/
 COPY kindling-falcolib-probe.tar.gz  ./
-RUN curl -O https://k8s-bpf-probes-public.oss-cn-hangzhou.aliyuncs.com/async-profiler-kindling-v1.0.1.tar.gz
-RUN tar -zvxf async-profiler-kindling-v1.0.1.tar.gz
+
+COPY build-asyncprofiler.sh /app/
+RUN sh build-asyncprofiler.sh
 
 COPY libso/libkindling.so /lib64/
 COPY libso/* /usr/lib64/

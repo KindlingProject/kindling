@@ -42,6 +42,12 @@ void print_profile_debug_info(sinsp_evt* sevt);
 
 void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps);
 
+char* start_attach_agent(int64_t pid);
+
+char* stop_attach_agent(int64_t pid);
+
+void attach_agent(int64_t pid, char* error_message, bool is_attach);
+
 void get_capture_statistics();
 
 uint16_t get_protocol(scap_l4_proto proto);

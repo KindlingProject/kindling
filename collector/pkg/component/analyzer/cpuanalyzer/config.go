@@ -5,14 +5,18 @@ const (
 )
 
 type Config struct {
-	SegmentSize       int `mapstructure:"segment_size"`
 	javaTraceSlowTime int `mapstructure:"java_trace_slow_time"`
+	// SegmentSize defines how many segments(seconds) can be cached to wait for sending.
+	// The elder segments will be overwritten by the newer ones, so don't set it too low.
+	SegmentSize int `mapstructure:"segment_size"`
+	// EdgeEventsWindowSize is the size of the duration window that seats the edge events.
+	// The unit is seconds. The greater it is, the more data will be stored.
+	EdgeEventsWindowSize int `mapstructure:"edge_events_window_size"`
 }
 
-func (cfg *Config) GetSegmentSize() int {
-	if cfg.SegmentSize > 0 {
-		return cfg.SegmentSize
-	} else {
-		return defaultSegmentSize
+func NewDefaultConfig() *Config {
+	return &Config{
+		SegmentSize:          40,
+		EdgeEventsWindowSize: 2,
 	}
 }
