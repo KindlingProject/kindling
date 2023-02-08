@@ -197,7 +197,7 @@ func (j *ApmSpanEvent) Kind() TimedEventKind {
 
 type InnerCall struct {
 	StartTime uint64           `json:"startTime"`
-	EndTime   uint64           `json:"spendTime"`
+	EndTime   uint64           `json:"endTime"`
 	Trace     *model.DataGroup `json:"trace"`
 }
 
