@@ -5,6 +5,7 @@
 
 ## Unreleased
 ### New features
+- Add trace to cpuevents to display the payload of network flows. ([#442](https://github.com/KindlingProject/kindling/pull/442))
 - Support Attach Agent for NoAPM Java Application. ([#431](https://github.com/KindlingProject/kindling/pull/431))
 
 ### Enhancements
@@ -38,9 +39,9 @@
 - Add the missing timestamp of TCP connect data and filter the incorrect one without srcPort.([#405](https://github.com/KindlingProject/kindling/pull/405))
 - Fix the bug that multiple events cannot be correlated when they are in one ON-CPU data. ([#395](https://github.com/KindlingProject/kindling/pull/395))
 - Add the missed latency field for `cgoEvent` to fix the bug where the `request_sent_time` in `single_net_request_metric_group` is always 0. ([#394](https://github.com/KindlingProject/kindling/pull/394))
-- Fix http-100 request is detected as NOSUPPORT([393](https://github.com/KindlingProject/kindling/pull/393))
-- Fix the wrong thread name in the trace profiling function. ([#385])(https://github.com/KindlingProject/kindling/pull/385)
-- Remove "reset" method of ScheduledTaskRoutine to fix a potential dead-lock issue. ([#369])(https://github.com/KindlingProject/kindling/pull/369)
+- Fix http-100 request is detected as NOSUPPORT([#393](https://github.com/KindlingProject/kindling/pull/393))
+- Fix the wrong thread name in the trace profiling function. ([#385](https://github.com/KindlingProject/kindling/pull/385))
+- Remove "reset" method of ScheduledTaskRoutine to fix a potential dead-lock issue. ([#369](https://github.com/KindlingProject/kindling/pull/369))
 - Fix the bug where the pod metadata with persistent IP in the map is deleted incorrectly due to the deleting mechanism with a delay. ([#374](https://github.com/KindlingProject/kindling/pull/374))
 - Fix the bug that when the response is nil, the NAT IP and port are not added to the labels of the "DataGroup". ([#378](https://github.com/KindlingProject/kindling/pull/378))
 - Fix potential deadlock of exited thread delay queue. ([#373](https://github.com/KindlingProject/kindling/pull/373))
@@ -124,7 +125,7 @@
 
 ## v0.2.0 - 2022-05-07
 ### Features
-- Provide a kindling Prometheus exporter that can support integration with Prometheus easily. See kindling's metrics from the kindling website[http://kindling.harmonycloud.cn/docs/usage/prometheus-metric/]
+- Provide a kindling Prometheus exporter that can support integration with Prometheus easily. See kindling's metrics from the kindling [website](http://kindling.harmonycloud.cn/docs/usage/prometheus-metric/).
 - Support network performance, DNS performance, service network maps, and workload performance analysis.
 - Support HTTP, MySQL, and REDIS request analysis.
 - Provide a Grafana-plugin with four built-in dashboards to support basic analysis features.
