@@ -133,6 +133,7 @@ router.get('/getTraceFile', function(req, res, next) {
                 item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
                 item.transactionIds = JSON.parse(item.transactionIds);
                 item.spans = JSON.parse(item.spans);
+                item.innerCalls = JSON.parse(item.innerCalls);
             } catch (error) {
                 console.error('error: %s', error, item);
             }

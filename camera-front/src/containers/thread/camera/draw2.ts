@@ -216,7 +216,7 @@ class Camera {
             _.forEach(item.eventList, (event, idx2: number) => {
                 event.idx = idx2;
                 event.timeRate = event.time / this.timeRangeDiff;
-                event.left = this.xScale(new Date(event.startTime));
+                event.left = this.xScale(new Date(event.startTime)) as number;
             });
             _.forEach(item.eventList, (event, idx2: number) => {
                 if (event.timeRate && event.timeRate > this.timeThreshold) {
@@ -296,7 +296,7 @@ class Camera {
                 .attr('class', 'javalock_rect')
                 .attr('data-thread', item.name)
                 .attr('data-type', d => d.eventType)
-                .attr('width', (lock: IJavaLock) => barWarpWidth * (lock.time / this.timeRangeDiff))
+                .attr('width', (lock: IJavaLock) => this.xScale(new Date(lock.endTime)) - this.xScale(new Date(lock.startTime)))
                 .attr('height', this.barWidth + 8)
                 .attr('cursor', 'pointer')
                 // .attr('style', 'display: none')
@@ -418,13 +418,13 @@ class Camera {
         let operateFile = `${src_ip}:${src_port}->${dst_ip}:${dst_port}`;
         let threadObj: IThread = _.find(this.data, {tid: parseInt(tid)})!;
         timestamp = parseInt(timestamp);
-        let netEvent: IEventTime | null = null;
+        let netEvent: any = null;
         if (threadObj) {
             _.forEach(threadObj.eventList, event => {
                 if (event.type === 'net') {
                     if (event.info && event.info.file === operateFile) {
                         if (event.startTime > timestamp - 2 && event.startTime < timestamp + 2 ) {
-                            netEvent = event;
+                            netEvent = _.cloneDeep(event);
                         }
                     }
                 }
@@ -433,7 +433,7 @@ class Camera {
                 // @ts-ignore
                 netEvent.message = netEvent.eventType === "netread" ? this.trace.labels.request_payload : this.trace.labels.response_payload;
             }
-            this.eventClick(netEvent);
+            this.eventClick({...netEvent, traceInfo: this.trace});
         }
     }
     /**
@@ -634,6 +634,7 @@ class Camera {
         let temp = id.split('_');
         const evt: any = this.data[temp[1]].eventList[temp[2]];
         evt.threadName = this.data[temp[1]].name;
+        evt.tid = this.data[temp[1]].tid;
         this.eventClick(evt);
         if (showActive) {
             if (this.activeEventDomId) {
@@ -994,10 +995,12 @@ class Camera {
                 // let timediff = endTime - startTime;
                 if (ftime > 0) {
                     let x = _this.xScale(new Date(stime));
+                    let left = x > _this.nameWidth ? x : _this.nameWidth;
+                    let right = _this.xScale(etime);
                     d3.select(this)
                         .style('display', 'block')
                         .style('visibility', _this.showJavaLockFlag ? 'visible' : 'hidden')
-                        .attr('width', _this.barWarpWidth * (ftime / timeRangeDiff))
+                        .attr('width', right - left)
                         .attr('x', x > _this.nameWidth ? x : _this.nameWidth); 
                 } else {
                     d3.select(this).style('display', 'none');
@@ -1046,7 +1049,6 @@ class Camera {
             d3.selectAll('.start_icon').each(function() {
                 let timestamp = d3.select(this).attr('data-timestamp');
                 let position = _this.xScale(new Date(parseInt(timestamp)));
-                console.log(position);
                 d3.select(this)
                     .attr('transform', `translate(${position}, ${_this.barPadding - 8})`)
                     .attr('style', () => {
@@ -1182,7 +1184,8 @@ class Camera {
         let data: any = [];
         this.showTraceFlag = showTrace;
         if (showTrace) {
-            data = _.filter(this.data, item => item.traceList.length > 0 || whiteThread.indexOf(item.name) > -1 || _.some(item.eventList, opt => opt.active));
+            // data = _.filter(this.data, item => item.traceList.length > 0 || whiteThread.indexOf(item.name) > -1 || _.some(item.eventList, opt => opt.active));
+            data = _.filter(this.data, item => item.traceList.length > 0 || whiteThread.indexOf(item.name) > -1 || item.active || (item.traceStartTimestamp && item.traceEndTimestamp));
             if (this.filters.threadList.length > 0) {
                 data = data.concat(_.filter(this.data, (item: IThread) => this.filters.threadList.indexOf(item.tid) > -1));
             }
