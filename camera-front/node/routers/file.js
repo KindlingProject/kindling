@@ -72,10 +72,10 @@ router.get("/getAllTraceFileList", function(req, res, next) {
             let fileStats = fs.statSync(path.join(filePath, file));
             if (fileStats.isFile) {
                 let fileNameList = file.split('_');
-                let contentKeyBuffer = new Buffer.from(fileNameList[1], 'base64')
+                let contentKeyBuffer = new Buffer.from(fileNameList[2], 'base64')
                 let contentKey = contentKeyBuffer.toString();
                 let newList = [].concat(fileNameList);
-                newList[1] = contentKey;
+                newList[2] = contentKey;
                 let showFileName = _.join(newList, '_');
                 list.push({
                     fileName: file,
