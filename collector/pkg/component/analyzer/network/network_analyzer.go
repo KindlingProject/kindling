@@ -223,21 +223,6 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 	}
 }
 
-//func (na *NetworkAnalyzer) Flush() {
-//	na.requestMonitor.Range(func(k, v interface{}) bool {
-//		mps := v.(*messagePairs)
-//		var timeoutTs = mps.getTimeoutTs()
-//		if timeoutTs != 0 {
-//			var duration = time.Now().UnixNano()/1000000000 - int64(timeoutTs)/1000000000
-//			if mps.responses != nil && duration >= int64(2*time.Second) {
-//				// No FdReuse Request
-//				_ = na.distributeTraceMetric(mps, nil)
-//			}
-//		}
-//		return true
-//	})
-//}
-
 func (na *NetworkAnalyzer) analyseConnect(evt *model.KindlingEvent) error {
 	mps := &messagePairs{
 		connects:         newEvents(evt, na.snaplen),
