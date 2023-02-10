@@ -3,6 +3,8 @@ package k8sprocessor
 import (
 	"strconv"
 
+	"go.uber.org/zap"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor"
@@ -10,7 +12,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"go.uber.org/zap"
 )
 
 const (
@@ -76,7 +77,11 @@ func (p *K8sMetadataProcessor) Consume(dataGroup *model.DataGroup) error {
 	switch name {
 	case constnames.NetRequestMetricGroupName:
 		p.processNetRequestMetric(dataGroup)
-	case constnames.TcpMetricGroupName:
+	case constnames.TcpRttMetricGroupName:
+		fallthrough
+	case constnames.TcpRetransmitMetricGroupName:
+		fallthrough
+	case constnames.TcpDropMetricGroupName:
 		p.processTcpMetric(dataGroup)
 	default:
 		p.processNetRequestMetric(dataGroup)
