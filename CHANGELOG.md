@@ -6,6 +6,9 @@
 ## Unreleased
 ### New features
 - Support Attach Agent for NoAPM Java Application. ([#431](https://github.com/KindlingProject/kindling/pull/431))
+- Added simple view, added span information.
+- Modified the query method for net event-related requests to use innercalls, remove query es api.
+- Supports automatic probe installation.
 
 ### Enhancements
 - Add an option edge_events_window_size to allow users to reduce the size of the files by narrowing the time window where seats the edge events. ([#437](https://github.com/KindlingProject/kindling/pull/437))
