@@ -829,7 +829,7 @@ function Thread() {
                         <Button onClick={() => setProfileModalVisible(false)}>稍候自行安装</Button>
                         <Button type="primary" onClick={() => toggleInstallProfile('start_attach_agent')} loading={profileModalLoading}>立即自动安装</Button>
                     </div>}>
-                        <div className='profile_modal_text'>未检测到支持的Tracing探针，为不影响Trace的Span和线程分析，请您及时安装。(点击查看<a href='http://kindling.harmonycloud.cn/' target="_blank">支持的探针列表</a>)</div>
+                        <div className='profile_modal_text'>未检测到支持的Tracing探针，为不影响Trace的Span和线程分析，请您及时安装。(点击查看<a href='http://kindling.harmonycloud.cn/docs/reference/kindling-java-agent/kindling-java-compatibility/' target="_blank">支持的探针列表</a>)</div>
                         <div className='profile_modal_text'>或点击下方按钮，让Trace Profiling自动为您的应用(目前只支持Java应用)安装探针。</div>
                     </Modal>
                     {
