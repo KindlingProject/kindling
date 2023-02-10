@@ -66,6 +66,7 @@ function Thread() {
     const [showEventDetail, setShowEventDetail] = useState<boolean>(false);
     const [profileModalVisible, setProfileModalVisible] = useState(false);
     const [profileModalLoading, setprofileModalLoading] = useState(false);
+    const [unistallLoading, setUnistallLoading] = useState(false);
 
 
     let cameraRef = useRef();
@@ -335,9 +336,17 @@ function Thread() {
             operation,
             pid: nowTrace.labels.pid
         };
-        setprofileModalLoading(true);
+        if (operation === 'stop_attach_agent') {
+            setUnistallLoading(true);
+        } else {
+            setprofileModalLoading(true);
+        }
         toggleProfile(params).then(res => {
-            setprofileModalLoading(false);
+            if (operation === 'stop_attach_agent') {
+                setUnistallLoading(false);
+            } else {
+                setprofileModalLoading(false);
+            }
             if (res.data.Code === 1) {
                 if (operation === 'stop_attach_agent') {
                     message.success('卸载成功');
@@ -795,6 +804,9 @@ function Thread() {
                                         <Tooltip title="点击卸载">
                                             <DeleteOutlined style={{ color: '#fc1313' }} onClick={() => toggleInstallProfile('stop_attach_agent')}/>
                                         </Tooltip>
+                                        {
+                                            unistallLoading && <SyncOutlined spin />
+                                        }
                                     </Tag> : <Tag>已检测到Tracing探针</Tag>)
                                 }
                                 <Tag>协议类型：{nowTrace?.labels?.protocol}</Tag>
