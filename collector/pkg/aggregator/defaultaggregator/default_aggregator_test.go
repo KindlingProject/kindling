@@ -34,7 +34,7 @@ func TestConcurrentAggregator(t *testing.T) {
 	go func() {
 		for i := 0; i < runLoop; i++ {
 			metricValues := []*model.Metric{
-				{Name: "duration", Data: &model.Metric_Int{Int: &model.Int{Value: duration}}},
+				{Name: "duration", Data: &model.Int{Value: duration}},
 			}
 			dataGroup := model.NewDataGroup("testMetric", labels, 0, metricValues...)
 			aggregatorInstance.Aggregate(dataGroup, labelSelectors)

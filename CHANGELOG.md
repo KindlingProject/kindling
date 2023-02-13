@@ -15,6 +15,7 @@
 - Support to identify the MySQL protocol with statements `commit` and `set`. ([#417](https://github.com/KindlingProject/kindling/pull/417))
 
 ### Bug fixes
+- Fix the bug that TCP metrics are not aggregated correctly. ([#444](https://github.com/KindlingProject/kindling/pull/444))
 - Fix the bug that cpuanalyzer missed some trigger events due to the incorrect variable reference. This may cause some traces can't correlate with on/off CPU data. ([#424](https://github.com/KindlingProject/kindling/pull/424))
 
 ## v0.6.0 - 2022-12-21
