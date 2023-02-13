@@ -16,6 +16,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
@@ -170,6 +171,17 @@ func (ca *CpuAnalyzer) ConsumeSpanEvent(event *model.KindlingEvent) {
 		}
 	}
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+}
+
+func (ca *CpuAnalyzer) ConsumeTraces(trace SendTriggerEvent) {
+	tid := trace.OriginalData.Labels.GetIntValue(constlabels.RequestTid)
+	threadName := trace.OriginalData.Labels.GetStringValue(constlabels.Comm)
+	event := &InnerCall{
+		StartTime: trace.StartTime,
+		EndTime:   trace.StartTime + trace.SpendTime,
+		Trace:     trace.OriginalData,
+	}
+	ca.PutEventToSegments(trace.Pid, uint32(tid), threadName, event)
 }
 
 func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
