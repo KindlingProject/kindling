@@ -585,13 +585,13 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                         if (logList.length > 0 && logList[onFlag]) {
                             let logInfo = logList[onFlag].split('@');
                             if (logInfo[1] && logInfo[1].length > 0) {
-                                let traceId;
-                                if (logInfo[1].length > 0) {
-                                    let traceInfo = logInfo[1].match(/(?<=\[)(.+?)(?=\])/g);
-                                    traceId = traceInfo ? _.trim(traceInfo[0].split(':')[1]) : '';
-                                } else {
-                                    traceId = '';
-                                }
+                                let traceId = '';
+                                // if (logInfo[1].length > 0) {
+                                //     let traceInfo = logInfo[1].match(/(?<=\[)(.+?)(?=\])/g);
+                                //     traceId = traceInfo ? _.trim(traceInfo[0].split(':')[1]) : '';
+                                // } else {
+                                //     traceId = '';
+                                // }
                                 let logItem: ILogEvent = {
                                     eventType: 'log',
                                     startTime: formatTimsToMS(startTime),
