@@ -2,6 +2,7 @@
 
 .thread_warp {
     .mixin_wh(100%, 100%);
+    // overflow-y: auto;
     .thread_header {
         .mixin_entrance_page_header();
         .small_title {
@@ -13,6 +14,7 @@
         display: flex;
         background-color: var(--main-body-bg-color);
         height: calc(100% - 84px);
+        // height: 100%;
         position: relative;
         .toggle_btn {
             position: absolute;
@@ -209,24 +211,20 @@
                 }
             }
             .event_body {
-                // display: flex;
+                display: block;
                 width: 100%;
-                height: 100%;
-                max-height: 0;
+                height: calc(100% - 36px);
                 overflow: hidden;
                 transition: max-height .25s;
                 overflow-y: auto;
-                // transition-property: max-height;
-                // transition-duration: 500ms;
-                // transition-timing-function: ease-out;
-                &.show {
-                    max-height: 165px;
-                    // display: block;
-                }
-                &.hide {
-                    max-height: 0;
-                    // display: none;
-                }
+                // &.show {
+                //     max-height: 165px;
+                //     // display: block;
+                // }
+                // &.hide {
+                //     max-height: 0;
+                //     // display: none;
+                // }
                 .event_detail {
                     width: 100%;
                     height: 100%;
@@ -251,6 +249,19 @@
                 }
             }
         }
+    }
+}
+
+.profile_modal_text {
+    text-indent: 2em;
+    margin-bottom: 10px;
+}
+.profile_modal_footer {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    button:first-child {
+        margin-right: 32px;
     }
 }
 

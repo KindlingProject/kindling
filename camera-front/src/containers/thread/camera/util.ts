@@ -32,6 +32,7 @@ export const protoclList = [
 export const eventList: IEvent[] = [
     {
         name: 'oncpu',
+        alias: 'running',
         value: 'on',
         type: 'on',
         fillColor: '#FDE6E4',
@@ -39,6 +40,7 @@ export const eventList: IEvent[] = [
         color: '#E10000'
     }, {
         name: 'file-open',
+        alias: 'fileopen',
         value: 'fileopen',
         type: 'file',
         fillColor: '#EDE4FF',
@@ -46,13 +48,47 @@ export const eventList: IEvent[] = [
         color: '#A70CC9'
     }, {
         name: 'file-close',
+        alias: 'fileclose',
         value: 'fileclose',
         type: 'file',
         fillColor: '#EDE4FF',
         activeColor: '#E5DAFB',
         color: '#A70CC9'
     }, {
+        name: 'file-read',
+        alias: 'fileread',
+        value: 'fileread',
+        type: 'file',
+        fillColor: '#EDE4FF',
+        activeColor: '#E5DAFB',
+        color: '#A70CC9'
+    }, {
+        name: 'file-write',
+        alias: 'filewrite',
+        value: 'filewrite',
+        type: 'file',
+        fillColor: '#EDE4FF',
+        activeColor: '#E5DAFB',
+        color: '#A70CC9'
+    }, {
+        name: 'file',
+        alias: 'file',
+        value: 'file',
+        type: 'file',
+        fillColor: '#EDE4FF',
+        activeColor: '#E5DAFB',
+        color: '#A70CC9'
+    }, {
+        name: 'net',
+        alias: 'net',
+        value: 'net',
+        type: 'net',
+        fillColor: '#FEF3E6',
+        activeColor: '#F8E8D7',
+        color: '#E97A00'
+    }, {
         name: 'net-read',
+        alias: 'netread',
         value: 'netread',
         type: 'net',
         fillColor: '#FEF3E6',
@@ -60,6 +96,7 @@ export const eventList: IEvent[] = [
         color: '#E97A00'
     }, {
         name: 'net-write',
+        alias: 'netwrite',
         value: 'netwrite',
         type: 'net',
         fillColor: '#FEF3E6',
@@ -67,6 +104,7 @@ export const eventList: IEvent[] = [
         color: '#E97A00'
     }, {
         name: 'futex',
+        alias: 'futex',
         value: 'futex',
         type: 'futex',
         fillColor: '#E6F4F5',
@@ -74,6 +112,7 @@ export const eventList: IEvent[] = [
         color: '#0094A5'
     }, {
         name: 'idle',
+        alias: 'idle',
         value: 'idle',
         type: 'idle',
         fillColor: '#EDF8FF',
@@ -81,6 +120,7 @@ export const eventList: IEvent[] = [
         color: '#0877CB'
     }, {
         name: 'epoll',
+        alias: 'epoll',
         value: 'epoll',
         type: 'epoll',
         fillColor: '#e5f5ea',
@@ -88,6 +128,7 @@ export const eventList: IEvent[] = [
         color: '#06a838'
     }, {
         name: 'other',
+        alias: 'other',
         value: 'other',
         type: 'other',
         fillColor: '#E5E5E5',
@@ -95,6 +136,7 @@ export const eventList: IEvent[] = [
         color: '#333333'
     }, {
         name: 'MonitorEnter(Java Lock)',
+        alias: 'MonitorEnter',
         value: 'MonitorEnter',
         type: 'lock',
         fillColor: '#fffde280',
@@ -102,6 +144,7 @@ export const eventList: IEvent[] = [
         color: '#c0b81c'
     }, {
         name: 'MonitorWait(Java Lock)',
+        alias: 'MonitorWait',
         value: 'MonitorWait',
         type: 'lock',
         fillColor: '#fffde280',
@@ -109,6 +152,7 @@ export const eventList: IEvent[] = [
         color: '#c0b81c'
     }, {
         name: 'UnsafePark(Java Lock)',
+        alias: 'UnsafePark',
         value: 'UnsafePark',
         type: 'lock',
         fillColor: '#fffde280',
@@ -134,6 +178,27 @@ export const darkEventList: IEvent[] = [
     }, {
         name: 'file-close',
         value: 'fileclose',
+        type: 'file',
+        fillColor: '#5227A3',
+        activeColor: '#5227A3',
+        color: '#FFFFFF'
+    }, {
+        name: 'file-read',
+        value: 'fileread',
+        type: 'file',
+        fillColor: '#5227A3',
+        activeColor: '#5227A3',
+        color: '#FFFFFF'
+    }, {
+        name: 'file-write',
+        value: 'filewrite',
+        type: 'file',
+        fillColor: '#5227A3',
+        activeColor: '#5227A3',
+        color: '#FFFFFF'
+    }, {
+        name: 'file',
+        value: 'file',
         type: 'file',
         fillColor: '#5227A3',
         activeColor: '#5227A3',
@@ -305,7 +370,7 @@ export const containTime = (timeRange: number[], startTime: number, endTime: num
  * @param timeRange 时间区间
  * @returns 
  */
-const timeHandle = (startTime, endTime, timeNum, timeRange, transform = true) => {
+export const timeHandle = (startTime, endTime, timeNum, timeRange, transform = true) => {
     let time = transform ? formatTimsToMS(timeNum) : timeNum;
     // 若事件的开始事件小于当前请求的时间区间，需要根据当前时间的开始值进行截取，同时重新计算事件耗时
     let stime = transform ? formatTimsToMS(startTime) : startTime;
@@ -392,6 +457,50 @@ const onOffInfoHandle = (info, eventObj, timeRange) => {
     }
 }
 
+const spanListHandle = (list, timeRange) => {
+    let initList: any = _.cloneDeep(list).sort((a, b) => a.startTime - b.startTime);
+    let clist: any[] = [];
+    _.forEach(initList, item => {
+        if (containTime(timeRange, item.startTime, item.endTime)) {
+            let { stime, etime, time } = timeHandle(item.startTime, item.endTime, item.endTime - item.startTime, timeRange);
+            clist.push({
+                startTime: stime,
+                endTime: etime,
+                time: time,
+                tid: item.tid,
+                traceId: item.traceId,
+                name: item.name
+            });
+        }
+    });
+    return clist;
+
+    // let firstObj = clist.shift();
+    // let result: any = [];
+    // let level = 1;
+    // result.push({...firstObj, level: level}); 
+
+    // while(clist.length > 0) {
+    //     let item = clist.shift();
+    //     _.forEach(result, opt => {
+    //         if (opt.endTime < item.startTime) {
+    //             if (_.findIndex(result, {startTime: item.startTime}) === -1) {
+    //                 result.push({...item, level: opt.level});
+    //             } 
+    //         } else {
+    //             if (_.findIndex(result, {startTime: item.startTime}) === -1) {
+    //                 result.push({...item, level: opt.level + 1});
+    //             } else {
+    //                 let obj = _.find(result, {startTime: item.startTime});
+    //                 obj.level = opt.level + 1;
+    //             }
+    //         }
+    //     });
+    // }
+    // console.log('result', result);
+    // return result;
+}
+
 const BigType = {
     '0': 'on', 
     '1': 'file', 
@@ -409,6 +518,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
     let result: IThread[] = [];
     const groupData = _.groupBy(data, 'tid');
     const eventlist = _.cloneDeep(eventList);
+    let allSpanList: any[] = [];
     let requestTraceId, responseTraceId;
     _.forEach(groupData, (list, key) => {
         let threadObj:IThread = {
@@ -421,7 +531,8 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
             eventList: [],
             javaLockList: [],
             logList: [],
-            traceList: []
+            traceList: [],
+            innerCalls: []
         };
         /**
          * 根据trace中的timestamp、end_timestamp、request_tid response_tid标识trace开始跟结束的标志 ☆
@@ -437,6 +548,15 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         let cpuEvents = _.chain(list).map('cpuEvents').flatten().uniqBy('startTime').value();
         let javaFutexEvents = _.chain(list).map('javaFutexEvents').flatten().uniqBy('startTime').value();
         let transactionIdsList = _.chain(list).map('transactionIds').flatten().value();
+        let spanList = _.chain(list).map('spans').flatten().uniqBy('startTime').compact().value();
+        let innerCallsList = _.chain(list).map('innerCalls').flatten().uniqBy('startTime').compact().value();
+        threadObj.innerCalls = innerCallsList;
+
+        _.forEach(spanList, item => {
+            item.tid = threadObj.tid;
+        });
+        allSpanList = allSpanList.concat(spanList);
+
         _.forEach(cpuEvents, event => {
             let { startTime } = event;
             let timeTypeList = _.compact(event.timeType.split(','));
@@ -465,13 +585,13 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                         if (logList.length > 0 && logList[onFlag]) {
                             let logInfo = logList[onFlag].split('@');
                             if (logInfo[1] && logInfo[1].length > 0) {
-                                let traceId;
-                                if (logInfo[1].length > 0) {
-                                    let traceInfo = logInfo[1].match(/(?<=\[)(.+?)(?=\])/g);
-                                    traceId = traceInfo ? _.trim(traceInfo[0].split(':')[1]) : '';
-                                } else {
-                                    traceId = '';
-                                }
+                                let traceId = '';
+                                // if (logInfo[1].length > 0) {
+                                //     let traceInfo = logInfo[1].match(/(?<=\[)(.+?)(?=\])/g);
+                                //     traceId = traceInfo ? _.trim(traceInfo[0].split(':')[1]) : '';
+                                // } else {
+                                //     traceId = '';
+                                // }
                                 let logItem: ILogEvent = {
                                     eventType: 'log',
                                     startTime: formatTimsToMS(startTime),
@@ -479,6 +599,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                                     log: logInfo[1].length > 0 ? logInfo[1] : '--'
                                 };
                                 if (logItem.startTime > timeRange[0] && logItem.startTime < timeRange[1]) {
+                                    eventObj.log = logItem;
                                     threadObj.logList.push(logItem);
                                 } 
                             } 
@@ -693,10 +814,15 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
             allInfo.push(timeObj);
 
             let waitObj = _.find(allInfo, {type: 'futex'});
-            waitObj.time = parseFloat((parseFloat(waitObj.time) - time).toFixed(2));
-            waitObj.timeRate = ((waitObj.time / (requestEndTimestamp - requestStartTimestamp)) * 100).toFixed(2)
+            if (waitObj) {
+                if (waitObj.time > time) {
+                    waitObj.time = parseFloat((parseFloat(waitObj.time) - time).toFixed(2));
+                    waitObj.timeRate = ((waitObj.time / (requestEndTimestamp - requestStartTimestamp)) * 100).toFixed(2)
+                } else {
+                    _.remove(allInfo, item => item.type === 'futex');
+                }
+            }
         }
-        console.log(allInfo);
     }
     
     // 获取整个trace过程中，trace处理的开始值跟结束值
@@ -708,7 +834,13 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         traceTimes = [minStart, maxEnd];
     }
 
-    return {data: result, eventlist, traceTimes, requestInfo: allInfo, traceId};
+    // 所有的spanList事件处理
+    const times = [timeRange[0] + 2 * 1000, timeRange[1] - 2 * 1000, ...traceTimes];
+    const sampleTimeRange = [_.min(times) - 10, _.max(times) + 10];
+    allSpanList = _.filter(allSpanList, item => item.traceId === traceId);
+    let spanTreeList = allSpanList.length > 0 ? spanListHandle(allSpanList, sampleTimeRange) : [];
+
+    return {data: result, spanTreeList, eventlist, traceTimes, requestInfo: allInfo, traceId};
 }
 
 export const getLineTimesList = (requestTimes, traceTimes) => {
