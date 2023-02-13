@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
@@ -77,4 +79,39 @@ func TestRecord(t *testing.T) {
 	if !reflect.DeepEqual(histogramValue.GetHistogram(), expectedValue) {
 		t.Errorf("expected %+v, got %+v", expectedValue, histogramValue.GetHistogram())
 	}
+}
+
+// TestRecordDiffMetricsWithSameKey validates that a recorder can record only the metrics that are same as the initial ones.
+// But it allows to record different metrics with different keys.
+func TestRecordDiffMetricsWithSameKey(t *testing.T) {
+	aggKindMap := AggregatedConfig{KindMap: map[string][]KindConfig{
+		"duration": {
+			{Kind: SumKind, OutputName: "duration_sum"},
+		},
+		"last": {{Kind: LastKind, OutputName: "last"}},
+	}}
+	recorder := newValueRecorder("testRecorder", aggKindMap.KindMap)
+	keys := aggregator.NewLabelKeys([]aggregator.LabelKey{
+		{
+			Name:  "stringKey",
+			Value: "stringValue",
+			VType: aggregator.StringType,
+		},
+	}...)
+	for i := 0; i < 100; i++ {
+		metricValues := []*model.Metric{
+			model.NewIntMetric("duration", int64(100)),
+		}
+		recorder.Record(keys, metricValues, 0)
+		metricValues = []*model.Metric{
+			model.NewIntMetric("last", int64(i)),
+		}
+		recorder.Record(keys, metricValues, 0)
+	}
+	retMetricGroup := recorder.dump()
+	sumValue, _ := retMetricGroup[0].GetMetric("duration_sum")
+	assert.Equal(t, int64(10000), sumValue.GetInt().Value)
+	// last is not aggregated because it is not the initial one using the current key
+	_, ok := retMetricGroup[0].GetMetric("last")
+	assert.Equal(t, false, ok)
 }

@@ -7,10 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/Kindling-project/kindling/collector/pkg/component"
-	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
-	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -29,6 +25,11 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
+	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
 const (
@@ -43,17 +44,6 @@ const (
 )
 
 var serviceName string
-
-type labelKey struct {
-	metric          string
-	srcIp           string
-	dstIp           string
-	dstPort         int64
-	requestContent  string
-	responseContent string
-	statusCode      string
-	protocol        string
-}
 
 type OtelOutputExporters struct {
 	metricExporter exportmetric.Exporter
@@ -151,7 +141,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
+				adapter.NewSimpleAdapter([]string{constnames.TcpRttMetricGroupName, constnames.TcpRetransmitMetricGroupName,
+					constnames.TcpDropMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
 			},
 		}
 		go func() {
@@ -218,7 +209,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
-				adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
+				adapter.NewSimpleAdapter([]string{constnames.TcpRttMetricGroupName, constnames.TcpRetransmitMetricGroupName,
+					constnames.TcpDropMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
 			},
 		}
 

@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator"
 	"github.com/Kindling-project/kindling/collector/pkg/aggregator/defaultaggregator"
 	"github.com/Kindling-project/kindling/collector/pkg/component"
@@ -13,7 +15,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"go.uber.org/zap"
 )
 
 const Type = "aggregateprocessor"
@@ -124,7 +125,11 @@ func (p *AggregateProcessor) Consume(dataGroup *model.DataGroup) error {
 		dataGroup.Name = constnames.AggregatedNetRequestMetricGroup
 		p.aggregator.Aggregate(dataGroup, p.netRequestLabelSelectors)
 		return abnormalDataErr
-	case constnames.TcpMetricGroupName:
+	case constnames.TcpRttMetricGroupName:
+		fallthrough
+	case constnames.TcpRetransmitMetricGroupName:
+		fallthrough
+	case constnames.TcpDropMetricGroupName:
 		p.aggregator.Aggregate(dataGroup, p.tcpLabelSelectors)
 		return nil
 	case constnames.TcpConnectMetricGroupName:

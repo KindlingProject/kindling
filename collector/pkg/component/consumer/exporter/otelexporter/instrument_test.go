@@ -6,16 +6,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Kindling-project/kindling/collector/pkg/component"
-	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
-	"github.com/Kindling-project/kindling/collector/pkg/model"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+
+	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
 func Test_instrumentFactory_recordLastValue(t *testing.T) {
@@ -61,7 +62,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 		controller.WithResource(nil),
 	)
 
-	cont.Start(context.Background())
+	_ = cont.Start(context.Background())
 
 	ins := newInstrumentFactory(cont.Meter("test"), component.NewDefaultTelemetryTools(), nil)
 
@@ -77,7 +78,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 
 func makeTcpGroup(rttLatency int64) *model.DataGroup {
 	return model.NewDataGroup(
-		constnames.TcpMetricGroupName,
+		constnames.TcpRttMetricGroupName,
 		model.NewAttributeMapWithValues(
 			map[string]model.AttributeValue{
 				constlabels.SrcIp:           model.NewStringValue("src-ip"),
@@ -170,8 +171,8 @@ func Test_instrumentFactory_recordTraceAsMetric(t *testing.T) {
 					t1 = lastTraceAsMetric[i]
 
 					// value check
-					if metric, ok := t1.GetMetric(constnames.TraceAsMetric); ok {
-						if metric.GetInt().Value != randTime {
+					if m, ok := t1.GetMetric(constnames.TraceAsMetric); ok {
+						if m.GetInt().Value != randTime {
 							t.Errorf("Value check failed")
 						}
 					} else {
