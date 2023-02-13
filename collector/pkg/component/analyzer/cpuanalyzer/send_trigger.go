@@ -1,7 +1,6 @@
 package cpuanalyzer
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -39,7 +38,7 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 	if data.Labels.GetBoolValue("isInstallApm") {
 		isInstallApm[uint64(data.Labels.GetIntValue("pid"))] = true
 	} else {
-		if isInstallApm[uint64(data.Labels.GetIntValue("pid"))] {
+		if isInstallApm[uint64(data.Labels.GetIntValue("pid"))] && data.Labels.GetBoolValue(constlabels.IsServer) {
 			return
 		}
 	}
@@ -58,6 +57,7 @@ type SendTriggerEvent struct {
 	OriginalData *model.DataGroup `json:"originalData"`
 }
 
+// ReceiveSendSignal todo: Modify the sampling algorithm to ensure that the data sampled by each multi-trace system is uniform. Now this is written because it is easier to implement
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	// Break the for loop if the channel is closed
 	for sendContent := range sendChannel {
@@ -131,7 +131,6 @@ func (ca *CpuAnalyzer) sampleSend() {
 					SpendTime:    uint64(duration.GetInt().Value),
 					OriginalData: data.Clone(),
 				}
-				fmt.Println(event)
 				sendChannel <- event
 				sampleMap.Delete(k)
 				return true

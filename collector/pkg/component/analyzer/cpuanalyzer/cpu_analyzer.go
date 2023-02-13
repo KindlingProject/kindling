@@ -16,7 +16,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/model"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
@@ -107,8 +106,8 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 		ContainerId: event.GetContainerId(),
 	}
 	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
-	ca.analyzerJavaTraceTime(ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+	ca.analyzerJavaTraceTime(ev)
 }
 
 func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
@@ -118,12 +117,13 @@ func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
 		if ca.javaTraces[ev.TraceId+ev.PidString] != nil && (ev.Timestamp-ca.javaTraces[ev.TraceId+ev.PidString].Timestamp) > uint64(ca.cfg.JavaTraceSlowTime)*uint64(time.Millisecond) {
 			labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
-				constlabels.IsSlow:     model.NewBoolValue(true),
-				constlabels.Pid:        model.NewIntValue(pid),
-				constlabels.Protocol:   model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Protocol),
-				constlabels.ContentKey: model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Url),
-				"isInstallApm":         model.NewBoolValue(true),
-				constlabels.IsServer:   model.NewBoolValue(true),
+				constlabels.IsSlow:         model.NewBoolValue(true),
+				constlabels.Pid:            model.NewIntValue(pid),
+				constlabels.Protocol:       model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Protocol),
+				constlabels.ContentKey:     model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Url),
+				"isInstallApm":             model.NewBoolValue(true),
+				constlabels.IsServer:       model.NewBoolValue(true),
+				constlabels.HttpApmTraceId: model.NewStringValue(ev.TraceId),
 			})
 			if kubernetes.IsInitSuccess {
 				k8sInfo, ok := ca.metadata.GetByContainerId(ev.ContainerId)
