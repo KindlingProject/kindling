@@ -115,7 +115,7 @@ func (t *SendEventsTask) run() {
 }
 
 func (ca *CpuAnalyzer) sampleSend() {
-	timer := time.NewTicker(1 * time.Second)
+	timer := time.NewTicker(time.Duration(ca.cfg.SamplingInterval) * time.Second)
 	for {
 		select {
 		case <-timer.C:
