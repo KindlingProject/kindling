@@ -5,7 +5,7 @@ const (
 )
 
 type Config struct {
-	javaTraceSlowTime int `mapstructure:"java_trace_slow_time"`
+	JavaTraceSlowTime int `mapstructure:"java_trace_slow_time"`
 	// SegmentSize defines how many segments(seconds) can be cached to wait for sending.
 	// The elder segments will be overwritten by the newer ones, so don't set it too low.
 	SegmentSize int `mapstructure:"segment_size"`
@@ -16,6 +16,7 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
+		JavaTraceSlowTime:    500,
 		SegmentSize:          40,
 		EdgeEventsWindowSize: 2,
 	}

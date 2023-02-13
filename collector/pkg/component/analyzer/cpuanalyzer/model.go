@@ -149,12 +149,13 @@ func (j *JavaFutexEvent) Kind() TimedEventKind {
 }
 
 type TransactionIdEvent struct {
-	Timestamp uint64 `json:"timestamp"`
-	TraceId   string `json:"traceId"`
-	IsEntry   uint32 `json:"isEntry"`
-	Protocol  string `json:"protocol"`
-	Url       string `json:"url"`
-	pidString string
+	Timestamp   uint64 `json:"timestamp"`
+	TraceId     string `json:"traceId"`
+	IsEntry     uint32 `json:"isEntry"`
+	Protocol    string `json:"protocol"`
+	Url         string `json:"url"`
+	PidString   string `json:"pidString"`
+	ContainerId string `json:"containerId"`
 }
 
 func (t *TransactionIdEvent) StartTimestamp() uint64 {

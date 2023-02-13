@@ -1,6 +1,7 @@
 package cpuanalyzer
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -17,6 +18,10 @@ var (
 	sampleMap     sync.Map
 	isInstallApm  map[uint64]bool
 )
+
+func init() {
+	isInstallApm = make(map[uint64]bool, 100000)
+}
 
 // ReceiveDataGroupAsSignal receives model.DataGroup as a signal.
 // Signal is used to trigger to send CPU on/off events
@@ -39,8 +44,8 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		}
 	}
 	if data.Labels.GetBoolValue(constlabels.IsSlow) {
-		url, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + string(data.Labels.GetIntValue("pid")))
-		if ok && url != nil {
+		_, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + string(data.Labels.GetIntValue("pid")))
+		if !ok {
 			sampleMap.Store(data.Labels.GetStringValue(constlabels.ContentKey)+string(data.Labels.GetIntValue("pid")), data)
 		}
 	}
@@ -114,6 +119,7 @@ func (ca *CpuAnalyzer) sampleSend() {
 					SpendTime:    uint64(duration.GetInt().Value),
 					OriginalData: data.Clone(),
 				}
+				fmt.Println(event)
 				sendChannel <- event
 				sampleMap.Delete(k)
 				return true

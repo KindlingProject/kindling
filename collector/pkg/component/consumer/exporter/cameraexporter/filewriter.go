@@ -43,6 +43,8 @@ func (fw *fileWriter) write(group *model.DataGroup) {
 	switch groupName {
 	case constnames.SingleNetRequestMetricGroup:
 		fw.writeTrace(group)
+	case constnames.SpanEvent:
+		fw.writeTrace(group)
 	case constnames.CameraEventGroupName:
 		fw.writeCpuEvents(group)
 	}

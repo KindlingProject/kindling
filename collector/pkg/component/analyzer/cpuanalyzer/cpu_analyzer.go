@@ -2,6 +2,7 @@ package cpuanalyzer
 
 import (
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 	"strconv"
@@ -31,8 +32,9 @@ type CpuAnalyzer struct {
 	lock                 sync.RWMutex
 	telemetry            *component.TelemetryTools
 	tidExpiredQueue      *tidDeleteQueue
-	javaTraces           map[string]uint64
+	javaTraces           map[string]*TransactionIdEvent
 	nextConsumers        []consumer.Consumer
+	metadata             *kubernetes.K8sMetaDataCache
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -50,10 +52,13 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		telemetry:     telemetry,
 		nextConsumers: consumers,
 		routineSize:   atomic.NewInt32(0),
+		metadata:      kubernetes.MetaDataCache,
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
+	ca.javaTraces = make(map[string]*TransactionIdEvent, 100000)
 	go ca.TidDelete(30*time.Second, 10*time.Second)
+	go ca.sampleSend()
 	newSelfMetrics(telemetry.MeterProvider, ca)
 	return ca
 }
@@ -92,30 +97,42 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 	isEntry, _ := strconv.ParseUint(event.GetStringUserAttribute("is_enter"), 10, 32)
 	ev := &TransactionIdEvent{
-		Timestamp: event.Timestamp,
-		TraceId:   event.GetStringUserAttribute("trace_id"),
-		IsEntry:   uint32(isEntry),
-		Protocol:  event.GetStringUserAttribute("protocol"),
-		Url:       event.GetStringUserAttribute("url"),
-		pidString: string(event.GetPid()),
+		Timestamp:   event.Timestamp,
+		TraceId:     event.GetStringUserAttribute("trace_id"),
+		IsEntry:     uint32(isEntry),
+		Protocol:    event.GetStringUserAttribute("protocol"),
+		Url:         event.GetStringUserAttribute("url"),
+		PidString:   strconv.FormatUint(uint64(event.GetPid()), 10),
+		ContainerId: event.GetContainerId(),
 	}
 	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+	ca.analyzerJavaTraceTime(ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
-func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev TransactionIdEvent) {
+func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 	if ev.IsEntry == 1 {
-		ca.javaTraces[ev.TraceId+ev.pidString] = ev.Timestamp
+		ca.javaTraces[ev.TraceId+ev.PidString] = ev
 	} else {
-		if ca.javaTraces[ev.TraceId+ev.pidString] > 0 && (ev.Timestamp-ca.javaTraces[ev.TraceId+ev.pidString]) > uint64(ca.cfg.javaTraceSlowTime)*uint64(time.Millisecond) {
+		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
+		if ca.javaTraces[ev.TraceId+ev.PidString] != nil && (ev.Timestamp-ca.javaTraces[ev.TraceId+ev.PidString].Timestamp) > uint64(ca.cfg.JavaTraceSlowTime)*uint64(time.Millisecond) {
 			labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 				constlabels.IsSlow:     model.NewBoolValue(true),
-				constlabels.Pid:        model.NewStringValue(ev.pidString),
-				constlabels.Protocol:   model.NewStringValue(ev.Protocol),
-				constlabels.ContentKey: model.NewStringValue(ev.Url),
+				constlabels.Pid:        model.NewIntValue(pid),
+				constlabels.Protocol:   model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Protocol),
+				constlabels.ContentKey: model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Url),
 				"isInstallApm":         model.NewBoolValue(true),
+				constlabels.IsServer:   model.NewBoolValue(true),
 			})
-			metric := model.NewIntMetric(constvalues.RequestTotalTime, int64(ev.Timestamp-ca.javaTraces[ev.TraceId+ev.pidString]))
+			if kubernetes.IsInitSuccess {
+				k8sInfo, ok := ca.metadata.GetByContainerId(ev.ContainerId)
+				if ok {
+					labels.AddStringValue(constlabels.DstWorkloadName, k8sInfo.RefPodInfo.WorkloadName)
+					labels.AddStringValue(constlabels.DstContainer, k8sInfo.Name)
+					labels.AddStringValue(constlabels.DstPod, k8sInfo.RefPodInfo.PodName)
+				}
+			}
+			metric := model.NewIntMetric(constvalues.RequestTotalTime, int64(ev.Timestamp-ca.javaTraces[ev.TraceId+ev.PidString].Timestamp))
 			dataGroup := model.NewDataGroup(constnames.SpanEvent, labels, ev.Timestamp, metric)
 			ReceiveDataGroupAsSignal(dataGroup)
 		}
