@@ -1,3 +1,4 @@
-[submodule "agent-libs"]
-	path = agent-libs
+[submodule "probe/libs/agent-libs"]
+	path = probe/libs/agent-libs
 	url = https://github.com/KindlingProject/agent-libs.git
+	branch = kindling-dev
