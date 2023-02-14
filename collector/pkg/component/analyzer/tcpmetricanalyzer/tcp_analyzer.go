@@ -3,6 +3,10 @@ package tcpmetricanalyzer
 import (
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
@@ -10,9 +14,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"github.com/hashicorp/go-multierror"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -25,7 +26,7 @@ type TcpMetricAnalyzer struct {
 	telemetry   *component.TelemetryTools
 }
 
-func NewTcpMetricAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, nextConsumers []consumer.Consumer) analyzer.Analyzer {
+func NewTcpMetricAnalyzer(_ interface{}, telemetry *component.TelemetryTools, nextConsumers []consumer.Consumer) analyzer.Analyzer {
 	retAnalyzer := &TcpMetricAnalyzer{
 		consumers: nextConsumers,
 		telemetry: telemetry,
@@ -101,7 +102,7 @@ func (a *TcpMetricAnalyzer) generateRtt(event *model.KindlingEvent) (*model.Data
 		return nil, nil
 	}
 	metric := model.NewIntMetric(constnames.TcpRttMetricName, int64(rtt))
-	return model.NewDataGroup(constnames.TcpMetricGroupName, labels, event.Timestamp, metric), nil
+	return model.NewDataGroup(constnames.TcpRttMetricGroupName, labels, event.Timestamp, metric), nil
 }
 
 func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*model.DataGroup, error) {
@@ -110,7 +111,7 @@ func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*mod
 		return nil, err
 	}
 	metric := model.NewIntMetric(constnames.TcpRetransmitMetricName, 1)
-	return model.NewDataGroup(constnames.TcpMetricGroupName, labels, event.Timestamp, metric), nil
+	return model.NewDataGroup(constnames.TcpRetransmitMetricGroupName, labels, event.Timestamp, metric), nil
 }
 
 func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.DataGroup, error) {
@@ -119,7 +120,7 @@ func (a *TcpMetricAnalyzer) generateDrop(event *model.KindlingEvent) (*model.Dat
 		return nil, err
 	}
 	metric := model.NewIntMetric(constnames.TcpDropMetricName, 1)
-	return model.NewDataGroup(constnames.TcpMetricGroupName, labels, event.Timestamp, metric), nil
+	return model.NewDataGroup(constnames.TcpDropMetricGroupName, labels, event.Timestamp, metric), nil
 }
 
 func (a *TcpMetricAnalyzer) getTupleLabels(event *model.KindlingEvent) (*model.AttributeMap, error) {

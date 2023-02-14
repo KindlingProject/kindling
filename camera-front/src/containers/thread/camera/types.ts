@@ -1,5 +1,7 @@
 // 绘制图表时配置option 
 export interface IOption {
+    showComplex?: boolean;
+    spanList: any[];
     data: IThread[];
     trace: any;
     traceId: string;
@@ -29,6 +31,7 @@ export interface IFilterParams {
 export type IEvent = {
     type: string;
     name: string;
+    alias?: string;
     value: string;
     color: string;
     fillColor: string;
@@ -46,6 +49,7 @@ export type IEventTime  = {
     info?: any;
     stackList: any[];
     active?: boolean;
+    log?: ILogEvent;
     message?: any;
     // 后续处理数据判断虚线是否需要合并
     idx?: number;
@@ -83,7 +87,8 @@ export interface IThread {
     eventList: IEventTime[];
     javaLockList: IJavaLock[];
     logList: ILogEvent[];
-    traceList: any[]
+    traceList: any[];
+    innerCalls: any[];
 }
 
 export type ILineTime = {
