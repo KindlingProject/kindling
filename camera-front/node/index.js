@@ -47,7 +47,7 @@ app.use(profileProxy);
 
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 1 minute
-    max: 20
+    max: 100
 });
 app.use(limiter);
 
