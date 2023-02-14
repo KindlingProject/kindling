@@ -1,7 +1,7 @@
 cd ../../
 mkdir -p probe/build
 cd probe/build
-agent_libs_src="/kindling/agent-libs/"
+agent_libs_src="/kindling/probe/libs/agent-libs/"
 cflag="-DBUILD_DRIVER=OFF -DPROBE_VERSION=0.1.1dev"
 if [ -d "$agent_libs_src" ]; then
   cflag=$cflag" -DAGENT_LIBS_SOURCE_DIR=$agent_libs_src"
@@ -16,7 +16,7 @@ else
   mkdir -p ../../collector/docker/libso && cp -rf ./src/libkindling.so ../../collector/docker/libso/
   cp -rf ./src/libkindling.so /usr/lib64/
   cd ../../collector/
-  go mod tidy && go mod vendor
+  go mod tidy
   sh collector-version-build.sh
   collectorPath="./docker/kindling-collector"
   if [ ! -f "$collectorPath" ]; then

@@ -17,7 +17,7 @@ libkindling:
 
 
 
-LIBS_SRC := $(abspath ./agent-libs)
+LIBS_SRC := $(abspath ./probe/libs/agent-libs)
 COLLECTOR_PATH := $(abspath ./collector)
 SCRIPTS_PATH := $(abspath ./deploy/scripts)
 PROBE_PATH := $(abspath ./probe)
