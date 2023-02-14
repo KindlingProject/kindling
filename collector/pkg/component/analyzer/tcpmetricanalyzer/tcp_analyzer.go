@@ -79,6 +79,9 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if dataGroup == nil {
 		return nil
 	}
+	if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
+		a.telemetry.Logger.Debug("TcpMetricAnalyzer To NextProcess:\n" + dataGroup.String())
+	}
 	var retError error
 	for _, nextConsumer := range a.consumers {
 		err := nextConsumer.Consume(dataGroup)
