@@ -531,6 +531,7 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
     strcpy(p_kindling_event->context.tinfo.comm, (char*)threadInfo->m_comm.data());
   }
   p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
+  strcpy(p_kindling_event->context.tinfo.containerId, (char*)threadInfo->m_container_id.data());
   p_kindling_event->paramsNumber = userAttNumber;
 }
 
