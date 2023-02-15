@@ -5,6 +5,7 @@
 
 ## Unreleased
 ### New features
+- Fix retransmission count are not consistent with the real value on Linux 4.7 or higher([#450](https://github.com/KindlingProject/kindling/pull/450))
 - Add a new simplified chart to display the trace-profiling data. It mixes `span` with profiling and is more user-friendly. Try the demo now on the [website](http://kindling.harmonycloud.cn/).([#443](https://github.com/KindlingProject/kindling/pull/443))
 - Add trace to cpuevents to display the payload of network flows. ([#442](https://github.com/KindlingProject/kindling/pull/442))
 - Support Attach Agent for NoAPM Java Application. ([#431](https://github.com/KindlingProject/kindling/pull/431))
