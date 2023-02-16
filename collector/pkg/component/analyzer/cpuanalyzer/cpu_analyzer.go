@@ -115,7 +115,8 @@ func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 		ca.javaTraces[ev.TraceId+ev.PidString] = ev
 	} else {
 		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
-		if ca.javaTraces[ev.TraceId+ev.PidString] != nil && (ev.Timestamp-ca.javaTraces[ev.TraceId+ev.PidString].Timestamp) > uint64(ca.cfg.JavaTraceSlowTime)*uint64(time.Millisecond) {
+		spendTime := ev.Timestamp - ca.javaTraces[ev.TraceId+ev.PidString].Timestamp
+		if ca.javaTraces[ev.TraceId+ev.PidString] != nil && spendTime > uint64(ca.cfg.JavaTraceSlowTime)*uint64(time.Millisecond) {
 			labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 				constlabels.IsSlow:         model.NewBoolValue(true),
 				constlabels.Pid:            model.NewIntValue(pid),
@@ -133,8 +134,8 @@ func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 					labels.AddStringValue(constlabels.DstPod, k8sInfo.RefPodInfo.PodName)
 				}
 			}
-			metric := model.NewIntMetric(constvalues.RequestTotalTime, int64(ev.Timestamp-ca.javaTraces[ev.TraceId+ev.PidString].Timestamp))
-			dataGroup := model.NewDataGroup(constnames.SpanEvent, labels, ev.Timestamp, metric)
+			metric := model.NewIntMetric(constvalues.RequestTotalTime, int64(spendTime))
+			dataGroup := model.NewDataGroup(constnames.SpanEvent, labels, ca.javaTraces[ev.TraceId+ev.PidString].Timestamp, metric)
 			ReceiveDataGroupAsSignal(dataGroup)
 		}
 	}
