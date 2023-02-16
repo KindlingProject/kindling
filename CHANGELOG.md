@@ -3,7 +3,7 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
-## Unreleased
+## v0.7.0 - 2023-02-16
 ### New features
 - Add a new simplified chart to display the trace-profiling data. It mixes `span` with profiling and is more user-friendly. Try the demo now on the [website](http://kindling.harmonycloud.cn/).([#443](https://github.com/KindlingProject/kindling/pull/443))
 - Add trace to cpuevents to display the payload of network flows. ([#442](https://github.com/KindlingProject/kindling/pull/442))
