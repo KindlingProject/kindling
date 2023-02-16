@@ -627,7 +627,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                             } 
                         }
                         if (onInfoList.length > 0 && onInfoList[onFlag]) {
-                            let result = onOffInfoHandle(onInfoList[onFlag], eventObj, timeRange);
+                            let result: any = onOffInfoHandle(onInfoList[onFlag], eventObj, timeRange);
                             if (_.isArray(result)) {
                                 threadObj.eventList = [...threadObj.eventList, ...result];
                             } else {
@@ -643,7 +643,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                     }
                     if (type !== '0') {
                         if (offInfoList.length > 0 && offInfoList[offFlag]) {
-                            let result = onOffInfoHandle(offInfoList[offFlag], eventObj, timeRange);
+                            let result: any = onOffInfoHandle(offInfoList[offFlag], eventObj, timeRange);
                             if (_.isArray(result)) {
                                 threadObj.eventList = [...threadObj.eventList, ...result];
                             } else {
