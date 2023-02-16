@@ -116,16 +116,21 @@ func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 	} else {
 		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
 		spendTime := ev.Timestamp - ca.javaTraces[ev.TraceId+ev.PidString].Timestamp
+		contentKey := ca.javaTraces[ev.TraceId+ev.PidString].Url
 		if ca.javaTraces[ev.TraceId+ev.PidString] != nil && spendTime > uint64(ca.cfg.JavaTraceSlowTime)*uint64(time.Millisecond) {
+			protocol := ca.javaTraces[ev.TraceId+ev.PidString].Protocol
 			labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 				constlabels.IsSlow:         model.NewBoolValue(true),
 				constlabels.Pid:            model.NewIntValue(pid),
-				constlabels.Protocol:       model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Protocol),
-				constlabels.ContentKey:     model.NewStringValue(ca.javaTraces[ev.TraceId+ev.PidString].Url),
+				constlabels.Protocol:       model.NewStringValue(protocol),
+				constlabels.ContentKey:     model.NewStringValue(contentKey),
 				"isInstallApm":             model.NewBoolValue(true),
 				constlabels.IsServer:       model.NewBoolValue(true),
 				constlabels.HttpApmTraceId: model.NewStringValue(ev.TraceId),
 			})
+			if protocol == "http" {
+				labels.AddStringValue(constlabels.HttpUrl, contentKey)
+			}
 			if kubernetes.IsInitSuccess {
 				k8sInfo, ok := ca.metadata.GetByContainerId(ev.ContainerId)
 				if ok {
