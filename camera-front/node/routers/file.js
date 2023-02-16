@@ -113,7 +113,7 @@ router.get('/getTraceFile', function(req, res, next) {
         console.log('finished reading');
         // write to file here.
         let result = output;
-        let resList = result.split('------');
+        let resList = result.split('------\n');
         let traceData = JSON.parse(_.head(resList));
         let cpuEventStrs = _.slice(resList, 1);
         let cpuEventsList = [];
