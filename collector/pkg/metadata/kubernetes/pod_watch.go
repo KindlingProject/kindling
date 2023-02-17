@@ -323,7 +323,19 @@ func OnUpdate(objOld interface{}, objNew interface{}) {
 }
 
 func onDelete(obj interface{}) {
-	pod := obj.(*corev1.Pod)
+	// Maybe get DeletedFinalStateUnknown instead of *corev1.Pod.
+	// Fix https://github.com/KindlingProject/kindling/issues/445
+	pod, ok := obj.(*corev1.Pod)
+	if !ok {
+		deletedState, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return
+		}
+		pod, ok = deletedState.Obj.(*corev1.Pod)
+		if !ok {
+			return
+		}
+	}
 	podInfo := &deletedPodInfo{
 		uid:          string(pod.UID),
 		name:         pod.Name,
