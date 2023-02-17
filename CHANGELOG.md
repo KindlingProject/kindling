@@ -5,6 +5,21 @@
 
 ## Unreleased
 ### New features
+- Support trace-profiling sampling to reduce data output. ([#446](https://github.com/KindlingProject/kindling/pull/446))
+- 
+
+### Enhancements
+- 
+- 
+
+### Bug fixes
+- 
+- 
+- Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
+- 
+
+## v0.7.0 - 2023-02-16
+### New features
 - Add a new simplified chart to display the trace-profiling data. It mixes `span` with profiling and is more user-friendly. Try the demo now on the [website](http://kindling.harmonycloud.cn/).([#443](https://github.com/KindlingProject/kindling/pull/443))
 - Add trace to cpuevents to display the payload of network flows. ([#442](https://github.com/KindlingProject/kindling/pull/442))
 - Support Attach Agent for NoAPM Java Application. ([#431](https://github.com/KindlingProject/kindling/pull/431))

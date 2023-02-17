@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams  } from "react-router-dom";
 import { Button, Input, Tag, Checkbox, Select, AutoComplete, message, Spin, Progress, TreeSelect, Tooltip, Modal} from 'antd';
-import { SyncOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, UpOutlined, ArrowLeftOutlined, ArrowRightOutlined, FilterOutlined, FullscreenOutlined, FullscreenExitOutlined, ExclamationCircleOutlined, DeleteOutlined } from '@ant-design/icons';
+import { SyncOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, UpOutlined, ArrowLeftOutlined, ArrowRightOutlined, FilterOutlined, FullscreenOutlined, FullscreenExitOutlined, ExclamationCircleOutlined, DeleteOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import CustomDatePicker from '@/containers/components/customDatePicker';
 import CameraWarp from './camera';
@@ -642,6 +642,12 @@ function Thread() {
                                     traceFileList.map((item: any, idx) => <Select.Option key={idx} value={item.fileName}>{item.showFileName}</Select.Option>)
                                 }
                             </Select>
+                            <div className="profile_tooltip">
+                                <Tooltip title={'1. 仅针对慢请求(响应时间>500ms)的Trace进行采样。\n2. 同一Trace，5s内采样一次。\n3. 满足上述条件，触发Trace调用之后，需等待5s左右，刷新当前页面，方可看到最新采样记录。'} overlayStyle={{whiteSpace: 'break-spaces'}}>
+                                    <QuestionCircleOutlined />
+                                    <span>采样规则</span>
+                                </Tooltip>
+                            </div>
                         </React.Fragment>
                     }         
                 </div>
@@ -811,7 +817,6 @@ function Thread() {
                                 }
                                 <Tag>协议类型：{nowTrace?.labels?.protocol}</Tag>
                                 <Tag>响应时间：{formatTimeNs(_.find(nowTrace?.metrics, {Name: 'request_total_time'})?.Data.Value || 0)}</Tag>
-                                <Tag>返回码：{nowTrace?.labels?.http_status_code}</Tag>
                                 <Tag>TimeStamp：{nowTrace?.timestamp ? moment(Math.floor(nowTrace?.timestamp / 1000000)).format('YYYY-MM-DD HH:mm:ss') : ''}</Tag>
                             </div>
                         </div>

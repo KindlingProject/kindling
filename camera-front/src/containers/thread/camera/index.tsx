@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Switch, Empty, Tooltip, message } from 'antd';
 import { GatewayOutlined, RollbackOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import tooltipPng from '@/assets/images/tooltip.png';
+import tooltipPng2 from '@/assets/images/tooltip2.png';
 import _ from 'lodash';
 import './index.less';
 import { IOption } from './types'; 
@@ -188,7 +189,10 @@ class CameraWarp extends React.Component<IProps, IState> {
                     {
                         option.showComplex ? <div>
                             <Button size="small" onClick={this.toggleSupportAddLine} style={{ marginRight: 10 }}>{supportAddLine ? '取消关键时刻' : '添加关键时刻'}</Button>
-                            <Button size="small" onClick={this.traceAnaliysis} type={supportTrace ? 'primary' : 'default'} ghost={supportTrace} style={{ marginRight: 10 }}>Trace分析</Button>
+                            <Button size="small" onClick={this.traceAnaliysis} type={supportTrace ? 'primary' : 'default'} ghost={supportTrace} style={{ marginRight: 10 }}>
+                                Trace分析
+                                <Tooltip title="开启Trace分析后，线程轴仅展示与本次请求业务关联的线程，收起其他系统线程"><QuestionCircleOutlined/></Tooltip>
+                            </Button>
                             <Button size="small" onClick={() => onViewChange('sample')}>简易视图</Button>
                         </div> : <div>
                             <Button size="small" onClick={() => onViewChange('complex')} style={{ marginRight: 10 }}>复杂视图</Button>
@@ -210,11 +214,11 @@ class CameraWarp extends React.Component<IProps, IState> {
                         }
                         {
                             showEventChart && !option.showComplex && <React.Fragment>
-                                <span>cpu事件</span>
+                                <span>CPU事件</span>
                                 <Switch checked={events.indexOf('on') > -1} onChange={() => this.changeEvents('on')} size='small'/>
-                                <span>net事件</span>
+                                <span>Net事件</span>
                                 <Switch checked={events.indexOf('net') > -1} onChange={() => this.changeEvents('net')} size='small'/>
-                                <span>file事件</span>
+                                <span>File事件</span>
                                 <Switch checked={events.indexOf('file') > -1} onChange={() => this.changeEvents('file')} size='small'/>
                             </React.Fragment>
                         }
@@ -228,7 +232,7 @@ class CameraWarp extends React.Component<IProps, IState> {
                         }
                         <div className='operate_tooltip'>
                             <QuestionCircleOutlined className='operate_icon'/>
-                            <img alt='图例' src={tooltipPng}/>
+                            <img alt='图例' src={option.showComplex ? tooltipPng : tooltipPng2}/>
                         </div>  
                     </div>
                 </div>

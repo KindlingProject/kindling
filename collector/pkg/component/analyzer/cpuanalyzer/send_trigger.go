@@ -1,6 +1,7 @@
 package cpuanalyzer
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -14,7 +15,13 @@ var (
 	enableProfile bool
 	once          sync.Once
 	sendChannel   chan SendTriggerEvent
+	sampleMap     sync.Map
+	isInstallApm  map[uint64]bool
 )
+
+func init() {
+	isInstallApm = make(map[uint64]bool, 100000)
+}
 
 // ReceiveDataGroupAsSignal receives model.DataGroup as a signal.
 // Signal is used to trigger to send CPU on/off events
@@ -29,18 +36,18 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		})
 		return
 	}
-	if data.Labels.GetBoolValue(constlabels.IsSlow) || data.Labels.GetBoolValue(constlabels.IsError) {
-		duration, ok := data.GetMetric(constvalues.RequestTotalTime)
-		if !ok {
+	if data.Labels.GetBoolValue("isInstallApm") {
+		isInstallApm[uint64(data.Labels.GetIntValue("pid"))] = true
+	} else {
+		if isInstallApm[uint64(data.Labels.GetIntValue("pid"))] && data.Labels.GetBoolValue(constlabels.IsServer) {
 			return
 		}
-		event := SendTriggerEvent{
-			Pid:          uint32(data.Labels.GetIntValue("pid")),
-			StartTime:    data.Timestamp,
-			SpendTime:    uint64(duration.GetInt().Value),
-			OriginalData: data.Clone(),
+	}
+	if data.Labels.GetBoolValue(constlabels.IsSlow) {
+		_, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + strconv.FormatInt(data.Labels.GetIntValue("pid"), 10))
+		if !ok {
+			sampleMap.Store(data.Labels.GetStringValue(constlabels.ContentKey)+strconv.FormatInt(data.Labels.GetIntValue("pid"), 10), data)
 		}
-		sendChannel <- event
 	}
 }
 
@@ -51,6 +58,7 @@ type SendTriggerEvent struct {
 	OriginalData *model.DataGroup `json:"originalData"`
 }
 
+// ReceiveSendSignal todo: Modify the sampling algorithm to ensure that the data sampled by each multi-trace system is uniform. Now this is written because it is easier to implement
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	// Break the for loop if the channel is closed
 	for sendContent := range sendChannel {
@@ -105,6 +113,33 @@ func (t *SendEventsTask) run() {
 	// keyElements are used to correlate the cpuEvents with the trace.
 	keyElements := filepathhelper.GetFilePathElements(t.triggerEvent.OriginalData, t.triggerEvent.StartTime)
 	t.cpuAnalyzer.sendEvents(keyElements.ToAttributes(), t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
+}
+
+func (ca *CpuAnalyzer) sampleSend() {
+	timer := time.NewTicker(time.Duration(ca.cfg.SamplingInterval) * time.Second)
+	for {
+		select {
+		case <-timer.C:
+			sampleMap.Range(func(k, v interface{}) bool {
+				data := v.(*model.DataGroup)
+				duration, ok := data.GetMetric(constvalues.RequestTotalTime)
+				if !ok {
+					return false
+				}
+				event := SendTriggerEvent{
+					Pid:          uint32(data.Labels.GetIntValue("pid")),
+					StartTime:    data.Timestamp,
+					SpendTime:    uint64(duration.GetInt().Value),
+					OriginalData: data,
+				}
+				sendChannel <- event
+				sampleMap.Delete(k)
+				return true
+			})
+
+		}
+	}
+
 }
 
 func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {

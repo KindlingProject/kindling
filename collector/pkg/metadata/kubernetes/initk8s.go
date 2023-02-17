@@ -59,6 +59,7 @@ var (
 	MetaDataCache = New()
 	KubeClient    *k8s.Clientset
 	once          sync.Once
+	IsInitSuccess = false
 )
 
 func InitK8sHandler(options ...Option) error {
@@ -78,6 +79,7 @@ func InitK8sHandler(options ...Option) error {
 			retErr = fmt.Errorf("cannot connect to kubernetes: %w", err)
 			return
 		}
+		IsInitSuccess = true
 		go NodeWatch(clientSet)
 		time.Sleep(1 * time.Second)
 		go RsWatch(clientSet)
