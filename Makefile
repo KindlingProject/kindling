@@ -80,8 +80,6 @@ kernel-headers:
 		echo "$(KernelName) already installed"; \
 	fi
 
-AGENT_LIBS_COMMIT_ID=$(shell cd $(LIBS_SRC) && git rev-parse HEAD)
-
 ## Check libs exists or download, patch cmake file
 .PHONY: patch-libs
 patch-libs:
@@ -92,12 +90,6 @@ patch-libs:
 	else \
 		echo "Libs src: $(LIBS_SRC) exist"; \
 	fi
-	@echo "Patching libs commit id: $(AGENT_LIBS_COMMIT_ID)";
-
-	@echo "Patching $(PROBE_PATCH_FILE)";
-	@sed 's/AGENT_LIBS_VERSION "[0-9a-zA-Z]*"/AGENT_LIBS_VERSION "${AGENT_LIBS_COMMIT_ID}"/g' $(PROBE_PATCH_FILE) > $(PROBE_PATCH_FILE).new && \
-	mv $(PROBE_PATCH_FILE).new $(PROBE_PATCH_FILE);
-	@echo "Patching $(PROBE_PATCH_FILE) done"
 
 ## Grant executable permissions to build.sh
 .PHONY: patch-scripts
@@ -130,7 +122,7 @@ pack-probe:
 	else \
 		cd $(LIBS_SRC) && \
 		tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/ && \
-		cp -f kindling-falcolib-probe.tar.gz $(COLLECTOR_PATH)/docker/.; \
+		mv kindling-falcolib-probe.tar.gz $(COLLECTOR_PATH)/docker/ ;\
 	fi
 
 ## Build kindling probe in docker
