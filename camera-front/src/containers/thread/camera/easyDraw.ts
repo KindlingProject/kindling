@@ -540,7 +540,6 @@ class EasyCamera {
         d3.selectAll('.sub_num_warp')
             .on('mouseenter', function(this: any) {
                 let id = d3.select(this).attr('id');
-                // let lineId = id.replace('subRectNum', 'line');
                 let lineId = id.replace(/subRectNum/, 'line');
                 d3.select(`#${lineId}`).attr('style', 'stroke-width: 4px');
                 let classValue = d3.select(this).select('.event_num_rect').attr('class');
@@ -551,7 +550,6 @@ class EasyCamera {
             })
             .on('mouseleave', function(this: any) {
                 let id = d3.select(this).attr('id');
-                // let lineId = id.replace('subRectNum', 'line');
                 let lineId = id.replace(/subRectNum/, 'line');
                 d3.select(`#${lineId}`).attr('style', 'stroke-width: 1px');
                 d3.select(this).select('.event_num_rect').attr('style', 'stroke: #dcdcdc');
