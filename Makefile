@@ -146,3 +146,16 @@ kindling-collector:
 ## Install depends and build probe locally and build collector
 .PHONY: docker-build-all
 docker-build-all: depends kindling-probe kindling-collector
+
+## Clean build
+.PHONY: clean
+clean:
+	sudo rm -rf probe/libs/agent-libs/kindling-falcolib-probe
+	sudo rm -rf collector/docker/kindling-falcolib-probe.tar.gz
+	sudo rm -rf probe/build/
+	sudo rm -rf collector/docker/libso/libkindling.so
+	sudo rm -rf collector/docker/kindling-collector
+	@if [ "$(shell docker images -q kindling-agent:latest)" ]; then \
+		docker rmi kindling-agent:latest; \
+		echo "Remove old docker image: kindling-agent:latest"; \
+	fi
