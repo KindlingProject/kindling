@@ -3,6 +3,21 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
+## Unreleased
+### New features
+- 
+- 
+
+### Enhancements
+- 
+- 
+
+### Bug fixes
+- 
+- 
+- Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
+- 
+
 ## v0.7.0 - 2023-02-16
 ### New features
 - Add a new simplified chart to display the trace-profiling data. It mixes `span` with profiling and is more user-friendly. Try the demo now on the [website](http://kindling.harmonycloud.cn/).([#443](https://github.com/KindlingProject/kindling/pull/443))
