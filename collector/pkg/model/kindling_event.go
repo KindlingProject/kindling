@@ -428,8 +428,8 @@ type Fd struct {
 	Protocol L4Proto
 	// repeated for ipv6, client_ip[0] for ipv4
 	Role  bool
-	Sip   IP
-	Dip   IP
+	Sip   []uint32
+	Dip   []uint32
 	Sport uint32
 	Dport uint32
 	// if FD is type of unix_sock
@@ -437,16 +437,6 @@ type Fd struct {
 	Source uint64
 	// Destination socket endpoint
 	Destination uint64
-}
-
-type IP []uint32
-
-func (i IP) String() string {
-	if len(i) > 0 {
-		return IPLong2String(i[0])
-	} else {
-		return ""
-	}
 }
 
 func (m *Fd) GetNum() int32 {
@@ -570,9 +560,9 @@ func textUserAttributes(attrs [16]KeyValue) string {
 func textUserAttribute(attr KeyValue) string {
 	switch attr.ValueType {
 	case ValueType_CHARBUF:
-		return fmt.Sprintf("%s:CHARBUF(%.80s)", attr.Key, bytesReader(attr.Value, 80))
+		fallthrough
 	case ValueType_BYTEBUF:
-		return fmt.Sprintf("%s:BYTEBUF(%.80s)", attr.Key, bytesReader(attr.Value, 80))
+		return fmt.Sprintf("%s:<%s>", attr.Key, bytesReader(attr.Value, 200))
 	case ValueType_INT64:
 		fallthrough
 	case ValueType_INT32:
@@ -580,7 +570,7 @@ func textUserAttribute(attr KeyValue) string {
 	case ValueType_INT16:
 		fallthrough
 	case ValueType_INT8:
-		return fmt.Sprintf("%s:INT(%d)", attr.Key, attr.GetIntValue())
+		return fmt.Sprintf("%s:%d", attr.Key, attr.GetIntValue())
 	case ValueType_UINT64:
 		fallthrough
 	case ValueType_UINT32:
@@ -588,22 +578,22 @@ func textUserAttribute(attr KeyValue) string {
 	case ValueType_UINT16:
 		fallthrough
 	case ValueType_UINT8:
-		return fmt.Sprintf("%s:UINT(%d)", attr.Key, attr.GetUintValue())
+		return fmt.Sprintf("%s:%d", attr.Key, attr.GetUintValue())
 	case ValueType_FLOAT:
-		return fmt.Sprintf("%s:FLOAT(%f)", attr.Key, math.Float32frombits(byteOrder.Uint32(attr.Value)))
+		return fmt.Sprintf("%s:%f", attr.Key, math.Float32frombits(byteOrder.Uint32(attr.Value)))
 	case ValueType_NONE:
 		return "none"
 	default:
-		return fmt.Sprintf("%s:UNKNOW(%s)", attr.Key, string(attr.Value))
+		return fmt.Sprintf("%s:%s", attr.Key, string(attr.Value))
 	}
 }
 
-var nonAlphanumericRegex = regexp.MustCompile(`[^a-zA-Z0-9\.\\\/:@\-\=?]+`)
+var nonASCII = regexp.MustCompile(`[^ -~]`)
 
 func bytesReader(data []byte, maxLength int) string {
 	if len(data) > maxLength {
-		return nonAlphanumericRegex.ReplaceAllString(string(data[:maxLength]), " ")
+		return fmt.Sprintf("%s(%d bytes more)", nonASCII.ReplaceAllString(string(data[:maxLength]), "."), len(data)-maxLength)
 	} else {
-		return nonAlphanumericRegex.ReplaceAllString(string(data), " ")
+		return nonASCII.ReplaceAllString(string(data), ".")
 	}
 }
