@@ -242,8 +242,8 @@ var L4Proto_value = map[string]int32{
 	"RAW":     4,
 }
 
-func (m *KindlingEvent) String() string {
-	data, _ := json.Marshal(&m)
+func (k *KindlingEvent) String() string {
+	data, _ := json.Marshal(&k)
 	return string(data)
 }
 
@@ -269,40 +269,40 @@ func (k *KindlingEvent) Reset() {
 	k.Ctx.ThreadInfo.Pid = 0
 }
 
-func (m *KindlingEvent) GetSource() Source {
-	if m != nil {
-		return m.Source
+func (k *KindlingEvent) GetSource() Source {
+	if k != nil {
+		return k.Source
 	}
 	return Source_SOURCE_UNKNOWN
 }
 
-func (m *KindlingEvent) GetTimestamp() uint64 {
-	if m != nil {
-		return m.Timestamp
+func (k *KindlingEvent) GetTimestamp() uint64 {
+	if k != nil {
+		return k.Timestamp
 	}
 	return 0
 }
 
-func (m *KindlingEvent) GetName() string {
-	if m != nil {
-		return m.Name
+func (k *KindlingEvent) GetName() string {
+	if k != nil {
+		return k.Name
 	}
 	return ""
 }
 
-func (m *KindlingEvent) GetCategory() Category {
-	if m != nil {
-		return m.Category
+func (k *KindlingEvent) GetCategory() Category {
+	if k != nil {
+		return k.Category
 	}
 	return Category_CAT_NONE
 }
 
-func (m *KindlingEvent) GetUserAttributes() *[16]KeyValue {
-	return &m.UserAttributes
+func (k *KindlingEvent) GetUserAttributes() *[16]KeyValue {
+	return &k.UserAttributes
 }
 
-func (m *KindlingEvent) GetCtx() *Context {
-	return &m.Ctx
+func (k *KindlingEvent) GetCtx() *Context {
+	return &k.Ctx
 }
 
 type KeyValue struct {
@@ -314,23 +314,23 @@ type KeyValue struct {
 	Value []byte
 }
 
-func (m *KeyValue) GetKey() string {
-	if m != nil {
-		return m.Key
+func (kv *KeyValue) GetKey() string {
+	if kv != nil {
+		return kv.Key
 	}
 	return ""
 }
 
-func (m *KeyValue) GetValueType() ValueType {
-	if m != nil {
-		return m.ValueType
+func (kv *KeyValue) GetValueType() ValueType {
+	if kv != nil {
+		return kv.ValueType
 	}
 	return ValueType_NONE
 }
 
-func (m *KeyValue) GetValue() []byte {
-	if m != nil {
-		return m.Value
+func (kv *KeyValue) GetValue() []byte {
+	if kv != nil {
+		return kv.Value
 	}
 	return nil
 }
