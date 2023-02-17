@@ -1,6 +1,7 @@
 package cpuanalyzer
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -43,9 +44,9 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		}
 	}
 	if data.Labels.GetBoolValue(constlabels.IsSlow) {
-		_, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + string(data.Labels.GetIntValue("pid")))
+		_, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + strconv.FormatInt(data.Labels.GetIntValue("pid"), 10))
 		if !ok {
-			sampleMap.Store(data.Labels.GetStringValue(constlabels.ContentKey)+string(data.Labels.GetIntValue("pid")), data)
+			sampleMap.Store(data.Labels.GetStringValue(constlabels.ContentKey)+strconv.FormatInt(data.Labels.GetIntValue("pid"), 10), data)
 		}
 	}
 }
