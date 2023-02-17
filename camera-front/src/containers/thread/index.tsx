@@ -1,24 +1,25 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams  } from "react-router-dom";
-import { Button, Input, Tag, Checkbox, Select, AutoComplete, message, Spin, Progress, TreeSelect, Tooltip} from 'antd';
-import { SyncOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, UpOutlined, ArrowLeftOutlined, ArrowRightOutlined, FilterOutlined, FullscreenOutlined, FullscreenExitOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Button, Input, Tag, Checkbox, Select, AutoComplete, message, Spin, Progress, TreeSelect, Tooltip, Modal} from 'antd';
+import { SyncOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, UpOutlined, ArrowLeftOutlined, ArrowRightOutlined, FilterOutlined, FullscreenOutlined, FullscreenExitOutlined, ExclamationCircleOutlined, DeleteOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import CustomDatePicker from '@/containers/components/customDatePicker';
 import CameraWarp from './camera';
 import './index.less';
 
 import { protoclList, eventList as staticEventList, netReadTypes, netWriteTypes, dataHandle, buildFilterList, formatTimeNs, getLineTimesList } from './camera/util';
-import { getTraceList, getTraceData, getTracePayload, getFolderList, getFileList, getFileDetail } from '@/request';
+import { getTraceList, getTraceData, getTracePayload, getFolderList, getFileList, getFileDetail, toggleProfile } from '@/request';
 import { IFilterField } from './type';
 import Flamegraph from './Flamegraph';
 import EventDetail from './EventDetail';
-import { IOption, IFilterParams, IEvent, ILineTime } from './camera/types';
+import { IOption, IFilterParams, IEvent, ILineTime, IThread } from './camera/types';
 import { setStore, getStore, defaultTimeInfo, translateRecentTime } from '@/services/util';
 import moment from 'moment';
 
 function Thread() {
     const [searchParams] = useSearchParams();
     const [showESQuery, setShowESQuery] = useState(false);
+    const [showComplex, setShowComplex] = useState(false);
     // es的接口查询相关数据需要的参数
     const [pid, setPid] = useState(getStore('pid') || '');
     const [testStartTimestamp, setStartTimeStamp] = useState<number | null>(parseInt(getStore('startTimestamp') as string) || null);
@@ -38,13 +39,13 @@ function Thread() {
     const [nowTrace, setNowTrace] = useState<any>({});
     const [nowTraceIdx, setNowTraceIdx] = useState<number>(0);
     const [nowTraceData, setNowTraceData] = useState<any>([]);
+    const [allSpanList, setAllSpanList] = useState<any>([]);
     const [requestEventInfo, setRequestEventInfo] = useState<any>([]);
     const [nowEvent, setNowEvent] = useState<any>({});
     const [traceId, setTraceId] = useState('');     // 返回的trace.labels中没有traceId需要去cpuEvents里面匹配一次，若存在需要回填traceId
 
     const [lineTimeList, setLineTimeList] = useState<ILineTime[]>([]);
     const [loading, setloading] = useState<boolean>(false);
-    const [infoloading, setInfoloading] = useState<boolean>(false);
 
     const [nowTraceTimeRange, setNowTraceTimeRange] = useState<Date[]>([]);
     const [threadList, setThreadList] = useState<any>([]);
@@ -60,9 +61,13 @@ function Thread() {
     const [selectEventList, setSelectEventList] = useState<any>([]);
 
     const [showFullScreen, setShowFullScreen] = useState<boolean>(false);
-    const [hideFilterWarp, setHideFilterWarp] = useState<boolean>(false);
+    const [hideFilterWarp, setHideFilterWarp] = useState<boolean>(true);
     const [hideFilterFieldList, setHideFilterFieldList] = useState<string[]>([]);
-    const [showEventDetail, setShowEventDetail] = useState<boolean>(true);
+    const [showEventDetail, setShowEventDetail] = useState<boolean>(false);
+    const [profileModalVisible, setProfileModalVisible] = useState(false);
+    const [profileModalLoading, setprofileModalLoading] = useState(false);
+    const [unistallLoading, setUnistallLoading] = useState(false);
+
 
     let cameraRef = useRef();
 
@@ -71,8 +76,8 @@ function Thread() {
         let totalTime = _.find(trace.metrics, {Name: 'request_total_time'});
         let traceEndTimestamp = Math.floor((trace.timestamp + totalTime.Data.Value) / 1000000);
         const requestTimes = [traceStartTimestamp, traceEndTimestamp];
-        let startTimestamp = traceStartTimestamp - 5 * 1000;
-        let endTimestamp = traceEndTimestamp + 5 * 1000;
+        let startTimestamp = traceStartTimestamp - 2 * 1000;
+        let endTimestamp = traceEndTimestamp + 2 * 1000;
         const params = {
             pid: trace.labels.pid,
             startTimestamp: startTimestamp,
@@ -86,20 +91,26 @@ function Thread() {
                     item.cpuEvents = JSON.parse(item.cpuEvents as string);
                     item.javaFutexEvents = JSON.parse(item.javaFutexEvents as string);
                     item.transactionIds = JSON.parse(item.transactionIds as string);
+                    item.spans = JSON.parse(item.spans as string);
+                    item.innerCalls = JSON.parse(item.innerCalls as string);
                 });
-                const { data, eventlist, traceTimes, requestInfo, traceId } = dataHandle(result, [startTimestamp, endTimestamp], trace);
+                const { data, spanTreeList, eventlist, traceTimes, requestInfo, traceId: ftraceId } = dataHandle(result, [startTimestamp, endTimestamp], trace);
                 const { threadList, fileList } = buildFilterList(data);
 
+                if (!ftraceId) {
+                    setProfileModalVisible(true);
+                }
                 const linetimes = getLineTimesList(requestTimes, traceTimes);
-                console.log(data, linetimes);
+                // console.log(data, linetimes);
                 setNowTraceData(data);
+                setAllSpanList(spanTreeList);
                 setNowTraceTimeRange([new Date(startTimestamp), new Date(endTimestamp)]);
                 setLineTimeList(linetimes);
                 setThreadList(threadList);
                 setFileList(fileList);
                 setEventList(eventlist);
                 setRequestEventInfo(requestInfo);
-                setTraceId(traceId);
+                setTraceId(ftraceId);
             } else {
                 setNowTraceData([]);
                 setThreadList([]);
@@ -110,25 +121,22 @@ function Thread() {
             }
         });
     }
-    const initData = (time) => {
+    // 当请求模式为请求es-server的中的接口数据
+    const initData = (params) => {
         setloading(true);
-        const params: any = {
-            startTimestamp: time.from,
-            endTimestamp: time.to,
+        const fparams: any = {
+            startTimestamp: params.from,
+            endTimestamp: params.to,
             isServer: true,
-            protocol: testProtocl
+            protocol: params.protocol || testProtocl
         }
-        if (pid) {
-            params.pid = pid;
+        if (params.pid) {
+            fparams.pid = params.pid;
         }
-        if (testStartTimestamp && testStartTimestamp > 0 && testEndTimestamp && testEndTimestamp > 0) {
-            params.startTimestamp = testStartTimestamp;
-            params.endTimestamp = testEndTimestamp;
-        }
-        getTraceList(params).then(res => {
+        getTraceList(fparams).then(res => {
             let result: any = [];
-            if (pid) {
-                result = _.filter(res.data, item => item.labels.pid === parseInt(pid));
+            if (params.pid) {
+                result = _.filter(res.data, item => item.labels.pid === parseInt(params.pid));
             } else {
                 result = res.data;
             }
@@ -147,6 +155,7 @@ function Thread() {
                 setNowTraceData([]);
                 setNowTrace({});
             }
+            // document.getElementById('chart_body')?.scrollIntoView();
         });
     }
     const init2 = () => {
@@ -158,11 +167,19 @@ function Thread() {
             time = defaultTimeInfo;
         }
         setTimeValue(time);
-        const timeRange = {
+        let params: any = {
             from: new Date(time.from).getTime(),
-            to: new Date(time.to).getTime()
+            to: new Date(time.to).getTime(),
+            protocol: testProtocl
         }
-        initData(timeRange);
+        if (pid) {
+            params.pid = pid;
+        }
+        if (testStartTimestamp && testStartTimestamp > 0 && testEndTimestamp && testEndTimestamp > 0) {
+            params.from = testStartTimestamp;
+            params.to = testEndTimestamp;
+        }
+        initData(params);
     }
     // node 接口直接读取文件列表
     const getAllFolderList = () => {
@@ -174,7 +191,8 @@ function Thread() {
             }
         });
     }
-    const getAllTraceFile = (folder) => {
+    // node 接口，根据对应的文件目录获取该目录下的所有profile文件，并从文件名中解析url列表
+    const getAllTraceFile = (folder, init = true, file = '') => {
         setFolderName(folder);
         getFileList({folderName: folder}).then(res => {
             if (res.data.success && res.data.data.length > 0) {
@@ -182,26 +200,39 @@ function Thread() {
                 let urlFileList = _.groupBy(res.data.data, 'contentKey');
                 let urlList: string[] = _.keys(urlFileList);
                 setTraceUrlList(urlList);
-                setTraceUrl(urlList[0]);
-                // setTraceFileList(res.data.data);
                 setUrlTraceFileList(urlFileList);
-                let fileList: any = urlFileList[urlList[0]];
-                setTraceFileList(fileList);
-                selectFileName(fileList[0].fileName, folder);
+                if (init) {
+                    setTraceUrl(urlList[0]);
+                    let fileList: any = urlFileList[urlList[0]];
+                    setTraceFileList(fileList);
+                    selectFileName(fileList[0].fileName, folder);
+                } else {
+                    let fileObj = _.find(res.data.data, {fileName: file});
+                    if (fileObj) {
+                        let url = fileObj.contentKey;
+                        setTraceUrl(url);
+                        let fileList: any = urlFileList[url];
+                        setTraceFileList(fileList);
+                        selectFileName(file, folder);
+                    }
+                }
             } else {
                 setTraceFileList([]);
             }
         });
     }
+    // 切换container，即切换对应的文件目录
     const selectFolder = (folder) => {
         getAllTraceFile(folder);
     }
+    // 根据选择的url筛选对应的profile文件
     const changeTraceUrl = (url) => {
         setTraceUrl(url);
         let fileList: any = urlTraceFileList[url];
         setTraceFileList(fileList);
         selectFileName(fileList[0].fileName, folderName);
     }
+    // 选择查看的profile文件，node直接读取文件内容返回
     const selectFileName = (fileName, folder) => {
         setTestFileName(fileName);
         getFileDetail({folderName: folder, fileName}).then(res => {
@@ -209,33 +240,37 @@ function Thread() {
                 let {trace: traceData, cpuEvents} = res.data.data;
                 setTraceList([traceData]);
                 setNowTrace(traceData);
-                console.log('traceData', traceData);
+                // console.log('traceData', traceData);
                 if (traceData.labels?.trace_id) {
                     setTraceId(traceData.labels.trace_id);
-                }
+                } 
                 setNowTraceIdx(0);
 
                 let traceStartTimestamp = Math.ceil(traceData.timestamp / 1000000);
                 let totalTime = _.find(traceData.metrics, {Name: 'request_total_time'});
                 let traceEndTimestamp = Math.ceil((traceData.timestamp + totalTime.Data.Value) / 1000000);
                 const requestTimes = [traceStartTimestamp, traceEndTimestamp];
-                let startTimestamp = traceStartTimestamp - 5 * 1000;
-                let endTimestamp = traceEndTimestamp + 5 * 1000;
+                let startTimestamp = traceStartTimestamp - 2 * 1000;
+                let endTimestamp = traceEndTimestamp + 2 * 1000;
 
                 if (cpuEvents.length > 0) {
-                    const { data, eventlist, traceTimes, requestInfo, traceId } = dataHandle(cpuEvents, [startTimestamp, endTimestamp], traceData);
+                    const { data, spanTreeList, eventlist, traceTimes, requestInfo, traceId: ftraceId } = dataHandle(cpuEvents, [startTimestamp, endTimestamp], traceData);
                     const { threadList, fileList } = buildFilterList(data);
-    
+                    
+                    if (!ftraceId) {
+                        setProfileModalVisible(true);
+                    }
                     const linetimes = getLineTimesList(requestTimes, traceTimes);
-                    console.log(data, linetimes);
+                    // console.log(data, linetimes);
                     setNowTraceData(data);
+                    setAllSpanList(spanTreeList);
                     setNowTraceTimeRange([new Date(startTimestamp), new Date(endTimestamp)]);
                     setLineTimeList(linetimes);
                     setThreadList(threadList);
                     setFileList(fileList);
                     setEventList(eventlist);
                     setRequestEventInfo(requestInfo);
-                    setTraceId(traceId);
+                    setTraceId(ftraceId);
                     setNowEvent({});
                 } else {
                     setNowTraceData([]);
@@ -252,7 +287,31 @@ function Thread() {
     }
 
     useEffect(() => {
-        setShowESQuery((searchParams.get('query') && searchParams.get('query') === 'es') ? true : false);
+        let folder = searchParams.get('folder');
+        let file = searchParams.get('file');
+        if (folder && file) {
+            getAllTraceFile(folder, false, file);
+            // selectFileName(file, folder);
+        }
+
+        let queryType = searchParams.get('query');
+        setShowESQuery((queryType && queryType === 'es') ? true : false);
+        if (queryType === 'es') {
+            let pid = searchParams.get('pid');
+            let stime = searchParams.get('stime');
+            let etime = searchParams.get('etime');
+            let protocl = searchParams.get('protocl');
+            if (pid && stime && etime && protocl) {
+                setPid(pid);
+                setStartTimeStamp(parseInt(stime));
+                setEndTimestamp(parseInt(etime));
+                setTestProtocl(protocl || 'http');
+                setStore('pid', pid);
+                setStore('startTimestamp', stime);
+                setStore('endTimestamp', etime);
+                initData({pid: pid, from: stime, to: etime, protocol: protocl});
+            }
+        }
         let theme: any = searchParams.get('theme') || 'light';
         let body = document.getElementsByTagName('body')[0];
         body.className = `${theme}-theme`;
@@ -270,6 +329,35 @@ function Thread() {
             to: new Date(time.to).getTime()
         }
         initData(timeRange);
+    }
+
+    const toggleInstallProfile = operation => {
+        const params = {
+            operation,
+            pid: nowTrace.labels.pid
+        };
+        if (operation === 'stop_attach_agent') {
+            setUnistallLoading(true);
+        } else {
+            setprofileModalLoading(true);
+        }
+        toggleProfile(params).then(res => {
+            if (operation === 'stop_attach_agent') {
+                setUnistallLoading(false);
+            } else {
+                setprofileModalLoading(false);
+            }
+            if (res.data.Code === 1) {
+                if (operation === 'stop_attach_agent') {
+                    message.success('卸载成功');
+                } else {
+                    message.success('启动成功');
+                    setProfileModalVisible(false);
+                }
+            } else {
+                message.warning(res.data.Msg);
+            }
+        });
     }
 
     const toggleFilterWarp = () => {
@@ -373,51 +461,99 @@ function Thread() {
     const handleEventClick = (evt: any) => {
         console.log('event', evt);
         if (evt) {
-            if (showESQuery) {
-                if (evt.type === 'net' && evt.info) {
-                    setInfoloading(true);
-                    const tempIp = evt.info.file.split('->');
-                    const [srcIp, srcPort] = tempIp[0].split(':');
-                    const [dstIp, dstPort] = tempIp[1].split(':');
-                    let type = '';
-                    if (netReadTypes.indexOf(evt.info.operate) > -1) {
-                        type = parseInt(evt.info.requestType) === 1 ? 'request' : 'response'
+            if (evt.type === 'net' && evt.tid && evt.info) {
+                let threadData: IThread = _.find(nowTraceData, {tid: evt.tid});
+                console.log(threadData);
+                let time = evt.eventType === 'netread' ? evt.endTime : evt.startTime;
+                let type = '';
+                if (netReadTypes.indexOf(evt.info.operate) > -1) {
+                    type = parseInt(evt.info.requestType) === 1 ? 'request' : 'response'
+                }
+                if (netWriteTypes.indexOf(evt.info.operate) > -1) {
+                    type = parseInt(evt.info.requestType) === 1 ? 'response' : 'request'
+                }
+                let armed = false;
+                _.forEach(threadData.innerCalls, item => {
+                    let traceStartTime = item.startTime / 1000000;
+                    let traceEndTime = item.endTime / 1000000;
+                    let traceInfo = item.trace;
+                    if (evt.eventType === 'netread') {
+                        if (traceEndTime - 5 < evt.endTime && evt.endTime < traceEndTime + 5) {
+                            armed = true;
+                            const event: any = {
+                                ...evt,
+                                message: type === 'request' ? traceInfo.labels?.request_payload : traceInfo.labels?.response_payload,
+                                requestType: type,
+                                traceInfo: traceInfo
+                            };
+                            console.log('net event: ', event);
+                            setNowEvent(event);
+                        }
+                    } else {
+                        if (traceStartTime - 5 < evt.startTime && evt.startTime < traceStartTime + 5) {
+                            armed = true;
+                            const event: any = {
+                                ...evt,
+                                message: type === 'request' ? traceInfo.labels?.request_payload : traceInfo.labels?.response_payload,
+                                requestType: type,
+                                traceInfo: traceInfo
+                            };
+                            console.log('net event: ', event);
+                            setNowEvent(event);
+                        }
                     }
-                    if (netWriteTypes.indexOf(evt.info.operate) > -1) {
-                        type = parseInt(evt.info.requestType) === 1 ? 'response' : 'request'
-                    }
-                    const params = {
-                        pid: nowTrace.labels.pid,
-                        type: type,
-                        startTimestamp: parseInt(evt.endTime) - 2,
-                        endTimestamp: parseInt(evt.endTime) + 2,
-                        srcIp, 
-                        srcPort, 
-                        dstIp, 
-                        dstPort
-                    };
-                    getTracePayload(params).then(res => {
-                        const event: any = {
-                            ...evt,
-                            message: type === 'request' ? res.data.labels?.request_payload : res.data.labels?.response_payload,
-                            requestType: type,
-                            traceInfo: res.data
-                        };
-                        console.log('net event: ', event);
-                        setNowEvent(event);
-                        setTimeout(() => {
-                            setInfoloading(false);
-                        }, 100);
-                    });
-                } else {
-                    if (evt.active) {
-                        evt.message = evt.eventType === "netread" ? nowTrace.labels.request_payload : nowTrace.labels.response_payload;
-                    }
+                }); 
+                if (!armed) {
                     setNowEvent(evt);
                 }
             } else {
                 setNowEvent(evt);
             }
+            // if (showESQuery) {
+            //     if (evt.type === 'net' && evt.info) {
+            //         setInfoloading(true);
+            //         const tempIp = evt.info.file.split('->');
+            //         const [srcIp, srcPort] = tempIp[0].split(':');
+            //         const [dstIp, dstPort] = tempIp[1].split(':');
+            //         let type = '';
+            //         if (netReadTypes.indexOf(evt.info.operate) > -1) {
+            //             type = parseInt(evt.info.requestType) === 1 ? 'request' : 'response'
+            //         }
+            //         if (netWriteTypes.indexOf(evt.info.operate) > -1) {
+            //             type = parseInt(evt.info.requestType) === 1 ? 'response' : 'request'
+            //         }
+            //         const params = {
+            //             pid: nowTrace.labels.pid,
+            //             type: type,
+            //             startTimestamp: parseInt(evt.endTime) - 2,
+            //             endTimestamp: parseInt(evt.endTime) + 2,
+            //             srcIp, 
+            //             srcPort, 
+            //             dstIp, 
+            //             dstPort
+            //         };
+            //         getTracePayload(params).then(res => {
+            //             const event: any = {
+            //                 ...evt,
+            //                 message: type === 'request' ? res.data.labels?.request_payload : res.data.labels?.response_payload,
+            //                 requestType: type,
+            //                 traceInfo: res.data
+            //             };
+            //             console.log('net event: ', event);
+            //             setNowEvent(event);
+            //             setTimeout(() => {
+            //                 setInfoloading(false);
+            //             }, 100);
+            //         });
+            //     } else {
+            //         if (evt.active) {
+            //             evt.message = evt.eventType === "netread" ? nowTrace.labels.request_payload : nowTrace.labels.response_payload;
+            //         }
+            //         setNowEvent(evt);
+            //     }
+            // } else {
+            //     setNowEvent(evt);
+            // }
         } else {
             setNowEvent({});
         }
@@ -437,8 +573,11 @@ function Thread() {
         setChartTid(parseInt(tid));
     }
 
-    const toggleEventDetail = () => {
-        setShowEventDetail(!showEventDetail);
+    const toggleEventDetail = (value) => {
+        setShowEventDetail(value);
+        if (!value) {
+            setNowEvent({});
+        }
     }
 
     const changePid = (e) => {
@@ -453,7 +592,17 @@ function Thread() {
         setEndTimestamp(parseInt(e.target.value))
         setStore('endTimestamp', e.target.value);
     }
+    // 点击复杂视图或者简易视图切换URL重新渲染页面
+    const changeView = (type) => {
+        setShowComplex(type === 'complex');
+        if (type === 'complex') {
+            setShowEventDetail(true);
+        }
+    }
+
     const option: IOption = {
+        showComplex: showComplex,
+        spanList: allSpanList,
         data: nowTraceData,
         trace: nowTrace,
         traceId: nowTrace?.labels?.trace_id || '',
@@ -480,7 +629,7 @@ function Thread() {
                             <Button onClick={init2}>查询</Button>   
                         </React.Fragment> : <React.Fragment>
                             <span className='small_title' style={{ marginLeft: 10 }}>Container：</span>
-                            <TreeSelect style={{ width: 180, marginRight: 10 }} dropdownStyle={{ maxHeight: 400, overflow: 'auto' }} dropdownMatchSelectWidth={280} value={folderName} treeData={folderList} treeDefaultExpandAll onChange={selectFolder}/>
+                            <TreeSelect style={{ width: 180, marginRight: 10 }} dropdownStyle={{ maxHeight: 400, overflow: 'auto' }} dropdownMatchSelectWidth={280} value={folderName} treeData={folderList} treeDefaultExpandAll showSearch onChange={selectFolder}/>
                             <span className='small_title'>Trace：</span>
                             <Select value={traceUrl} style={{ width: 120, marginRight: 10 }} dropdownMatchSelectWidth={240} onChange={changeTraceUrl}>
                                 {
@@ -493,6 +642,12 @@ function Thread() {
                                     traceFileList.map((item: any, idx) => <Select.Option key={idx} value={item.fileName}>{item.showFileName}</Select.Option>)
                                 }
                             </Select>
+                            <div className="profile_tooltip">
+                                <Tooltip title={'1. 仅针对慢请求(响应时间>500ms)的Trace进行采样。\n2. 同一Trace，5s内采样一次。\n3. 满足上述条件，触发Trace调用之后，需等待5s左右，刷新当前页面，方可看到最新采样记录。'} overlayStyle={{whiteSpace: 'break-spaces'}}>
+                                    <QuestionCircleOutlined />
+                                    <span>采样规则</span>
+                                </Tooltip>
+                            </div>
                         </React.Fragment>
                     }         
                 </div>
@@ -505,9 +660,9 @@ function Thread() {
                     }
                 </div>
             </header>
-            <div className='thead_body'>
+            <div className='thead_body' id='chart_body'>
                 {
-                    hideFilterWarp && <Button className='toggle_btn' shape='circle' size='small' icon={<MenuUnfoldOutlined />} onClick={toggleFilterWarp} />
+                    (hideFilterWarp && showComplex) && <Button className='toggle_btn' shape='circle' size='small' icon={<MenuUnfoldOutlined />} onClick={toggleFilterWarp} />
                 }
                 <div className='filter_panel' style={{ display: hideFilterWarp ? 'none' : 'block' }}>
                     <Button className='toggle_btn' shape='circle' size='small' icon={<MenuFoldOutlined />} onClick={toggleFilterWarp} />
@@ -644,8 +799,22 @@ function Thread() {
                             <h3>{nowTrace?.labels?.http_method}：{nowTrace?.labels?.http_url}</h3>
                             <div>
                                 <Tag>Trace ID：{nowTrace?.labels ? (traceId ? <span>{traceId}</span> : <Tooltip title="请先安装Skywalking探针，否则无法标注关键线程">
-                                    <ExclamationCircleOutlined className='shinning_icon'/>
+                                    <ExclamationCircleOutlined className='shinning_icon' onClick={() => setProfileModalVisible(true)}/>
                                 </Tooltip>) : null}</Tag>
+                                {
+                                    (!_.isEmpty(nowTrace) && !traceId) && <Tag color="error" onClick={() => setProfileModalVisible(true)} style={{ cursor: 'pointer' }}>未检测到Tracing探针</Tag>
+                                }
+                                {
+                                    (traceId && allSpanList.length > 0) && (nowTrace.labels.trace_type === 'harmonycloud' ? <Tag color="blue">
+                                        已检测到Kindling APM演示探针 
+                                        <Tooltip title="点击卸载">
+                                            <DeleteOutlined style={{ color: '#fc1313' }} onClick={() => toggleInstallProfile('stop_attach_agent')}/>
+                                        </Tooltip>
+                                        {
+                                            unistallLoading && <SyncOutlined spin />
+                                        }
+                                    </Tag> : <Tag>已检测到Tracing探针</Tag>)
+                                }
                                 <Tag>协议类型：{nowTrace?.labels?.protocol}</Tag>
                                 <Tag>响应时间：{formatTimeNs(_.find(nowTrace?.metrics, {Name: 'request_total_time'})?.Data.Value || 0)}</Tag>
                                 <Tag>返回码：{nowTrace?.labels?.http_status_code}</Tag>
@@ -662,8 +831,15 @@ function Thread() {
                             <Button icon={showFullScreen ? <FullscreenExitOutlined/> : <FullscreenOutlined/>} className='f-ml8' onClick={fullScreen}/>
                         </div>
                     </div>
+                    <Modal visible={profileModalVisible} title="提醒" onCancel={() => setProfileModalVisible(false)} footer={<div className='profile_modal_footer'>
+                        <Button onClick={() => setProfileModalVisible(false)}>稍候自行安装</Button>
+                        <Button type="primary" onClick={() => toggleInstallProfile('start_attach_agent')} loading={profileModalLoading}>立即自动安装</Button>
+                    </div>}>
+                        <div className='profile_modal_text'>未检测到支持的Tracing探针，为不影响Trace的Span和线程分析，请您及时安装。(点击查看<a href='http://kindling.harmonycloud.cn/docs/reference/kindling-java-agent/kindling-java-compatibility/' target="_blank">支持的探针列表</a>)</div>
+                        <div className='profile_modal_text'>或点击下方按钮，让Trace Profiling自动为您的应用(目前只支持Java应用)安装探针。</div>
+                    </Modal>
                     {
-                        requestEventInfo.length > 0 && <div className='process_over_warp'>
+                        (requestEventInfo.length > 0 && showComplex) ? <div className='process_over_warp'>
                             <div className='request_info_process_warp'>
                                 { 
                                     requestEventInfo.map(item => 
@@ -685,27 +861,27 @@ function Thread() {
                                     )
                                 }
                             </div>
-                        </div>
+                        </div> : null
                     }
-                    <div className='charts' style={{ height: requestEventInfo.length > 0 ? 'calc(60% - 90px)' : '60%' }}>
+                    <div className='charts' style={{ height: showEventDetail ? (requestEventInfo.length > 0 && showComplex) ? 'calc(60% - 90px)' : '60%' : 'calc(100% - 85px)' }}>
                         {
                             loading && <Spin spinning={loading} className="camera_loading"></Spin>
                         }
-                        <CameraWarp ref={cameraRef} option={option} />
+                        <CameraWarp ref={cameraRef} option={option} onViewChange={changeView} onEventDetail={(value) => toggleEventDetail(value)} />
                     </div>
-                    <div className='event_info_warp'>
-                        <div className='event_header'>
-                            <span>事件详情</span>
-                            <div onClick={toggleEventDetail}>
-                                {showEventDetail ? <UpOutlined /> : <DownOutlined />}
+                    {
+                        showEventDetail ? <div className='event_info_warp'>
+                            <div className='event_header'>
+                                <span>事件详情</span>
+                                {/* <div onClick={toggleEventDetail}>
+                                    {showEventDetail ? <UpOutlined /> : <DownOutlined />}
+                                </div> */}
                             </div>
-                        </div>
-                        <div className={`event_body ${showEventDetail ? 'show' : 'hide'}`}>
-                            <Spin spinning={infoloading}>
-                                {nowEvent?.eventType === 'on' ? <Flamegraph data={nowEvent} /> : <EventDetail data={nowEvent} showESQuery={showESQuery} />}
-                            </Spin>
-                        </div>
-                    </div>
+                            <div className={`event_body`}>
+                                {nowEvent?.eventType === 'on' ? <Flamegraph data={nowEvent} /> : <EventDetail data={nowEvent} />}
+                            </div>
+                        </div> : null
+                    }
                 </div>
             </div>
         </div>

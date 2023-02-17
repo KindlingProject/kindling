@@ -113,7 +113,7 @@ router.get('/getTraceFile', function(req, res, next) {
         console.log('finished reading');
         // write to file here.
         let result = output;
-        let resList = result.split('------');
+        let resList = result.split('------\n');
         let traceData = JSON.parse(_.head(resList));
         let cpuEventStrs = _.slice(resList, 1);
         let cpuEventsList = [];
@@ -133,6 +133,7 @@ router.get('/getTraceFile', function(req, res, next) {
                 item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
                 item.transactionIds = JSON.parse(item.transactionIds);
                 item.spans = JSON.parse(item.spans);
+                item.innerCalls = JSON.parse(item.innerCalls);
             } catch (error) {
                 console.error('error: %s', error, item);
             }

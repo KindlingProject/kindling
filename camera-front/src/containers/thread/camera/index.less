@@ -26,7 +26,7 @@
             }
         }
         >span {
-            margin-right: 4px;
+            margin: 5px;
             color: var(--body-text-color);
         }
         .operate_tooltip {
@@ -62,6 +62,14 @@
     display: flex;
     flex-direction: column;
 
+    .chart_title {
+        position: absolute;
+        top: 5px;
+        left: 0px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--body-text-color);
+    }
     #top_time_svg {
         width: 100%;
     }
@@ -148,6 +156,29 @@
             font-weight: 200;
             pointer-events: none;
         }
+        .event_rect_small_text {
+            font-size: 9px;
+            font-weight: 200;
+            pointer-events: none;
+        }
+        .event_num_rect {
+            cursor: pointer;
+            fill: #FFFFFF;
+            stroke: #dcdcdc;
+            &.disabled {
+                cursor: not-allowed;
+                fill: #f5f5f5;
+            }
+        }
+        .event_num_text {
+            font-size: 10px;
+            font-weight: 200;
+            stroke: #333333;
+            pointer-events: none;
+            &.disabled {
+                stroke: #c7c7c7;
+            }
+        }
         .trace_line {
             stroke-width: 2px;
             stroke: #3d3d3d;
@@ -169,6 +200,12 @@
             // fill: #E6F4F5;
             stroke: #1291A2;
         }
+        .span_event_rect {
+            fill: #FFFFFF00;
+            stroke-dasharray: 4, 3;
+            stroke-width: 2;
+            stroke: #e97a00;
+        }
     }
     .tooltip_line_warp {
         .tooltip_line_rect {
@@ -189,6 +226,10 @@
         height: 46px;
         #bottom_xaxis_svg {
             .wh();
+        }
+        .xaxis_span_line {
+            stroke: #e97a00;
+            stroke-width: 3px;
         }
     }
     
@@ -262,8 +303,59 @@
             font-size: 10px;
             font-weight: 100;
         }
+        .xaxis_circle {
+            fill: #FFFFFF;
+            stroke: #0f8ff8;
+            stroke-width: 2px;
+        }
     }
     
+    #span_chart {
+        width: 100%;
+        height: 95%;
+        overflow-y: auto;
+    }
+    #span_svg {
+        width: 100%; 
+        height: 100%;
+        .circle_symbol {
+            fill: #FFFFFF;
+            stroke: #333333;
+        }
+        .span_title {
+            font-size: 12px;
+            font-weight: 100;
+            stroke: #828282;
+        }
+        .span_title_line {
+            stroke: #828282;
+            stroke-width: 1px;
+            fill: none;
+        }
+        .span_rect_bg {
+            fill: #f5f5f5;
+            cursor: pointer;
+        }
+        .span_rect {
+            cursor: pointer;
+        }
+        .span_rect_text {
+            font-size: 11px;
+            stroke: #4b4b4b;
+            pointer-events: none;
+            font-weight: 100;
+        }
+    }
+}
+
+.empty_span_warp {
+    width: 100%;
+    text-align: center;
+    padding: 30px;
+    .empty_span_text {
+        text-indent: 2em;
+        margin-bottom: 10px;
+    }
 }
 
 
@@ -337,4 +429,17 @@
     -moz-animation: lock_glowing 1000ms infinite  !important;
     -o-animation: lock_glowing 1000ms infinite  !important;
     animation: lock_glowing 1000ms infinite  !important;
+}
+
+
+@keyframes event_span_glowing {  
+    0% { stroke: #FFFFFF00; }
+    50% { stroke: #e97a00; }
+    100% { stroke: #FFFFFF00; }
+}
+.event_span_shining {
+    -webkit-animation: event_span_glowing 1000ms infinite !important;
+    -moz-animation: event_span_glowing 1000ms infinite  !important;
+    -o-animation: event_span_glowing 1000ms infinite  !important;
+    animation: event_span_glowing 1000ms infinite  !important;
 }

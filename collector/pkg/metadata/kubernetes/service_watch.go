@@ -172,7 +172,19 @@ func OnUpdateService(objOld interface{}, objNew interface{}) {
 }
 
 func onDeleteService(obj interface{}) {
-	service := obj.(*corev1.Service)
+	// Maybe get DeletedFinalStateUnknown instead of *corev1.Pod.
+	// Fix https://github.com/KindlingProject/kindling/issues/445
+	service, ok := obj.(*corev1.Service)
+	if !ok {
+		deletedState, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return
+		}
+		service, ok = deletedState.Obj.(*corev1.Service)
+		if !ok {
+			return
+		}
+	}
 	// 'delete' will delete all such service in MetaDataCache
 	globalServiceInfo.delete(service.Namespace, service.Name)
 	ip := service.Spec.ClusterIP
