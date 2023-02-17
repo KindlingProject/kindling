@@ -598,12 +598,12 @@ func textUserAttribute(attr KeyValue) string {
 	}
 }
 
-var nonAlphanumericRegex = regexp.MustCompile(`[^a-zA-Z0-9 \.\\\/]+`)
+var nonAlphanumericRegex = regexp.MustCompile(`[^a-zA-Z0-9\.\\\/:@\-\=?]+`)
 
 func bytesReader(data []byte, maxLength int) string {
 	if len(data) > maxLength {
-		return nonAlphanumericRegex.ReplaceAllString(string(data[:maxLength]), ".")
+		return nonAlphanumericRegex.ReplaceAllString(string(data[:maxLength]), " ")
 	} else {
-		return nonAlphanumericRegex.ReplaceAllString(string(data), ".")
+		return nonAlphanumericRegex.ReplaceAllString(string(data), " ")
 	}
 }
