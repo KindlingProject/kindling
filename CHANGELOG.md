@@ -5,7 +5,7 @@
 
 ## Unreleased
 ### New features
-- 
+- Support trace-profiling sampling to reduce data output. ([#446](https://github.com/KindlingProject/kindling/pull/446))
 - 
 
 ### Enhancements

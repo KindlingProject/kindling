@@ -43,6 +43,8 @@ func (fw *fileWriter) write(group *model.DataGroup) {
 	switch groupName {
 	case constnames.SingleNetRequestMetricGroup:
 		fw.writeTrace(group)
+	case constnames.SpanEvent:
+		fw.writeTrace(group)
 	case constnames.CameraEventGroupName:
 		fw.writeCpuEvents(group)
 	}
@@ -74,8 +76,7 @@ func (fw *fileWriter) writeTrace(group *model.DataGroup) {
 		return
 	}
 	// /$path/podName_containerName_pid/protocol_contentKey_timestamp_isServer
-	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer)
-	// Check whether we need to roll over the files
+	fileName := getFileName(pathElements.Protocol, pathElements.ContentKey, pathElements.Timestamp, pathElements.IsServer) // Check whether we need to roll over the files
 	err := fw.writeFile(baseDir, fileName, group)
 	if err != nil {
 		fw.logger.Errorf("Failed to write trace to file: %v", err)

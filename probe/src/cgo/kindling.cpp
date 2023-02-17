@@ -31,6 +31,8 @@ int64_t debug_pid = 0;
 int64_t debug_tid = 0;
 char* traceId = new char[128];
 char* isEnter = new char[16];
+char* protocol = new char[32];
+char* url = new char[256];
 char* start_time_char = new char[32];
 char* end_time_char = new char[32];
 char* tid_char = new char[32];
@@ -465,6 +467,8 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
   int val_offset = 0;
   int tmp_offset = 0;
   int traceId_offset = 0;
+  int protocol_offset = 0;
+  int url_offset = 0;
   for (int i = 8; i < data_param.m_len; i++) {
     if (data_val[i] == '!') {
       if (val_offset == 0) {
@@ -472,6 +476,12 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
         traceId_offset = tmp_offset;
       } else if (val_offset == 1) {
         isEnter[tmp_offset] = '\0';
+      } else if (val_offset == 2) {
+        protocol[tmp_offset] = '\0';
+        protocol_offset = tmp_offset;
+      } else if (val_offset == 3) {
+        url[tmp_offset] = '\0';
+        url_offset = tmp_offset;
         break;
       }
       tmp_offset = 0;
@@ -482,7 +492,12 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
       traceId[tmp_offset] = data_val[i];
     } else if (val_offset == 1) {
       isEnter[tmp_offset] = data_val[i];
+    } else if (val_offset == 2) {
+      protocol[tmp_offset] = data_val[i];
+    } else if (val_offset == 3) {
+      url[tmp_offset] = data_val[i];
     }
+
     tmp_offset++;
   }
   p_kindling_event->timestamp = s_evt->get_ts();
@@ -496,6 +511,16 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
   p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
   p_kindling_event->userAttributes[userAttNumber].len = 1;
   userAttNumber++;
+  strcpy(p_kindling_event->userAttributes[userAttNumber].key, "protocol");
+  memcpy(p_kindling_event->userAttributes[userAttNumber].value, protocol, protocol_offset);
+  p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+  p_kindling_event->userAttributes[userAttNumber].len = protocol_offset;
+  userAttNumber++;
+  strcpy(p_kindling_event->userAttributes[userAttNumber].key, "url");
+  memcpy(p_kindling_event->userAttributes[userAttNumber].value, url, url_offset);
+  p_kindling_event->userAttributes[userAttNumber].valueType = CHARBUF;
+  p_kindling_event->userAttributes[userAttNumber].len = url_offset;
+  userAttNumber++;
   strcpy(p_kindling_event->name, "apm_trace_id_event");
   p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
   map<uint64_t, char*>::iterator key =
@@ -506,6 +531,7 @@ void parse_xtid(sinsp_evt* s_evt, char* data_val, sinsp_evt_param data_param,
     strcpy(p_kindling_event->context.tinfo.comm, (char*)threadInfo->m_comm.data());
   }
   p_kindling_event->context.tinfo.pid = threadInfo->m_pid;
+  strcpy(p_kindling_event->context.tinfo.containerId, (char*)threadInfo->m_container_id.data());
   p_kindling_event->paramsNumber = userAttNumber;
 }
 
