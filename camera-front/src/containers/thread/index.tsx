@@ -817,7 +817,6 @@ function Thread() {
                                 }
                                 <Tag>协议类型：{nowTrace?.labels?.protocol}</Tag>
                                 <Tag>响应时间：{formatTimeNs(_.find(nowTrace?.metrics, {Name: 'request_total_time'})?.Data.Value || 0)}</Tag>
-                                <Tag>返回码：{nowTrace?.labels?.http_status_code}</Tag>
                                 <Tag>TimeStamp：{nowTrace?.timestamp ? moment(Math.floor(nowTrace?.timestamp / 1000000)).format('YYYY-MM-DD HH:mm:ss') : ''}</Tag>
                             </div>
                         </div>

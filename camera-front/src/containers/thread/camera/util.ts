@@ -677,8 +677,9 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
          * 当 response_tid 时，timestamp越靠近end_timestamp trace的优先级越高，反之request_tid时，越靠近timestamp优先级越高
          * response_tid找出的traceId的优先级更高（即 requestTraceId != responseTraceId 时，traceId = responseTraceId）
          */
+        threadObj.traceList = transactionIdsList;
         if (!trace_id && transactionIdsList.length > 0) {
-            threadObj.traceList = transactionIdsList;
+            // threadObj.traceList = transactionIdsList;
             if (threadObj.tid === request_tid || threadObj.tid === response_tid) {
                 let traceList = _.filter(transactionIdsList, item => item.timestamp < end_timestamp && item.timestamp > trace.timestamp);
                 if (traceList.length > 0 && threadObj.tid === request_tid) {
