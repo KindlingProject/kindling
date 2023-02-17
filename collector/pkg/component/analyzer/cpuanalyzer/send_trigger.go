@@ -130,7 +130,7 @@ func (ca *CpuAnalyzer) sampleSend() {
 					Pid:          uint32(data.Labels.GetIntValue("pid")),
 					StartTime:    data.Timestamp,
 					SpendTime:    uint64(duration.GetInt().Value),
-					OriginalData: data.Clone(),
+					OriginalData: data,
 				}
 				sendChannel <- event
 				sampleMap.Delete(k)
