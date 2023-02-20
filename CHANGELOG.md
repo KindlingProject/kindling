@@ -9,7 +9,7 @@
 - 
 
 ### Enhancements
-- improve Kindling Event log format.([#455](https://github.com/KindlingProject/kindling/pull/455))
+- Improve Kindling Event log format.([#455](https://github.com/KindlingProject/kindling/pull/455))
 - 
 
 ### Bug fixes
