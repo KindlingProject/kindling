@@ -428,8 +428,8 @@ type Fd struct {
 	Protocol L4Proto
 	// repeated for ipv6, client_ip[0] for ipv4
 	Role  bool
-	Sip   []uint32
-	Dip   []uint32
+	Sip   IPs
+	Dip   IPs
 	Sport uint32
 	Dport uint32
 	// if FD is type of unix_sock
@@ -438,6 +438,29 @@ type Fd struct {
 	// Destination socket endpoint
 	Destination uint64
 }
+
+type IPs []uint32
+
+func (ips IPs) String() string {
+	var text strings.Builder
+	text.WriteString("[")
+	for index, ip := range ips {
+		if index != 0 {
+			text.WriteByte(',')
+		}
+		text.WriteString(IPLong2String(ip))
+	}
+	text.WriteString("]")
+	return text.String()
+}
+
+// func (i ip_int) String() string {
+// 	if i > 0 {
+// 		return IPLong2String(uint32(i))
+// 	} else {
+// 		return ""
+// 	}
+// }
 
 func (m *Fd) GetNum() int32 {
 	if m != nil {
