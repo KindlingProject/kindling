@@ -454,14 +454,6 @@ func (ips IPs) String() string {
 	return text.String()
 }
 
-// func (i ip_int) String() string {
-// 	if i > 0 {
-// 		return IPLong2String(uint32(i))
-// 	} else {
-// 		return ""
-// 	}
-// }
-
 func (m *Fd) GetNum() int32 {
 	if m != nil {
 		return m.Num
