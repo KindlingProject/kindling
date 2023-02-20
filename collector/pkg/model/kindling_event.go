@@ -1,6 +1,12 @@
 package model
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"math"
+	"regexp"
+	"strings"
+)
 
 type Source int32
 
@@ -422,8 +428,8 @@ type Fd struct {
 	Protocol L4Proto
 	// repeated for ipv6, client_ip[0] for ipv4
 	Role  bool
-	Sip   []uint32
-	Dip   []uint32
+	Sip   IPs
+	Dip   IPs
 	Sport uint32
 	Dport uint32
 	// if FD is type of unix_sock
@@ -431,6 +437,21 @@ type Fd struct {
 	Source uint64
 	// Destination socket endpoint
 	Destination uint64
+}
+
+type IPs []uint32
+
+func (ips IPs) String() string {
+	var text strings.Builder
+	text.WriteString("[")
+	for index, ip := range ips {
+		if index != 0 {
+			text.WriteByte(',')
+		}
+		text.WriteString(IPLong2String(ip))
+	}
+	text.WriteString("]")
+	return text.String()
 }
 
 func (m *Fd) GetNum() int32 {
@@ -515,4 +536,79 @@ func (m *Fd) GetDestination() uint64 {
 		return m.Destination
 	}
 	return 0
+}
+
+func TextKindlingEvent(m *KindlingEvent) string {
+	var text strings.Builder
+	text.WriteString("{")
+	// Since Source is always SOURCE_UNKNOW now, just ignore
+	// text.WriteString(fmt.Sprintf("Source: %s,", Source_name[int32(m.Source)]))
+	text.WriteString(fmt.Sprintf("Name:%s ", m.Name))
+	text.WriteString(fmt.Sprintf("Category:%d ", m.Category))
+	text.WriteString(fmt.Sprintf("ParamsNumber:%d ", m.ParamsNumber))
+	text.WriteString(fmt.Sprintf("UserAttributes:%s ", textUserAttributes(m.UserAttributes)))
+	text.WriteString(fmt.Sprintf("Ctx:%+v ", m.Ctx))
+	text.WriteString(fmt.Sprintf("Latency:%d ", m.Latency))
+	text.WriteString(fmt.Sprintf("Timestamp:%d", m.Timestamp))
+	text.WriteString("}")
+	return text.String()
+}
+
+func textUserAttributes(attrs [16]KeyValue) string {
+	var attrsStr strings.Builder
+	var block = false
+	attrsStr.WriteByte('[')
+	for _, attr := range attrs {
+		if attr.ValueType != ValueType_NONE {
+			if block {
+				attrsStr.WriteByte(' ')
+			} else {
+				block = true
+			}
+			attrsStr.WriteString(textUserAttribute(attr))
+		}
+	}
+	attrsStr.WriteByte(']')
+	return attrsStr.String()
+}
+
+func textUserAttribute(attr KeyValue) string {
+	switch attr.ValueType {
+	case ValueType_CHARBUF:
+		fallthrough
+	case ValueType_BYTEBUF:
+		return fmt.Sprintf("%s:<%s>", attr.Key, bytesReader(attr.Value, 200))
+	case ValueType_INT64:
+		fallthrough
+	case ValueType_INT32:
+		fallthrough
+	case ValueType_INT16:
+		fallthrough
+	case ValueType_INT8:
+		return fmt.Sprintf("%s:%d", attr.Key, attr.GetIntValue())
+	case ValueType_UINT64:
+		fallthrough
+	case ValueType_UINT32:
+		fallthrough
+	case ValueType_UINT16:
+		fallthrough
+	case ValueType_UINT8:
+		return fmt.Sprintf("%s:%d", attr.Key, attr.GetUintValue())
+	case ValueType_FLOAT:
+		return fmt.Sprintf("%s:%f", attr.Key, math.Float32frombits(byteOrder.Uint32(attr.Value)))
+	case ValueType_NONE:
+		return "none"
+	default:
+		return fmt.Sprintf("%s:%s", attr.Key, string(attr.Value))
+	}
+}
+
+var nonASCII = regexp.MustCompile(`[^ -~]`)
+
+func bytesReader(data []byte, maxLength int) string {
+	if len(data) > maxLength {
+		return fmt.Sprintf("%s(%d bytes more)", nonASCII.ReplaceAllString(string(data[:maxLength]), "."), len(data)-maxLength)
+	} else {
+		return nonASCII.ReplaceAllString(string(data), ".")
+	}
 }
