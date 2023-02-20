@@ -112,6 +112,18 @@ func UpdateNode(objOld interface{}, objNew interface{}) {
 }
 
 func DeleteNode(obj interface{}) {
-	node := obj.(*corev1.Node)
+	// Maybe get DeletedFinalStateUnknown instead of *corev1.Pod.
+	// Fix https://github.com/KindlingProject/kindling/issues/445
+	node, ok := obj.(*corev1.Node)
+	if !ok {
+		deletedState, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return
+		}
+		node, ok = deletedState.Obj.(*corev1.Node)
+		if !ok {
+			return
+		}
+	}
 	globalNodeInfo.delete(node.Name)
 }

@@ -5,24 +5,19 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/Kindling-project/kindling/collector/pkg/component"
-	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
-	adapter3 "github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
+
+	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
+	adapter3 "github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
 const Type = "prometheus"
-
-const (
-	Int64BoundaryMultiplier = 1e6
-)
-
-var serviceName string
 
 type prometheusExporter struct {
 	cfg                  *Config
@@ -45,7 +40,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 
 	collector := newCollector(cfg, telemetry.Logger)
 	registry := prometheus.NewRegistry()
-	registry.Register(collector)
+	_ = registry.Register(collector)
 
 	netAdapter := adapter3.NewNetAdapter(nil, &adapter3.NetAdapterConfig{
 		StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
@@ -53,7 +48,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 		StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 	})
-	simpleAdapter := adapter3.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, nil)
+	simpleAdapter := adapter3.NewSimpleAdapter([]string{constnames.TcpRttMetricGroupName, constnames.TcpRetransmitMetricGroupName,
+		constnames.TcpDropMetricGroupName}, nil)
 
 	prometheusExporter := &prometheusExporter{
 		cfg:       cfg,
@@ -62,7 +58,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			registry,
 			promhttp.HandlerOpts{
 				ErrorHandling: promhttp.ContinueOnError,
-				ErrorLog:      &promLogger{realLog: telemetry.Logger},
+				ErrorLog:      newPromLogger(telemetry.Logger),
 			},
 		),
 		// metricAggregationMap: cfg.MetricAggregationMap,
@@ -71,13 +67,15 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			constnames.NetRequestMetricGroupName:       {netAdapter},
 			constnames.AggregatedNetRequestMetricGroup: {netAdapter},
 			constnames.SingleNetRequestMetricGroup:     {netAdapter},
-			constnames.TcpMetricGroupName:              {simpleAdapter},
+			constnames.TcpRttMetricGroupName:           {simpleAdapter},
+			constnames.TcpRetransmitMetricGroupName:    {simpleAdapter},
+			constnames.TcpDropMetricGroupName:          {simpleAdapter},
 		},
 		adapter: simpleAdapter,
 	}
 
 	go func() {
-		prometheusExporter.Start(context.Background())
+		_ = prometheusExporter.Start(context.Background())
 	}()
 	return prometheusExporter
 }
@@ -86,18 +84,6 @@ func (p *prometheusExporter) findInstrumentKind(metricName string) (MetricAggreg
 	kind, find := p.metricAggregationMap[metricName]
 	return kind, find
 }
-
-var exponentialInt64Boundaries = []float64{10, 25, 50, 80, 130, 200, 300,
-	400, 500, 700, 1000, 2000, 5000, 30000}
-
-// exponentialInt64NanoSecondsBoundaries applies a multiplier to the exponential
-// Int64Boundaries: [ 5M, 10M, 20M, 40M, ...]
-var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []float64) {
-	for _, f := range bounds {
-		asint = append(asint, Int64BoundaryMultiplier*f)
-	}
-	return
-}(exponentialInt64Boundaries)
 
 func (p *prometheusExporter) Start(_ context.Context) error {
 	ln, err := net.Listen("tcp", p.cfg.PromCfg.Endpoint)

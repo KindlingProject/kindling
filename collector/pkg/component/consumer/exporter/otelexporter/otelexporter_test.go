@@ -7,6 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.uber.org/zap"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/tools/adapter"
@@ -14,12 +21,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
-	"github.com/spf13/viper"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"go.uber.org/zap"
 )
 
 func InitOtelExporter(t *testing.T) exporter.Exporter {
@@ -171,13 +172,13 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 	}
 
 	telemetry := component.NewDefaultTelemetryTools()
-	exporter, _ := newExporters(context.Background(), cfg, telemetry)
+	myExporter, _ := newExporters(context.Background(), cfg, telemetry)
 
 	cont := controller.New(
 		otelprocessor.NewFactory(simple.NewWithHistogramDistribution(
 			histogram.WithExplicitBoundaries(exponentialInt64NanosecondsBoundaries),
-		), exporter.metricExporter),
-		controller.WithExporter(exporter.metricExporter),
+		), myExporter.metricExporter),
+		controller.WithExporter(myExporter.metricExporter),
 		controller.WithCollectPeriod(cfg.StdoutCfg.CollectPeriod),
 		controller.WithResource(nil),
 	)
@@ -198,7 +199,8 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 				StorePodDetail:     cfg.AdapterConfig.NeedPodDetail,
 				StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 			}),
-			adapter.NewSimpleAdapter([]string{constnames.TcpMetricGroupName}, nil),
+			adapter.NewSimpleAdapter([]string{constnames.TcpRttMetricGroupName, constnames.TcpRetransmitMetricGroupName,
+				constnames.TcpDropMetricGroupName}, nil),
 		},
 	}
 
@@ -254,7 +256,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		otelexporter.Consume(metricsGroupsSlice[recordCounter%dimension])
+		_ = otelexporter.Consume(metricsGroupsSlice[recordCounter%dimension])
 		recordCounter++
 	}
 

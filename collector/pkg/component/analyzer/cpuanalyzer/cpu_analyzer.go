@@ -2,6 +2,9 @@ package cpuanalyzer
 
 import (
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 	"strconv"
 	"sync"
 	"time"
@@ -29,7 +32,9 @@ type CpuAnalyzer struct {
 	lock                 sync.RWMutex
 	telemetry            *component.TelemetryTools
 	tidExpiredQueue      *tidDeleteQueue
+	javaTraces           map[string]*TransactionIdEvent
 	nextConsumers        []consumer.Consumer
+	metadata             *kubernetes.K8sMetaDataCache
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -47,10 +52,13 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 		telemetry:     telemetry,
 		nextConsumers: consumers,
 		routineSize:   atomic.NewInt32(0),
+		metadata:      kubernetes.MetaDataCache,
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
+	ca.javaTraces = make(map[string]*TransactionIdEvent, 100000)
 	go ca.TidDelete(30*time.Second, 10*time.Second)
+	go ca.sampleSend()
 	newSelfMetrics(telemetry.MeterProvider, ca)
 	return ca
 }
@@ -89,12 +97,54 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 	isEntry, _ := strconv.ParseUint(event.GetStringUserAttribute("is_enter"), 10, 32)
 	ev := &TransactionIdEvent{
-		Timestamp: event.Timestamp,
-		TraceId:   event.GetStringUserAttribute("trace_id"),
-		IsEntry:   uint32(isEntry),
+		Timestamp:   event.Timestamp,
+		TraceId:     event.GetStringUserAttribute("trace_id"),
+		IsEntry:     uint32(isEntry),
+		Protocol:    event.GetStringUserAttribute("protocol"),
+		Url:         event.GetStringUserAttribute("url"),
+		PidString:   strconv.FormatUint(uint64(event.GetPid()), 10),
+		ContainerId: event.GetContainerId(),
 	}
 	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+	ca.analyzerJavaTraceTime(ev)
+}
+
+func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
+	if ev.IsEntry == 1 {
+		ca.javaTraces[ev.TraceId+ev.PidString] = ev
+	} else {
+		oldEvent := ca.javaTraces[ev.TraceId+ev.PidString]
+		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
+		spendTime := ev.Timestamp - oldEvent.Timestamp
+		contentKey := oldEvent.Url
+		if oldEvent != nil && spendTime > uint64(ca.cfg.JavaTraceSlowTime)*uint64(time.Millisecond) {
+			protocol := oldEvent.Protocol
+			labels := model.NewAttributeMapWithValues(map[string]model.AttributeValue{
+				constlabels.IsSlow:         model.NewBoolValue(true),
+				constlabels.Pid:            model.NewIntValue(pid),
+				constlabels.Protocol:       model.NewStringValue(protocol),
+				constlabels.ContentKey:     model.NewStringValue(contentKey),
+				"isInstallApm":             model.NewBoolValue(true),
+				constlabels.IsServer:       model.NewBoolValue(true),
+				constlabels.HttpApmTraceId: model.NewStringValue(ev.TraceId),
+			})
+			if protocol == "http" {
+				labels.AddStringValue(constlabels.HttpUrl, contentKey)
+			}
+			if kubernetes.IsInitSuccess {
+				k8sInfo, ok := ca.metadata.GetByContainerId(ev.ContainerId)
+				if ok {
+					labels.AddStringValue(constlabels.DstWorkloadName, k8sInfo.RefPodInfo.WorkloadName)
+					labels.AddStringValue(constlabels.DstContainer, k8sInfo.Name)
+					labels.AddStringValue(constlabels.DstPod, k8sInfo.RefPodInfo.PodName)
+				}
+			}
+			metric := model.NewIntMetric(constvalues.RequestTotalTime, int64(spendTime))
+			dataGroup := model.NewDataGroup(constnames.SpanEvent, labels, oldEvent.Timestamp, metric)
+			ReceiveDataGroupAsSignal(dataGroup)
+		}
+	}
 }
 
 func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
@@ -128,6 +178,17 @@ func (ca *CpuAnalyzer) ConsumeSpanEvent(event *model.KindlingEvent) {
 		}
 	}
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
+}
+
+func (ca *CpuAnalyzer) ConsumeTraces(trace SendTriggerEvent) {
+	tid := trace.OriginalData.Labels.GetIntValue(constlabels.RequestTid)
+	threadName := trace.OriginalData.Labels.GetStringValue(constlabels.Comm)
+	event := &InnerCall{
+		StartTime: trace.StartTime,
+		EndTime:   trace.StartTime + trace.SpendTime,
+		Trace:     trace.OriginalData,
+	}
+	ca.PutEventToSegments(trace.Pid, uint32(tid), threadName, event)
 }
 
 func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
@@ -174,7 +235,7 @@ func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName str
 		ca.cpuPidEvents[pid] = tidCpuEvents
 	}
 	timeSegments, exist := tidCpuEvents[tid]
-	maxSegmentSize := ca.cfg.GetSegmentSize()
+	maxSegmentSize := ca.cfg.SegmentSize
 	if exist {
 		endOffset := int(event.EndTimestamp()/nanoToSeconds - timeSegments.BaseTime)
 		if endOffset < 0 {

@@ -15,6 +15,7 @@ const (
 	TimedJavaFutexEventKind
 	TimedTransactionIdEventKind
 	TimedApmSpanEventKind
+	TimedInnerCallEventKind
 )
 
 const (
@@ -22,6 +23,7 @@ const (
 	JavaFutexEventLabel     = "javaFutexEvents"
 	TransactionIdEventLabel = "transactionIds"
 	SpanLabel               = "spans"
+	InnerCallLabel          = "innerCalls"
 )
 
 type TimedEvent interface {
@@ -49,6 +51,7 @@ type Segment struct {
 	JavaFutexEvents []TimedEvent `json:"javaFutexEvents"`
 	TransactionIds  []TimedEvent `json:"transactionIds"`
 	Spans           []TimedEvent `json:"spans"`
+	InnerCalls      []TimedEvent `json:"innerCalls"`
 	IsSend          int
 	IndexTimestamp  string `json:"indexTimestamp"`
 }
@@ -61,6 +64,7 @@ func newSegment(startTime uint64, endTime uint64) *Segment {
 		JavaFutexEvents: make([]TimedEvent, 0),
 		TransactionIds:  make([]TimedEvent, 0),
 		Spans:           make([]TimedEvent, 0),
+		InnerCalls:      make([]TimedEvent, 0),
 		IsSend:          0,
 		IndexTimestamp:  "",
 	}
@@ -76,6 +80,8 @@ func (s *Segment) putTimedEvent(event TimedEvent) {
 		s.TransactionIds = append(s.TransactionIds, event)
 	case TimedApmSpanEventKind:
 		s.Spans = append(s.Spans, event)
+	case TimedInnerCallEventKind:
+		s.InnerCalls = append(s.InnerCalls, event)
 	}
 }
 
@@ -102,6 +108,10 @@ func (s *Segment) toDataGroup(parent *TimeSegments) *model.DataGroup {
 	spanEventString, err := json.Marshal(s.Spans)
 	if err == nil {
 		labels.AddStringValue(SpanLabel, string(spanEventString))
+	}
+	innerCallString, err := json.Marshal(s.InnerCalls)
+	if err == nil {
+		labels.AddStringValue(InnerCallLabel, string(innerCallString))
 	}
 	return model.NewDataGroup(constnames.CameraEventGroupName, labels, s.StartTime)
 }
@@ -149,9 +159,13 @@ func (j *JavaFutexEvent) Kind() TimedEventKind {
 }
 
 type TransactionIdEvent struct {
-	Timestamp uint64 `json:"timestamp"`
-	TraceId   string `json:"traceId"`
-	IsEntry   uint32 `json:"isEntry"`
+	Timestamp   uint64 `json:"timestamp"`
+	TraceId     string `json:"traceId"`
+	IsEntry     uint32 `json:"isEntry"`
+	Protocol    string `json:"protocol"`
+	Url         string `json:"url"`
+	PidString   string `json:"pidString"`
+	ContainerId string `json:"containerId"`
 }
 
 func (t *TransactionIdEvent) StartTimestamp() uint64 {
@@ -183,4 +197,22 @@ func (j *ApmSpanEvent) EndTimestamp() uint64 {
 
 func (j *ApmSpanEvent) Kind() TimedEventKind {
 	return TimedApmSpanEventKind
+}
+
+type InnerCall struct {
+	StartTime uint64           `json:"startTime"`
+	EndTime   uint64           `json:"endTime"`
+	Trace     *model.DataGroup `json:"trace"`
+}
+
+func (c *InnerCall) StartTimestamp() uint64 {
+	return c.StartTime
+}
+
+func (c *InnerCall) EndTimestamp() uint64 {
+	return c.EndTime
+}
+
+func (c *InnerCall) Kind() TimedEventKind {
+	return TimedInnerCallEventKind
 }

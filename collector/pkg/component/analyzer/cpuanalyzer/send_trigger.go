@@ -1,6 +1,7 @@
 package cpuanalyzer
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -10,12 +11,17 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 )
 
-var eventsWindowsDuration = 6 * time.Second
 var (
 	enableProfile bool
 	once          sync.Once
 	sendChannel   chan SendTriggerEvent
+	sampleMap     sync.Map
+	isInstallApm  map[uint64]bool
 )
+
+func init() {
+	isInstallApm = make(map[uint64]bool, 100000)
+}
 
 // ReceiveDataGroupAsSignal receives model.DataGroup as a signal.
 // Signal is used to trigger to send CPU on/off events
@@ -30,18 +36,18 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		})
 		return
 	}
-	if data.Labels.GetBoolValue(constlabels.IsSlow) {
-		duration, ok := data.GetMetric(constvalues.RequestTotalTime)
-		if !ok {
+	if data.Labels.GetBoolValue("isInstallApm") {
+		isInstallApm[uint64(data.Labels.GetIntValue("pid"))] = true
+	} else {
+		if isInstallApm[uint64(data.Labels.GetIntValue("pid"))] && data.Labels.GetBoolValue(constlabels.IsServer) {
 			return
 		}
-		event := SendTriggerEvent{
-			Pid:          uint32(data.Labels.GetIntValue("pid")),
-			StartTime:    data.Timestamp,
-			SpendTime:    uint64(duration.GetInt().Value),
-			OriginalData: data.Clone(),
+	}
+	if data.Labels.GetBoolValue(constlabels.IsSlow) {
+		_, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + strconv.FormatInt(data.Labels.GetIntValue("pid"), 10))
+		if !ok {
+			sampleMap.Store(data.Labels.GetStringValue(constlabels.ContentKey)+strconv.FormatInt(data.Labels.GetIntValue("pid"), 10), data)
 		}
-		sendChannel <- event
 	}
 }
 
@@ -52,50 +58,95 @@ type SendTriggerEvent struct {
 	OriginalData *model.DataGroup `json:"originalData"`
 }
 
+// ReceiveSendSignal todo: Modify the sampling algorithm to ensure that the data sampled by each multi-trace system is uniform. Now this is written because it is easier to implement
 func (ca *CpuAnalyzer) ReceiveSendSignal() {
 	// Break the for loop if the channel is closed
 	for sendContent := range sendChannel {
+		// CpuAnalyzer consumes all traces from the client-side to add them to TimeSegments
+		// These traces are not considered as signals, so we skip them here. Note they won't
+		// be consumed by the following consumers.
+		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsServer) {
+			ca.ConsumeTraces(sendContent)
+			continue
+		}
+		// Only send the slow traces as the signals
+		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsSlow) {
+			continue
+		}
+		// Store the traces first
 		for _, nexConsumer := range ca.nextConsumers {
 			_ = nexConsumer.Consume(sendContent.OriginalData)
 		}
 		// Copy the value and then get its pointer to create a new task
 		triggerEvent := sendContent
-		task := &SendEventsTask{0, ca, &triggerEvent}
+		task := &SendEventsTask{
+			cpuAnalyzer:              ca,
+			triggerEvent:             &triggerEvent,
+			edgeEventsWindowDuration: time.Duration(ca.cfg.EdgeEventsWindowSize) * time.Second,
+		}
 		expiredCallback := func() {
 			ca.routineSize.Dec()
 		}
 		// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
-		NewAndStartScheduledTaskRoutine(1*time.Second, eventsWindowsDuration+1, task, expiredCallback)
+		NewAndStartScheduledTaskRoutine(1*time.Second, time.Duration(ca.cfg.EdgeEventsWindowSize)*time.Second+1, task, expiredCallback)
 		ca.routineSize.Inc()
 	}
 }
 
 type SendEventsTask struct {
-	tickerCount  int
-	cpuAnalyzer  *CpuAnalyzer
-	triggerEvent *SendTriggerEvent
+	tickerCount              int
+	cpuAnalyzer              *CpuAnalyzer
+	triggerEvent             *SendTriggerEvent
+	edgeEventsWindowDuration time.Duration
 }
 
 // |________________|______________|_________________|
-// 0      (5s)      1  (duration)  2      (5s)       3
+// 0  (edgeWindow)  1  (duration)  2  (edgeWindow)   3
 // 0: The start time of the windows where the events we need are.
 // 1: The start time of the "trace".
 // 2: The end time of the "trace". This is nearly equal to the creating time of the task.
 // 3: The end time of the windows where the events we need are.
 func (t *SendEventsTask) run() {
-	currentWindowsStartTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime - uint64(eventsWindowsDuration)
-	currentWindowsEndTime := uint64(t.tickerCount*1e9) + t.triggerEvent.StartTime + t.triggerEvent.SpendTime
+	currentWindowsStartTime := uint64(t.tickerCount)*uint64(time.Second) + t.triggerEvent.StartTime - uint64(t.edgeEventsWindowDuration)
+	currentWindowsEndTime := uint64(t.tickerCount)*uint64(time.Second) + t.triggerEvent.StartTime + t.triggerEvent.SpendTime
 	t.tickerCount++
 	// keyElements are used to correlate the cpuEvents with the trace.
 	keyElements := filepathhelper.GetFilePathElements(t.triggerEvent.OriginalData, t.triggerEvent.StartTime)
 	t.cpuAnalyzer.sendEvents(keyElements.ToAttributes(), t.triggerEvent.Pid, currentWindowsStartTime, currentWindowsEndTime)
 }
 
+func (ca *CpuAnalyzer) sampleSend() {
+	timer := time.NewTicker(time.Duration(ca.cfg.SamplingInterval) * time.Second)
+	for {
+		select {
+		case <-timer.C:
+			sampleMap.Range(func(k, v interface{}) bool {
+				data := v.(*model.DataGroup)
+				duration, ok := data.GetMetric(constvalues.RequestTotalTime)
+				if !ok {
+					return false
+				}
+				event := SendTriggerEvent{
+					Pid:          uint32(data.Labels.GetIntValue("pid")),
+					StartTime:    data.Timestamp,
+					SpendTime:    uint64(duration.GetInt().Value),
+					OriginalData: data,
+				}
+				sendChannel <- event
+				sampleMap.Delete(k)
+				return true
+			})
+
+		}
+	}
+
+}
+
 func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {
 	ca.lock.RLock()
 	defer ca.lock.RUnlock()
 
-	maxSegmentSize := ca.cfg.GetSegmentSize()
+	maxSegmentSize := ca.cfg.SegmentSize
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
 		ca.telemetry.Logger.Infof("Not found the cpu events with the pid=%d, startTime=%d, endTime=%d",

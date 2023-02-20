@@ -16,14 +16,14 @@ For more ways to contribute, check out the [Open Source Guides](https://opensour
 Before submitting a new issue, try to make sure someone hasn’t already reported the problem. You can look through the existing issues for similar issues.
 ​
 
-[Report a bug](https://github.com/Kindling-project/kindling/issues/new?assignees=&labels=&template=bug_report.md&title=) by submitting a new issue. Make sure to follow the issue template and add more detailed information which will help us reproduce the problem.
+[Report a bug](https://github.com/KindlingProject/kindling/issues/new?assignees=&labels=&template=bug_report.md&title=) by submitting a new issue. Make sure to follow the issue template and add more detailed information which will help us reproduce the problem.
 
 ## Triage issues
 If you don't have the knowledge or time to code, consider helping with issue triage. The community will thank you for saving them time by spending some of yours.
 Read more about the ways you can [Triage issues](contribute/triage_issues.md).
 
 ## Answering questions
-It's important to us to help the users who have problems with Kindling, and we’d love your help. Go to [disscussions](https://github.com/Kindling-project/kindling/discussions), you can find unanswered questions, and you can answer those questions.
+It's important to us to help the users who have problems with Kindling, and we’d love your help. Go to [disscussions](https://github.com/KindlingProject/kindling/discussions), you can find unanswered questions, and you can answer those questions.
 
 
 ## Your first contribution
@@ -33,7 +33,7 @@ The first step to starting to contribute to Kindling is finding something to wor
 
 + How to find documents improving issues? Kindling has a `documentation` label for issues that you can improve Kindling docs.
 
-If you are ready to contribute code changes, review the [developer guide](http://www.kindling.space:33215/project-1/doc-10/) for how to set up your local environment.
+If you are ready to contribute code changes, review the [developer guide](http://kindling.harmonycloud.cn/docs/developer-guide/build-kindling-container-image/) for how to set up your local environment.
 When you want to submit your local changes, read about [create pull request](contribute/create_pull_request.md).
 
 ## Sign your commits

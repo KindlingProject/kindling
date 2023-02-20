@@ -72,10 +72,10 @@ router.get("/getAllTraceFileList", function(req, res, next) {
             let fileStats = fs.statSync(path.join(filePath, file));
             if (fileStats.isFile) {
                 let fileNameList = file.split('_');
-                let contentKeyBuffer = new Buffer.from(fileNameList[1], 'base64')
+                let contentKeyBuffer = new Buffer.from(fileNameList[2], 'base64')
                 let contentKey = contentKeyBuffer.toString();
                 let newList = [].concat(fileNameList);
-                newList[1] = contentKey;
+                newList[2] = contentKey;
                 let showFileName = _.join(newList, '_');
                 list.push({
                     fileName: file,
@@ -113,7 +113,7 @@ router.get('/getTraceFile', function(req, res, next) {
         console.log('finished reading');
         // write to file here.
         let result = output;
-        let resList = result.split('------');
+        let resList = result.split('------\n');
         let traceData = JSON.parse(_.head(resList));
         let cpuEventStrs = _.slice(resList, 1);
         let cpuEventsList = [];
@@ -133,6 +133,7 @@ router.get('/getTraceFile', function(req, res, next) {
                 item.javaFutexEvents = JSON.parse(item.javaFutexEvents);
                 item.transactionIds = JSON.parse(item.transactionIds);
                 item.spans = JSON.parse(item.spans);
+                item.innerCalls = JSON.parse(item.innerCalls);
             } catch (error) {
                 console.error('error: %s', error, item);
             }

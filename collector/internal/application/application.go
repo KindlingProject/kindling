@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/spf13/viper"
+	"go.uber.org/multierr"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/cpuanalyzer"
@@ -20,8 +23,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/controller"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver/cgoreceiver"
-	"github.com/spf13/viper"
-	"go.uber.org/multierr"
 )
 
 type Application struct {
@@ -73,14 +74,10 @@ func (a *Application) Shutdown() error {
 	return multierr.Combine(a.receiver.Shutdown(), a.analyzerManager.ShutdownAll(a.telemetry.GetGlobalTelemetryTools().Logger))
 }
 
-func initFlags() error {
-	return nil
-}
-
 func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterReceiver(cgoreceiver.Cgo, cgoreceiver.NewCgoReceiver, &cgoreceiver.Config{})
-	a.componentsFactory.RegisterAnalyzer(network.Network.String(), network.NewNetworkAnalyzer, &network.Config{})
-	a.componentsFactory.RegisterAnalyzer(cpuanalyzer.CpuProfile.String(), cpuanalyzer.NewCpuAnalyzer, &cpuanalyzer.Config{})
+	a.componentsFactory.RegisterAnalyzer(network.Network.String(), network.NewNetworkAnalyzer, network.NewDefaultConfig())
+	a.componentsFactory.RegisterAnalyzer(cpuanalyzer.CpuProfile.String(), cpuanalyzer.NewCpuAnalyzer, cpuanalyzer.NewDefaultConfig())
 	a.componentsFactory.RegisterProcessor(k8sprocessor.K8sMetadata, k8sprocessor.NewKubernetesProcessor, &k8sprocessor.DefaultConfig)
 	a.componentsFactory.RegisterExporter(otelexporter.Otel, otelexporter.NewExporter, &otelexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(tcpmetricanalyzer.TcpMetric.String(), tcpmetricanalyzer.NewTcpMetricAnalyzer, &tcpmetricanalyzer.Config{})
@@ -99,7 +96,7 @@ func (a *Application) readInConfig(path string) error {
 	}
 	a.telemetry.ConstructConfig(a.viper)
 	err = a.componentsFactory.ConstructConfig(a.viper)
-	a.controllerFactory.ConstructConfig(a.viper, a.telemetry.GetGlobalTelemetryTools())
+	_ = a.controllerFactory.ConstructConfig(a.viper, a.telemetry.GetGlobalTelemetryTools())
 	if err != nil {
 		return fmt.Errorf("error happened while constructing config: %w", err)
 	}

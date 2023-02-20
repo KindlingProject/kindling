@@ -63,7 +63,7 @@ To get started with issue triage and finding issues that haven't been triaged yo
 
 ### Browse unlabeled issues
 
-The easiest and straight forward way of getting started and finding issues that haven't been triaged is to browse [unlabeled issues](https://github.com/Kindling-project/kindling/issues?q=is%3Aopen+is%3Aissue+no%3Alabel) and starting from the bottom and working yourself to the top.
+The easiest and straight forward way of getting started and finding issues that haven't been triaged is to browse [unlabeled issues](https://github.com/KindlingProject/kindling/issues?q=is%3Aopen+is%3Aissue+no%3Alabel) and starting from the bottom and working yourself to the top.
 
 ### Subscribe to all notifications
 
@@ -73,7 +73,7 @@ It's highly recommended that you set up filters to automatically remove emails f
 
 ## 2. Ensure the issue contains basic information
 
-Before triaging an issue very far, make sure that the issue's author provided the standard issue information. This will help you make an educated recommendation on how to categorize the issue. The kindling project utilizes [GitHub issue templates](https://github.com/Kindling-project/kindling/issues/new/choose) to guide contributors to provide standard information that must be included for each type of template or type of issue.
+Before triaging an issue very far, make sure that the issue's author provided the standard issue information. This will help you make an educated recommendation on how to categorize the issue. The kindling project utilizes [GitHub issue templates](https://github.com/KindlingProject/kindling/issues/new/choose) to guide contributors to provide standard information that must be included for each type of template or type of issue.
 
 ### Standard issue information that must be included
 
@@ -182,7 +182,7 @@ First, evaluate if the documentation makes sense to be included in the Kindling 
 
 - Is this something we want/can maintain as a project?
 - Is this referring to usage of some specific features and in that case is that a popular use case ?
-- If unsure, kindly and politely add a comment explaining that we would need [discussions](https://github.com/Kindling-project/kindling/discussions) to identify that lots of other users want/need this.
+- If unsure, kindly and politely add a comment explaining that we would need [discussions](https://github.com/KindlingProject/kindling/discussions) to identify that lots of other users want/need this.
 
 Second, label the issue `type/docs` and at least one `area/* label.
 
@@ -200,7 +200,7 @@ There's a minor typo/error/lack of information that adds a lot of confusion for 
 
 ### Support requests
 
-1. Kindly and politely direct the issue author to the [github discussion](https://github.com/Kindling-project/kindling/discussions) and explain that GitHub is mainly used for tracking bugs and feature requests. If possible, it's usually a good idea to add some pointers to the issue author's question.
+1. Kindly and politely direct the issue author to the [github discussion](https://github.com/KindlingProject/kindling/discussions) and explain that GitHub is mainly used for tracking bugs and feature requests. If possible, it's usually a good idea to add some pointers to the issue author's question.
 2. Close the issue and label it with `type/question`.
 
 ##  4. Prioritization of issues
@@ -271,7 +271,7 @@ Depending on the issue and/or priority, it's always a good idea to consider sign
 
 ## Investigation of issues
 
-When an issue has all basic information provided, but the triage responsible haven't been able to reproduce the reported problem at a first glance, the issue is labeled [Needs investigation](https://github.com/Kindling-project/kindling/labels/needs%20investigation). Depending on the perceived severity the investigation will either be delegated to another maintainer for further investigation or put on hold until someone else (maintainer or contributor) picks it up and eventually starts investigating it.
+When an issue has all basic information provided, but the triage responsible haven't been able to reproduce the reported problem at a first glance, the issue is labeled [Needs investigation](https://github.com/KindlingProject/kindling/labels/needs%20investigation). Depending on the perceived severity the investigation will either be delegated to another maintainer for further investigation or put on hold until someone else (maintainer or contributor) picks it up and eventually starts investigating it.
 
 Investigating issues can be a very time consuming task, especially for the maintainers, given  the complexities of Kindling. There is a certain number of combinations that are more common than others, and these are in general easier for maintainers to investigate.
 

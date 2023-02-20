@@ -22,7 +22,9 @@ func newValueRecorder(recorderName string, aggKindMap map[string][]KindConfig) *
 	}
 }
 
-// Record is thread-safe, and return the result value
+// Record is thread-safe, and return the result value.
+// A recorder can record only the metrics that are the same as the initial ones when using the same key.
+// But it can record different metrics with different keys.
 func (r *valueRecorder) Record(key *aggregator.LabelKeys, metricValues []*model.Metric, timestamp uint64) {
 	if key == nil {
 		return

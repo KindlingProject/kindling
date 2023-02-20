@@ -1,8 +1,8 @@
 # Kindling
 
-[![License](https://img.shields.io/badge/license-Apache2.0-blue.svg)](https://github.com/Kindling-project/kindling/blob/main/LICENSE)
-[![Doc](https://img.shields.io/badge/docs-latest-green.svg)](http://www.kindling.space:33215/project-1/) 
-[![Go Report Card](https://goreportcard.com/badge/github.com/Kindling-project/kindling/collector)](https://goreportcard.com/report/github.com/Kindling-project/kindling/collector)
+[![License](https://img.shields.io/badge/license-Apache2.0-blue.svg)](https://github.com/KindlingProject/kindling/blob/main/LICENSE)
+[![Doc](https://img.shields.io/badge/docs-latest-green.svg)](http://kindling.harmonycloud.cn/docs/overview-and-concepts/overview/) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/KindlingProject/kindling/collector)](https://goreportcard.com/report/github.com/KindlingProject/kindling/collector)
 
 Visit our [Kindling website](http://kindling.harmonycloud.cn/) for more information.
 
@@ -91,21 +91,21 @@ The standard version will be open-sourced in 2023.
 
 ## Get started
 
-You can deploy Kindling easily, check out the [Installation Guide](http://www.kindling.space:33215/project-1/doc-3/) for details.
+You can deploy Kindling easily, check out the [Installation Guide](http://kindling.harmonycloud.cn/docs/installation/kindling-agent/requirements/) for details.
 
 ## Documentation
 
-The Kindling documentation is available on our [Kindling website]( http://www.kindling.space:33215/project-1/)
+The Kindling documentation is available on our [Kindling website](http://kindling.harmonycloud.cn/docs/overview-and-concepts/overview/)
 
 ## Contributing 
 
-Contributions are welcome, you can contribute in many ways: report issues, help us reproduce issues, fix bugs, add features, give us advice on GitHub discussion, and so on. If you are interested in joining us to unveil the eBPF in the Kubernetes area, you can start by reading the [Contributing Guide](https://github.com/Kindling-project/kindling/blob/main/CONTRIBUTING.md).
+Contributions are welcome, you can contribute in many ways: report issues, help us reproduce issues, fix bugs, add features, give us advice on GitHub discussion, and so on. If you are interested in joining us to unveil the eBPF in the Kubernetes area, you can start by reading the [Contributing Guide](https://github.com/KindlingProject/kindling/blob/main/CONTRIBUTING.md).
 
 ## Contact
 
 If you have questions or ideas, please feel free to reach out to us in the following ways:
 
-- Check out our [discussions](https://github.com/Kindling-project/kindling/discussions)
+- Check out our [discussions](https://github.com/KindlingProject/kindling/discussions)
 - Join us on our [Slack team](https://join.slack.com/t/kindling-world/shared_invite/zt-1fs2yco0i-CMc0yRIqc_jqE~2aHxsNRA)
 - Join our WeChat Group (in Chinese)
 
@@ -113,5 +113,5 @@ If you have questions or ideas, please feel free to reach out to us in the follo
 
 ## License
 
-Kindling is distributed under [Apache License, Version2.0](https://github.com/Kindling-project/kindling/blob/main/LICENSE).
+Kindling is distributed under [Apache License, Version2.0](https://github.com/KindlingProject/kindling/blob/main/LICENSE).
 

@@ -41,7 +41,9 @@ const (
 
 	CameraEventGroupName = "camera_event_group"
 
-	TcpMetricGroupName        = "tcp_metric_metric_group"
-	NodeMetricGroupName       = "node_metric_metric_group"
-	TcpConnectMetricGroupName = "tcp_connect_metric_group"
+	TcpRttMetricGroupName        = "tcp_rtt_metric_group"
+	TcpRetransmitMetricGroupName = "tcp_retransmit_metric_group"
+	TcpDropMetricGroupName       = "tcp_drop_metric_group"
+	NodeMetricGroupName          = "node_metric_metric_group"
+	TcpConnectMetricGroupName    = "tcp_connect_metric_group"
 )
