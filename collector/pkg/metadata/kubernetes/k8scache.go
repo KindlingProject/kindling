@@ -153,13 +153,13 @@ func (c *K8sMetaDataCache) GetContainerByIpPort(ip string, port uint32) (*K8sCon
 	if !ok {
 		// find the first pod whose network mode is not hostnetwork
 		for _, info := range portContainerInfo {
-			if !info.RefPodInfo.isHostNetwork && info.RefPodInfo.WorkloadKind != "daemonset" {
+			if !info.RefPodInfo.isHostNetwork {
 				return info, true
 			}
 		}
 		return nil, false
 	} else {
-		if !containerInfo.RefPodInfo.isHostNetwork && containerInfo.RefPodInfo.WorkloadKind != "daemonset" {
+		if !containerInfo.RefPodInfo.isHostNetwork {
 			return containerInfo, true
 		}
 		return nil, false
@@ -183,7 +183,7 @@ func (c *K8sMetaDataCache) GetPodByIp(ip string) (*K8sPodInfo, bool) {
 	}
 	// find the first pod whose network mode is not hostnetwork
 	for _, info := range portContainerInfo {
-		if !info.RefPodInfo.isHostNetwork && info.RefPodInfo.WorkloadKind != "daemonset" {
+		if !info.RefPodInfo.isHostNetwork {
 			return info.RefPodInfo, true
 		}
 	}

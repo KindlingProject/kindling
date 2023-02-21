@@ -111,6 +111,18 @@ func OnUpdateReplicaSet(objOld interface{}, objNew interface{}) {
 }
 
 func onDeleteReplicaSet(obj interface{}) {
-	rs := obj.(*appv1.ReplicaSet)
+	// Maybe get DeletedFinalStateUnknown instead of *corev1.Pod.
+	// Fix https://github.com/KindlingProject/kindling/issues/445
+	rs, ok := obj.(*appv1.ReplicaSet)
+	if !ok {
+		deletedState, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return
+		}
+		rs, ok = deletedState.Obj.(*appv1.ReplicaSet)
+		if !ok {
+			return
+		}
+	}
 	globalRsInfo.deleteOwnerReference(mapKey(rs.Namespace, rs.Name))
 }
