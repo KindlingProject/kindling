@@ -206,7 +206,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | --- | --- | --- |
 | `kindling_tcp_srtt_microseconds` | Gauge | Smoothed round trip time of the TCP socket |
 | `kindling_tcp_packet_loss_total` | Counter | Total number of dropped packets |
-| `kindling_tcp_retransmit_total` | Counter | Total times of retransmitting happens (not packets count) |
+| `kindling_tcp_retransmit_total` | Counter | Total number of resending segments  |
 
 ### Labels List
 | **Label Name** | **Example** | **Notes** |
@@ -229,6 +229,9 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | `dst_container` | business-container | The name of the destination container |
 | `dst_ip` | 10.1.11.24 | Pod's IP by default. If the destination is not a pod in Kubernetes, this is the IP address of an external entity |
 | `dst_port` | 80 | The listening port of the destination container, if applicable |
+
+### Notes
+**Note 1**:  Before Kindling v0.7.0, the `kindling_tcp_retransmit_total` was used to count how many retransmit event happened,which is less than total number of resending segments since Linux may resending mutiple segments durning one retransmit event.
 
 ## TCP Socket Connects Metrics
 
