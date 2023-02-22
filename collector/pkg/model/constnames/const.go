@@ -14,7 +14,6 @@ const (
 	SendMsgEvent  = "sendmsg"
 	SendMMsgEvent = "sendmmsg"
 	RecvMsgEvent  = "recvmsg"
-	RecvMMsgEvent = "recvmmsg"
 	ConnectEvent  = "connect"
 
 	TcpCloseEvent          = "tcp_close"

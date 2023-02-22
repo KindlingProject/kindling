@@ -101,12 +101,11 @@ func (na *NetworkAnalyzer) ConsumableEvents() []string {
 		constnames.SendMsgEvent,
 		constnames.RecvMsgEvent,
 		constnames.SendMMsgEvent,
-		constnames.RecvMMsgEvent,
 	}
 }
 
 func (na *NetworkAnalyzer) Start() error {
-	// TODO When import multi annalyzers, this part should move to factory. The metric will relate with analyzers.
+	// TODO When import multi analyzers, this part should move to factory. The metric will relate with analyzers.
 	newSelfMetrics(na.telemetry.MeterProvider, na)
 
 	go na.consumerFdNoReusingTrace()
@@ -195,6 +194,16 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 		return err
 	}
 	if isRequest {
+		// We have only seen DNS queries use "sendmmsg" to send requests until now.
+		// Here we consider different messages as different requests which is what we have figured.
+		if evt.Name == constnames.SendMMsgEvent {
+			na.telemetry.Logger.Warnf("%x", evt.GetData())
+			evtSlices := model.ConvertSendmmsg(evt)
+			for _, e := range evtSlices {
+				_ = na.analyseRequest(e)
+			}
+			return nil
+		}
 		return na.analyseRequest(evt)
 	} else {
 		return na.analyseResponse(evt)
