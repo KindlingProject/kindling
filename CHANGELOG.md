@@ -14,7 +14,7 @@
 
 ### Bug fixes
 - 
-- Collector subscribes `sendmmsg` and `recvmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
+- Collector subscribes `sendmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
 - Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
 - 
 
