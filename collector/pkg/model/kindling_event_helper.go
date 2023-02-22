@@ -117,6 +117,21 @@ func (k *KindlingEvent) GetUserAttribute(key string) *KeyValue {
 	return nil
 }
 
+func (k *KindlingEvent) SetUserAttribute(key string, value []byte) {
+	if k.ParamsNumber == 0 {
+		return
+	}
+	for index, keyValue := range k.UserAttributes {
+		if index+1 > int(k.ParamsNumber) {
+			break
+		}
+		if keyValue.Key == key {
+			k.UserAttributes[index].Value = value
+			break
+		}
+	}
+}
+
 func (k *KindlingEvent) GetPid() uint32 {
 	ctx := k.GetCtx()
 	if ctx == nil {

@@ -13,9 +13,14 @@ func ConvertSendmmsg(evt *KindlingEvent) []*KindlingEvent {
 	data := evt.GetData()
 	bytesSlice := splitDataBytes(data)
 	for _, bytes := range bytesSlice {
-		evtTemplate := *evt
-		evtTemplate.GetUserAttribute("data").Value = bytes
-		ret = append(ret, &evtTemplate)
+		evtTemplate := new(KindlingEvent)
+		// Clone the original event
+		*evtTemplate = *evt
+		lenBytes := make([]byte, 8)
+		byteOrder.PutUint64(lenBytes, uint64(len(bytes)))
+		evtTemplate.SetUserAttribute("res", lenBytes)
+		evtTemplate.SetUserAttribute("data", bytes)
+		ret = append(ret, evtTemplate)
 	}
 	return ret
 }
@@ -33,9 +38,13 @@ func splitDataBytes(data []byte) [][]byte {
 		fragmentEnd := sizeEndIndex + int(size)
 		var childData []byte
 		if fragmentEnd < dataLength {
-			childData = data[sizeEndIndex:fragmentEnd]
+			// Copy the array to avoid the slice being changed unexpectedly later
+			childData = make([]byte, fragmentEnd-sizeEndIndex)
+			copy(childData, data[sizeEndIndex:fragmentEnd])
 		} else {
-			childData = data[sizeEndIndex:]
+			// Copy the array to avoid the slice being changed unexpectedly later
+			childData = make([]byte, dataLength-sizeEndIndex)
+			copy(childData, data[sizeEndIndex:])
 		}
 		ret = append(ret, childData)
 		startIndex = fragmentEnd

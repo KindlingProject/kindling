@@ -129,6 +129,8 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 		}
 		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 		na.snaplen = 200
+		// Do not start the timeout check otherwise the test maybe fail
+		na.cfg.EnableTimeoutCheck = false
 		_ = na.Start()
 	}
 	return na
