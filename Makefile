@@ -25,22 +25,7 @@ PROBE_PATCH_FILE := $(PROBE_PATH)/cmake/modules/agent-libs.cmake
 
 kernelVersion = $(shell uname -r)
 ErrorExit = exit 1
-
-ifneq ($(shell cat /etc/os-release | grep Ubuntu | wc -l),0)
-	KernelName = linux-headers-$(kernelVersion)
-	CheckCommand = dpkg -l | grep $(KernelName)
-	InstallCommand = sudo apt-get -y install $(KernelName)
-else
-	ifneq ($(shell cat /etc/os-release | grep CentOS | wc -l),0)
-		KernelName = kernel-devel-$(kernelVersion)
-		CheckCommand = yum list installed |grep $(KernelName)
-		InstallCommand = sudo yum -y install $(KernelName)
-	else
-		KernelName = NotSupport
-		CheckCommand = $(ErrorExit)
-		InstallCommand = $(ErrorExit)
-	endif
-endif
+SuccessExit = exit 0
 
 LIBS_IMAGE ?= kindlingproject/kernel-builder:latest
 KINDLING_IMAGE ?= kindlingproject/agent-builder:latest
@@ -67,24 +52,40 @@ builder-images:
 ## Check kernel headers exists or download, support Ubuntu, CentOS
 .PHONY: kernel-headers
 kernel-headers:
-	@echo "Checking kernel headers...";
-	@if [ "$(KernelName)" = "NotSupport" ]; then \
-		echo "System kernel is not the expected Ubuntu and CentOS.Try installing kernel headers locally"; \
-		$(ErrorExit); \
+	@if [ $(shell cat /etc/os-release | grep Ubuntu | wc -l) -ne 0 ]; then \
+		make _ubuntu-headers; \
+	else \
+		if [ $(shell cat /etc/os-release | grep CentOS | wc -l) -ne 0 ]; then \
+			make _centos-kernel; \
+		else \
+			echo "System kernel is not the expected Ubuntu and CentOS.Try installing kernel headers locally"; \
+			$(ErrorExit); \
+		fi \
 	fi
 
-	@if [ -z "$(shell exit 1)" ]; then \
-		echo "Downloading $(KernelName)..."; \
-		$(InstallCommand); \
+.PHONY: _ubuntu-headers
+_ubuntu-headers:
+	@if [ -z "$(shell dpkg -l | grep linux-headers-$(kernelVersion))" ]; then \
+		echo "Downloading linux-headers-$(kernelVersion)..."; \
+		sudo apt-get -y install linux-headers-$(kernelVersion); \
 	else \
-		echo "$(KernelName) already installed"; \
+		echo "Linux-headers-$(kernelVersion) already installed"; \
+	fi
+
+.PHONY: _centos-kernel
+_centos-kernel:
+	@if [ -z "$(shell yum list installed |grep kernel-devel-$(kernelVersion))" ]; then \
+		echo "Downloading kernel-devel-$(kernelVersion)..."; \
+		sudo yum -y install kernel-devel-$(kernelVersion); \
+	else \
+		echo "Kernel-devel-$(kernelVersion) already installed"; \
 	fi
 
 ## Check libs exists or download, patch cmake file
 .PHONY: patch-libs
 patch-libs:
 	@echo "Checking libs...";
-	@if [ ! -d "$(LIBS_SRC)" ]; then \
+	@if [ ! "$(shell ls -A1q $(LIBS_SRC))" ]; then \
 		echo "$(LIBS_SRC) not exist, downloading....."; \
 		git submodule update --init --recursive; \
 	else \
@@ -118,7 +119,7 @@ pack-probe:
 	@echo "Packaging kindling probe...";
 	@if [ ! -d "$(LIBS_SRC)/kindling-falcolib-probe/" ]; then \
 		echo "The packaged probe does not exist.try again"; \
-		exit 1; \
+		$(ErrorExit); \
 	else \
 		cd $(LIBS_SRC) && \
 		tar -cvzf kindling-falcolib-probe.tar.gz kindling-falcolib-probe/ && \
@@ -138,10 +139,10 @@ _build-collector:
 kindling-collector:
 	@if [ ! -f "$(COLLECTOR_PATH)/docker/kindling-falcolib-probe.tar.gz" ]; then \
 		echo "The kindling-falcolib-probe.tar.gz does not exist. make probe-libs first"; \
-		exit 1; \
+		$(ErrorExit); \
 	fi
 	@cd $(SCRIPTS_PATH) && bash -c "./run_docker.sh make _build-collector";
-	@exit ;
+	@$(SuccessExit) ;
 
 ## Install depends and build probe locally and build collector
 .PHONY: docker-build-all
