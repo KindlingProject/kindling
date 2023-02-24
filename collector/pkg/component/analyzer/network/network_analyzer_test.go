@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/spf13/viper"
+	viperpackage "github.com/spf13/viper"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
@@ -44,6 +44,8 @@ func TestRedisProtocol(t *testing.T) {
 func TestDnsProtocol(t *testing.T) {
 	testProtocol(t, "dns/server-event.yml",
 		"dns/server-trace-multi.yml")
+	testProtocol(t, "dns/client-event.yml",
+		"dns/client-trace-sendmmg.yml")
 }
 
 func TestKafkaProtocol(t *testing.T) {
@@ -90,7 +92,7 @@ func (p *NoCacheDataGroupPool) Get() *model.DataGroup {
 	return dataGroup.(*model.DataGroup)
 }
 
-func (p *NoCacheDataGroupPool) Free(dataGroup *model.DataGroup) {
+func (p *NoCacheDataGroupPool) Free(_ *model.DataGroup) {
 }
 
 var na *NetworkAnalyzer
@@ -99,14 +101,14 @@ var results []*model.DataGroup
 func prepareNetworkAnalyzer() *NetworkAnalyzer {
 	if na == nil {
 		config := &Config{}
-		viper := viper.New()
+		viper := viperpackage.New()
 		viper.SetConfigFile("protocol/testdata/na-protocol-config.yaml")
 		err := viper.ReadInConfig()
 		if err != nil {
 			fmt.Printf("Read Config File failed%v\n", err)
 			return nil
 		}
-		viper.UnmarshalKey("analyzers.networkanalyzer", config)
+		_ = viper.UnmarshalKey("analyzers.networkanalyzer", config)
 
 		na = &NetworkAnalyzer{
 			cfg:           config,
@@ -127,7 +129,9 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 		}
 		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 		na.snaplen = 200
-		na.Start()
+		// Do not start the timeout check otherwise the test maybe fail
+		na.cfg.EnableTimeoutCheck = false
+		_ = na.Start()
 	}
 	return na
 }
@@ -155,11 +159,11 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 			results = []*model.DataGroup{}
 			events := trace.getSortedEvents(eventCommon)
 			for _, event := range events {
-				na.ConsumeEvent(event)
+				_ = na.ConsumeEvent(event)
 			}
 			if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
 				var oldPairs = pairInterface.(*messagePairs)
-				na.distributeTraceMetric(oldPairs, nil)
+				_ = na.distributeTraceMetric(oldPairs, nil)
 			}
 			trace.Validate(t, results)
 		})
@@ -168,27 +172,27 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 
 func getEventCommon(path string) *EventCommon {
 	eventCommon := &EventCommon{}
-	viper := viper.New()
+	viper := viperpackage.New()
 	viper.SetConfigFile(path)
 	err := viper.ReadInConfig()
 	if err != nil {
 		fmt.Printf("Error%v\n", err)
 		return nil
 	}
-	viper.UnmarshalKey("eventCommon", eventCommon)
+	_ = viper.UnmarshalKey("eventCommon", eventCommon)
 	return eventCommon
 }
 
 func getTrace(path string) *Trace {
 	trace := &Trace{}
-	viper := viper.New()
+	viper := viperpackage.New()
 	viper.SetConfigFile(path)
 	err := viper.ReadInConfig()
 	if err != nil {
 		fmt.Printf("Error%v\n", err)
 		return nil
 	}
-	viper.UnmarshalKey("trace", trace)
+	_ = viper.UnmarshalKey("trace", trace)
 	return trace
 }
 
@@ -231,7 +235,7 @@ type Trace struct {
 	Expects   []TraceExpect `mapstructure:"expects"`
 }
 
-func (trace *Trace) PrepareMessagePairs(common *EventCommon) *messagePairs {
+func (trace *Trace) prepareMessagePairs(common *EventCommon) *messagePairs {
 	mps := &messagePairs{
 		connects:  nil,
 		requests:  nil,
@@ -328,7 +332,7 @@ func checkSize(t *testing.T, key string, expect int, got int) {
 }
 
 func (trace *Trace) getSortedEvents(common *EventCommon) []*model.KindlingEvent {
-	events := []*model.KindlingEvent{}
+	events := make([]*model.KindlingEvent, 0)
 	if trace.Connects != nil {
 		for _, connect := range trace.Connects {
 			events = append(events, connect.exchange(common))
@@ -457,16 +461,6 @@ func getSplitIndex(data string) int {
 		return 0
 	}
 	return index
-}
-
-func isHex(b byte) bool {
-	if b >= '0' && b <= '9' {
-		return true
-	}
-	if b >= 'a' && b <= 'z' {
-		return true
-	}
-	return false
 }
 
 type UserAttributes struct {

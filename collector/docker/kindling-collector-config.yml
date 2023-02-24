@@ -23,6 +23,8 @@ receivers:
         category: net
       - name: syscall_exit-recvmsg
         category: net
+      - name: syscall_exit-sendmmsg
+        category: net
       - name: kprobe-tcp_close
       - name: kprobe-tcp_rcv_established
       - name: kprobe-tcp_drop

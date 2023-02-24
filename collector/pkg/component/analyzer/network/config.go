@@ -8,6 +8,8 @@ const (
 )
 
 type Config struct {
+	// This option is set only for testing. We enable it by default otherwise the function will not work.
+	EnableTimeoutCheck  bool
 	ConnectTimeout      int `mapstructure:"connect_timeout"`
 	FdReuseTimeout      int `mapstructure:"fd_reuse_timeout"`
 	NoResponseThreshold int `mapstructure:"no_response_threshold"`
@@ -26,6 +28,7 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
+		EnableTimeoutCheck:    true,
 		ConnectTimeout:        100,
 		FdReuseTimeout:        15,
 		NoResponseThreshold:   120,
