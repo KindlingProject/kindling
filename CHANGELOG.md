@@ -13,8 +13,7 @@
 - 
 
 ### Bug fixes
-- 
-- 
+- Fix retransmission count is not consistent with the real value on Linux 4.7 or higher([#450](https://github.com/KindlingProject/kindling/pull/450))
 - Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
 - 
 

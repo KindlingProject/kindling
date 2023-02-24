@@ -345,7 +345,6 @@ int getEvent(void** pp_kindling_event) {
       break;
     }
     case PPME_TCP_DROP_E:
-    case PPME_TCP_RETRANCESMIT_SKB_E:
     case PPME_TCP_SET_STATE_E: {
       auto pTuple = ev->get_param_value_raw("tuple");
       userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
@@ -373,6 +372,21 @@ int getEvent(void** pp_kindling_event) {
     case PPME_TCP_RECEIVE_RESET_E: {
       auto pTuple = ev->get_param_value_raw("tuple");
       userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
+      break;
+    }
+    case PPME_TCP_RETRANCESMIT_SKB_E:{
+      auto pTuple = ev->get_param_value_raw("tuple");
+      userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
+
+      auto segs = ev->get_param_value_raw("segs");
+      if (segs != NULL){
+        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "segs");
+        memcpy(p_kindling_event->userAttributes[userAttNumber].value, segs->m_val,
+               segs->m_len);
+        p_kindling_event->userAttributes[userAttNumber].len = segs->m_len;
+        p_kindling_event->userAttributes[userAttNumber].valueType = INT32;
+        userAttNumber++;
+      }
       break;
     }
     default: {
