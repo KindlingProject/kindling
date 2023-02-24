@@ -79,6 +79,9 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if dataGroup == nil {
 		return nil
 	}
+	if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
+		a.telemetry.Logger.Debug("TcpMetricAnalyzer To NextProcess:\n" + dataGroup.String())
+	}
 	var retError error
 	for _, nextConsumer := range a.consumers {
 		err := nextConsumer.Consume(dataGroup)
@@ -110,7 +113,14 @@ func (a *TcpMetricAnalyzer) generateRetransmit(event *model.KindlingEvent) (*mod
 	if err != nil {
 		return nil, err
 	}
-	metric := model.NewIntMetric(constnames.TcpRetransmitMetricName, 1)
+
+	var segs = int64(1)
+	p_segs := event.GetUserAttribute("segs")
+	if p_segs != nil && p_segs.GetValueType() == model.ValueType_INT32 {
+		segs = p_segs.GetIntValue()
+	}
+
+	metric := model.NewIntMetric(constnames.TcpRetransmitMetricName, segs)
 	return model.NewDataGroup(constnames.TcpRetransmitMetricGroupName, labels, event.Timestamp, metric), nil
 }
 
