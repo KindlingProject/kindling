@@ -231,7 +231,7 @@ We made some rules for considering whether a request is abnormal. For the abnorm
 | `dst_port` | 80 | The listening port of the destination container, if applicable |
 
 ### Notes
-**Note 1**: Before Kindling v0.7.0, the `kindling_tcp_retransmit_total` was used to count how many retransmit event happened, which is less than total number of resending segments since Linux may resend mutiple segments during one retransmit event.
+**Note 1**: Before Kindling v0.7.0, the `kindling_tcp_retransmit_total` was used to count how many retransmit events happened, which is less than total number of resending segments since Linux may resend mutiple segments during one retransmit event.
 
 ## TCP Socket Connects Metrics
 
