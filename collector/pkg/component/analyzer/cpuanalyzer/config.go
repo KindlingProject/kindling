@@ -8,6 +8,9 @@ type Config struct {
 	// SamplingInterval is the sampling interval for the same url.
 	// The unit is seconds.
 	SamplingInterval int `mapstructure:"sampling_interval"`
+	// OpenJavaTraceSampling a switch for whether to use Java-Trace to trigger sampling.
+	// The default is false.
+	OpenJavaTraceSampling bool `mapstructure:"open_java_trace_sampling"`
 	//JavaTraceSlowTime is used to identify the threshold of slow requests recognized by the apm side
 	// The unit is seconds.
 	JavaTraceSlowTime int `mapstructure:"java_trace_slow_time"`
@@ -21,9 +24,10 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		SamplingInterval:     5,
-		JavaTraceSlowTime:    500,
-		SegmentSize:          40,
-		EdgeEventsWindowSize: 2,
+		SamplingInterval:      5,
+		OpenJavaTraceSampling: false,
+		JavaTraceSlowTime:     500,
+		SegmentSize:           40,
+		EdgeEventsWindowSize:  2,
 	}
 }
