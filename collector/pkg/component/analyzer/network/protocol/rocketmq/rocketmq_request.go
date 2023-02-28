@@ -3,6 +3,7 @@ package rocketmq
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 )
@@ -63,6 +64,7 @@ func parseHeader(message *protocol.PayloadMessage, header *rocketmqHeader) {
 		remarkLen   int32
 		extFieldLen int32
 		offset      int
+		err         error
 	)
 	message.ReadInt16(8, &header.Code)
 	header.LanguageCode = message.Data[10]
@@ -83,10 +85,22 @@ func parseHeader(message *protocol.PayloadMessage, header *rocketmqHeader) {
 		//offset starts from 29
 		var extFieldBytesLen = 0
 		for extFieldBytesLen < int(extFieldLen) && extFieldBytesLen+29 < len(message.Data) {
-			offset, _ = message.ReadInt16(offset, &keyLen)
-			offset, key, _ = message.ReadBytes(offset, int(keyLen))
-			offset, _ = message.ReadInt32(offset, &valueLen)
-			offset, value, _ = message.ReadBytes(offset, int(valueLen))
+			offset, err = message.ReadInt16(offset, &keyLen)
+			if err != nil {
+				break
+			}
+			offset, key, err = message.ReadBytes(offset, int(keyLen))
+			if err != nil {
+				break
+			}
+			offset, err = message.ReadInt32(offset, &valueLen)
+			if err != nil {
+				break
+			}
+			offset, value, err = message.ReadBytes(offset, int(valueLen))
+			if err != nil {
+				break
+			}
 			extFieldMap[string(key)] = string(value)
 			extFieldBytesLen = extFieldBytesLen + 2 + int(keyLen) + 4 + int(valueLen)
 			if string(key) == "topic" || string(key) == "b" {
