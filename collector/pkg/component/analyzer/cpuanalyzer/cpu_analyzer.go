@@ -2,12 +2,13 @@ package cpuanalyzer
 
 import (
 	"fmt"
-	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
+	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 
 	"go.uber.org/atomic"
 	"go.uber.org/zap/zapcore"
@@ -107,7 +108,9 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 	}
 	//ca.sendEventDirectly(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
-	ca.analyzerJavaTraceTime(ev)
+	if ca.cfg.OpenJavaTraceSampling {
+		ca.analyzerJavaTraceTime(ev)
+	}
 }
 
 func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
@@ -180,15 +183,21 @@ func (ca *CpuAnalyzer) ConsumeSpanEvent(event *model.KindlingEvent) {
 	ca.PutEventToSegments(event.GetPid(), event.Ctx.ThreadInfo.GetTid(), event.Ctx.ThreadInfo.Comm, ev)
 }
 
-func (ca *CpuAnalyzer) ConsumeTraces(trace SendTriggerEvent) {
-	tid := trace.OriginalData.Labels.GetIntValue(constlabels.RequestTid)
-	threadName := trace.OriginalData.Labels.GetStringValue(constlabels.Comm)
-	event := &InnerCall{
-		StartTime: trace.StartTime,
-		EndTime:   trace.StartTime + trace.SpendTime,
-		Trace:     trace.OriginalData,
+func (ca *CpuAnalyzer) ConsumeTraces(trace *model.DataGroup) {
+	pid := trace.Labels.GetIntValue("pid")
+	tid := trace.Labels.GetIntValue(constlabels.RequestTid)
+	threadName := trace.Labels.GetStringValue(constlabels.Comm)
+	duration, ok := trace.GetMetric(constvalues.RequestTotalTime)
+	if !ok {
+		ca.telemetry.Logger.Warnf("No request_total_time in the trace, pid=%d, threadName=%s", pid, threadName)
+		return
 	}
-	ca.PutEventToSegments(trace.Pid, uint32(tid), threadName, event)
+	event := &InnerCall{
+		StartTime: trace.Timestamp,
+		EndTime:   trace.Timestamp + uint64(duration.GetInt().Value),
+		Trace:     trace,
+	}
+	ca.PutEventToSegments(uint32(pid), uint32(tid), threadName, event)
 }
 
 func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
