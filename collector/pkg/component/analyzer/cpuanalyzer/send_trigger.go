@@ -60,6 +60,8 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		// Now we don't store the trace from the server-side due to the storage concern.
 		if !trace.Labels.GetBoolValue(constlabels.IsServer) {
 			traceChan <- trace
+			// The trace sent from the client-side won't be treated as trigger event, so we just return here.
+			return
 		}
 		// If the data is not from APM while there have been APM traces received, we don't make it as a signal.
 		if !isInstallApm[uint64(data.Labels.GetIntValue("pid"))] {
