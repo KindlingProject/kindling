@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	enableProfile bool
-	once          sync.Once
-	sendChannel   chan SendTriggerEvent
-	sampleMap     sync.Map
-	isInstallApm  map[uint64]bool
+	enableProfile    bool
+	once             sync.Once
+	triggerEventChan chan SendTriggerEvent
+	traceChan        chan *model.DataGroup
+	sampleMap        sync.Map
+	isInstallApm     map[uint64]bool
 )
 
 func init() {
@@ -30,23 +31,41 @@ func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 		once.Do(func() {
 			// We must close the channel at the sender-side.
 			// Otherwise, we need complex codes to handle it.
-			if sendChannel != nil {
-				close(sendChannel)
+			if triggerEventChan != nil {
+				close(triggerEventChan)
+			}
+			if traceChan != nil {
+				close(traceChan)
 			}
 		})
 		return
 	}
-	if data.Labels.GetBoolValue("isInstallApm") {
+	isFromApm := data.Labels.GetBoolValue("isInstallApm")
+	if isFromApm {
 		isInstallApm[uint64(data.Labels.GetIntValue("pid"))] = true
-	} else {
-		if isInstallApm[uint64(data.Labels.GetIntValue("pid"))] && data.Labels.GetBoolValue(constlabels.IsServer) {
+		if !data.Labels.GetBoolValue(constlabels.IsSlow) {
 			return
 		}
-	}
-	if data.Labels.GetBoolValue(constlabels.IsSlow) {
-		_, ok := sampleMap.Load(data.Labels.GetStringValue(constlabels.ContentKey) + strconv.FormatInt(data.Labels.GetIntValue("pid"), 10))
-		if !ok {
-			sampleMap.Store(data.Labels.GetStringValue(constlabels.ContentKey)+strconv.FormatInt(data.Labels.GetIntValue("pid"), 10), data.Clone())
+		// We save the trace to sampleMap to make it as the sending trigger event.
+		pidString := strconv.FormatInt(data.Labels.GetIntValue("pid"), 10)
+		// The data is unnecessary to be cloned as it won't be reused.
+		sampleMap.LoadOrStore(data.Labels.GetStringValue(constlabels.ContentKey)+pidString, data)
+	} else {
+		if !data.Labels.GetBoolValue(constlabels.IsSlow) {
+			return
+		}
+		// Clone the data for further usage. Otherwise, it will be reused and loss fields.
+		trace := data.Clone()
+		// CpuAnalyzer consumes all traces from the client-side to add them to TimeSegments for data enrichment.
+		// Now we don't store the trace from the server-side due to the storage concern.
+		if !trace.Labels.GetBoolValue(constlabels.IsServer) {
+			traceChan <- trace
+		}
+		// If the data is not from APM while there have been APM traces received, we don't make it as a signal.
+		if !isInstallApm[uint64(data.Labels.GetIntValue("pid"))] {
+			// We save the trace to sampleMap to make it as the sending trigger event.
+			pidString := strconv.FormatInt(data.Labels.GetIntValue("pid"), 10)
+			sampleMap.LoadOrStore(data.Labels.GetStringValue(constlabels.ContentKey)+pidString, trace)
 		}
 	}
 }
@@ -58,17 +77,18 @@ type SendTriggerEvent struct {
 	OriginalData *model.DataGroup `json:"originalData"`
 }
 
-// ReceiveSendSignal todo: Modify the sampling algorithm to ensure that the data sampled by each multi-trace system is uniform. Now this is written because it is easier to implement
-func (ca *CpuAnalyzer) ReceiveSendSignal() {
+// ReadTraceChan reads the trace channel and make cpuanalyzer consume them as general events.
+func (ca *CpuAnalyzer) ReadTraceChan() {
 	// Break the for loop if the channel is closed
-	for sendContent := range sendChannel {
-		// CpuAnalyzer consumes all traces from the client-side to add them to TimeSegments
-		// These traces are not considered as signals, so we skip them here. Note they won't
-		// be consumed by the following consumers.
-		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsServer) {
-			ca.ConsumeTraces(sendContent)
-			continue
-		}
+	for trace := range traceChan {
+		ca.ConsumeTraces(trace)
+	}
+}
+
+// ReadTriggerEventChan reads the triggerEvent channel and creates tasks to send cpuEvents.
+func (ca *CpuAnalyzer) ReadTriggerEventChan() {
+	// Break the for loop if the channel is closed
+	for sendContent := range triggerEventChan {
 		// Only send the slow traces as the signals
 		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsSlow) {
 			continue
@@ -132,14 +152,12 @@ func (ca *CpuAnalyzer) sampleSend() {
 					SpendTime:    uint64(duration.GetInt().Value),
 					OriginalData: data,
 				}
-				sendChannel <- event
+				triggerEventChan <- event
 				sampleMap.Delete(k)
 				return true
 			})
-
 		}
 	}
-
 }
 
 func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {
