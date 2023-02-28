@@ -1067,7 +1067,7 @@ class EasyCamera {
         // const spanSize = document.getElementById('camera')?.getBoundingClientRect();
         // const sizeHeight = spanSize?.height as number;
         // const spanChartHeight = 28 * maxLevel > sizeHeight ? 28 * maxLevel : sizeHeight;
-        const spanChartHeight = 28 * this.spanList.length;
+        const spanChartHeight = 38 * this.spanList.length;
         this.spanSvg = d3.select('#span_svg').attr('height', spanChartHeight);
         
         const spanTreeWarp = this.spanSvg.append('g').attr('id', 'span_tree_warp').attr('transform', `translate(0, 0)` );
