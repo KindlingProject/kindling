@@ -5,7 +5,7 @@
 
 ## Unreleased
 ### New features
-- Support trace-profiling sampling to reduce data output. ([#446](https://github.com/KindlingProject/kindling/pull/446))
+- Support trace-profiling sampling to reduce data output. One trace is sampled every five seconds for each endpoint by default. ([#446](https://github.com/KindlingProject/kindling/pull/446)[#462](https://github.com/KindlingProject/kindling/pull/462))
 - 
 
 ### Enhancements
