@@ -17,11 +17,15 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
+    paths-ignore:
+        - '**/*.md'
+        - '**/*.txt'
   schedule:
     - cron: '45 22 * * 0'
 
 jobs:
   analyze:
+    if: github.repository == 'KindlingProject/kindling'
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
