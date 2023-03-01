@@ -679,7 +679,6 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
          */
         threadObj.traceList = transactionIdsList;
         if (!trace_id && transactionIdsList.length > 0) {
-            // threadObj.traceList = transactionIdsList;
             if (threadObj.tid === request_tid || threadObj.tid === response_tid) {
                 let traceList = _.filter(transactionIdsList, item => item.timestamp < end_timestamp && item.timestamp > trace.timestamp);
                 if (traceList.length > 0 && threadObj.tid === request_tid) {
@@ -736,7 +735,12 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         traceId = responseTraceId;
     }
     _.forEach(result, item => {
-        const sameTraceList = _.uniqBy(_.filter(item.traceList, item => item.traceId === traceId), 'timestamp');
+        let sameTraceList = _.uniqBy(_.filter(item.traceList, item => item.traceId === traceId), 'timestamp');
+        /**
+         * 临时解决方案：后台返回trace数据格式不再是10交替出现的，解决方案过滤油url的数据，没有url的数据用作后续数据分析
+         * isEntry: 1 => trace的开始时间; isEntry: 0 => trace的结束时间 
+         */
+        sameTraceList = _.filter(sameTraceList, item => item.url.length === 0);
         item.traceList = [];
         for(let i = 0;i < sameTraceList.length; i++) {
             if (i % 2 === 0 && sameTraceList[i+1]) {
@@ -750,6 +754,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         }
     });
     
+
     // 判断当前线程日志中解析的traceId是否包含trace数据中traceId
     _.forEach(result, item => {
         let logTraceIdList = _.chain(item.logList).map('traceId').compact().value();
