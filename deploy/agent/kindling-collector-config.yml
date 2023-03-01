@@ -37,6 +37,8 @@ receivers:
       - name: tracepoint-procexit
 analyzers:
   cpuanalyzer:
+    # sampling_interval is the sampling interval for the same url. The unit is second.
+    sampling_interval: 5
     # segment_size defines how many segments(seconds) can be cached to wait for sending.
     # The elder segments will be overwritten by the newer ones, so don't set it too low.
     segment_size: 40
