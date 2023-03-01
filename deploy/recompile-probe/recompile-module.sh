@@ -1,4 +1,4 @@
-AGENT_LIBS_COMMIT_ID=5afa674d0c7e2758c2d49e04dfebcd05b46bfce4
+AGENT_LIBS_COMMIT_ID=fcbd3f65e4c24647ba9c5539d32594ed03360fba
 
 mkdir -p rebuild-kindling-agent
 cd rebuild-kindling-agent
