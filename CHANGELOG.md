@@ -9,10 +9,12 @@
 - 
 
 ### Enhancements
+- **Upgrade the golang version to v1.19 in the requirement**. ([#463](https://github.com/KindlingProject/kindling/pull/463))
 - Improve Kindling Event log format. ([#455](https://github.com/KindlingProject/kindling/pull/455))
 - 
 
 ### Bug fixes
+- Fix security alerts(CVE-2022-41721, CVE-2022-27664) by upgrading package `golang.org/x/net`.([#463](https://github.com/KindlingProject/kindling/pull/463))
 - Fix the potential endless loop in the rocketmq parser. ([#465](https://github.com/KindlingProject/kindling/pull/465))
 - Fix retransmission count is not consistent with the real value on Linux 4.7 or higher. ([#450](https://github.com/KindlingProject/kindling/pull/450))
 - Reduce the cases pods are not found when they are daemonset. ([#439](https://github.com/KindlingProject/kindling/pull/439) @llhhbc)
