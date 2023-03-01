@@ -10,7 +10,7 @@
 
 ### Enhancements
 - Improve Kindling Event log format. ([#455](https://github.com/KindlingProject/kindling/pull/455))
-- Fix security alerts(CVE-2022-41721, CVE-2022-27664) by upgrading package `golang.org/x/net`, which indirectly depends on the Golang v1.18.  So we decided to **upgrade to the latest Golang version(v1.20) in image of builder** and **update the requirement to Golang(v1.19)**. ([#463](https://github.com/KindlingProject/kindling/pull/463))
+- **Update the golang version to v1.19 in the requirement**. ([#463](https://github.com/KindlingProject/kindling/pull/463))
 - 
 
 ### Bug fixes
@@ -19,6 +19,7 @@
 - Reduce the cases pods are not found when they are daemonset. ([#439](https://github.com/KindlingProject/kindling/pull/439) @llhhbc)
 - Collector subscribes `sendmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
 - Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
+- Fix security alerts(CVE-2022-41721, CVE-2022-27664) by upgrading package `golang.org/x/net`.([#463](https://github.com/KindlingProject/kindling/pull/463))
 - 
 
 ## v0.7.0 - 2023-02-16
