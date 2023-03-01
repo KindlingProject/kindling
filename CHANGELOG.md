@@ -3,15 +3,13 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
-## Unreleased
+## v0.7.1 - 2023-03-01
 ### New features
 - Support trace-profiling sampling to reduce data output. One trace is sampled every five seconds for each endpoint by default. ([#446](https://github.com/KindlingProject/kindling/pull/446)[#462](https://github.com/KindlingProject/kindling/pull/462))
-- 
 
 ### Enhancements
 - **Upgrade the golang version to v1.19 in the requirement**. ([#463](https://github.com/KindlingProject/kindling/pull/463))
 - Improve Kindling Event log format. ([#455](https://github.com/KindlingProject/kindling/pull/455))
-- 
 
 ### Bug fixes
 - Fix security alerts(CVE-2022-41721, CVE-2022-27664) by upgrading package `golang.org/x/net`.([#463](https://github.com/KindlingProject/kindling/pull/463))
@@ -20,7 +18,6 @@
 - Reduce the cases pods are not found when they are daemonset. ([#439](https://github.com/KindlingProject/kindling/pull/439) @llhhbc)
 - Collector subscribes `sendmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
 - Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
-- 
 
 ## v0.7.0 - 2023-02-16
 ### New features
