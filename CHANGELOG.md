@@ -10,6 +10,7 @@
 
 ### Enhancements
 - Improve Kindling Event log format. ([#455](https://github.com/KindlingProject/kindling/pull/455))
+- Fix security alerts(CVE-2022-41721, CVE-2022-27664) by upgrading package `golang.org/x/net`, which indirectly depends on the Golang v1.18.  So we decided to **upgrade to the latest Golang version(v1.20) in image of builder** and **update the requirement to Golang(v1.19)**. ([#463](https://github.com/KindlingProject/kindling/pull/463))
 - 
 
 ### Bug fixes
