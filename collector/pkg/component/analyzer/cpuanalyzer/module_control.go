@@ -1,6 +1,10 @@
 package cpuanalyzer
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/Kindling-project/kindling/collector/pkg/model"
+)
 
 func (ca *CpuAnalyzer) ProfileModule() (submodule string, start func() error, stop func() error) {
 	return "cpuanalyzer", ca.StartProfile, ca.StopProfile
@@ -9,10 +13,12 @@ func (ca *CpuAnalyzer) ProfileModule() (submodule string, start func() error, st
 func (ca *CpuAnalyzer) StartProfile() error {
 	// control flow changed
 	// Note that these two variables belongs to the package
-	sendChannel = make(chan SendTriggerEvent, 3e5)
+	triggerEventChan = make(chan SendTriggerEvent, 3e5)
+	traceChan = make(chan *model.DataGroup, 1e4)
 	enableProfile = true
 	once = sync.Once{}
-	go ca.ReceiveSendSignal()
+	go ca.ReadTriggerEventChan()
+	go ca.ReadTraceChan()
 	return nil
 }
 

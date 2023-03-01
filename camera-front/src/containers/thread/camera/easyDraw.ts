@@ -40,7 +40,6 @@ class EasyCamera {
     groupLineData = {};
     
     timeRange: number[];
-    eventTimeRange: number[];
     timeRangeDiff: number;
     showLogFlag: boolean = true;       // 是否显示日志的标志位
     showJavaLockFlag: boolean = true;  // 是否显示lock事件的标志位
@@ -71,7 +70,6 @@ class EasyCamera {
         let lineTimes: any[] = _.chain(this.lineTimeList).map(item => new Date(item.time).getTime()).value();
         // this.timeRange = traceTimes.map((opt, idx) => idx === 0 ? new Date(opt).getTime() - this.timeDiffStep : new Date(opt).getTime() + this.timeDiffStep);
         this.timeRange = [_.min(lineTimes) - this.timeDiffStep, _.max(lineTimes) + this.timeDiffStep];
-        this.eventTimeRange = [_.min(lineTimes), _.max(lineTimes)];
         this.timeRangeDiff = this.timeRange[1] - this.timeRange[0] + this.timeDiffStep * 2;
 
         this.eventClick = option.eventClick.bind(this);
@@ -154,7 +152,7 @@ class EasyCamera {
             let lineData: IEventTime[] = [];
             _.forEach(item.eventList, (event, idx2: number) => {
                 let { startTime, endTime, time } = event;
-                if (this.containTime(this.eventTimeRange, startTime, endTime)) {
+                if (this.containTime(this.timeRange, startTime, endTime)) {
                     let { stime, etime, time: ftime } = this.timeHandle(startTime, endTime, time, this.timeRange);
                     const timeRate = ftime / this.timeRangeDiff;
                     event.left = this.xScale(stime) as number;
@@ -253,7 +251,7 @@ class EasyCamera {
             // 根据时间区间更新javalock的绘制与位置
             d3.selectAll('.javalock_rect').each(function(d: any) {
                 let {startTime, endTime, time} = d;
-                if (_this.containTime(_this.eventTimeRange, startTime, endTime)) {
+                if (_this.containTime(_this.timeRange, startTime, endTime)) {
                     let { stime, etime, time: ftime } = _this.timeHandle(startTime, endTime, time, _this.timeRange);
                     if (ftime > 0) {
                         let left = _this.xScale(stime);
@@ -1067,7 +1065,7 @@ class EasyCamera {
         // const spanSize = document.getElementById('camera')?.getBoundingClientRect();
         // const sizeHeight = spanSize?.height as number;
         // const spanChartHeight = 28 * maxLevel > sizeHeight ? 28 * maxLevel : sizeHeight;
-        const spanChartHeight = 28 * this.spanList.length;
+        const spanChartHeight = 38 * this.spanList.length;
         this.spanSvg = d3.select('#span_svg').attr('height', spanChartHeight);
         
         const spanTreeWarp = this.spanSvg.append('g').attr('id', 'span_tree_warp').attr('transform', `translate(0, 0)` );

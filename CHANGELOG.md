@@ -5,15 +5,17 @@
 
 ## Unreleased
 ### New features
-- Support trace-profiling sampling to reduce data output. ([#446](https://github.com/KindlingProject/kindling/pull/446))
+- Support trace-profiling sampling to reduce data output. One trace is sampled every five seconds for each endpoint by default. ([#446](https://github.com/KindlingProject/kindling/pull/446)[#462](https://github.com/KindlingProject/kindling/pull/462))
 - 
 
 ### Enhancements
-- Improve Kindling Event log format.([#455](https://github.com/KindlingProject/kindling/pull/455))
+- Improve Kindling Event log format. ([#455](https://github.com/KindlingProject/kindling/pull/455))
 - 
 
 ### Bug fixes
-- Fix retransmission count is not consistent with the real value on Linux 4.7 or higher([#450](https://github.com/KindlingProject/kindling/pull/450))
+- Fix the potential endless loop in the rocketmq parser. ([#465](https://github.com/KindlingProject/kindling/pull/465))
+- Fix retransmission count is not consistent with the real value on Linux 4.7 or higher. ([#450](https://github.com/KindlingProject/kindling/pull/450))
+- Reduce the cases pods are not found when they are daemonset. ([#439](https://github.com/KindlingProject/kindling/pull/439) @llhhbc)
 - Collector subscribes `sendmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
 - Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
 - 
