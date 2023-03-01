@@ -215,7 +215,7 @@ export default function EventDetail(props: Props) {
         specifications={specifications}
       />
       {
-        data.type === 'net' ? <div style={{ marginTop: '10px' }}>
+        data.type === 'net' && _.keys(traceData).length > 0 ? <div style={{ marginTop: '10px' }}>
           <DescriptionList
             title="相关请求信息"
             data={traceData}
