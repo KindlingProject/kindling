@@ -9,17 +9,17 @@
 - 
 
 ### Enhancements
+- **Upgrade the golang version to v1.19 in the requirement**. ([#463](https://github.com/KindlingProject/kindling/pull/463))
 - Improve Kindling Event log format. ([#455](https://github.com/KindlingProject/kindling/pull/455))
-- **Update the golang version to v1.19 in the requirement**. ([#463](https://github.com/KindlingProject/kindling/pull/463))
 - 
 
 ### Bug fixes
+- Fix security alerts(CVE-2022-41721, CVE-2022-27664) by upgrading package `golang.org/x/net`.([#463](https://github.com/KindlingProject/kindling/pull/463))
 - Fix the potential endless loop in the rocketmq parser. ([#465](https://github.com/KindlingProject/kindling/pull/465))
 - Fix retransmission count is not consistent with the real value on Linux 4.7 or higher. ([#450](https://github.com/KindlingProject/kindling/pull/450))
 - Reduce the cases pods are not found when they are daemonset. ([#439](https://github.com/KindlingProject/kindling/pull/439) @llhhbc)
 - Collector subscribes `sendmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
 - Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
-- Fix security alerts(CVE-2022-41721, CVE-2022-27664) by upgrading package `golang.org/x/net`.([#463](https://github.com/KindlingProject/kindling/pull/463))
 - 
 
 ## v0.7.0 - 2023-02-16
