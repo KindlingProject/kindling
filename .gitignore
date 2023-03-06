@@ -9,7 +9,7 @@ probe/cmake-build-debug
 collector/docker/kindling-collector
 collector/docker/libso/libkindling.so
 collector/docker/kindling-falcolib-probe.tar.gz
-
+collector/vendor/
 node_modules
 *.log
 logs
