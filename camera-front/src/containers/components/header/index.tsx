@@ -86,15 +86,15 @@ function Header(props: any) {
                     </Menu.Item> */}
                 </Menu>
             </div>
-            <div className={style.home_header_right}>
+            {/* <div className={style.home_header_right}>
                 <span>启动Trace检测：</span>
                 <Switch checked={profileStatus} onChange={changeProfileStatus}></Switch>
                 {
                     loading && <LoadingOutlined style={{ marginLeft: 10 }}/>
                 }
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                {/* <Switch checkedChildren='暗黑' unCheckedChildren='明亮' checked={theme ==='dark'} onChange={changeTheme}></Switch> */}
-            </div>
+                <Switch checkedChildren='暗黑' unCheckedChildren='明亮' checked={theme ==='dark'} onChange={changeTheme}></Switch>
+            </div> */}
         </div>
     );
 }
