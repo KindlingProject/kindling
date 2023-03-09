@@ -1,4 +1,5 @@
 type SeriesSize = 'sm' | 'md' | 'lg';
+export type MetricType = 'latency' | 'calls' | 'errorRate' | 'sentVolume' | 'receiveVolume' | 'rtt' | 'retransmit' | 'packageLost' | 'connFail';
 
 export interface SimpleOptions {
   layout: string;
@@ -9,4 +10,12 @@ export interface SimpleOptions {
   normalRtt: number;
   abnormalRtt: number;
   seriesCountSize: SeriesSize;
+}
+
+export interface DataPoint {
+  Time: number;
+  Value: number;
+}
+export interface DataSourceResponse {
+  datapoints: DataPoint[];
 }

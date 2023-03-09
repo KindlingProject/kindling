@@ -1,6 +1,7 @@
 import _ from 'lodash';
+import { MetricType } from '../types';
 
-export const metricList: Array<{label: string; value: any; description?: string}> = [
+export const metricList: Array<{label: string; value: MetricType; description?: string}> = [
     { label: 'Latency', value: 'latency' },
     { label: 'Calls', value: 'calls' },
     { label: 'Error Rate', value: 'errorRate' },
@@ -11,6 +12,14 @@ export const metricList: Array<{label: string; value: any; description?: string}
     { label: 'Package Lost', value: 'packageLost' },
     { label: 'Connection Failure', value: 'connFail' }
 ];
+export const metricDataName = {
+    sentVolume: 'edgeSendVolumeData',
+    receiveVolume: 'edgeReceiveVolumeData',
+    retransmit: 'edgeRetransmitData',
+    rtt: 'edgeRTTData',
+    packageLost: 'edgePackageLostData'
+}
+
 export const layoutOptions = [
     { label: 'Hierarchy Chart', value: 'dagre' },
     { label: 'Mesh Chart', value: 'force' }
@@ -34,13 +43,16 @@ const externalTypes: string[] = ['NOT_FOUND_EXTERNAL', 'NOT_FOUND_INTERNAL', 'EX
 // workloadTypes
 const workloadTypes: string[] = ['workload', 'deployment', 'daemonset', 'statefulset', 'node'];
 
+type NodeField = 'calls' | 'latency' | 'errorRate' | 'sentVolume' | 'receiveVolume';
 export interface TopologyProps {
     nodes: NodeProps[];
     edges: EdgeProps[];
 }
+
 export interface NodeProps {
     id: string;
     name: string;
+    namespace?: string;
     nodeType: string;
     showNamespace: Boolean;
     calls?: number;
@@ -75,11 +87,11 @@ export interface NodeDataProps {
 export interface EdgeDataProps {
     edgeCallData: any[];
     edgeTimeData: any[];
-    edgeSendVolumeData: any[];
-    edgeReceiveVolumeData: any[];
-    edgeRetransmitData: any[];
-    edgeRTTData: any[];
-    edgePackageLostData: any[];
+    edgeSendVolumeData?: any[];
+    edgeReceiveVolumeData?: any[];
+    edgeRetransmitData?: any[];
+    edgeRTTData?: any[];
+    edgePackageLostData?: any[];
 }
 
 
@@ -92,7 +104,7 @@ export const transformData = (data: any[]) => {
     _.forEach(data, item => {
         let tdata: any = {
             ...item.fields[1].labels,
-            values: item.fields[1].values
+            values: item.fields[1].values.buffer
         }
         result.push(tdata);
     });
@@ -117,6 +129,31 @@ const edgeFilter = (item: any, edge: EdgeProps) => {
         return item.src_namespace === edge.source && item.dst_namespace === edge.target;
     }
 };
+const nsNodeInfoHandle = (node: NodeProps, nodeData: NodeDataProps) => {
+    let callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.id);
+    let timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.id);
+    let sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.id);
+    let receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.id);
+    let errorList = _.filter(callsList, item => {
+        if (item.protocol === 'http') {
+            return parseInt(item.response_content, 10) >= 400;
+        } else if (item.protocol === 'dns') {
+            return parseInt(item.response_content, 10) > 0;
+        } else {
+            return false
+        }
+    });
+
+    let calls = callsList.length > 0 ? _.chain(callsList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let latency = calls ? timeValue / calls / 1000000 : 0;
+    let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let errorRate = calls ? errorValue / calls * 100 : 0;
+    let sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    
+    return { calls, latency, errorRate, sentVolume, receiveVolume }
+}   
 // namespace relational data handle
 export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps) => {
     let nodes: NodeProps[] = [], edges: EdgeProps[] = [];
@@ -163,34 +200,16 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
             }
         }
     });
-    nodes.forEach((node: NodeProps) => {
-        if (externalTypes.indexOf(node.nodeType) === -1) {
-            let callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.id);
-            let timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.id);
-            let sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.id);
-            let receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.id);
-            let errorList = _.filter(callsList, item => {
-                if (item.protocol === 'http') {
-                    return parseInt(item.response_content, 10) >= 400;
-                } else if (item.protocol === 'dns') {
-                    return parseInt(item.response_content, 10) > 0;
-                } else {
-                    return false
-                }
-            });
-
-            node.calls = callsList.length > 0 ? _.chain(callsList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            node.latency = node.calls ? timeValue / node.calls / 1000000 : 0;
-            let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            node.errorRate = node.calls ? errorValue / node.calls * 100 : 0;
-            node.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            node.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            
-            node.status = 'green';
-        }
+    _.forEach(nodes, (node: NodeProps) => {
         node.status = 'green';
+        if (externalTypes.indexOf(node.nodeType) === -1) {
+            let info: Record<NodeField, any> = nsNodeInfoHandle(node, nodeData);
+            (_.keys(info) as NodeField[]).forEach((field: NodeField) => {
+                node[field] = info[field];
+            });
+        }
     });
+    console.log('nsRelationHandle', nodes);
     _.remove(edges, edge => edge.source === edge.target);
     edges.forEach((edge: EdgeProps) => {
         let callsList = _.filter(topoData, item => edgeFilter(item, edge));
@@ -210,16 +229,16 @@ export const nsRelationHandle = (topoData: any, nodeData: NodeDataProps, edgeDat
         let rttList = _.filter(edgeData.edgeRTTData, item => edgeFilter(item, edge));
         let packageLostList = _.filter(edgeData.edgePackageLostData, item => edgeFilter(item, edge));
         
-        edge.calls = callsList.length > 0 ? _.chain(callsList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
+        edge.calls = callsList.length > 0 ? _.chain(callsList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
         edge.latency = edge.calls ? timeValue / edge.calls / 1000000 : 0;
-        let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
+        let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
         edge.errorRate = edge.calls ? errorValue / edge.calls * 100 : 0;
-        edge.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        edge.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        edge.rtt = rttList.length > 0 ? _.chain(rttList).map(item => _.compact(item.values.buffer).pop()).sum().value() / 1000 : 0;
-        edge.retransmit = retransmitList.length > 0 ? _.chain(retransmitList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        edge.packageLost = packageLostList.length > 0 ? _.chain(packageLostList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
+        edge.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        edge.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        edge.rtt = rttList.length > 0 ? _.chain(rttList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() / 1000 : 0;
+        edge.retransmit = retransmitList.length > 0 ? _.chain(retransmitList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        edge.packageLost = packageLostList.length > 0 ? _.chain(packageLostList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
     });
     return { nodes, edges };
 }
@@ -272,7 +291,7 @@ export const connFailNSRelationHandle = (topoData: any) => {
     edges.forEach((edge: EdgeProps) => {
         let connectData = _.filter(topoData, item => edgeFilter(item, edge));
         let connectFailData = _.filter(connectData, item => item.success === 'false');
-        edge.connFail = connectFailData.length > 0 ? _.chain(connectFailData).map(item => _.compact(item.values.buffer).pop()).sum().value() / _.chain(connectData).map(item => _.compact(item.values.buffer).pop()).sum().value() * 100 : 0;
+        edge.connFail = connectFailData.length > 0 ? _.chain(connectFailData).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() / _.chain(connectData).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() * 100 : 0;
     });
     return { nodes, edges };
 }
@@ -359,12 +378,12 @@ export const workloadRelationHandle = (workload: string, namespace: string, topo
         if (_.findIndex(edges, {id: edgeId}) === -1) {
             let opposite: boolean = _.findIndex(edges, {source: target, target: source}) > -1 ? true : false;
                 edges.push({
-                id: edgeId,
-                source: source,
-                target: target,
-                service: service || '',
-                opposite
-            });
+                    id: edgeId,
+                    source: source,
+                    target: target,
+                    service: service || '',
+                    opposite
+                });
         }
     });
     nodes = detailNodesHandle(nodes, nodeData);
@@ -473,6 +492,44 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
     return { node, source, target, service }
 }
 
+const detailNodeInfoHandle = (node: NodeProps, nodeData: NodeDataProps) => {
+    let callsList = [], timeList = [], sendVolumeList = [], receiveVolumeList = []; 
+    if (workloadTypes.indexOf(node.nodeType) > -1) {
+        callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.namespace && node.name === item.workload_name);
+        timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.namespace && node.name === item.workload_name);
+        sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name);
+        receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name);
+    } else if (node.nodeType === 'pod') {
+        callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.namespace && node.name === item.pod);
+        timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.namespace && node.name === item.pod);
+        sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.namespace && node.name === item.pod);
+        receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.namespace && node.name === item.pod);
+    } else {
+        callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
+        timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
+        sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
+        receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
+    }
+    let errorList = _.filter(callsList, item => {
+        if (item.protocol === 'http') {
+            return parseInt(item.response_content, 10) >= 400;
+        } else if (item.protocol === 'dns') {
+            return parseInt(item.response_content, 10) > 0;
+        } else {
+            return false
+        }
+    });
+
+    let calls = callsList.length > 0 ? _.chain(callsList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let latency = calls ? timeValue / calls / 1000000 : 0;
+    let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let errorRate = calls ? errorValue / calls * 100 : 0;
+    let sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    let receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+    
+    return { calls, latency, errorRate, sentVolume, receiveVolume }
+}
 /**
  * handle node indicator data
  * node节点数据处理（时延、调用次数、错误率、流量）
@@ -482,44 +539,13 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
 export const detailNodesHandle = (nodes: any[], nodeData: any) => {
     let nodelist = _.cloneDeep(nodes);
     nodelist.forEach(node => {
-        let callsList = [], timeList = [], sendVolumeList = [], receiveVolumeList = []; 
-        if (externalTypes.indexOf(node.nodeType) === -1) {
-            if (workloadTypes.indexOf(node.nodeType) > -1) {
-                callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.namespace && node.name === item.workload_name);
-                timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.namespace && node.name === item.workload_name);
-                sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name);
-                receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name);
-            } else if (node.nodeType === 'pod') {
-                callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.namespace && node.name === item.pod);
-                timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.namespace && node.name === item.pod);
-                sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.namespace && node.name === item.pod);
-                receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.namespace && node.name === item.pod);
-            } else {
-                callsList = _.filter(nodeData.nodeCallsData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
-                timeList = _.filter(nodeData.nodeTimeData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
-                sendVolumeList = _.filter(nodeData.nodeSendVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
-                receiveVolumeList = _.filter(nodeData.nodeReceiveVolumeData, item => item.namespace === node.namespace && node.name === item.workload_name && !item.pod);
-            }
-            let errorList = _.filter(callsList, item => {
-                if (item.protocol === 'http') {
-                    return parseInt(item.response_content, 10) >= 400;
-                } else if (item.protocol === 'dns') {
-                    return parseInt(item.response_content, 10) > 0;
-                } else {
-                    return false
-                }
-            });
-
-            node.calls = callsList.length > 0 ? _.chain(callsList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            node.latency = node.calls ? timeValue / node.calls / 1000000 : 0;
-            let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            node.errorRate = node.calls ? errorValue / node.calls * 100 : 0;
-            node.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            node.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-            node.status = 'green';
-        }
         node.status = 'green';
+        if (externalTypes.indexOf(node.nodeType) === -1) {
+            let info: Record<NodeField, any> = detailNodeInfoHandle(node, nodeData);
+            (_.keys(info) as NodeField[]).forEach((field: NodeField) => {
+                node[field] = info[field];
+            });
+        }
     });
     return nodelist;
 }
@@ -620,16 +646,16 @@ export const detailEdgesHandle = (nodes: any[], edges: any[], edgeData: any, sho
             }
         });
         
-        edge.calls = callsList.length > 0 ? _.chain(callsList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
+        edge.calls = callsList.length > 0 ? _.chain(callsList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        let timeValue = timeList.length > 0 ? _.chain(timeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
         edge.latency = edge.calls ? timeValue / edge.calls / 1000000 : 0;
-        let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
+        let errorValue = errorList.length > 0 ? _.chain(errorList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
         edge.errorRate = edge.calls ? errorValue / edge.calls * 100 : 0;
-        edge.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        edge.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        edge.rtt = rttList.length > 0 ? _.chain(rttList).map(item => _.compact(item.values.buffer).pop()).sum().value() / 1000 : 0;
-        edge.retransmit = retransmitList.length > 0 ? _.chain(retransmitList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
-        edge.packageLost = packageLostList.length > 0 ? _.chain(packageLostList).map(item => _.compact(item.values.buffer).pop()).sum().value() : 0;
+        edge.sentVolume = sendVolumeList.length > 0 ? _.chain(sendVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        edge.receiveVolume = receiveVolumeList.length > 0 ? _.chain(receiveVolumeList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        edge.rtt = rttList.length > 0 ? _.chain(rttList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() / 1000 : 0;
+        edge.retransmit = retransmitList.length > 0 ? _.chain(retransmitList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+        edge.packageLost = packageLostList.length > 0 ? _.chain(packageLostList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
         // console.log(edge);
     });
     return edgelist;
@@ -668,7 +694,85 @@ export const connFailDetailEdgesHandle = (nodes: any[], edges: any[], edgeData: 
             connectData = _.filter(connectData, item => item.dst_service === edge.service);
         }
         let connectFailData = _.filter(connectData, item => item.success === 'false');
-        edge.connFail = connectFailData.length > 0 ? _.chain(connectFailData).map(item => _.compact(item.values.buffer).pop()).sum().value() / _.chain(connectData).map(item => _.compact(item.values.buffer).pop()).sum().value() * 100 : 0;
+        edge.connFail = connectFailData.length > 0 ? _.chain(connectFailData).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() / _.chain(connectData).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() * 100 : 0;
     });
     return edgelist;
+}
+
+export const updateNode = (graphData: TopologyProps, nodeData: NodeDataProps, SGraph: any, namespaceAll: boolean) => {
+    if (namespaceAll) {
+        SGraph.getNodes().forEach((dNode: any) => {
+            let node = dNode.getModel();
+            let info = nsNodeInfoHandle(node, nodeData);
+            node = {...node, ...info};
+            dNode.update(node);
+        });
+    } else {
+        SGraph.getNodes().forEach((dNode: any) => {
+            let node = dNode.getModel();
+            let info = detailNodeInfoHandle(node, nodeData);
+            node = {...node, ...info};
+            dNode.update(node);
+        });
+    }
+}
+
+export const updateEdge = (graphData: TopologyProps, metric: MetricType, metricData: any, SGraph: any, namespaceAll: boolean, showService: boolean) => {
+    let {nodes, edges} = graphData;
+    if (namespaceAll) {
+        SGraph.getEdges().forEach((dEdge: any) => {
+            let edgeModel = dEdge.getModel();
+            let metricList = _.filter(metricData, item => edgeFilter(item, edgeModel));
+            let metricValue = metricList.length > 0 ? _.chain(metricList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+            if (metric === 'rtt') {
+                metricValue = metricValue / 1000;
+            }
+            edgeModel[metric] = metricValue;
+            edges.splice(_.findIndex(edges, {source: edgeModel.source, target: edgeModel.target}), 1, edgeModel);
+            dEdge.update(edgeModel);
+        });
+    } else {
+        SGraph.getEdges().forEach((dEdge: any) => {
+            let edge = dEdge.getModel();
+            let sourceNode = _.find(nodes, {id: edge.source})!;
+            let targteNode = _.find(nodes, {id: edge.target})!;
+
+            let metricList = [];
+
+            if (externalTypes.indexOf(sourceNode.nodeType) > -1) {
+                let ip = sourceNode.id.substring(sourceNode.id.lastIndexOf('_') + 1, sourceNode.id.indexOf(':') > -1 ? sourceNode.id.indexOf(':') : sourceNode.id.length);
+                metricList = _.filter(metricData, item => item.src_namespace === sourceNode.namespace && item.src_ip === ip);
+            } else if (sourceNode.nodeType === 'pod') {
+                metricList = _.filter(metricData, item => item.src_namespace === sourceNode.namespace && item.src_pod === sourceNode.name);
+            } else if (sourceNode.nodeType === 'unknow') {
+                metricList = _.filter(metricData, item => item.src_namespace === sourceNode.namespace && item.src_workload_name === sourceNode.name && !item.src_pod);
+            } else if (workloadTypes.indexOf(sourceNode.nodeType) > -1) {
+                metricList = _.filter(metricData, item => item.src_namespace === sourceNode.namespace && item.src_workload_name === sourceNode.name);
+            }
+
+            if (externalTypes.indexOf(targteNode.nodeType) > -1) {
+                let ip = targteNode.id.substring(targteNode.id.lastIndexOf('_') + 1, targteNode.id.indexOf(':') > -1 ? targteNode.id.indexOf(':') : targteNode.id.length);
+                metricList = _.filter(metricList, item => item.dst_namespace === targteNode.namespace && item.dst_ip === ip);
+            } else if (targteNode.nodeType === 'pod') {
+                metricList = _.filter(metricList, item => item.dst_namespace === targteNode.namespace && item.dst_pod === targteNode.name);
+            } else if (targteNode.nodeType === 'unknow') {
+                metricList = _.filter(metricList, item => item.dst_namespace === targteNode.namespace && item.dst_workload_name === targteNode.name && !item.dst_pod);
+            } else if (workloadTypes.indexOf(targteNode.nodeType) > -1)  {
+                metricList = _.filter(metricList, item => item.dst_namespace === targteNode.namespace && item.dst_workload_name === targteNode.name);
+            }
+
+            if (showService && edge.service) {
+                metricList = _.filter(metricList, item => item.dst_service === edge.service);
+            }
+
+        
+            let metricValue = metricList.length > 0 ? _.chain(metricList).map(item => parseFloat(_.compact(item.values).pop() + '')).sum().value() : 0;
+            if (metric === 'rtt') {
+                metricValue = metricValue / 1000;
+            }
+            edge[metric] = metricValue;
+            edges.splice(_.findIndex(edges, {source: edge.source, target: edge.target}), 1, edge);
+            dEdge.update(edge);
+        });
+    }
 }
