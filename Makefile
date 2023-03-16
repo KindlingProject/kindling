@@ -4,6 +4,8 @@ define exec-command
 $(1)
 endef
 
+LIBS_SRC := $(abspath ./probe/libs/agent-libs)
+
 .PHONY: collector
 collector: libkindling
 	@echo Build Env:
@@ -11,13 +13,10 @@ collector: libkindling
 	cd collector && go build -o docker/kindling-collector -ldflags="-X 'github.com/Kindling-project/kindling/collector/version.CodeVersion=${GitCommit}'" ./cmd/kindling-collector/
 
 .PHONY: libkindling
-libkindling:
-	mkdir -p probe/build && cd probe/build && cmake -DBUILD_DRIVER=OFF -DPROBE_VERSION=0.1.1dev .. && make 
+libkindling: patch-libs
+	mkdir -p probe/build && cd probe/build && cmake -DBUILD_DRIVER=OFF -DPROBE_VERSION=0.1.1dev -DAGENT_LIBS_SOURCE_DIR=$(LIBS_SRC) .. && make 
 	mkdir -p collector/docker/libso/. && cp -rf probe/build/src/libkindling.so collector/docker/libso/. && cp -rf probe/build/src/libkindling.so /usr/lib64/.
 
-
-
-LIBS_SRC := $(abspath ./probe/libs/agent-libs)
 COLLECTOR_PATH := $(abspath ./collector)
 SCRIPTS_PATH := $(abspath ./deploy/scripts)
 PROBE_PATH := $(abspath ./probe)

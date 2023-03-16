@@ -27,25 +27,7 @@ if(AGENT_LIBS_SOURCE_DIR)
   set(AGENT_LIBS_VERSION "local")
   message(STATUS "Using local falcosecurity/libs in '${AGENT_LIBS_SOURCE_DIR}'")
 else()
-  # The falcosecurity/libs git reference (branch name, commit hash, or tag) To update falcosecurity/libs version for the next release, change the
-  # default below In case you want to test against another falcosecurity/libs version just pass the variable - ie., `cmake
-  # -DAGENT_LIBS_VERSION=dev ..`
-  if(NOT AGENT_LIBS_VERSION)
-    set(AGENT_LIBS_VERSION "fcbd3f65e4c24647ba9c5539d32594ed03360fba")
-    set(AGENT_LIBS_CHECKSUM "SHA256=5b72e2e3cdb00c9e6ed6876ecb0c406a0d366510942237c1f95a7442b70e6bef")
-  endif()
-
-  # cd /path/to/build && cmake /path/to/source
-  execute_process(COMMAND "${CMAKE_COMMAND}" -DAGENT_LIBS_VERSION=${AGENT_LIBS_VERSION} -DAGENT_LIBS_CHECKSUM=${AGENT_LIBS_CHECKSUM}
-                          ${AGENT_LIBS_CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${AGENT_LIBS_CMAKE_WORKING_DIR})
-
-  # todo(leodido, fntlnz) > use the following one when CMake version will be >= 3.13
-
-  # execute_process(COMMAND "${CMAKE_COMMAND}" -B ${AGENT_LIBS_CMAKE_WORKING_DIR} WORKING_DIRECTORY
-  # "${AGENT_LIBS_CMAKE_SOURCE_DIR}")
-
-  execute_process(COMMAND "${CMAKE_COMMAND}" --build . WORKING_DIRECTORY "${AGENT_LIBS_CMAKE_WORKING_DIR}")
-  set(AGENT_LIBS_SOURCE_DIR "${AGENT_LIBS_CMAKE_WORKING_DIR}/agent-libs-prefix/src/agent-libs")
+  message(STATUS "No falcosecurity/libs found locally, please set it via AGENT_LIBS_SOURCE_DIR")
 endif()
 
 set(DRIVER_VERSION "${AGENT_LIBS_VERSION}")
