@@ -40,6 +40,7 @@
       "targets": [
         {
           "expr": "increase(kindling_topology_request_total[$__range])",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -47,6 +48,7 @@
         },
         {
           "expr": "increase(kindling_topology_request_duration_nanoseconds_total[$__range])",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -54,7 +56,7 @@
         },
         {
           "expr": "increase(kindling_topology_request_request_bytes_total[$__range])",
-          "hide": false,
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -62,7 +64,7 @@
         },
         {
           "expr": "increase(kindling_topology_request_response_bytes_total[$__range])",
-          "hide": false,
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -70,6 +72,7 @@
         },
         {
           "expr": "increase(kindling_entity_request_total[$__range])",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -77,6 +80,7 @@
         },
         {
           "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_total[$__range])) by (namespace, workload_name, pod)",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -84,6 +88,7 @@
         },
         {
           "expr": "sum(increase(kindling_entity_request_send_bytes_total[$__range])) by(namespace, workload_name, pod)",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -91,6 +96,7 @@
         },
         {
           "expr": "sum(increase(kindling_entity_request_receive_bytes_total[$__range])) by(namespace, workload_name, pod)",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -98,6 +104,7 @@
         },
         {
           "expr": "increase(kindling_tcp_retransmit_total[$__range])",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -105,6 +112,7 @@
         },
         {
           "expr": "avg_over_time(kindling_tcp_srtt_microseconds[$__range])",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -112,6 +120,7 @@
         },
         {
           "expr": "increase(kindling_tcp_packet_loss_total[$__range])",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -119,6 +128,7 @@
         },
         {
           "expr": "increase(kindling_tcp_connect_total[$__range])",
+          "hide": true,
           "instant": true,
           "interval": "",
           "legendFormat": "",

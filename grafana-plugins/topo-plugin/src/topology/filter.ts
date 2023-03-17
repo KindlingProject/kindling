@@ -19,10 +19,10 @@ class FilterList {
 
     init(data: any[], namespace: string) {
         let namespaces = _.uniq(_.concat(_.map(data, 'src_namespace'), _.map(data, 'dst_namespace')));
-        this.namespaceList.push({
-            label: 'All', 
-            value: 'all'
-        });
+        // this.namespaceList.push({
+        //     label: 'All', 
+        //     value: 'all'
+        // });
         this.workloadList.push({
             label: 'All', 
             value: 'all'
@@ -48,6 +48,11 @@ class FilterList {
                     });
                 }
             });
+        });
+        this.namespaceList.sort((a, b) => a.value.localeCompare(b.value));
+        this.namespaceList.push({
+            label: 'All', 
+            value: 'all'
         });
         if (namespace !== 'all') {
             this.changeNamespace(namespace);
