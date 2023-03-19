@@ -9,7 +9,7 @@
 #include <thread>
 #include "scap_open_exception.h"
 #include "sinsp_capture_interrupt_exception.h"
-
+#include "utils.h"
 #include "converter/cpu_converter.h"
 
 cpu_converter* cpuConverter;
@@ -1102,6 +1102,7 @@ void print_profile_debug_info(sinsp_evt* sevt) {
 void get_capture_statistics() {
   scap_stats s;
   while (1) {
+    printCurrentDate();
     inspector->get_capture_stats(&s);
     printf("seen by driver: %" PRIu64 "\n", s.n_evts);
     if (s.n_drops != 0) {
