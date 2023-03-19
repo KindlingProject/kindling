@@ -1132,6 +1132,7 @@ void get_capture_statistics() {
     if (s.n_tids_suppressed != 0) {
       printf("Number of threads currently being suppressed: %" PRIu64 "\n", s.n_tids_suppressed);
     }
+    fflush(stdout);
     sleep(10);
   }
 }

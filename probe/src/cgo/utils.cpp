@@ -3,8 +3,9 @@
 //
 
 #include "utils.h"
+#include <cstdio>
 #include <cstdlib>
-#include <sys/time.h>
+#include <time.h>
 
 char *date = (char *)(malloc(sizeof(char) * 30));
 void printCurrentDate() {
