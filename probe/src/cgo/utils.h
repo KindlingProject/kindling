@@ -5,6 +5,6 @@
 #ifndef KINDLING_PROBE_UTILS_H_
 #define KINDLING_PROBE_UTILS_H_
 
-void printCurrentDate();
+void printCurrentTime();
 
 #endif  // KINDLING_PROBE_UTILS_H_

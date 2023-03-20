@@ -1102,7 +1102,7 @@ void print_profile_debug_info(sinsp_evt* sevt) {
 void get_capture_statistics() {
   scap_stats s;
   while (1) {
-    printCurrentDate();
+    printCurrentTime();
     inspector->get_capture_stats(&s);
     printf("seen by driver: %" PRIu64 "\n", s.n_evts);
     if (s.n_drops != 0) {
