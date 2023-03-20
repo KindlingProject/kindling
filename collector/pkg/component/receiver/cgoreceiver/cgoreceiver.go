@@ -68,11 +68,11 @@ func (r *CgoReceiver) Start() error {
 		if res == 1 {
 			return fmt.Errorf("fail to init probe")
 		}
+		go r.getCaptureStatistics()
+		go r.catchSignalUp()
+		time.Sleep(2 * time.Second)
 		r.isInitProbe = true
 	}
-	go r.getCaptureStatistics()
-	go r.catchSignalUp()
-	time.Sleep(2 * time.Second)
 	_ = r.subEvent()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
