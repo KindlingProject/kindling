@@ -42,7 +42,6 @@ type CgoReceiver struct {
 	eventChannel    chan *model.KindlingEvent
 	stopCh          chan interface{}
 	stats           eventCounter
-	isInitProbe     bool
 }
 
 func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
@@ -57,7 +56,6 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 		eventChannel:    make(chan *model.KindlingEvent, 3e5),
 		stopCh:          make(chan interface{}, 1),
 	}
-	cgoReceiver.isInitProbe = false
 	cgoReceiver.stats = newDynamicStats(cfg.SubscribeInfo)
 	newSelfMetrics(telemetry.MeterProvider, cgoReceiver)
 	return cgoReceiver
@@ -77,6 +75,7 @@ func (r *CgoReceiver) Start() error {
 	_ = r.subEvent()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
+	go r.getCaptureStatistics()
 	go r.consumeEvents()
 	go r.startGetEvent()
 	return nil
