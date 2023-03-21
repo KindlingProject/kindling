@@ -28,6 +28,8 @@ const (
 	Cgo = "cgoreceiver"
 )
 
+var sigUp sync.Once
+
 type CKindlingEventForGo C.struct_kindling_event_t_for_go
 
 type CEventParamsForSubscribe C.struct_event_params_for_subscribe
@@ -63,16 +65,15 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 
 func (r *CgoReceiver) Start() error {
 	r.telemetry.Logger.Info("Start CgoReceiver")
-	if !r.isInitProbe {
-		res := int(C.runForGo())
-		if res == 1 {
-			return fmt.Errorf("fail to init probe")
-		}
-		go r.getCaptureStatistics()
+	res := 0
+	sigUp.Do(func() {
+		res = int(C.runForGo())
 		go r.catchSignalUp()
-		time.Sleep(2 * time.Second)
-		r.isInitProbe = true
+	})
+	if res == 1 {
+		return fmt.Errorf("fail to init probe")
 	}
+	time.Sleep(2 * time.Second)
 	_ = r.subEvent()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
@@ -223,7 +224,17 @@ func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, sto
 }
 
 func (r *CgoReceiver) getCaptureStatistics() {
-	C.getCaptureStatistics()
+
+	r.shutdownWG.Add(1)
+	for {
+		select {
+		case <-r.stopCh:
+			r.shutdownWG.Done()
+			return
+		default:
+			C.getCaptureStatistics()
+		}
+	}
 }
 
 func (r *CgoReceiver) catchSignalUp() {

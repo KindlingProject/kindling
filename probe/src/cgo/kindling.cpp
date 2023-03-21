@@ -1101,36 +1101,33 @@ void print_profile_debug_info(sinsp_evt* sevt) {
 
 void get_capture_statistics() {
   scap_stats s;
-  while (1) {
-    inspector->get_capture_stats(&s);
-    printf("seen by driver: %" PRIu64 "\n", s.n_evts);
-    if (s.n_drops != 0) {
-      printf("Number of dropped events: %" PRIu64 "\n", s.n_drops);
-    }
-    if (s.n_drops_buffer != 0) {
-      printf("Number of dropped events caused by full buffer: %" PRIu64 "\n", s.n_drops_buffer);
-    }
-    if (s.n_drops_pf != 0) {
-      printf("Number of dropped events caused by invalid memory access: %" PRIu64 "\n",
-             s.n_drops_pf);
-    }
-    if (s.n_drops_bug != 0) {
-      printf(
-          "Number of dropped events caused by an invalid condition in the kernel instrumentation: "
-          "%" PRIu64 "\n",
-          s.n_drops_bug);
-    }
-    if (s.n_preemptions != 0) {
-      printf("Number of preemptions: %" PRIu64 "\n", s.n_preemptions);
-    }
-    if (s.n_suppressed != 0) {
-      printf("Number of events skipped due to the tid being in a set of suppressed tids: %" PRIu64
-             "\n",
-             s.n_suppressed);
-    }
-    if (s.n_tids_suppressed != 0) {
-      printf("Number of threads currently being suppressed: %" PRIu64 "\n", s.n_tids_suppressed);
-    }
-    sleep(10);
+  inspector->get_capture_stats(&s);
+  printf("seen by driver: %" PRIu64 "\n", s.n_evts);
+  if (s.n_drops != 0) {
+    printf("Number of dropped events: %" PRIu64 "\n", s.n_drops);
   }
+  if (s.n_drops_buffer != 0) {
+    printf("Number of dropped events caused by full buffer: %" PRIu64 "\n", s.n_drops_buffer);
+  }
+  if (s.n_drops_pf != 0) {
+    printf("Number of dropped events caused by invalid memory access: %" PRIu64 "\n", s.n_drops_pf);
+  }
+  if (s.n_drops_bug != 0) {
+    printf(
+        "Number of dropped events caused by an invalid condition in the kernel instrumentation: "
+        "%" PRIu64 "\n",
+        s.n_drops_bug);
+  }
+  if (s.n_preemptions != 0) {
+    printf("Number of preemptions: %" PRIu64 "\n", s.n_preemptions);
+  }
+  if (s.n_suppressed != 0) {
+    printf("Number of events skipped due to the tid being in a set of suppressed tids: %" PRIu64
+           "\n",
+           s.n_suppressed);
+  }
+  if (s.n_tids_suppressed != 0) {
+    printf("Number of threads currently being suppressed: %" PRIu64 "\n", s.n_tids_suppressed);
+  }
+  sleep(10);
 }
