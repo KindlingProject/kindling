@@ -105,9 +105,9 @@ Contributions are welcome, you can contribute in many ways: report issues, help 
 
 If you have questions or ideas, please feel free to reach out to us in the following ways:
 
-- Check out our [discussions](https://github.com/KindlingProject/kindling/discussions)
-- Join us on our [Slack team](https://join.slack.com/t/kindling-world/shared_invite/zt-1fs2yco0i-CMc0yRIqc_jqE~2aHxsNRA)
-- Join our WeChat Group (in Chinese)
+- Check out the [discussions](https://github.com/KindlingProject/kindling/discussions)
+- Join the Kindling [Slack channel](https://join.slack.com/t/kindling-world/shared_invite/zt-1rmki34l0-JiFpWFR7YhqlXG~mSQQAtg)
+- Join the WeChat Group (in Chinese)
 
 ![img](/docs/imgs/wechat-code.png)
 
