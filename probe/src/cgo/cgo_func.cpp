@@ -11,6 +11,9 @@ int runForGo() { return init_probe(); }
 int getKindlingEvent(void** kindlingEvent) { return getEvent(kindlingEvent); }
 
 
+int getPageFaultEvent(void *pagefaultKindlingEvent, void *count, void *maxlen, void *flag){
+	return get_pagefault_event_except_ringbuffer(pagefaultKindlingEvent, count, maxlen, (int*)flag);
+}
 int startProfile() { return start_profile(); }
 int stopProfile() { return stop_profile(); }
 

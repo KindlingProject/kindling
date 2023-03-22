@@ -72,8 +72,65 @@ func (r *CgoReceiver) Start() error {
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
+	go r.getPageFaultEvent(5 * time.Second)
 	go r.startGetEvent()
 	return nil
+}
+
+func (r *CgoReceiver) getPageFaultEvent(interval time.Duration) {
+	var PageFaultEnabled bool = false
+	for _, value := range r.cfg.SubscribeInfo {
+		if value.Name == "tracepoint-page_fault" {
+			if enable, ok := value.Params["enable"]; ok && (enable == "true" || enable == "1") {
+				PageFaultEnabled = true
+			}
+			break
+		}
+	}
+
+	if !PageFaultEnabled {
+		return
+	}
+
+	//1. initialization: get pagefault event from treadstable(/proc)
+	var count int = 0
+	var maxlen int = 65535
+	var fromThreadsTable int = 0
+	var fromBPFMap int = 1
+	pagefaultKindlingEvent := make([]CKindlingEventForGo, maxlen)
+	// var pKindlingEvent unsafe.Pointer
+
+	res := int(C.getPageFaultEvent((unsafe.Pointer)(&pagefaultKindlingEvent[0]), (unsafe.Pointer)(&count), (unsafe.Pointer)(&maxlen), (unsafe.Pointer)(&fromThreadsTable)))
+	if res == 0 {
+		for i := 0; i < count; i++ {
+			event := convertEvent((*CKindlingEventForGo)(&pagefaultKindlingEvent[i]))
+			r.eventChannel <- event
+			r.stats.add(event.Name, 1)
+		}
+	}
+
+	r.telemetry.Logger.Info("pagefault init successed:", zap.Int("init_threads_count", count))
+
+	//2. get pagefault event from eBPF Map in cycle
+	count = 0
+	// var pKindlingEvent unsafe.Pointer
+	r.shutdownWG.Add(1)
+	for {
+		select {
+		case <-r.stopCh:
+			r.shutdownWG.Done()
+			return
+		case <-time.After(interval):
+			res := int(C.getPageFaultEvent((unsafe.Pointer)(&pagefaultKindlingEvent[0]), (unsafe.Pointer)(&count), (unsafe.Pointer)(&maxlen), (unsafe.Pointer)(&fromBPFMap)))
+			if res == 0 {
+				for i := 0; i < count; i++ {
+					event := convertEvent((*CKindlingEventForGo)(&pagefaultKindlingEvent[i]))
+					r.eventChannel <- event
+					r.stats.add(event.Name, 1)
+				}
+			}
+		}
+	}
 }
 
 func (r *CgoReceiver) startGetEvent() {
@@ -188,6 +245,11 @@ func (r *CgoReceiver) subEvent() error {
 		//to do. analyze params filed in the value
 		paramsList := make([]CEventParamsForSubscribe, 0)
 		var temp CEventParamsForSubscribe
+		for name, value := range value.Params {
+			temp.name = C.CString(name)
+			temp.value = C.CString(value)
+			paramsList = append(paramsList, temp)
+		}
 		temp.name = C.CString("terminator")
 		paramsList = append(paramsList, temp)
 		C.subEventForGo(C.CString(value.Name), C.CString(value.Category), (unsafe.Pointer)(&paramsList[0]))

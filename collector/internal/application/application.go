@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/pgftmetricanalyzer"
 	"github.com/spf13/viper"
 	"go.uber.org/multierr"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/cameraexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/logexporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter/otelexporter"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/aggregateprocessor"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/k8sprocessor"
 	"github.com/Kindling-project/kindling/collector/pkg/component/controller"
@@ -84,6 +86,8 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(loganalyzer.Type.String(), loganalyzer.New, &loganalyzer.Config{})
 	a.componentsFactory.RegisterProcessor(aggregateprocessor.Type, aggregateprocessor.New, aggregateprocessor.NewDefaultConfig())
+	a.componentsFactory.RegisterAnalyzer(pgftmetricanalyzer.PgftMetric.String(), pgftmetricanalyzer.NewPgftMetricAnalyzer, &pgftmetricanalyzer.Config{})
+
 	a.componentsFactory.RegisterAnalyzer(tcpconnectanalyzer.Type.String(), tcpconnectanalyzer.New, tcpconnectanalyzer.NewDefaultConfig())
 	a.componentsFactory.RegisterExporter(cameraexporter.Type, cameraexporter.New, cameraexporter.NewDefaultConfig())
 }
@@ -129,6 +133,11 @@ func (a *Application) buildPipeline() error {
 	k8sMetadataProcessor2 := k8sProcessorFactory.NewFunc(k8sProcessorFactory.Config, a.telemetry.GetTelemetryTools(aggregateprocessor.Type), aggregateProcessorForTcp)
 	tcpAnalyzerFactory := a.componentsFactory.Analyzers[tcpmetricanalyzer.TcpMetric.String()]
 	tcpAnalyzer := tcpAnalyzerFactory.NewFunc(tcpAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(tcpmetricanalyzer.TcpMetric.String()), []consumer.Consumer{k8sMetadataProcessor2})
+
+	//3. Page Fault analyzer
+	pgftAnalyzerFactory := a.componentsFactory.Analyzers[pgftmetricanalyzer.PgftMetric.String()]
+	pgftAnalyzer := pgftAnalyzerFactory.NewFunc(pgftAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(pgftmetricanalyzer.PgftMetric.String()), []consumer.Consumer{k8sMetadataProcessor})
+
 	tcpConnectAnalyzerFactory := a.componentsFactory.Analyzers[tcpconnectanalyzer.Type.String()]
 	tcpConnectAnalyzer := tcpConnectAnalyzerFactory.NewFunc(tcpConnectAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(tcpconnectanalyzer.Type.String()), []consumer.Consumer{k8sMetadataProcessor})
 
@@ -136,7 +145,7 @@ func (a *Application) buildPipeline() error {
 	cpuAnalyzer := cpuAnalyzerFactory.NewFunc(cpuAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(cpuanalyzer.CpuProfile.String()), []consumer.Consumer{cameraExporter})
 
 	// Initialize receiver packaged with multiple analyzers
-	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer, tcpConnectAnalyzer, cpuAnalyzer)
+	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer, tcpConnectAnalyzer, pgftAnalyzer, cpuAnalyzer)
 	if err != nil {
 		return fmt.Errorf("error happened while creating analyzer manager: %w", err)
 	}

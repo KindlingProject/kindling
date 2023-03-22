@@ -10,12 +10,17 @@
 #include "scap_open_exception.h"
 #include "sinsp_capture_interrupt_exception.h"
 #include "utils.h"
+
+#include "pagefaults.h"
 #include "converter/cpu_converter.h"
+
+#include <chrono>
 
 cpu_converter* cpuConverter;
 fstream debug_file_log;
 map<uint64_t, char*> ptid_comm;
 static sinsp* inspector = nullptr;
+pagefaults_analyzer *pgft_analyzer = nullptr;
 sinsp_evt_formatter* formatter = nullptr;
 bool printEvent = false;
 int cnt = 0;
@@ -64,6 +69,17 @@ void sub_event(char* eventName, char* category, event_params_for_subscribe param
   if (it_type == m_events.end()) {
     cout << "failed to find event " << eventName << endl;
     return;
+  }
+  if (it_type->second == PPME_PAGE_FAULT_E) {
+    for (int i = 0; strcmp(params[i].name, "terminator") != 0; i++) {
+      if (strncmp(params[i].name, "enable", 6) == 0 && (strncmp(params[i].value, "true", 4) == 0 || strncmp(params[i].value, "1", 1) == 0)) {
+        inspector->enable_page_faults();
+        inspector->set_eventmask(PPME_PAGE_FAULT_X);
+        inspector->set_eventmask(PPME_PAGE_FAULT_E);
+        pgft_analyzer = new pagefaults_analyzer(inspector);
+      }
+    }
+
   }
   if (category == nullptr || category[0] == '\0') {
     for (int j = 0; j < 16; j++) {
@@ -166,6 +182,17 @@ int init_probe() {
   return 0;
 }
 
+int get_pagefault_event_except_ringbuffer(void *pagefaultKindlingEvent, void *count, void *maxlen, int *flag) {
+  if(pgft_analyzer){
+    if(*flag == 0){
+      return pgft_analyzer->get_pagefaults_from_threadstable((kindling_event_t_for_go*)pagefaultKindlingEvent, (int *)count, (int *)maxlen);
+    }
+    return pgft_analyzer->get_pagefaults_from_bpf_map((kindling_event_t_for_go*)pagefaultKindlingEvent, (int *)count, (int *)maxlen);
+  }
+  return -1;
+}
+
+
 int getEvent(void** pp_kindling_event) {
   int32_t res;
   sinsp_evt* ev;
@@ -176,6 +203,9 @@ int getEvent(void** pp_kindling_event) {
   if (result == -1) {
     return -1;
   }
+  if(ev->get_type() == PPME_PAGE_FAULT_E && !pgft_analyzer){
+    return -1;
+	}
   auto threadInfo = ev->get_thread_info();
   if (is_start_profile &&
       (ev->get_type() == PPME_SYSCALL_EXECVE_8_X || ev->get_type() == PPME_SYSCALL_EXECVE_13_X ||

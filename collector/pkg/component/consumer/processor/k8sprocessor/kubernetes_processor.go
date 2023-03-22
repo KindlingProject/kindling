@@ -83,10 +83,40 @@ func (p *K8sMetadataProcessor) Consume(dataGroup *model.DataGroup) error {
 		fallthrough
 	case constnames.TcpDropMetricGroupName:
 		p.processTcpMetric(dataGroup)
+	case constnames.PgftMetricGroupName:
+		p.processPgftMetric(dataGroup)
 	default:
 		p.processNetRequestMetric(dataGroup)
 	}
 	return p.nextConsumer.Consume(dataGroup)
+}
+
+func (p *K8sMetadataProcessor) processPgftMetric(dataGroup *model.DataGroup) {
+	p.addK8sMetaDataForPgft(dataGroup)
+}
+
+func (p *K8sMetadataProcessor) addK8sMetaDataForPgft(dataGroup *model.DataGroup) {
+	labelMap := dataGroup.Labels
+	containerId := labelMap.GetStringValue(constlabels.ContainerId)
+	containerInfo, ok := p.metadata.GetByContainerId(containerId)
+	if ok {
+		p.addK8sMetaDataForPgftLabel(dataGroup.Labels, containerInfo)
+	}
+}
+
+func (p *K8sMetadataProcessor) addK8sMetaDataForPgftLabel(labelMap *model.AttributeMap, containerInfo *kubernetes.K8sContainerInfo) {
+	labelMap.UpdateAddStringValue(constlabels.Container, containerInfo.Name)
+	labelMap.UpdateAddStringValue(constlabels.ContainerId, containerInfo.ContainerId)
+	podInfo := containerInfo.RefPodInfo
+	labelMap.UpdateAddStringValue(constlabels.Pod, podInfo.PodName)
+	labelMap.UpdateAddStringValue(constlabels.Ip, podInfo.Ip)
+	if containerInfo.RefPodInfo.ServiceInfo != nil {
+		labelMap.UpdateAddStringValue(constlabels.Service, containerInfo.RefPodInfo.ServiceInfo.ServiceName)
+	}
+	labelMap.UpdateAddStringValue(constlabels.Namespace, podInfo.Namespace)
+	labelMap.UpdateAddStringValue(constlabels.WorkloadKind, podInfo.WorkloadKind)
+	labelMap.UpdateAddStringValue(constlabels.WorkloadName, podInfo.WorkloadName)
+	labelMap.UpdateAddStringValue(constlabels.Node, p.localNodeName)
 }
 
 func (p *K8sMetadataProcessor) processNetRequestMetric(dataGroup *model.DataGroup) {

@@ -50,6 +50,8 @@ void attach_agent(int64_t pid, char* error_message, bool is_attach);
 
 void get_capture_statistics();
 
+int get_pagefault_event_except_ringbuffer(void *pagefaultKindlingEvent, void *count, void *maxlen, int *flag);
+
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);
@@ -62,18 +64,19 @@ struct event_params_for_subscribe {
   char *value;
 };
 void sub_event(char* eventName, char* category, event_params_for_subscribe params[]);
+typedef struct keyValue {
+    char* key;
+    char* value;
+    uint32_t len;
+    uint32_t valueType;
+} KeyValue;
 struct kindling_event_t_for_go {
   uint64_t timestamp;
   char* name;
   uint32_t category;
   uint16_t paramsNumber;
   uint64_t latency;
-  struct KeyValue {
-    char* key;
-    char* value;
-    uint32_t len;
-    uint32_t valueType;
-  } userAttributes[16];
+  KeyValue userAttributes[16];
   struct event_context {
     struct thread_info {
       uint32_t pid;
@@ -430,6 +433,7 @@ const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
     {"kprobe-tcp_set_state", PPME_TCP_SET_STATE_E},
     {"tracepoint-tcp_send_reset", PPME_TCP_SEND_RESET_E},
     {"tracepoint-tcp_receive_reset", PPME_TCP_RECEIVE_RESET_E},
+    {"tracepoint-page_fault", PPME_PAGE_FAULT_E},
     {"tracepoint-cpu_analysis", PPME_CPU_ANALYSIS_E},
     {"tracepoint-procexit", PPME_PROCEXIT_1_E},
 };
