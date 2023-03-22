@@ -46,8 +46,8 @@ const profileProxy = createProxyMiddleware('/profile', {
 app.use(profileProxy);
 
 const limiter = rateLimit({
-    windowMs: 10 * 60 * 1000, // 1 minute
-    max: 100
+    windowMs: settings.ratelimit.windowMs,
+    max: settings.ratelimit.max
 });
 app.use(limiter);
 
