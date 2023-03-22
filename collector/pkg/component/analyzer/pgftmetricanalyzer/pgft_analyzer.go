@@ -97,7 +97,7 @@ func (a *PgftMetricAnalyzer) generatePageFault(event *model.KindlingEvent) (*mod
 	var dataSlice []*model.Metric
 	dataSlice = append(dataSlice, dataMaj)
 	dataSlice = append(dataSlice, dataMin)
-	// a.telemetry.Logger.Infof("get pagefault event: pid = %d, tid = %d, maj = %d, min = %d", labels.GetIntValue(constlabels.Pid), labels.GetIntValue(constlabels.Tid), ptMaj, ptMin)
+	a.telemetry.Logger.Debugf("get pagefault event: pid = %d, tid = %d, maj = %d, min = %d", labels.GetIntValue(constlabels.Pid), labels.GetIntValue(constlabels.Tid), ptMaj, ptMin)
 	return model.NewDataGroup(constnames.PgftMetricGroupName, labels, event.Timestamp, dataSlice...), nil
 }
 
