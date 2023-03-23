@@ -5,6 +5,7 @@
 
 ## v0.7.1 - 2023-03-01
 ### New features
+- Add bind support to get the listening ip and port of a server. ([#493](https://github.com/KindlingProject/kindling/pull/493))
 - Support trace-profiling sampling to reduce data output. One trace is sampled every five seconds for each endpoint by default. ([#446](https://github.com/KindlingProject/kindling/pull/446)[#462](https://github.com/KindlingProject/kindling/pull/462))
 
 ### Enhancements
