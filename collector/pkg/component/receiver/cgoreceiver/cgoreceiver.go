@@ -137,10 +137,10 @@ func convertEvent(cgoEvent *CKindlingEventForGo) *model.KindlingEvent {
 	ev.Ctx.FdInfo.Role = If(cgoEvent.context.fdInfo.role != 0, true, false).(bool)
 	ev.Ctx.FdInfo.Sip = make([]uint32, 4)
 	ev.Ctx.FdInfo.Dip = make([]uint32, 4)
-    for i := 0; i < 4; i++ {
-        ev.Ctx.FdInfo.Sip[i] = uint32(cgoEvent.context.fdInfo.sip[i])
-        ev.Ctx.FdInfo.Dip[i] = uint32(cgoEvent.context.fdInfo.dip[i])
-    }
+	for i := 0; i < 4; i++ {
+		ev.Ctx.FdInfo.Sip[i] = uint32(cgoEvent.context.fdInfo.sip[i])
+		ev.Ctx.FdInfo.Dip[i] = uint32(cgoEvent.context.fdInfo.dip[i])
+	}
 	ev.Ctx.FdInfo.Sport = uint32(cgoEvent.context.fdInfo.sport)
 	ev.Ctx.FdInfo.Dport = uint32(cgoEvent.context.fdInfo.dport)
 	ev.Ctx.FdInfo.Source = uint64(cgoEvent.context.fdInfo.source)
