@@ -1,6 +1,6 @@
 #ifndef SYSDIG_PAGEFAULTS_H
 #define SYSDIG_PAGEFAULTS_H
-#include "kindling.h"
+#include "../cgo/kindling.h"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>

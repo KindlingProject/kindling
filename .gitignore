@@ -4,10 +4,6 @@
 build/
 probe/src/probe/cmake-build-debug/
 probe/build/
-
-collector/docker/kindling-collector
-collector/docker/libso/libkindling.so
-collector/docker/kindling-falcolib-probe.tar.gz
 probe/cmake-build-debug
 
 collector/docker/kindling-collector

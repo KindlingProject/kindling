@@ -11,7 +11,7 @@
 #include "sinsp_capture_interrupt_exception.h"
 #include "utils.h"
 
-#include "pagefaults.h"
+#include "converter/pagefaults_converter.h"
 #include "converter/cpu_converter.h"
 
 #include <chrono>

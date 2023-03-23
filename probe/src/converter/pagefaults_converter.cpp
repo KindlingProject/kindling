@@ -1,5 +1,6 @@
-#include "pagefaults.h"
-#include "utils.h"
+#include "../cgo/kindling.h"
+#include "../cgo/utils.h"
+#include "pagefaults_converter.h"
 /* convert process information to main thread information.
   The page fault data we want is limited to thread granularity.*/
 void pagefaults_analyzer::convert_threadstable() {
@@ -88,7 +89,8 @@ int pagefaults_analyzer::get_pagefaults_from_bpf_map(kindling_event_t_for_go evt
   }
 
   for (int i = 0; i < rescnt; i++) {
-    init_pagefault_kindling_event(&evt[evtcnt]);
+    sinsp_threadinfo* threadInfo = inspector->m_thread_manager->get_threads()->get(read_from_bpf_map[i].tid);
+    init_pagefault_kindling_event(&evt[evtcnt], threadInfo);
     strcpy(evt[evtcnt].name, "page_fault");
     evt[evtcnt].context.tinfo.pid = read_from_bpf_map[i].pid;
     evt[evtcnt].context.tinfo.tid = read_from_bpf_map[i].tid;
