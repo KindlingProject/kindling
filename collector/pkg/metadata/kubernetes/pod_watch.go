@@ -226,7 +226,7 @@ func getControllerKindName(pod *corev1.Pod) (workloadKind string, workloadName s
 				workloadName = workload.Name
 			} else {
 				// If not found in 'globalRsInfo', just use 'Deployment' as the workload kind.
-				workloadKind = "Deployment"
+				workloadKind = DeploymentKind
 				workloadName = extractDeploymentName(owner.Name)
 			}
 			return
