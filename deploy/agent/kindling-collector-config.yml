@@ -113,7 +113,14 @@ processors:
     enable: true
     kube_auth_type: serviceAccount
     kube_config_dir: /root/.kube/config
+    # GraceDeletePeriod controls the delay interval after receiving delete event.
+    # The unit is seconds, and the default value is 60 seconds.
+    # Should not be lower than 30 seconds.
     grace_delete_period: 60
+    # enable_fetch_replicaset controls whether to fetch ReplicaSet information.
+    # The default value is false. It should be enabled if the ReplicaSet
+    # is used to control pods in the third-party CRD except for Deployment.
+    enable_fetch_replicaset: false
   aggregateprocessor:
     # Aggregation duration window size. The unit is second.
     ticker_interval: 5
