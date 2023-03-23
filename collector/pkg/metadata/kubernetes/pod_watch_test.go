@@ -338,3 +338,23 @@ func assertFindPod(t *testing.T, pod *corev1.Pod) {
 	_, find = MetaDataCache.GetContainerByHostIpPort(pod.Status.HostIP, uint32(pod.Spec.Containers[0].Ports[0].HostPort))
 	assert.True(t, find, "Didn't find the new HostIP Port in MetaDataCache")
 }
+
+func Test_extractDeploymentName(t *testing.T) {
+	type args struct {
+		replicaSetName string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{args: args{"nginx-deployment-75675f5897"}, want: "nginx-deployment"},
+		{args: args{"nginx-75675f5897"}, want: "nginx"},
+		{args: args{"nginx75675f5897"}, want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, extractDeploymentName(tt.args.replicaSetName), "extractDeploymentName(%v)", tt.args.replicaSetName)
+		})
+	}
+}

@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"fmt"
 	_ "path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -223,15 +224,29 @@ func getControllerKindName(pod *corev1.Pod) (workloadKind string, workloadName s
 			if workload, ok := globalRsInfo.GetOwnerReference(mapKey(pod.Namespace, owner.Name)); ok {
 				workloadKind = CompleteGVK(workload.APIVersion, strings.ToLower(workload.Kind))
 				workloadName = workload.Name
-				return
+			} else {
+				// If not found in 'globalRsInfo', just use 'Deployment' as the workload kind.
+				workloadKind = "Deployment"
+				workloadName = extractDeploymentName(owner.Name)
 			}
+			return
 		}
-		// If the owner of pod is not ReplicaSet or the replicaset has no controller
+		// If the owner of pod is not ReplicaSet
 		workloadKind = CompleteGVK(owner.APIVersion, strings.ToLower(owner.Kind))
 		workloadName = owner.Name
 		return
 	}
 	return
+}
+
+var rRegex = regexp.MustCompile(`^(.*)-[0-9a-z]+$`)
+
+func extractDeploymentName(replicaSetName string) string {
+	parts := rRegex.FindStringSubmatch(replicaSetName)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return ""
 }
 
 func OnUpdate(objOld interface{}, objNew interface{}) {

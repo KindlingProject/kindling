@@ -24,10 +24,10 @@ const (
 	AuthTypeServiceAccount AuthType = "serviceAccount"
 	// AuthTypeKubeConfig uses local credentials like those used by kubectl.
 	AuthTypeKubeConfig AuthType = "kubeConfig"
-	// Default kubeconfig path
+	// DefaultKubeConfigPath Default kubeconfig path
 	DefaultKubeConfigPath string = "~/.kube/config"
-	// Default grace delete period is 60 seconds
-	DefaultGraceDeletePeriod time.Duration = time.Second * 60
+	// DefaultGraceDeletePeriod is 60 seconds
+	DefaultGraceDeletePeriod = time.Second * 60
 )
 
 var authTypes = map[AuthType]bool{
@@ -57,7 +57,6 @@ func (c APIConfig) Validate() error {
 
 var (
 	MetaDataCache = New()
-	KubeClient    *k8s.Clientset
 	once          sync.Once
 	IsInitSuccess = false
 )
@@ -66,9 +65,10 @@ func InitK8sHandler(options ...Option) error {
 	var retErr error
 	once.Do(func() {
 		k8sConfig := config{
-			KubeAuthType:      AuthTypeKubeConfig,
-			KubeConfigDir:     DefaultKubeConfigPath,
-			GraceDeletePeriod: DefaultGraceDeletePeriod,
+			KubeAuthType:          AuthTypeKubeConfig,
+			KubeConfigDir:         DefaultKubeConfigPath,
+			GraceDeletePeriod:     DefaultGraceDeletePeriod,
+			EnableFetchReplicaSet: false,
 		}
 		for _, option := range options {
 			option(&k8sConfig)
@@ -82,13 +82,14 @@ func InitK8sHandler(options ...Option) error {
 		IsInitSuccess = true
 		go NodeWatch(clientSet)
 		time.Sleep(1 * time.Second)
-		go RsWatch(clientSet)
-		time.Sleep(1 * time.Second)
+		if k8sConfig.EnableFetchReplicaSet {
+			go RsWatch(clientSet)
+			time.Sleep(1 * time.Second)
+		}
 		go ServiceWatch(clientSet)
 		time.Sleep(1 * time.Second)
 		go PodWatch(clientSet, k8sConfig.GraceDeletePeriod)
 		time.Sleep(1 * time.Second)
-		KubeClient = clientSet
 	})
 	return retErr
 }
