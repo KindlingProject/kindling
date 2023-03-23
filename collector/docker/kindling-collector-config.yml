@@ -32,6 +32,9 @@ receivers:
       - name: syscall_exit-connect
       - name: kretprobe-tcp_connect
       - name: kprobe-tcp_set_state
+      - name: tracepoint-page_fault
+        params:
+          enable: true
       - name: tracepoint-procexit
 analyzers:
   cpuanalyzer:
@@ -49,6 +52,7 @@ analyzers:
     # Whether add pid and command info in tcp-connect-metrics's labels
     need_process_info: false
   tcpmetricanalyzer:
+  pgftmetricanalyzer:
   networkanalyzer:
     connect_timeout: 100
     # How many seconds to wait until we consider a request as complete.
@@ -127,6 +131,10 @@ processors:
         - kind: sum
       response_io:
         - kind: sum
+      kindling_pagefault_major_total:
+        - kind: last
+      kindling_pagefault_minor_total:
+        - kind: last
       kindling_tcp_srtt_microseconds:
         - kind: last
       kindling_tcp_retransmit_total:
@@ -164,6 +172,8 @@ exporters:
       # send trace data in the format of ResourceSpan
       need_trace_as_span: false
     metric_aggregation_map:
+      kindling_pagefault_major_total: gauge
+      kindling_pagefault_minor_total: gauge
       kindling_entity_request_total: counter
       kindling_entity_request_duration_nanoseconds_total: counter
       kindling_entity_request_send_bytes_total: counter

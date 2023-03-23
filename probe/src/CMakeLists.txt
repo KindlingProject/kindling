@@ -10,6 +10,7 @@ set(SOURCE_FILES
 		cgo/cgo_func.cpp
 		cgo/kindling.cpp
 		converter/cpu_converter.cpp
+		converter/pagefaults_converter.cpp
         cgo/catch_sig.cpp cgo/catch_sig.h
 		cgo/utils.cpp cgo/utils.h)
 

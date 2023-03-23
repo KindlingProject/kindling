@@ -142,7 +142,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
 				adapter.NewSimpleAdapter([]string{constnames.TcpRttMetricGroupName, constnames.TcpRetransmitMetricGroupName,
-					constnames.TcpDropMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
+					constnames.TcpDropMetricGroupName, constnames.TcpConnectMetricGroupName, constnames.PgftMetricGroupName}, customLabels),
 			},
 		}
 		go func() {
@@ -210,7 +210,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					StoreExternalSrcIP: cfg.AdapterConfig.StoreExternalSrcIP,
 				}),
 				adapter.NewSimpleAdapter([]string{constnames.TcpRttMetricGroupName, constnames.TcpRetransmitMetricGroupName,
-					constnames.TcpDropMetricGroupName, constnames.TcpConnectMetricGroupName}, customLabels),
+					constnames.TcpDropMetricGroupName, constnames.TcpConnectMetricGroupName, constnames.PgftMetricGroupName}, customLabels),
 			},
 		}
 

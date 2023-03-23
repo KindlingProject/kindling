@@ -3,8 +3,10 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
+## Unreleased
 ## v0.7.1 - 2023-03-01
 ### New features
+- The monitoring of major & minor page fault is realized. ([#291](https://github.com/CloudDectective-Harmonycloud/kindling/pull/291))
 - Support trace-profiling sampling to reduce data output. One trace is sampled every five seconds for each endpoint by default. ([#446](https://github.com/KindlingProject/kindling/pull/446)[#462](https://github.com/KindlingProject/kindling/pull/462))
 
 ### Enhancements
