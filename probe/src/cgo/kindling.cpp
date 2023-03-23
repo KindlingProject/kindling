@@ -9,7 +9,7 @@
 #include <thread>
 #include "scap_open_exception.h"
 #include "sinsp_capture_interrupt_exception.h"
-
+#include "utils.h"
 #include "converter/cpu_converter.h"
 
 cpu_converter* cpuConverter;
@@ -1120,6 +1120,7 @@ void print_profile_debug_info(sinsp_evt* sevt) {
 void get_capture_statistics() {
   scap_stats s;
   while (1) {
+    printCurrentTime();
     inspector->get_capture_stats(&s);
     printf("seen by driver: %" PRIu64 "\n", s.n_evts);
     if (s.n_drops != 0) {
@@ -1149,6 +1150,7 @@ void get_capture_statistics() {
     if (s.n_tids_suppressed != 0) {
       printf("Number of threads currently being suppressed: %" PRIu64 "\n", s.n_tids_suppressed);
     }
+    fflush(stdout);
     sleep(10);
   }
 }

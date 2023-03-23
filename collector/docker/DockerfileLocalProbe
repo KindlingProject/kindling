@@ -9,14 +9,14 @@ COPY kindling-falcolib-probe.tar.gz  ./
 COPY build-asyncprofiler.sh /app/
 RUN sh build-asyncprofiler.sh
 
-COPY libso/libkindling.so /lib64/
-COPY libso/* /usr/lib64/
-
+COPY start.sh /app/
 COPY kindling-probe-loader /usr/bin/kindling-probe-loader
 RUN chmod +x  /usr/bin/kindling-probe-loader
+
+COPY libso/* /usr/lib64/
+COPY libkindling-plugin.so /app/
+COPY libso/libkindling.so /lib64/
 COPY kindling-collector-config.yml /app/config/
 COPY kindling-collector /app/kindling-collector
-COPY libkindling-plugin.so /app/
-COPY start.sh /app/
 
 CMD ["sh", "start.sh"]

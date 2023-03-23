@@ -744,12 +744,16 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         item.traceList = [];
         for(let i = 0;i < sameTraceList.length; i++) {
             if (i % 2 === 0 && sameTraceList[i+1]) {
-                item.traceList.push({
-                    traceId: sameTraceList[i].traceId,
-                    startTime: formatTimsToMS(sameTraceList[i].timestamp),
-                    endTime: formatTimsToMS(sameTraceList[i + 1].timestamp),
-                    time: formatTimsToMS(sameTraceList[i + 1].timestamp - sameTraceList[i].timestamp),
-                });
+                let startTime = formatTimsToMS(sameTraceList[i].timestamp);
+                let endTime = formatTimsToMS(sameTraceList[i + 1].timestamp);
+                if (startTime > requestStartTimestamp - 5 && endTime < requestEndTimestamp + 5) {
+                    item.traceList.push({
+                        traceId: sameTraceList[i].traceId,
+                        startTime: startTime,
+                        endTime: endTime,
+                        time: formatTimsToMS(sameTraceList[i + 1].timestamp - sameTraceList[i].timestamp),
+                    });
+                }   
             }
         }
     });
