@@ -21,6 +21,7 @@ interface IState {
     supportTrace: boolean;
     supportBrush: boolean;
     showJavaLock: boolean;
+    showRunq: boolean;
     showLog: boolean;
     showEventChart: boolean;
     installLoading: boolean;
@@ -33,6 +34,7 @@ class CameraWarp extends React.Component<IProps, IState> {
             supportAddLine: false,
             supportBrush: false,
             supportTrace: true,
+            showRunq: true,
             showJavaLock: true,
             showLog: true,
             showEventChart: false,
@@ -134,6 +136,12 @@ class CameraWarp extends React.Component<IProps, IState> {
     resetChartBrush = () => {
         this.camera.resetChartBrush()
     }
+    toggleRunqBtn = () => {
+        this.setState((prevState) => ({
+            showRunq: !prevState.showRunq
+        }));
+        this.state.showRunq ? this.camera.hideRunQ() : this.camera.showRunQ();
+    }
     toggleJavaLockBtn = () => {
         this.setState((prevState) => ({
             showJavaLock: !prevState.showJavaLock
@@ -182,7 +190,7 @@ class CameraWarp extends React.Component<IProps, IState> {
 
     render() {
         const {option, onViewChange} = this.props;
-        const {supportAddLine, supportBrush, showJavaLock, showLog, supportTrace, showEventChart, installLoading, events} = this.state;
+        const {supportAddLine, supportBrush, showRunq, showJavaLock, showLog, supportTrace, showEventChart, installLoading, events} = this.state;
         return (
             <div id="camera_chart_warp">
                 <div className='header'>
@@ -224,6 +232,8 @@ class CameraWarp extends React.Component<IProps, IState> {
                         }
                         {
                             option.showComplex || showEventChart ? <React.Fragment>
+                                <span>runq</span>
+                                <Switch checked={showRunq} onChange={this.toggleRunqBtn} size='small'/>
                                 <span>Java Lock</span>
                                 <Switch checked={showJavaLock} onChange={this.toggleJavaLockBtn} size='small'/>
                                 <span>Log事件</span>

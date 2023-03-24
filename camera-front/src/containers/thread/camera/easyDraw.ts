@@ -16,7 +16,7 @@ class EasyCamera {
     data: IThread[] = [];
     trace: any;
     lineTimeList: ILineTime[] = [];
-    timeThreshold: number = 0.002;
+    timeThreshold: number = 0.001;
     traceId: string;
     svgId: string;
     svg: any;
@@ -41,6 +41,7 @@ class EasyCamera {
     
     timeRange: number[];
     timeRangeDiff: number;
+    showRunQFlag: boolean = true;
     showLogFlag: boolean = true;       // 是否显示日志的标志位
     showJavaLockFlag: boolean = true;  // 是否显示lock事件的标志位
     activeEventDomId: string = '';      // 当前选中查看详情的event id => id_idx1_idx2
@@ -960,6 +961,14 @@ class EasyCamera {
         this.drawXAxisWEText(xAxisWarp, 0, requestTime[1].time); // 'IO End Time'
     }
 
+    showRunQ() {
+        this.showRunQFlag = true;
+        d3.selectAll('.event_runq').style('visibility', 'visible');
+    }
+    hideRunQ() {
+        this.showRunQFlag = false;
+        d3.selectAll('.event_runq').style('visibility', 'hidden');
+    }
     // 显示Java lock事件
     showJavaLock() {
         this.showJavaLockFlag = true;

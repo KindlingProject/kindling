@@ -21,7 +21,7 @@ class Camera {
     theme: 'light' | 'dark' = 'light';
     data: IThread[] = [];
     lineTimeList: ILineTime[] = [];
-    timeThreshold: number = 0.005;
+    timeThreshold: number = 0.0025;
     trace: any;
     traceId: string;
     svgId: string;
@@ -45,6 +45,7 @@ class Camera {
     timeRangeDiff: number;      // timeRange的时间区间差值
     requestTimes: Date[] = [];  // trace请求开始跟结束时间
     cruxTimes: number[] = [];     // 用户自定义的关键时刻数组
+    showRunQFlag: boolean = true;
     showLogFlag: boolean = true;       // 是否显示日志的标志位
     showJavaLockFlag: boolean = true;  // 是否显示lock事件的标志位
     showTraceFlag: boolean = true;         // 是否开启trace分析标志位
@@ -227,7 +228,7 @@ class Camera {
                     const eventWarp = barWarp.append('g')
                         .attr('id', `id_${idx}_${idx2}`)
                         .attr('data-type', event.eventType)
-                        .attr('class', 'event_warp');
+                        .attr('class', `event_warp ${event.eventType === 'runqLatency' ? 'event_runq' : ''}`);
                     eventWarp.append('rect')
                         .attr('class', 'event_rect')
                         .attr('width', timeWidth)
@@ -363,6 +364,7 @@ class Camera {
             _this.eventClick(data);
         });
 
+        !this.showRunQFlag && this.hideRunQ();
         // 默认开启trace 分析，默认打开javalock 跟 log绘制
         this.showTraceFlag && this.startTrace(true);
         this.showJavaLockFlag && this.showJavaLock();
@@ -884,6 +886,15 @@ class Camera {
     removeAddLine() {
         d3.select('.top_time_warp').attr('cursor', 'default').on('click', null);
     }
+
+    showRunQ() {
+        this.showRunQFlag = true;
+        d3.selectAll('.event_runq').style('visibility', 'visible');
+    }
+    hideRunQ() {
+        this.showRunQFlag = false;
+        d3.selectAll('.event_runq').style('visibility', 'hidden');
+    }
     // 显示Java lock事件
     showJavaLock() {
         this.showJavaLockFlag = true;
@@ -954,7 +965,7 @@ class Camera {
                         const eventWarp = barWarp.append('g')
                             .attr('id', `id_${idx}_${idx2}`)
                             .attr('data-type', event.eventType as string)
-                            .attr('class', 'event_warp');
+                            .attr('class', `event_warp ${event.eventType === 'runqLatency' ? 'event_runq' : ''}`);
                         eventWarp.append('rect')
                             .attr('class', 'event_rect')
                             .attr('width', timeWidth)
@@ -984,6 +995,7 @@ class Camera {
         // event warp click 监听事件点击事件
         this.addEventClickListener();
 
+        !this.showRunQFlag && this.hideRunQ();
         /**
          * 更新javaLock事件占比
          * 时间筛选后会出现event startTime 小于筛选的起始时间，endTime 大于筛选的终止时间，需要截取event的对应时间段 重新计算

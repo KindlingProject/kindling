@@ -55,6 +55,7 @@ export type IEventTime  = {
     idx?: number;
     timeRate?: number;
     left?: number;
+    runqLatency?: number;
     children?: IEventTime[];
 }
 export type IJavaLock  = {
