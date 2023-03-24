@@ -431,6 +431,7 @@ const onOffInfoHandle = (info, eventObj, timeRange) => {
                 detailInfo.startTime = formatTimsToMS(detailInfo.startTime);
                 detailInfo.duration = formatTimsToMS(detailInfo.duration);
                 subEvent.info = detailInfo;
+                subEvent.onOff = true;
                 if (eventObj.endTime > timeRange[0] && eventObj.startTime < timeRange[1]) {
                     result.push(subEvent);
                 }
@@ -456,6 +457,7 @@ const onOffInfoHandle = (info, eventObj, timeRange) => {
             subEvent.type = detailInfo.type;
             subEvent.eventType = detailInfo.type + detailInfo.operate;
             subEvent.info = detailInfo;
+            subEvent.onOff = true;
             result.push(subEvent);
         } 
         detailInfo.startTime = formatTimsToMS(detailInfo.startTime);
@@ -822,7 +824,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         let locks: IJavaLock[] = [];
         _.forEach(traceData, (item: IThread) => {
             _.forEach(item.eventList, event => {
-                if (event.endTime > requestStartTimestamp - 2 && event.startTime < requestEndTimestamp + 2) {
+                if (event.endTime > requestStartTimestamp - 2 && event.startTime < requestEndTimestamp + 2 && !event.onOff) {
                     let nEvent = _.cloneDeep(event);
                     let {stime, etime, time} = timeHandle(event.startTime, event.endTime, event.time, [requestStartTimestamp - 2, requestEndTimestamp + 2], false);
                     nEvent.startTime = stime;

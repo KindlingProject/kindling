@@ -55,6 +55,7 @@ export type IEventTime  = {
     idx?: number;
     timeRate?: number;
     left?: number;
+    onOff?: boolean;
     runqLatency?: number;
     children?: IEventTime[];
 }
