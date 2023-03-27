@@ -318,6 +318,7 @@ int getEvent(void** pp_kindling_event) {
         p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dport;
         break;
       case SCAP_FD_IPV6_SERVSOCK:
+        p_kindling_event->context.fdInfo.protocol = get_protocol(fdInfo->get_l4proto());
         p_kindling_event->context.fdInfo.role = fdInfo->is_role_server();
         memcpy(p_kindling_event->context.fdInfo.dip, fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b, sizeof(fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b));
         p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv6serverinfo.m_port;
