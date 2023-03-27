@@ -1,5 +1,7 @@
 package kubernetes
 
+const DeploymentKind = "deployment"
+
 // CompleteGVK returns the complete string of the workload kind.
 // If apiVersion is not one of the built-in groupVersion(see scheme.go), return {apiVersion}-{kind};
 // return {kind}, otherwise.

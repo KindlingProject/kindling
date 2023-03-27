@@ -3,6 +3,13 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
+## Unreleased 
+### Enhancements
+- Add an option `enable_fetch_replicaset` to control whether to fetch ReplicaSet metadata. The default value is false which aims to release pressure on Kubernetes API server. ([#492](https://github.com/KindlingProject/kindling/pull/492))
+
+### Bug fixes
+
+
 ## v0.7.1 - 2023-03-01
 ### New features
 - Add bind support to get the listening ip and port of a server. ([#493](https://github.com/KindlingProject/kindling/pull/493))

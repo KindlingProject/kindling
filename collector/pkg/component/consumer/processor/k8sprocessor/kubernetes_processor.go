@@ -43,9 +43,12 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 		}
 	}
 	var options []kubernetes.Option
-	options = append(options, kubernetes.WithAuthType(config.KubeAuthType))
-	options = append(options, kubernetes.WithKubeConfigDir(config.KubeConfigDir))
-	options = append(options, kubernetes.WithGraceDeletePeriod(config.GraceDeletePeriod))
+	options = append(options,
+		kubernetes.WithAuthType(config.KubeAuthType),
+		kubernetes.WithKubeConfigDir(config.KubeConfigDir),
+		kubernetes.WithGraceDeletePeriod(config.GraceDeletePeriod),
+		kubernetes.WithFetchReplicaSet(config.EnableFetchReplicaSet),
+	)
 	err := kubernetes.InitK8sHandler(options...)
 	if err != nil {
 		telemetry.Logger.Panicf("Failed to initialize [%s]: %v. Set the option 'enable' false if you want to run the agent in the non-Kubernetes environment.", K8sMetadata, err)
