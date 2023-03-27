@@ -89,14 +89,10 @@ void sub_event(char* eventName, char* category, event_params_for_subscribe param
   }
 }
 
-void suppress_events_comm(sinsp* inspector) {
-  const string comms[] = {"kindling-collec", "sshd",           "containerd",      "dockerd",
-                          "containerd-shim", "kubelet",        "kube-apiserver",  "etcd",
-                          "kube-controller", "kube-scheduler", "kube-rbac-proxy", "prometheus",
-                          "node_exporter",   "alertmanager",   "adapter"};
-  for (auto& comm : comms) {
-    inspector->suppress_events_comm(comm);
-  }
+void suppress_events_comm(string comm) {
+  printCurrentTime();
+  cout << "suppress_events for process " << comm << endl;
+  inspector->suppress_events_comm(comm);
 }
 
 void set_eventmask(sinsp* inspector) {
@@ -154,7 +150,6 @@ int init_probe() {
     formatter = new sinsp_evt_formatter(inspector, output_format);
     inspector->set_hostname_and_port_resolution_mode(false);
     set_snaplen(inspector);
-    suppress_events_comm(inspector);
     inspector->open("");
     set_eventmask(inspector);
 

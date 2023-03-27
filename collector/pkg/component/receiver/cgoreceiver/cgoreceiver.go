@@ -68,6 +68,7 @@ func (r *CgoReceiver) Start() error {
 	go r.getCaptureStatistics()
 	go r.catchSignalUp()
 	time.Sleep(2 * time.Second)
+	r.suppressEventsComm()
 	_ = r.subEvent()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
@@ -176,6 +177,16 @@ func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
 		}
 	}
 	return nil
+}
+
+func (r *CgoReceiver) suppressEventsComm() {
+	comms := r.cfg.ProcessFilterInfo.Comms
+	if len(comms) > 0 {
+		r.telemetry.Logger.Infof("Filter out process with command: %v", comms)
+	}
+	for _, comm := range comms {
+		C.suppressEventsCommForGo(C.CString(comm))
+	}
 }
 
 func (r *CgoReceiver) subEvent() error {

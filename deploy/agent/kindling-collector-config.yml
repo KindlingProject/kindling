@@ -25,8 +25,6 @@ receivers:
         category: net
       - name: syscall_exit-sendmmsg
         category: net
-      - name: syscall_exit-recvmmsg
-        category: net
       - name: kprobe-tcp_close
       - name: kprobe-tcp_rcv_established
       - name: kprobe-tcp_drop
@@ -35,6 +33,13 @@ receivers:
       - name: kretprobe-tcp_connect
       - name: kprobe-tcp_set_state
       - name: tracepoint-procexit
+    process_filter:
+      comms:
+        - "kindling-collec"
+        - "containerd"
+        - "dockerd"
+        - "containerd-shim"
+
 analyzers:
   cpuanalyzer:
     # sampling_interval is the sampling interval for the same url. The unit is second.
