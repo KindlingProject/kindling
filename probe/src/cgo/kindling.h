@@ -90,8 +90,8 @@ struct kindling_event_t_for_go {
       char* directory;
       uint32_t protocol;
       uint8_t role;
-      uint32_t sip;
-      uint32_t dip;
+      uint32_t sip[4];
+      uint32_t dip[4];
       uint32_t sport;
       uint32_t dport;
       uint64_t source;
