@@ -169,7 +169,7 @@ class EasyCamera {
                         const eventWarp = barWarp.append('g')
                             .attr('id', `id_${idx}_${idx2}`)
                             .attr('data-type', event.eventType)
-                            .attr('class', 'event_warp');
+                            .attr('class', `event_warp ${event.eventType === 'runqLatency' ? 'event_runq' : ''}`);
                         eventWarp.append('rect')
                             .attr('class', 'event_rect')
                             .attr('width', timeWidth)
@@ -418,7 +418,7 @@ class EasyCamera {
             const eventWarp = subRectWarp.append('g')
                 .attr('id', `id_${idx}_${event.idx}`)
                 .attr('data-type', event.eventType)
-                .attr('class', 'event_warp');
+                .attr('class', `event_warp ${event.eventType === 'runqLatency' ? 'event_runq' : ''}`);
             eventWarp.append('rect')
                 .attr('class', 'event_rect')
                 .attr('width', this.subEventWidth)

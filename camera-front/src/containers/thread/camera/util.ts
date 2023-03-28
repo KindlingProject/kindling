@@ -163,7 +163,7 @@ export const eventList: IEvent[] = [
         alias: 'runQ',
         value: 'runqLatency',
         type: 'runqLatency',
-        fillColor: '#eed7ea',
+        fillColor: '#fcc3f3',
         activeColor: '#ff87e3',
         color: '#fb65d8'
     }

@@ -140,19 +140,31 @@ class CameraWarp extends React.Component<IProps, IState> {
         this.setState((prevState) => ({
             showRunq: !prevState.showRunq
         }));
-        this.state.showRunq ? this.camera.hideRunQ() : this.camera.showRunQ();
+        if (this.props.option.showComplex) {
+            this.state.showRunq ? this.camera.hideRunQ() : this.camera.showRunQ();
+        } else {
+            this.state.showRunq ? this.easyCamera.hideRunQ() : this.easyCamera.showRunQ();
+        }
     }
     toggleJavaLockBtn = () => {
         this.setState((prevState) => ({
             showJavaLock: !prevState.showJavaLock
         }));
-        this.state.showJavaLock ? this.camera.hideJavaLock() : this.camera.showJavaLock();
+        if (this.props.option.showComplex) {
+            this.state.showJavaLock ? this.camera.hideJavaLock() : this.camera.showJavaLock();
+        } else {
+            this.state.showJavaLock ? this.easyCamera.hideJavaLock() : this.easyCamera.showJavaLock();
+        }
     }
     toggleLogBtn = () => {
         this.setState((prevState) => ({
             showLog: !prevState.showLog
         }));
-        this.state.showLog ? this.camera.hideLog() : this.camera.showLog();
+        if (this.props.option.showComplex) {
+            this.state.showLog ? this.camera.hideLog() : this.camera.showLog();
+        } else {
+            this.state.showLog ? this.easyCamera.hideLog() : this.easyCamera.showLog();
+        }
     }
 
     showSpanChart = () => {
