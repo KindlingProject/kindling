@@ -189,7 +189,9 @@ func (r *CgoReceiver) suppressEventsComm() {
 		r.telemetry.Logger.Infof("Filter out process with command: %v", comms)
 	}
 	for _, comm := range comms {
-		C.suppressEventsCommForGo(C.CString(comm))
+		csComm := C.CString(comm)
+		C.suppressEventsCommForGo(csComm)
+		C.free(unsafe.Pointer(csComm))
 	}
 }
 
@@ -205,7 +207,11 @@ func (r *CgoReceiver) subEvent() error {
 		var temp CEventParamsForSubscribe
 		temp.name = C.CString("terminator")
 		paramsList = append(paramsList, temp)
-		C.subEventForGo(C.CString(value.Name), C.CString(value.Category), (unsafe.Pointer)(&paramsList[0]))
+		csName := C.CString(value.Name)
+		csCategory := C.CString(value.Category)
+		C.subEventForGo(csName, csCategory, (unsafe.Pointer)(&paramsList[0]))
+		C.free(unsafe.Pointer(csName))
+		C.free(unsafe.Pointer(csCategory))
 	}
 	return nil
 }
