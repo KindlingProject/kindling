@@ -5,6 +5,7 @@
 
 ## Unreleased 
 ### Enhancements
+- Make suppress processes configurable. ([#495](https://github.com/KindlingProject/kindling/pull/495))
 - Add bind support to get the listening ip and port of a server. ([#493](https://github.com/KindlingProject/kindling/pull/493))
 - Add an option `enable_fetch_replicaset` to control whether to fetch ReplicaSet metadata. The default value is false which aims to release pressure on Kubernetes API server. ([#492](https://github.com/KindlingProject/kindling/pull/492))
 
