@@ -34,6 +34,7 @@ receivers:
       - name: kprobe-tcp_set_state
       - name: tracepoint-procexit
     process_filter:
+      # the length of a comm should be no more than 16
       comms:
         - "kindling-collec"
         - "containerd"
