@@ -14,3 +14,11 @@ type SubEvent struct {
 type ProcessFilter struct {
 	Comms []string `mapstructure:"comms"`
 }
+
+func NewDefaultConfig() *Config {
+	return &Config{
+		ProcessFilterInfo: ProcessFilter{
+			Comms: []string{"kindling-collec", "containerd", "dockerd", "containerd-shim"},
+		},
+	}
+}
