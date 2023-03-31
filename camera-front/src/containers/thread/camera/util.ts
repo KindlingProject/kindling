@@ -679,9 +679,9 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                             if (runqList[offFlag] > 1000) {
                                 let temp = _.isArray(result) ? result[0] : result;
                                 let obj: any = {
-                                    startTime: temp.endTime - runqList[offFlag] / 1000,
+                                    startTime: temp.endTime - parseInt(runqList[offFlag]) / 1000,
                                     endTime: temp.endTime,
-                                    time: runqList[offFlag],
+                                    time: parseInt(runqList[offFlag]),
                                     eventType: 'runqLatency',
                                     type: 'runqLatency'
                                 };
@@ -697,7 +697,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                                 let obj: any = {
                                     startTime: eventObj.endTime - parseInt(runqList[offFlag]) / 1000,
                                     endTime: eventObj.endTime,
-                                    time: parseInt(runqList[offFlag]) / 1000,
+                                    time: parseInt(runqList[offFlag]),
                                     eventType: 'runqLatency',
                                     type: 'runqLatency'
                                 };
