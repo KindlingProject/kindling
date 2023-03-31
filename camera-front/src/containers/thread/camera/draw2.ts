@@ -236,12 +236,22 @@ class Camera {
                         .attr('fill', sevent.fillColor)
                         .attr('x', event.left)
                         .attr('y', this.barPadding);
-                    if (event.timeRate > 0.05) {
-                        eventWarp.append('text').text(sevent.type)
-                            .attr('class', 'event_rect_left_text')
-                            .attr('stroke', sevent.color)
-                            .attr('x', event.left && event.left + 5)
-                            .attr('y', this.barPadding + this.barWidth / 2 + 5)
+                    if (event.eventType === 'runqLatency') {
+                        if (timeWidth! > 75) {
+                            eventWarp.append('text').text(sevent.type)
+                                .attr('class', 'event_rect_left_text')
+                                .attr('stroke', sevent.color)
+                                .attr('x', event.left && event.left + 5)
+                                .attr('y', this.barPadding + this.barWidth / 2 + 5)
+                        } 
+                    } else {
+                        if (event.timeRate > 0.05) {
+                            eventWarp.append('text').text(sevent.type)
+                                .attr('class', 'event_rect_left_text')
+                                .attr('stroke', sevent.color)
+                                .attr('x', event.left && event.left + 5)
+                                .attr('y', this.barPadding + this.barWidth / 2 + 5)
+                        }
                     }
                 }
             });
@@ -973,12 +983,22 @@ class Camera {
                             .attr('fill', sevent.fillColor)
                             .attr('x', event.left)
                             .attr('y', this.barPadding);
-                        if (timeRate > 0.05) {
-                            eventWarp.append('text').text(sevent.type)
-                                .attr('class', 'event_rect_left_text')
-                                .attr('stroke', sevent.color)
-                                .attr('x', event.left + 5)
-                                .attr('y', this.barPadding + this.barWidth / 2 + 5)
+                        if (event.eventType === 'runqLatency') {
+                            if (timeWidth! > 75) {
+                                eventWarp.append('text').text(sevent.type)
+                                    .attr('class', 'event_rect_left_text')
+                                    .attr('stroke', sevent.color)
+                                    .attr('x', event.left && event.left + 5)
+                                    .attr('y', this.barPadding + this.barWidth / 2 + 5)
+                            } 
+                        } else {
+                            if (timeRate > 0.05) {
+                                eventWarp.append('text').text(sevent.type)
+                                    .attr('class', 'event_rect_left_text')
+                                    .attr('stroke', sevent.color)
+                                    .attr('x', event.left && event.left + 5)
+                                    .attr('y', this.barPadding + this.barWidth / 2 + 5)
+                            }
                         }
                     } else {
                         lineData.push(event);
