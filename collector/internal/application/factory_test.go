@@ -49,7 +49,9 @@ func TestConstructConfig(t *testing.T) {
 		ConntrackMaxStateSize: 131072,
 		ConntrackRateLimit:    500,
 		ProcRoot:              "/proc",
-		ProtocolParser:        []string{"http", "mysql", "dns", "redis", "kafka", "dubbo"},
+		// Case: This slice is from the default config. The config file doesn't have this field.
+		ProtocolParser: []string{"http", "mysql", "dns", "redis", "kafka", "dubbo"},
+		// Case: This slice is overridden by the config file. The default config is different.
 		ProtocolConfigs: []network.ProtocolConfig{
 			{
 				Key:           "http",
