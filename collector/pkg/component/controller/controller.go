@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Kindling-project/kindling/collector/pkg/component"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+
+	"github.com/Kindling-project/kindling/collector/pkg/component"
 )
 
 type ControllerAPI interface {
@@ -50,7 +52,9 @@ type ControllerConfig struct {
 func (cf *ControllerFactory) ConstructConfig(viper *viper.Viper, tools *component.TelemetryTools) error {
 	var controllerConfig ControllerConfig
 	key := ControllerComponent
-	err := viper.UnmarshalKey(key, &controllerConfig)
+	err := viper.UnmarshalKey(key, &controllerConfig, func(config *mapstructure.DecoderConfig) {
+		config.ZeroFields = true
+	})
 	if err != nil {
 		tools.Logger.Errorf("Error happened when reading controller config, will disable all controller: %v", err)
 	}
