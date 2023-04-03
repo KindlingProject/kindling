@@ -3,13 +3,15 @@ package component
 import (
 	"log"
 
-	"github.com/Kindling-project/kindling/collector/pkg/observability"
-	"github.com/Kindling-project/kindling/collector/pkg/observability/logger"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/Kindling-project/kindling/collector/pkg/observability"
+	"github.com/Kindling-project/kindling/collector/pkg/observability/logger"
 )
 
 const (
@@ -40,7 +42,9 @@ func (t *TelemetryManager) ConstructConfig(viper *viper.Viper) {
 func (t *TelemetryManager) initLogger(viper *viper.Viper) {
 	var loggerConfig = logger.Config{}
 	key := ObservabilityConfig + "." + LogKey
-	err := viper.UnmarshalKey(key, &loggerConfig)
+	err := viper.UnmarshalKey(key, &loggerConfig, func(config *mapstructure.DecoderConfig) {
+		config.ZeroFields = true
+	})
 	if err != nil {
 		log.Printf("Error happened when reading logger config, and default config will be used: %v", err)
 	}
@@ -51,7 +55,9 @@ func (t *TelemetryManager) initLogger(viper *viper.Viper) {
 func (t *TelemetryManager) initProvider(viper *viper.Viper) {
 	var config = &observability.DefaultConfig
 	key := ObservabilityConfig + "." + MetricKey
-	err := viper.UnmarshalKey(key, config)
+	err := viper.UnmarshalKey(key, config, func(config *mapstructure.DecoderConfig) {
+		config.ZeroFields = true
+	})
 	if err != nil {
 		log.Printf("Error happened when reading observability config, and default config will be used: %v", err)
 	}
