@@ -10,7 +10,7 @@
 - Add an option `enable_fetch_replicaset` to control whether to fetch ReplicaSet metadata. The default value is false which aims to release pressure on Kubernetes API server. ([#492](https://github.com/KindlingProject/kindling/pull/492))
 
 ### Bug fixes
-
+- Fix the bug that the default configs of slice/map are not overridden. ([#497](https://github.com/KindlingProject/kindling/pull/497))
 
 ## v0.7.1 - 2023-03-01
 ### New features
