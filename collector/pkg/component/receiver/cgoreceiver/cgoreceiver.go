@@ -68,6 +68,7 @@ func (r *CgoReceiver) Start() error {
 	go r.getCaptureStatistics()
 	go r.catchSignalUp()
 	time.Sleep(2 * time.Second)
+	r.suppressEventsComm()
 	_ = r.subEvent()
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
@@ -182,6 +183,18 @@ func (r *CgoReceiver) sendToNextConsumer(evt *model.KindlingEvent) error {
 	return nil
 }
 
+func (r *CgoReceiver) suppressEventsComm() {
+	comms := r.cfg.ProcessFilterInfo.Comms
+	if len(comms) > 0 {
+		r.telemetry.Logger.Infof("Filter out process with command: %v", comms)
+	}
+	for _, comm := range comms {
+		csComm := C.CString(comm)
+		C.suppressEventsCommForGo(csComm)
+		C.free(unsafe.Pointer(csComm))
+	}
+}
+
 func (r *CgoReceiver) subEvent() error {
 	if len(r.cfg.SubscribeInfo) == 0 {
 		r.telemetry.Logger.Warn("No events are subscribed by cgoreceiver. Please check your configuration.")
@@ -194,7 +207,11 @@ func (r *CgoReceiver) subEvent() error {
 		var temp CEventParamsForSubscribe
 		temp.name = C.CString("terminator")
 		paramsList = append(paramsList, temp)
-		C.subEventForGo(C.CString(value.Name), C.CString(value.Category), (unsafe.Pointer)(&paramsList[0]))
+		csName := C.CString(value.Name)
+		csCategory := C.CString(value.Category)
+		C.subEventForGo(csName, csCategory, (unsafe.Pointer)(&paramsList[0]))
+		C.free(unsafe.Pointer(csName))
+		C.free(unsafe.Pointer(csCategory))
 	}
 	return nil
 }

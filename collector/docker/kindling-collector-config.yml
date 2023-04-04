@@ -33,6 +33,14 @@ receivers:
       - name: kretprobe-tcp_connect
       - name: kprobe-tcp_set_state
       - name: tracepoint-procexit
+    process_filter:
+      # the length of a comm should be no more than 16
+      comms:
+        - "kindling-collec"
+        - "containerd"
+        - "dockerd"
+        - "containerd-shim"
+
 analyzers:
   cpuanalyzer:
     # sampling_interval is the sampling interval for the same url. The unit is second.
@@ -104,13 +112,12 @@ analyzers:
         ports: [ 9876, 10911 ]
         slow_threshold: 500
 
-
 processors:
   k8smetadataprocessor:
     # Set "enable" false if you want to run the agent in the non-Kubernetes environment.
     # Otherwise, the agent will panic if it can't connect to the API-server.
     enable: true
-    kube_auth_type: kubeConfig
+    kube_auth_type: serviceAccount
     kube_config_dir: /root/.kube/config
     # GraceDeletePeriod controls the delay interval after receiving delete event.
     # The unit is seconds, and the default value is 60 seconds.
@@ -222,6 +229,9 @@ observability:
     export_kind: stdout
     prometheus:
       port: :9501
+      # Self-metrics for special purpose
+      # "resource" for agent CPU and memory usage metricss
+      # extra_metrics: ["resource"]
     otlp:
       collect_period: 15s
       # Note: DO NOT add the prefix "http://"

@@ -53,6 +53,9 @@ void get_capture_statistics();
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);
+
+void suppress_events_comm(string comm);
+
 struct event {
   string event_name;
   ppm_event_type event_type;
