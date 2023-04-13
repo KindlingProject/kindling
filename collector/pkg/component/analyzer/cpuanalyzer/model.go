@@ -116,6 +116,10 @@ func (s *Segment) toDataGroup(parent *TimeSegments) *model.DataGroup {
 	return model.NewDataGroup(constnames.CameraEventGroupName, labels, s.StartTime)
 }
 
+func (s *Segment) isNotEmpty() bool {
+	return len(s.CpuEvents) > 0 || len(s.JavaFutexEvents) > 0 || len(s.TransactionIds) > 0 || len(s.Spans) > 0 || len(s.InnerCalls) > 0
+}
+
 type CpuEvent struct {
 	StartTime   uint64 `json:"startTime"`
 	EndTime     uint64 `json:"endTime"`
