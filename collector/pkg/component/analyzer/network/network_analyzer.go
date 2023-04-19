@@ -101,6 +101,9 @@ func (na *NetworkAnalyzer) ConsumableEvents() []string {
 		constnames.SendMsgEvent,
 		constnames.RecvMsgEvent,
 		constnames.SendMMsgEvent,
+		constnames.GrpcHeaderEncoder,
+		constnames.GrpcHeaderServerRecv,
+		constnames.GrpcHeaderClientRecv,
 	}
 }
 
@@ -186,7 +189,7 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 		return na.analyseConnect(evt)
 	}
 
-	if evt.GetDataLen() <= 0 || evt.GetResVal() < 0 {
+	if evt.GetUintUserAttribute("streamid") <= 0 && (evt.GetDataLen() <= 0 || evt.GetResVal() < 0) {
 		// TODO: analyse udp
 		return nil
 	}
@@ -319,6 +322,11 @@ func (na *NetworkAnalyzer) analyseResponse(evt *model.KindlingEvent) error {
 
 	oldPairs.mergeResponse(evt)
 	na.requestMonitor.Store(oldPairs.getKey(), oldPairs)
+
+	if evt.GetUintUserAttribute("end_stream") == 1 {
+		_ = na.distributeTraceMetric(oldPairs, nil)
+	}
+
 	return nil
 }
 
@@ -376,6 +384,11 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 }
 
 func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup {
+	// check grpc protocol
+	if mps.requests.event.GetUintUserAttribute("streamid") > 0 {
+		return na.getRecords(mps, protocol.GRPC, nil)
+	}
+
 	// Step 1:  Static Config for port and protocol set in config file
 	port := mps.getPort()
 	staticProtocol, found := na.staticPortMap[port]

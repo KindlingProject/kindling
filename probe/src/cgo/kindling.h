@@ -7,7 +7,7 @@
 
 #include <QCoreApplication>
 #include <QPluginLoader>
-#include <QString>
+#include <QString>KRPOBE
 #include <QtDebug>
 #include <QtPlugin>
 #include <chrono>
@@ -435,6 +435,9 @@ const static event kindling_to_sysdig[PPM_EVENT_MAX] = {
     {"tracepoint-tcp_receive_reset", PPME_TCP_RECEIVE_RESET_E},
     {"tracepoint-cpu_analysis", PPME_CPU_ANALYSIS_E},
     {"tracepoint-procexit", PPME_PROCEXIT_1_E},
+    {"uprobe-grpc_header_encoder", PPME_GRPC_HEADER_ENCODE_E},
+    {"uprobe-grpc_header_server_recv", PPME_GRPC_HEADER_SERVER_RECV_E},
+    {"uprobe-grpc_header_client_recv", PPME_GRPC_HEADER_CLIENT_RECV_E},
 };
 
 struct event_category {

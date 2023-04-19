@@ -29,8 +29,11 @@ const (
 	SpanEvent          = "apm_span_event"
 	OtherEvent         = "other"
 
-	ProcessExitEvent = "procexit"
-	GrpcUprobeEvent  = "grpc_uprobe"
+	ProcessExitEvent     = "procexit"
+	GrpcUprobeEvent      = "grpc_uprobe"
+	GrpcHeaderEncoder    = "grpc_header_encoder"
+	GrpcHeaderServerRecv = "grpc_header_server_recv"
+	GrpcHeaderClientRecv = "grpc_header_client_recv"
 	// NetRequestMetricGroupName is used for dataGroup generated from networkAnalyzer.
 	NetRequestMetricGroupName = "net_request_metric_group"
 	// SingleNetRequestMetricGroup stands for the dataGroup with abnormal status.
