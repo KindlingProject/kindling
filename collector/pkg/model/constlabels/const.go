@@ -5,6 +5,7 @@ const (
 	ConnectFail
 	NoResponse
 	ProtocolError
+	GrpcError
 )
 
 const (

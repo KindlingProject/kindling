@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -386,7 +387,7 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup {
 	// check grpc protocol
 	if mps.requests.event.GetUintUserAttribute("streamid") > 0 {
-		return na.getRecords(mps, protocol.GRPC, nil)
+		return na.getRecords(mps, protocol.GRPC, generateGrpcAttributeMap(mps))
 	}
 
 	// Step 1:  Static Config for port and protocol set in config file
@@ -741,4 +742,38 @@ func (na *NetworkAnalyzer) getResponseSlowThreshold(protocol string) int {
 		return value
 	}
 	return na.cfg.getResponseSlowThreshold()
+}
+
+func generateGrpcAttributeMap(mps *messagePairs) *model.AttributeMap {
+	attributeMap := model.NewAttributeMap()
+	for _, event := range mps.requests.getEvents() {
+		attributeMap.AddStringValue("scheme", event.GetStringUserAttribute("scheme"))
+		attributeMap.AddStringValue("authority", event.GetStringUserAttribute("authority"))
+		attributeMap.AddStringValue("path", event.GetStringUserAttribute("path"))
+	}
+	for _, event := range mps.responses.getEvents() {
+		status := event.GetStringUserAttribute("status")
+		status = strings.ReplaceAll(status, "\x00", "")
+
+		if status != "" {
+			statusCode, _ := strconv.ParseInt(status, 10, 64)
+			attributeMap.AddIntValue(constlabels.HttpStatusCode, statusCode)
+			if statusCode >= 400 {
+				attributeMap.AddBoolValue(constlabels.IsError, true)
+				attributeMap.AddIntValue(constlabels.ErrorType, int64(constlabels.ProtocolError))
+			}
+		}
+		grpcStatus := event.GetStringUserAttribute("grpc_status")
+		grpcStatus = strings.ReplaceAll(grpcStatus, "\x00", "")
+		if grpcStatus != "" {
+			grpcStatusCode, _ := strconv.ParseInt(grpcStatus, 10, 64)
+			attributeMap.AddIntValue(constlabels.GrpcStatusCode, grpcStatusCode)
+			if grpcStatusCode > 0 {
+				attributeMap.AddBoolValue(constlabels.IsError, true)
+				attributeMap.AddIntValue(constlabels.ErrorType, int64(constlabels.GrpcError))
+			}
+		}
+
+	}
+	return attributeMap
 }
