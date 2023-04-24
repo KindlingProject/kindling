@@ -24,6 +24,7 @@ on:
         - '**/*.yml'
         - '**/*.json'
         - '**/Dockerfile*'
+        - '**/*.sh'
   schedule:
     - cron: '45 22 * * 0'
 
