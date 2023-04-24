@@ -11,6 +11,8 @@
 - Add an option `enable_fetch_replicaset` to control whether to fetch ReplicaSet metadata. The default value is false which aims to release pressure on Kubernetes API server. ([#492](https://github.com/KindlingProject/kindling/pull/492))
 
 ### Bug fixes
+- Fix the memory leak issue by deleting vtid-tid map to avoid OOM. ([#499](https://github.com/KindlingProject/kindling/pull/499))
+- Fix unrunnable bug due to the error Insufficient parameters of TCP retransmit. ([#499](https://github.com/KindlingProject/kindling/pull/499))
 - Fix the bug that in `cpuanalyzer`, no segments are sent if they contain no cpuevents. Now segments are sent as long as they contain events, regardless of what the events are. ([#502](https://github.com/KindlingProject/kindling/pull/502))
 - Fix the bug that the default configs of slice/map are not overridden. ([#497](https://github.com/KindlingProject/kindling/pull/497))
 
