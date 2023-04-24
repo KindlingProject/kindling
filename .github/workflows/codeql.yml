@@ -23,6 +23,7 @@ on:
         - '**/*.yaml'
         - '**/*.yml'
         - '**/*.json'
+        - '**/Dockerfile*'
   schedule:
     - cron: '45 22 * * 0'
 
