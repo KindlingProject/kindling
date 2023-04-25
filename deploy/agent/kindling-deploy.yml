@@ -82,27 +82,8 @@ spec:
         - mountPath: /etc/modprobe.d
           name: modprobe-d
           readOnly: true
-        - mountPath: /host/dev
-          name: dev-vol
-        - mountPath: /host/proc
-          name: proc-vol
-          readOnly: true
-        - mountPath: /host/etc
-          name: etc-vol
-          readOnly: true
-        - mountPath: /host/boot
-          name: boot-vol
-          readOnly: true
-        - mountPath: /host/lib/modules
-          name: modules-vol
-          readOnly: true
-        - mountPath: /host/usr
-          name: usr-vol
-          readOnly: true
-        - mountPath: /host/run
-          name: run-vol
-        - mountPath: /host/var/run
-          name: varrun-vol
+        - mountPath: /host/
+          name: root-vol
         - mountPath: /dev/shm
           name: dshm
       dnsPolicy: ClusterFirstWithHostNet
@@ -128,29 +109,8 @@ spec:
           medium: Memory
         name: dshm
       - hostPath:
-          path: /dev
-        name: dev-vol
-      - hostPath:
-          path: /proc
-        name: proc-vol
-      - hostPath:
-          path: /etc
-        name: etc-vol
-      - hostPath:
-          path: /boot
-        name: boot-vol
-      - hostPath:
-          path: /lib/modules
-        name: modules-vol
-      - hostPath:
-          path: /usr
-        name: usr-vol
-      - hostPath:
-          path: /run
-        name: run-vol
-      - hostPath:
-          path: /var/run
-        name: varrun-vol
+          path: /
+        name: root-vol
       - hostPath:
           path: /sys
         name: sys-vol

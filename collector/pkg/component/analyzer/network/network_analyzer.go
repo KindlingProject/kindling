@@ -634,6 +634,12 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	ret.UpdateAddIntMetric(constvalues.RequestIo, int64(mps.getRquestSize()))
 	ret.UpdateAddIntMetric(constvalues.ResponseIo, int64(mps.getResponseSize()))
 
+	//TODO: get grpc frame data size, then update these value
+	if evt.GetUintUserAttribute("streamid") != 0 {
+		ret.UpdateAddIntMetric(constvalues.RequestIo, 0)
+		ret.UpdateAddIntMetric(constvalues.ResponseIo, 0)
+	}
+
 	ret.Timestamp = evt.GetStartTime()
 
 	return []*model.DataGroup{ret}
@@ -746,15 +752,25 @@ func (na *NetworkAnalyzer) getResponseSlowThreshold(protocol string) int {
 
 func generateGrpcAttributeMap(mps *messagePairs) *model.AttributeMap {
 	attributeMap := model.NewAttributeMap()
-	for _, event := range mps.requests.getEvents() {
-		attributeMap.AddStringValue("scheme", event.GetStringUserAttribute("scheme"))
-		attributeMap.AddStringValue("authority", event.GetStringUserAttribute("authority"))
-		attributeMap.AddStringValue("path", event.GetStringUserAttribute("path"))
+	if mps == nil || mps.requests == nil {
+		return attributeMap
 	}
-	for _, event := range mps.responses.getEvents() {
-		status := event.GetStringUserAttribute("status")
-		status = strings.ReplaceAll(status, "\x00", "")
 
+	request := mps.requests.getEvent(0)
+	if request != nil {
+		attributeMap.AddStringValue(constlabels.Scheme, strings.ReplaceAll(request.GetStringUserAttribute("scheme"), "\x00", ""))
+		attributeMap.AddStringValue(constlabels.Authority, strings.ReplaceAll(request.GetStringUserAttribute("authority"), "\x00", ""))
+		attributeMap.AddStringValue(constlabels.Path, strings.ReplaceAll(request.GetStringUserAttribute("path"), "\x00", ""))
+	}
+
+	if mps.responses == nil {
+		return attributeMap
+	}
+
+	firstResp := mps.responses.getEvent(0)
+	if firstResp != nil {
+		status := firstResp.GetStringUserAttribute("status")
+		status = strings.ReplaceAll(status, "\x00", "")
 		if status != "" {
 			statusCode, _ := strconv.ParseInt(status, 10, 64)
 			attributeMap.AddIntValue(constlabels.HttpStatusCode, statusCode)
@@ -763,7 +779,11 @@ func generateGrpcAttributeMap(mps *messagePairs) *model.AttributeMap {
 				attributeMap.AddIntValue(constlabels.ErrorType, int64(constlabels.ProtocolError))
 			}
 		}
-		grpcStatus := event.GetStringUserAttribute("grpc_status")
+	}
+
+	lastResp := mps.responses.getEvent(mps.responses.size() - 1)
+	if lastResp != nil {
+		grpcStatus := lastResp.GetStringUserAttribute("grpc_status")
 		grpcStatus = strings.ReplaceAll(grpcStatus, "\x00", "")
 		if grpcStatus != "" {
 			grpcStatusCode, _ := strconv.ParseInt(grpcStatus, 10, 64)
@@ -773,7 +793,6 @@ func generateGrpcAttributeMap(mps *messagePairs) *model.AttributeMap {
 				attributeMap.AddIntValue(constlabels.ErrorType, int64(constlabels.GrpcError))
 			}
 		}
-
 	}
 	return attributeMap
 }

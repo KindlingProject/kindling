@@ -194,43 +194,6 @@ int getEvent(void** pp_kindling_event) {
   uint16_t ev_type = ev->get_type();
 
   print_event(ev);
-  if(ev->get_type() == PPME_FUN_E){
-      cout << ev->get_name() << ' ' << "parameter: " << *((uint32_t *)(ev->get_param_value_raw("parameter"))->m_val) << endl;
-  }
-  if(ev->get_type() == PPME_GRPC_HEADER_ENCODE_E){
-      cout << ev->get_name() << " event ==> " << endl;
-      cout << "ts: " << ev->get_ts() << endl;
-      cout << "end_stream: " << *((uint32_t *)(ev->get_param_value_raw("end_stream"))->m_val) << endl;
-      cout << "streamid: " << *((uint32_t *)(ev->get_param_value_raw("streamid"))->m_val) << endl;
-      cout << "fd: " << *((int32_t *)(ev->get_param_value_raw("fd"))->m_val) << endl;
-      cout << "status: " << ((char *)(ev->get_param_value_raw("status"))->m_val) << endl;
-      cout << "grpc_status: " << ((char *)(ev->get_param_value_raw("grpc_status"))->m_val) << endl;
-      cout << "scheme: " << ((char *)(ev->get_param_value_raw("scheme"))->m_val) << endl;
-      cout << "authority: " << ((char *)(ev->get_param_value_raw("authority"))->m_val) << endl;
-      cout << "path: " << ((char *)(ev->get_param_value_raw("path"))->m_val) << endl;
-      cout << "latency: " << ev->get_thread_info()->m_latency << endl;
-  }
-  if(ev->get_type() == PPME_GRPC_HEADER_SERVER_RECV_E){
-      cout << ev->get_name() << " event ==> " << endl;
-      cout << "ts: " << ev->get_ts() << endl;
-      cout << "end_stream: " << *((uint32_t *)(ev->get_param_value_raw("end_stream"))->m_val) << endl;
-      cout << "streamid: " << *((uint32_t *)(ev->get_param_value_raw("streamid"))->m_val) << endl;
-      cout << "fd: " << *((int32_t *)(ev->get_param_value_raw("fd"))->m_val) << endl;
-      cout << "scheme: " << ((char *)(ev->get_param_value_raw("scheme"))->m_val) << endl;
-      cout << "authority: " << ((char *)(ev->get_param_value_raw("authority"))->m_val) << endl;
-      cout << "path: " << ((char *)(ev->get_param_value_raw("path"))->m_val) << endl;
-      cout << "latency: " << ev->get_thread_info()->m_latency << endl;
-  }
-  if(ev->get_type() == PPME_GRPC_HEADER_CLIENT_RECV_E){
-      cout << ev->get_name() << " event ==> " << endl;
-      cout << "ts: " << ev->get_ts() << endl;
-      cout << "end_stream: " << *((uint32_t *)(ev->get_param_value_raw("end_stream"))->m_val) << endl;
-      cout << "streamid: " << *((uint32_t *)(ev->get_param_value_raw("streamid"))->m_val) << endl;
-      cout << "fd: " << *((int32_t *)(ev->get_param_value_raw("fd"))->m_val) << endl;
-      cout << "status: " << ((char *)(ev->get_param_value_raw("status"))->m_val) << endl;
-      cout << "grpc_status: " << ((char *)(ev->get_param_value_raw("grpc_status"))->m_val) << endl;
-      cout << "latency: " << ev->get_thread_info()->m_latency << endl;
-  }
   if (ev_type != PPME_CPU_ANALYSIS_E && is_profile_debug && threadInfo->m_tid == debug_tid &&
       threadInfo->m_pid == debug_pid) {
     print_profile_debug_info(ev);

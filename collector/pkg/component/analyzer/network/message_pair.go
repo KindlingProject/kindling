@@ -48,13 +48,6 @@ func (evts *events) getEvent(index int) *model.KindlingEvent {
 	return nil
 }
 
-func (evts *events) getEvents() []*model.KindlingEvent {
-	if evts.mergable != nil {
-		return evts.mergable.events
-	}
-	return []*model.KindlingEvent{evts.event}
-}
-
 func (evts *events) putEventBack(originEvts *events) {
 	newEvt := evts.event
 	evts.event = originEvts.event
