@@ -53,13 +53,19 @@ function getDescList(data): Specification[] {
       name: '操作时间',
       key: 'time',
       space: 'quater',
-      render: (value, allObj) => value ? parseFloat(value).toFixed(2) + 'ms' : '--'
+      render: (value, allObj) => value ? (data.eventType === 'runqLatency' ? (parseFloat(value) / 1000).toFixed(3) : parseFloat(value).toFixed(2)) + 'ms' : '--'
     },
     {
       name: '线程名称',
       key: 'threadName',
       space: 'quater'
-    },
+    }, 
+    ...(data.eventType !== "on" && data.runqLatency ? [{
+      name: '调度等待时间',
+      key: 'runqLatency',
+      space: 'quater',
+      render: (value, allObj) => value ? (parseInt(value) / 1000 < 0 ? (parseInt(value) / 1000).toFixed(3) + 'ms' : (parseInt(value) / 1000).toFixed(2) + 'ms') : '--'
+    }] as Specification[] : []),
     ...(data.eventType === "trace" ? [{
       name: 'Trace ID',
       key: 'traceId',
