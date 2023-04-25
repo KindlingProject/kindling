@@ -5,7 +5,6 @@ build/
 probe/src/probe/cmake-build-debug/
 probe/build/
 probe/cmake-build-debug
-probe/pkg
 
 collector/docker/kindling-collector
 collector/docker/libso/libkindling.so

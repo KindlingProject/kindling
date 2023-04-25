@@ -7,7 +7,7 @@
 
 #include <QCoreApplication>
 #include <QPluginLoader>
-#include <QString>KRPOBE
+#include <QString>
 #include <QtDebug>
 #include <QtPlugin>
 #include <chrono>
