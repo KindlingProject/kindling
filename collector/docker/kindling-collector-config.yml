@@ -204,6 +204,11 @@ exporters:
     custom_labels:
     prometheus:
       port: :9500
+      # with_memory sets the memory behavior of the exporter. If this is
+      # true, the exporter will report metric instruments and label sets
+      # that were previously reported but not updated in the most recent
+      # interval.
+      with_memory: false
     otlp:
       collect_period: 15s
       # Note: DO NOT add the prefix "http://"

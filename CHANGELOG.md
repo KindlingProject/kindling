@@ -3,14 +3,20 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
-## Unreleased 
+## v0.7.2 - 2023-04-24
 ### Enhancements
+- Add an option `WithMemory` to OpenTelemetry's Prometheus exporter. It allows users to control whether metrics that haven't been updated in the most recent interval are reported. ([#501](https://github.com/KindlingProject/kindling/pull/501))
 - Add a config to cgoreceiver for suppressing events according to processes' comm ([#495](https://github.com/KindlingProject/kindling/pull/495))
-- Add bind support to get the listening ip and port of a server. ([#493](https://github.com/KindlingProject/kindling/pull/493))
+- Add `bind` syscall support to get the listening ip and port of a server. ([#493](https://github.com/KindlingProject/kindling/pull/493))
 - Add an option `enable_fetch_replicaset` to control whether to fetch ReplicaSet metadata. The default value is false which aims to release pressure on Kubernetes API server. ([#492](https://github.com/KindlingProject/kindling/pull/492))
 
 ### Bug fixes
+- Fix the memory leak issue by deleting vtid-tid map to avoid OOM. ([#499](https://github.com/KindlingProject/kindling/pull/499))
+- Fix unrunnable bug due to the error Insufficient parameters of TCP retransmit. ([#499](https://github.com/KindlingProject/kindling/pull/499))
+- Fix the bug that in `cpuanalyzer`, no segments are sent if they contain no cpuevents. Now segments are sent as long as they contain events, regardless of what the events are. ([#502](https://github.com/KindlingProject/kindling/pull/502))
 - Fix the bug that the default configs of slice/map are not overridden. ([#497](https://github.com/KindlingProject/kindling/pull/497))
+
+Thanks for the significant help of @yanhongchang to provide OOM-killed information on #499.
 
 ## v0.7.1 - 2023-03-01
 ### New features
@@ -27,6 +33,8 @@
 - Reduce the cases pods are not found when they are daemonset. ([#439](https://github.com/KindlingProject/kindling/pull/439) @llhhbc)
 - Collector subscribes `sendmmsg` events to fix the bug that some DNS requests are missed. ([#430](https://github.com/KindlingProject/kindling/pull/430))
 - Fix the bug that the agent panics when it receives DeletedFinalStateUnknown by watching K8s metadata. ([#456](https://github.com/KindlingProject/kindling/pull/456))
+
+In this release, we have a new contributor @llhhbc. Thanks and welcome! 🥳
 
 ## v0.7.0 - 2023-02-16
 ### New features
