@@ -105,14 +105,10 @@ void sub_event(char* eventName, char* category, event_params_for_subscribe param
   }
 }
 
-void suppress_events_comm(sinsp* inspector) {
-  const string comms[] = {"kindling-collec", "sshd",           "containerd",      "dockerd",
-                          "containerd-shim", "kubelet",        "kube-apiserver",  "etcd",
-                          "kube-controller", "kube-scheduler", "kube-rbac-proxy", "prometheus",
-                          "node_exporter",   "alertmanager",   "adapter"};
-  for (auto& comm : comms) {
-    inspector->suppress_events_comm(comm);
-  }
+void suppress_events_comm(string comm) {
+  printCurrentTime();
+  cout << "suppress_events for process " << comm << endl;
+  inspector->suppress_events_comm(comm);
 }
 
 void set_eventmask(sinsp* inspector) {
@@ -170,7 +166,6 @@ int init_probe() {
     formatter = new sinsp_evt_formatter(inspector, output_format);
     inspector->set_hostname_and_port_resolution_mode(false);
     set_snaplen(inspector);
-    suppress_events_comm(inspector);
     inspector->open("");
     set_eventmask(inspector);
 
@@ -326,13 +321,32 @@ int getEvent(void** pp_kindling_event) {
         break;
       }
       case SCAP_FD_IPV4_SOCK:
+        p_kindling_event->context.fdInfo.protocol = get_protocol(fdInfo->get_l4proto());
+        p_kindling_event->context.fdInfo.role = fdInfo->is_role_server();
+        p_kindling_event->context.fdInfo.sip[0] = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_sip;
+        p_kindling_event->context.fdInfo.dip[0] = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_dip;
+        p_kindling_event->context.fdInfo.sport = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_sport;
+        p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_dport;
+        break;
       case SCAP_FD_IPV4_SERVSOCK:
         p_kindling_event->context.fdInfo.protocol = get_protocol(fdInfo->get_l4proto());
         p_kindling_event->context.fdInfo.role = fdInfo->is_role_server();
-        p_kindling_event->context.fdInfo.sip = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_sip;
-        p_kindling_event->context.fdInfo.dip = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_dip;
-        p_kindling_event->context.fdInfo.sport = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_sport;
-        p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv4info.m_fields.m_dport;
+        p_kindling_event->context.fdInfo.dip[0] = fdInfo->m_sockinfo.m_ipv4serverinfo.m_ip;
+        p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv4serverinfo.m_port;
+        break;
+      case SCAP_FD_IPV6_SOCK:
+        p_kindling_event->context.fdInfo.protocol = get_protocol(fdInfo->get_l4proto());
+        p_kindling_event->context.fdInfo.role = fdInfo->is_role_server();
+        memcpy(p_kindling_event->context.fdInfo.sip, fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sip.m_b, sizeof(fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sip.m_b));
+        memcpy(p_kindling_event->context.fdInfo.dip, fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dip.m_b, sizeof(fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dip.m_b));
+        p_kindling_event->context.fdInfo.sport = fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sport;
+        p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dport;
+        break;
+      case SCAP_FD_IPV6_SERVSOCK:
+        p_kindling_event->context.fdInfo.protocol = get_protocol(fdInfo->get_l4proto());
+        p_kindling_event->context.fdInfo.role = fdInfo->is_role_server();
+        memcpy(p_kindling_event->context.fdInfo.dip, fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b, sizeof(fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b));
+        p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv6serverinfo.m_port;
         break;
       case SCAP_FD_UNIX_SOCK:
         p_kindling_event->context.fdInfo.source = fdInfo->m_sockinfo.m_unixinfo.m_fields.m_source;

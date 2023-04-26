@@ -115,6 +115,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					histogram.WithExplicitBoundaries(exponentialInt64NanosecondsBoundaries),
 				),
 				aggregation.CumulativeTemporalitySelector(),
+				otelprocessor.WithMemory(cfg.PromCfg.WithMemory),
 			),
 			controller.WithResource(rs),
 		)

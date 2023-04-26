@@ -1,13 +1,15 @@
 package application
 
 import (
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
+
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/exporter"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor"
 	"github.com/Kindling-project/kindling/collector/pkg/component/receiver"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -103,13 +105,20 @@ func (c *ComponentsFactory) RegisterExporter(
 	}
 }
 
+// mapStructureDecoderConfigFunc is a function that is used to configure the mapstructure decoder.
+// ZeroFields option is set to true to allow the map/slice in the configuration file to override
+// the default values in the config struct.
+var mapStructureDecoderConfigFunc = func(dc *mapstructure.DecoderConfig) {
+	dc.ZeroFields = true
+}
+
 func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 	for _, componentKind := range ComponentsKeyMap {
 		switch componentKind {
 		case ReceiversKey:
 			for k, factory := range c.Receivers {
 				key := ReceiversKey + "." + k
-				err := viper.UnmarshalKey(key, factory.Config)
+				err := viper.UnmarshalKey(key, factory.Config, mapStructureDecoderConfigFunc)
 				if err != nil {
 					return err
 				}
@@ -117,7 +126,7 @@ func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 		case AnalyzersKey:
 			for k, factory := range c.Analyzers {
 				key := AnalyzersKey + "." + k
-				err := viper.UnmarshalKey(key, factory.Config)
+				err := viper.UnmarshalKey(key, factory.Config, mapStructureDecoderConfigFunc)
 				if err != nil {
 					return err
 				}
@@ -125,7 +134,7 @@ func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 		case ProcessorsKey:
 			for k, factory := range c.Processors {
 				key := ProcessorsKey + "." + k
-				err := viper.UnmarshalKey(key, factory.Config)
+				err := viper.UnmarshalKey(key, factory.Config, mapStructureDecoderConfigFunc)
 				if err != nil {
 					return err
 				}
@@ -133,7 +142,7 @@ func (c *ComponentsFactory) ConstructConfig(viper *viper.Viper) error {
 		case ExportersKey:
 			for k, factory := range c.Exporters {
 				key := ExportersKey + "." + k
-				err := viper.UnmarshalKey(key, factory.Config)
+				err := viper.UnmarshalKey(key, factory.Config, mapStructureDecoderConfigFunc)
 				if err != nil {
 					return err
 				}

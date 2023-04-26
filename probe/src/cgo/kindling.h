@@ -55,6 +55,9 @@ int get_pagefault_event_except_ringbuffer(void *pagefaultKindlingEvent, void *co
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);
+
+void suppress_events_comm(string comm);
+
 struct event {
   string event_name;
   ppm_event_type event_type;
@@ -93,8 +96,8 @@ struct kindling_event_t_for_go {
       char* directory;
       uint32_t protocol;
       uint8_t role;
-      uint32_t sip;
-      uint32_t dip;
+      uint32_t sip[4];
+      uint32_t dip[4];
       uint32_t sport;
       uint32_t dport;
       uint64_t source;

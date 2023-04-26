@@ -10,8 +10,9 @@ extern "C" {
 #endif
 int runForGo();
 int getKindlingEvent(void **kindlingEvent);
+void suppressEventsCommForGo(char *comm);
 int getPageFaultEvent(void *pagefaultKindlingEvent, void *count, void *maxlen, void *flag);
-int subEventForGo(char* eventName, char* category, void *params);
+void subEventForGo(char* eventName, char* category, void *params);
 int startProfile();
 int stopProfile();
 char* startAttachAgent(int pid);
@@ -60,8 +61,8 @@ struct kindling_event_t_for_go{
             char *directory;
             uint32_t protocol;
             uint8_t role;
-            uint32_t sip;
-            uint32_t dip;
+            uint32_t sip[4];
+            uint32_t dip[4];
             uint32_t sport;
             uint32_t dport;
 
