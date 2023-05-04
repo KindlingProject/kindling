@@ -59,6 +59,8 @@ spec:
           value: "200"
         - name: switch_agg_num
           value: "2"
+        - name: enable_uprobe
+          value: "false"
         - name: MY_NODE_IP
           valueFrom:
             fieldRef:
