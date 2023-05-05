@@ -60,8 +60,8 @@ The `DataGroup` contains the following fields:
   - `dns_domain`: The domain of the DNS request.
   - `dns_id`: The ID of the DNS request.
   - `dns_rcode`: The RCODE of the DNS response.
-  - You may also find the following *empty* fields. They are there because `DataGroup` is reused and these labels are 
-used by the next consumers.
+  - You may also find the following *empty* fields. They are there because `DataGroup` is sent to the next consumer, 
+and these labels are used by them. After that, the `DataGroup` is reused but no labels are removed.
     - `src_container_id`: The ID of the source container.
     - `src_ip`: The IP address of the source.
     - `src_port`: The port of the source.
