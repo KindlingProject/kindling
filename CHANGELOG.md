@@ -3,6 +3,10 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
+## Unreleased
+### New features
+- Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindling.harmonycloud.cn/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
+
 ## v0.7.2 - 2023-04-24
 ### Enhancements
 - Add an option `WithMemory` to OpenTelemetry's Prometheus exporter. It allows users to control whether metrics that haven't been updated in the most recent interval are reported. ([#501](https://github.com/KindlingProject/kindling/pull/501))
