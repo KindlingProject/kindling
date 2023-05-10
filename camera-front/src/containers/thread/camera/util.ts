@@ -570,14 +570,17 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         // console.log('cpuEvents', cpuEvents);
         _.forEach(cpuEvents, event => {
             let { startTime } = event;
-            let timeTypeList = _.compact(event.timeType.split(','));
-            let timeValueList = _.compact(event.typeSpecs.split(',')).map((v: any) => parseFloat(v));
+            // let timeTypeList = _.compact(event.timeType.split(','));
+            // let timeValueList = _.compact(event.typeSpecs.split(',')).map((v: any) => parseFloat(v));
+            let timeTypeList = event.timeType;
+            let timeValueList = event.typeSpecs;
             // 可能出现对应事件0 没有log输出的情况，日志格式为log1||log3，所以不能用compact清除空值。 onInfo和offInfo同上
             let logList = event.log.split('|');
             let stackList = event.stack ? event.stack.split('|') : [];
             let onInfoList = event.onInfo.split('|');
             let offInfoList = event.offInfo.split('|');
-            let runqList = event.runqLatency.split(',');
+            // let runqList = event.runqLatency.split(',');
+            let runqList = event.runqLatency;
             let onFlag = 0;
             let offFlag = 0;
 
@@ -598,7 +601,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                         stackList: []
                     };
                     
-                    if (type === '0') {
+                    if (parseInt(type) === 0) {
                         // TODO 日志其实需求根据@前面的数字截取字符串长度
                         if (logList.length > 0 && logList[onFlag]) {
                             let logInfo = logList[onFlag].split('@');
@@ -659,7 +662,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                         }
                         onFlag++;
                     }
-                    if (type !== '0') {
+                    if (parseInt(type) !== 0) {
                         if (offInfoList.length > 0 && offInfoList[offFlag]) {
                             let result: any = onOffInfoHandle(offInfoList[offFlag], eventObj, timeRange);
                             if (runqList[offFlag]) {
@@ -711,7 +714,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                     //     threadObj.eventList.push(eventObj);
                     // }
                 } else {
-                    if (type === '0') {
+                    if (parseInt(type) === 0) {
                         onFlag++;
                     } else {
                         offFlag++;
