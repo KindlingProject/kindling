@@ -9,6 +9,7 @@
 ### Bug fixes
 - Fixed span data deduplication issue.（[#511](https://github.com/KindlingProject/kindling/pull/511)）
 
+## v0.7.2 - 2023-04-24
 ### Enhancements
 - Add an option `WithMemory` to OpenTelemetry's Prometheus exporter. It allows users to control whether metrics that haven't been updated in the most recent interval are reported. ([#501](https://github.com/KindlingProject/kindling/pull/501))
 - Add a config to cgoreceiver for suppressing events according to processes' comm ([#495](https://github.com/KindlingProject/kindling/pull/495))
