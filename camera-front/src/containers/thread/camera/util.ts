@@ -548,7 +548,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         let cpuEvents = _.chain(list).map('cpuEvents').flatten().uniqBy('startTime').value();
         let javaFutexEvents = _.chain(list).map('javaFutexEvents').flatten().uniqBy('startTime').value();
         let transactionIdsList = _.chain(list).map('transactionIds').flatten().value();
-        let spanList = _.chain(list).map('spans').flatten().uniqBy('startTime').compact().value();
+        let spanList = _.chain(list).map('spans').flatten().uniqBy('name').compact().value();
         let innerCallsList = _.chain(list).map('innerCalls').flatten().uniqBy('startTime').compact().value();
         threadObj.innerCalls = innerCallsList;
 
