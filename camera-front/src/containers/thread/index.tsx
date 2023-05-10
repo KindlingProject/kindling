@@ -101,7 +101,7 @@ function Thread() {
                     setProfileModalVisible(true);
                 }
                 const linetimes = getLineTimesList(requestTimes, traceTimes);
-                // console.log(data, linetimes);
+                // console.log('data', data);
                 setNowTraceData(data);
                 setAllSpanList(spanTreeList);
                 setNowTraceTimeRange([new Date(startTimestamp), new Date(endTimestamp)]);
@@ -261,7 +261,7 @@ function Thread() {
                         setProfileModalVisible(true);
                     }
                     const linetimes = getLineTimesList(requestTimes, traceTimes);
-                    // console.log(data, linetimes);
+                    console.log('data', data);
                     setNowTraceData(data);
                     setAllSpanList(spanTreeList);
                     setNowTraceTimeRange([new Date(startTimestamp), new Date(endTimestamp)]);
