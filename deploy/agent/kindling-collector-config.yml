@@ -51,6 +51,12 @@ analyzers:
     # edge_events_window_size is the size of the duration window that seats the edge events.
     # The unit is second. The greater it is, the more data will be stored.
     edge_events_window_size: 2
+    #JavaTraceDeleteInterval is the interval for cleaning up expired data in javatraces.
+	  #The unit is seconds.
+    JavaTraceDeleteInterval: 10
+    #JavaTraceExpirationTime is the expiration time for data in javatraces.
+	  #The unit is seconds.
+		JavaTraceExpirationTime: 30
   tcpconnectanalyzer:
     channel_size: 10000
     wait_event_second: 10

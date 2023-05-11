@@ -33,9 +33,16 @@ type CpuAnalyzer struct {
 	lock                 sync.RWMutex
 	telemetry            *component.TelemetryTools
 	tidExpiredQueue      *tidDeleteQueue
-	javaTraces           map[string]*TransactionIdEvent
+	javaTraces           map[JavaTracesKey]*TransactionIdEvent
 	nextConsumers        []consumer.Consumer
 	metadata             *kubernetes.K8sMetaDataCache
+	cleanerTicker 		 *time.Ticker
+}
+
+type JavaTracesKey struct{
+	TraceId     	string 
+	PidString   	string 
+	StartTime   	time.Time 
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -57,7 +64,7 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
-	ca.javaTraces = make(map[string]*TransactionIdEvent, 100000)
+	ca.javaTraces = make(map[JavaTracesKey]*TransactionIdEvent, 100000)
 	go ca.TidDelete(30*time.Second, 10*time.Second)
 	go ca.sampleSend()
 	newSelfMetrics(telemetry.MeterProvider, ca)
@@ -65,12 +72,26 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 }
 
 func (ca *CpuAnalyzer) Start() error {
-	// Disable receiving and sending the profiling data by default.
+	ca.cleanerTicker = time.NewTicker(time.Duration(ca.cfg.JavaTraceDeleteInterval) * time.Second)
+	go func() {
+		for range ca.cleanerTicker.C {
+			ca.lock.Lock()
+			now := time.Now()
+			for key:= range ca.javaTraces {
+				if now.Sub(key.StartTime) > time.Duration(ca.cfg.JavaTraceExpirationTime)*time.Second {
+					delete(ca.javaTraces, key)
+					fmt.Print("Expired data has been released,pid = " + key.PidString)
+				}
+			}
+			ca.lock.Unlock()
+		}
+	}()
 	return nil
 }
 
 func (ca *CpuAnalyzer) Shutdown() error {
 	_ = ca.StopProfile()
+	ca.cleanerTicker.Stop()
 	return nil
 }
 
@@ -114,10 +135,19 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 }
 
 func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
+	javatracekey := &JavaTracesKey{
+		TraceId: ev.TraceId,
+		PidString: ev.PidString,
+		StartTime: time.Now(),
+	}
 	if ev.IsEntry == 1 {
-		ca.javaTraces[ev.TraceId+ev.PidString] = ev
+		ca.javaTraces[*javatracekey] = ev
 	} else {
-		oldEvent := ca.javaTraces[ev.TraceId+ev.PidString]
+		oldEvent,ok := ca.javaTraces[*javatracekey]
+		if(!ok){
+			ca.telemetry.Logger.Warnf("No javaTraces traceid=%d, pid=%s", javatracekey.TraceId,javatracekey.PidString)
+			return
+		}
 		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
 		spendTime := ev.Timestamp - oldEvent.Timestamp
 		contentKey := oldEvent.Url
