@@ -2,6 +2,8 @@ package k8sprocessor
 
 import (
 	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Config struct {
@@ -18,6 +20,8 @@ type Config struct {
 	// Set "Enable" false if you want to run the agent in the non-Kubernetes environment.
 	// Otherwise, the agent will panic if it can't connect to the API-server.
 	Enable bool `mapstructure:"enable"`
+
+	LabelSelector *v1.LabelSelector `mapstructure:"label_selector"`
 }
 
 var DefaultConfig Config = Config{
