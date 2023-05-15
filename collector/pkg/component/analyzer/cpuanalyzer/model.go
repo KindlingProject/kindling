@@ -120,16 +120,92 @@ func (s *Segment) isNotEmpty() bool {
 	return len(s.CpuEvents) > 0 || len(s.JavaFutexEvents) > 0 || len(s.TransactionIds) > 0 || len(s.Spans) > 0 || len(s.InnerCalls) > 0
 }
 
+func (s *Segment) UnmarshalJSON(data []byte) error {
+	events := make(map[string]json.RawMessage)
+	err := json.Unmarshal(data, &events)
+
+	if err != nil {
+		return err
+	}
+
+	for k, v := range events {
+		switch k {
+		case "startTime":
+			var t uint64
+			err := json.Unmarshal(v, &t)
+			if err != nil {
+				return err
+			}
+			s.StartTime = t
+		case "endTime":
+			var t uint64
+			err := json.Unmarshal(v, &t)
+			if err != nil {
+				return err
+			}
+			s.EndTime = t
+		case CpuEventLabel:
+			var e []CpuEvent
+			err := json.Unmarshal(v, &e)
+			if err != nil {
+				return err
+			}
+			for i, _ := range e {
+				s.CpuEvents = append(s.CpuEvents, &e[i])
+			}
+		case JavaFutexEventLabel:
+			var e []JavaFutexEvent
+			err := json.Unmarshal(v, &e)
+			if err != nil {
+				return err
+			}
+			for _, a := range e {
+				s.JavaFutexEvents = append(s.JavaFutexEvents, &a)
+			}
+		default:
+			//return errors.New("unrecognized key")
+		}
+	}
+	return nil
+}
+
+type CPUType uint8
+
+const (
+	CPUType_ON    CPUType = 0
+	CPUType_FILE  CPUType = 1
+	CPUType_NET   CPUType = 2
+	CPUType_FUTEX CPUType = 3
+	CPUType_IDLE  CPUType = 4
+	CPUType_OTHER CPUType = 5
+	CPUType_EPOLL CPUType = 6
+	CPUTYPE_MAX   CPUType = 7
+)
+
+func (ct CPUType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(uint16(ct))
+}
+
+func (ct *CPUType) UnmarshalJSON(data []byte) error {
+	var val uint16
+	err := json.Unmarshal(data, &val)
+	if err != nil {
+		return err
+	}
+	*ct = CPUType(val)
+	return nil
+}
+
 type CpuEvent struct {
-	StartTime   uint64 `json:"startTime"`
-	EndTime     uint64 `json:"endTime"`
-	TypeSpecs   string `json:"typeSpecs"`
-	RunqLatency string `json:"runqLatency"`
-	TimeType    string `json:"timeType"`
-	OnInfo      string `json:"onInfo"`
-	OffInfo     string `json:"offInfo"`
-	Log         string `json:"log"`
-	Stack       string `json:"stack"`
+	StartTime   uint64    `json:"startTime"`
+	EndTime     uint64    `json:"endTime"`
+	TypeSpecs   []uint64  `json:"typeSpecs"`
+	RunqLatency []uint64  `json:"runqLatency"`
+	TimeType    []CPUType `json:"timeType"`
+	OnInfo      string    `json:"onInfo"`
+	OffInfo     string    `json:"offInfo"`
+	Log         string    `json:"log"`
+	Stack       string    `json:"stack"`
 }
 
 func (c *CpuEvent) StartTimestamp() uint64 {

@@ -5,18 +5,6 @@
 #include "cgo/kindling.h"
 #include "sinsp.h"
 
-class cpu_data {
- public:
-  uint64_t start_time;
-  uint64_t end_time;
-  uint64_t on_total_time;
-  uint64_t off_total_time;
-  string time_specs;
-  string runq_latency;
-  string time_type;
-  uint32_t tid;
-};
-
 class cpu_converter {
  public:
   cpu_converter(sinsp* inspector);
