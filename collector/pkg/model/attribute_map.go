@@ -144,6 +144,9 @@ func (a *AttributeMap) ClearAttributes() {
 
 func (a *AttributeMap) ToStringMap() map[string]string {
 	stringMap := make(map[string]string)
+	if a == nil {
+		return stringMap
+	}
 	for k, v := range a.values {
 		stringMap[k] = v.ToString()
 	}
