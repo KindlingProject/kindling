@@ -11,33 +11,19 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 )
 
+// Eager Initialization
 var (
 	enableProfile    bool
-	once             sync.Once
 	triggerEventChan chan SendTriggerEvent
 	traceChan        chan *model.DataGroup
 	sampleMap        sync.Map
 	isInstallApm     map[uint64]bool
 )
 
-func init() {
-	isInstallApm = make(map[uint64]bool, 100000)
-}
-
 // ReceiveDataGroupAsSignal receives model.DataGroup as a signal.
 // Signal is used to trigger to send CPU on/off events
 func ReceiveDataGroupAsSignal(data *model.DataGroup) {
 	if !enableProfile {
-		once.Do(func() {
-			// We must close the channel at the sender-side.
-			// Otherwise, we need complex codes to handle it.
-			if triggerEventChan != nil {
-				close(triggerEventChan)
-			}
-			if traceChan != nil {
-				close(traceChan)
-			}
-		})
 		return
 	}
 	isFromApm := data.Labels.GetBoolValue("isInstallApm")
@@ -81,37 +67,45 @@ type SendTriggerEvent struct {
 
 // ReadTraceChan reads the trace channel and make cpuanalyzer consume them as general events.
 func (ca *CpuAnalyzer) ReadTraceChan() {
-	// Break the for loop if the channel is closed
-	for trace := range traceChan {
-		ca.ConsumeTraces(trace)
+	for {
+		select {
+		case trace := <-traceChan:
+			ca.ConsumeTraces(trace)
+		case <-ca.stopProfileChan:
+			return
+		}
 	}
 }
 
 // ReadTriggerEventChan reads the triggerEvent channel and creates tasks to send cpuEvents.
 func (ca *CpuAnalyzer) ReadTriggerEventChan() {
-	// Break the for loop if the channel is closed
-	for sendContent := range triggerEventChan {
-		// Only send the slow traces as the signals
-		if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsSlow) {
-			continue
+	for {
+		select {
+		case sendContent := <-triggerEventChan:
+			// Only send the slow traces as the signals
+			if !sendContent.OriginalData.Labels.GetBoolValue(constlabels.IsSlow) {
+				continue
+			}
+			// Store the traces first
+			for _, nexConsumer := range ca.nextConsumers {
+				_ = nexConsumer.Consume(sendContent.OriginalData)
+			}
+			// Copy the value and then get its pointer to create a new task
+			triggerEvent := sendContent
+			task := &SendEventsTask{
+				cpuAnalyzer:              ca,
+				triggerEvent:             &triggerEvent,
+				edgeEventsWindowDuration: time.Duration(ca.cfg.EdgeEventsWindowSize) * time.Second,
+			}
+			expiredCallback := func() {
+				ca.routineSize.Dec()
+			}
+			// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
+			NewAndStartScheduledTaskRoutine(1*time.Second, time.Duration(ca.cfg.EdgeEventsWindowSize)*time.Second+1, task, expiredCallback)
+			ca.routineSize.Inc()
+		case <-ca.stopProfileChan:
+			return
 		}
-		// Store the traces first
-		for _, nexConsumer := range ca.nextConsumers {
-			_ = nexConsumer.Consume(sendContent.OriginalData)
-		}
-		// Copy the value and then get its pointer to create a new task
-		triggerEvent := sendContent
-		task := &SendEventsTask{
-			cpuAnalyzer:              ca,
-			triggerEvent:             &triggerEvent,
-			edgeEventsWindowDuration: time.Duration(ca.cfg.EdgeEventsWindowSize) * time.Second,
-		}
-		expiredCallback := func() {
-			ca.routineSize.Dec()
-		}
-		// The expired duration should be windowDuration+1 because the ticker and the timer are not started together.
-		NewAndStartScheduledTaskRoutine(1*time.Second, time.Duration(ca.cfg.EdgeEventsWindowSize)*time.Second+1, task, expiredCallback)
-		ca.routineSize.Inc()
 	}
 }
 
@@ -146,7 +140,8 @@ func (ca *CpuAnalyzer) sampleSend() {
 				data := v.(*model.DataGroup)
 				duration, ok := data.GetMetric(constvalues.RequestTotalTime)
 				if !ok {
-					return false
+					sampleMap.Delete(k)
+					return true
 				}
 				event := SendTriggerEvent{
 					Pid:          uint32(data.Labels.GetIntValue("pid")),
@@ -158,6 +153,8 @@ func (ca *CpuAnalyzer) sampleSend() {
 				sampleMap.Delete(k)
 				return true
 			})
+		case <-ca.stopProfileChan:
+			return
 		}
 	}
 }
@@ -165,7 +162,11 @@ func (ca *CpuAnalyzer) sampleSend() {
 func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {
 	ca.lock.RLock()
 	defer ca.lock.RUnlock()
-
+	if !enableProfile {
+		ca.telemetry.Logger.Infof("The profiling is disabled, so won't send the cpu events. "+
+			"pid=%d, startTime=%d, endTime=%d", pid, startTime, endTime)
+		return
+	}
 	maxSegmentSize := ca.cfg.SegmentSize
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {

@@ -40,6 +40,8 @@ func (dq *tidDeleteQueue) Pop() {
 func (ca *CpuAnalyzer) TidDelete(interval time.Duration, expiredDuration time.Duration) {
 	for {
 		select {
+		case <-ca.stopProfileChan:
+			return
 		case <-time.After(interval):
 			now := time.Now()
 			func() {
