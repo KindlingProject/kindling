@@ -25,17 +25,17 @@ const (
 )
 
 type CpuAnalyzer struct {
-	cfg          *Config
-	cpuPidEvents map[uint32]map[uint32]*TimeSegments
-	// { pid: routine }
-	sendEventsRoutineMap sync.Map
-	routineSize          *atomic.Int32
-	lock                 sync.RWMutex
-	telemetry            *component.TelemetryTools
-	tidExpiredQueue      *tidDeleteQueue
-	javaTraces           map[string]*TransactionIdEvent
-	nextConsumers        []consumer.Consumer
-	metadata             *kubernetes.K8sMetaDataCache
+	cfg             *Config
+	cpuPidEvents    map[uint32]map[uint32]*TimeSegments
+	routineSize     *atomic.Int32
+	lock            sync.RWMutex
+	telemetry       *component.TelemetryTools
+	tidExpiredQueue *tidDeleteQueue
+	javaTraces      map[string]*TransactionIdEvent
+	nextConsumers   []consumer.Consumer
+	metadata        *kubernetes.K8sMetaDataCache
+
+	stopProfileChan chan struct{}
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -58,8 +58,6 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
 	ca.javaTraces = make(map[string]*TransactionIdEvent, 100000)
-	go ca.TidDelete(30*time.Second, 10*time.Second)
-	go ca.sampleSend()
 	newSelfMetrics(telemetry.MeterProvider, ca)
 	return ca
 }
@@ -238,6 +236,9 @@ var nanoToSeconds uint64 = 1e9
 func (ca *CpuAnalyzer) PutEventToSegments(pid uint32, tid uint32, threadName string, event TimedEvent) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
+	if !enableProfile {
+		return
+	}
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
 		tidCpuEvents = make(map[uint32]*TimeSegments)
