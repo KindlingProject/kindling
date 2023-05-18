@@ -70,7 +70,9 @@ func (ca *CpuAnalyzer) Start() error {
 }
 
 func (ca *CpuAnalyzer) Shutdown() error {
-	_ = ca.StopProfile()
+	if enableProfile {
+		_ = ca.StopProfile()
+	}
 	return nil
 }
 
