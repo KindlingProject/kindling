@@ -1,6 +1,8 @@
 package cpuanalyzer
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"strconv"
 	"sync"
@@ -68,7 +70,9 @@ func (ca *CpuAnalyzer) Start() error {
 }
 
 func (ca *CpuAnalyzer) Shutdown() error {
-	_ = ca.StopProfile()
+	if enableProfile {
+		_ = ca.StopProfile()
+	}
 	return nil
 }
 
@@ -207,12 +211,27 @@ func (ca *CpuAnalyzer) ConsumeCpuEvent(event *model.KindlingEvent) {
 			ev.StartTime = userAttributes.GetUintValue()
 		case event.UserAttributes[i].GetKey() == "end_time":
 			ev.EndTime = userAttributes.GetUintValue()
-		case event.UserAttributes[i].GetKey() == "type_specs":
-			ev.TypeSpecs = string(userAttributes.GetValue())
+		case event.UserAttributes[i].GetKey() == "time_specs":
+			val := userAttributes.GetValue()
+			ev.TypeSpecs = make([]uint64, len(val)/8)
+			err := binary.Read(bytes.NewBuffer(val), binary.LittleEndian, ev.TypeSpecs)
+			if err != nil {
+				ca.telemetry.Logger.Error("Failed to read time_specs")
+			}
 		case event.UserAttributes[i].GetKey() == "runq_latency":
-			ev.RunqLatency = string(userAttributes.GetValue())
+			val := userAttributes.GetValue()
+			ev.RunqLatency = make([]uint64, len(val)/8)
+			err := binary.Read(bytes.NewBuffer(val), binary.LittleEndian, ev.RunqLatency)
+			if err != nil {
+				ca.telemetry.Logger.Error("Failed to read runq_latency")
+			}
 		case event.UserAttributes[i].GetKey() == "time_type":
-			ev.TimeType = string(userAttributes.GetValue())
+			val := userAttributes.GetValue()
+			ev.TimeType = make([]CPUType, len(val))
+			err := binary.Read(bytes.NewBuffer(val), binary.LittleEndian, ev.TimeType)
+			if err != nil {
+				ca.telemetry.Logger.Error("Failed to read time_type")
+			}
 		case event.UserAttributes[i].GetKey() == "on_info":
 			ev.OnInfo = string(userAttributes.GetValue())
 		case event.UserAttributes[i].GetKey() == "off_info":

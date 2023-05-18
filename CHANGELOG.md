@@ -6,7 +6,10 @@
 ## Unreleased
 ### New features
 - Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindling.harmonycloud.cn/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
+### Enhancements
+- ⚠️Breaking change: Refactor the data format of on/off CPU events from "string" to "array". Note that the old data format cannot be parsed using the new version of the front-end.([#512](https://github.com/KindlingProject/kindling/pull/512) [#520](https://github.com/KindlingProject/kindling/pull/520))
 ### Bug fixes
+- Fix panic: send on closed channel. ([#519](https://github.com/KindlingProject/kindling/pull/519))
 - Fix the bug that the event detail panel doesn't hide when switching profiles.（[#513](https://github.com/KindlingProject/kindling/pull/513)）
 - Fix span data deduplication issue.（[#511](https://github.com/KindlingProject/kindling/pull/511)）
 
