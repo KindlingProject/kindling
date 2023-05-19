@@ -101,7 +101,7 @@ function Thread() {
                     setProfileModalVisible(true);
                 }
                 const linetimes = getLineTimesList(requestTimes, traceTimes);
-                // console.log(data, linetimes);
+                // console.log('data', data);
                 setNowTraceData(data);
                 setAllSpanList(spanTreeList);
                 setNowTraceTimeRange([new Date(startTimestamp), new Date(endTimestamp)]);
@@ -235,6 +235,7 @@ function Thread() {
     // 选择查看的profile文件，node直接读取文件内容返回
     const selectFileName = (fileName, folder) => {
         setTestFileName(fileName);
+        setShowEventDetail(false);
         getFileDetail({folderName: folder, fileName}).then(res => {
             if (res.data.success) {
                 let {trace: traceData, cpuEvents} = res.data.data;
@@ -261,7 +262,7 @@ function Thread() {
                         setProfileModalVisible(true);
                     }
                     const linetimes = getLineTimesList(requestTimes, traceTimes);
-                    // console.log(data, linetimes);
+                    console.log('data', data);
                     setNowTraceData(data);
                     setAllSpanList(spanTreeList);
                     setNowTraceTimeRange([new Date(startTimestamp), new Date(endTimestamp)]);
@@ -597,6 +598,8 @@ function Thread() {
         setShowComplex(type === 'complex');
         if (type === 'complex') {
             setShowEventDetail(true);
+        } else {
+            setShowEventDetail(false);
         }
     }
 

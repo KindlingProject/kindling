@@ -32,7 +32,7 @@ export const protoclList = [
 export const eventList: IEvent[] = [
     {
         name: 'oncpu',
-        alias: 'running',
+        alias: 'on',
         value: 'on',
         type: 'on',
         fillColor: '#FDE6E4',
@@ -158,6 +158,14 @@ export const eventList: IEvent[] = [
         fillColor: '#fffde280',
         activeColor: '#EFEDCA',
         color: '#c0b81c'
+    }, {
+        name: 'runqLatency',
+        alias: 'runQ',
+        value: 'runqLatency',
+        type: 'runqLatency',
+        fillColor: '#fcc3f3',
+        activeColor: '#ff87e3',
+        color: '#fb65d8'
     }
 ];
 export const darkEventList: IEvent[] = [
@@ -423,6 +431,7 @@ const onOffInfoHandle = (info, eventObj, timeRange) => {
                 detailInfo.startTime = formatTimsToMS(detailInfo.startTime);
                 detailInfo.duration = formatTimsToMS(detailInfo.duration);
                 subEvent.info = detailInfo;
+                subEvent.onOff = true;
                 if (eventObj.endTime > timeRange[0] && eventObj.startTime < timeRange[1]) {
                     result.push(subEvent);
                 }
@@ -448,6 +457,7 @@ const onOffInfoHandle = (info, eventObj, timeRange) => {
             subEvent.type = detailInfo.type;
             subEvent.eventType = detailInfo.type + detailInfo.operate;
             subEvent.info = detailInfo;
+            subEvent.onOff = true;
             result.push(subEvent);
         } 
         detailInfo.startTime = formatTimsToMS(detailInfo.startTime);
@@ -548,7 +558,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         let cpuEvents = _.chain(list).map('cpuEvents').flatten().uniqBy('startTime').value();
         let javaFutexEvents = _.chain(list).map('javaFutexEvents').flatten().uniqBy('startTime').value();
         let transactionIdsList = _.chain(list).map('transactionIds').flatten().value();
-        let spanList = _.chain(list).map('spans').flatten().uniqBy('startTime').compact().value();
+        let spanList = _.chain(list).map('spans').flatten().uniqWith((a, b) => a.startTime === b.startTime && a.name === b.name && a.endTime === b.endTime).compact().value();
         let innerCallsList = _.chain(list).map('innerCalls').flatten().uniqBy('startTime').compact().value();
         threadObj.innerCalls = innerCallsList;
 
@@ -557,17 +567,28 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         });
         allSpanList = allSpanList.concat(spanList);
 
+        // console.log('cpuEvents', cpuEvents);
         _.forEach(cpuEvents, event => {
             let { startTime } = event;
-            let timeTypeList = _.compact(event.timeType.split(','));
-            let timeValueList = _.compact(event.typeSpecs.split(',')).map((v: any) => parseFloat(v));
+            // let timeTypeList = _.compact(event.timeType.split(','));
+            // let timeValueList = _.compact(event.typeSpecs.split(',')).map((v: any) => parseFloat(v));
+            let timeTypeList = event.timeType;
+            let timeValueList = event.typeSpecs;
             // 可能出现对应事件0 没有log输出的情况，日志格式为log1||log3，所以不能用compact清除空值。 onInfo和offInfo同上
             let logList = event.log.split('|');
             let stackList = event.stack ? event.stack.split('|') : [];
             let onInfoList = event.onInfo.split('|');
             let offInfoList = event.offInfo.split('|');
+            // let runqList = event.runqLatency.split(',');
+            let runqList = event.runqLatency;
             let onFlag = 0;
             let offFlag = 0;
+
+            // console.log('timeTypeList', timeTypeList);
+            // console.log('timeValueList', timeValueList);
+            // console.log('onInfoList', onInfoList);
+            // console.log('offInfoList', offInfoList);
+            // console.log('runqList', runqList);
             timeTypeList.forEach((type: any, idx) => {
                 let endTime = startTime + timeValueList[idx];
                 if (containTime(timeRange,startTime, endTime)) {
@@ -580,7 +601,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                         stackList: []
                     };
                     
-                    if (type === '0') {
+                    if (parseInt(type) === 0) {
                         // TODO 日志其实需求根据@前面的数字截取字符串长度
                         if (logList.length > 0 && logList[onFlag]) {
                             let logInfo = logList[onFlag].split('@');
@@ -641,9 +662,16 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                         }
                         onFlag++;
                     }
-                    if (type !== '0') {
+                    if (parseInt(type) !== 0) {
                         if (offInfoList.length > 0 && offInfoList[offFlag]) {
                             let result: any = onOffInfoHandle(offInfoList[offFlag], eventObj, timeRange);
+                            if (runqList[offFlag]) {
+                                if (_.isArray(result)) {
+                                    result[0].runqLatency = runqList[offFlag];
+                                } else {
+                                    result.runqLatency = runqList[offFlag]
+                                }
+                            }
                             if (_.isArray(result)) {
                                 threadObj.eventList = [...threadObj.eventList, ...result];
                             } else {
@@ -651,9 +679,33 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                                     threadObj.eventList.push(result);
                                 }
                             }
+                            if (runqList[offFlag] > 1000) {
+                                let temp = _.isArray(result) ? result[0] : result;
+                                let obj: any = {
+                                    startTime: temp.endTime - parseInt(runqList[offFlag]) / 1000,
+                                    endTime: temp.endTime,
+                                    time: parseInt(runqList[offFlag]),
+                                    eventType: 'runqLatency',
+                                    type: 'runqLatency'
+                                };
+                                threadObj.eventList.push(obj);
+                            }
                         } else {
                             eventObj.eventType = eventObj.type;
+                            if (runqList[offFlag]) {
+                                eventObj.runqLatency = runqList[offFlag];
+                            }
                             threadObj.eventList.push(eventObj);
+                            if (runqList[offFlag] && runqList[offFlag] > 1000) {
+                                let obj: any = {
+                                    startTime: eventObj.endTime - parseInt(runqList[offFlag]) / 1000,
+                                    endTime: eventObj.endTime,
+                                    time: parseInt(runqList[offFlag]),
+                                    eventType: 'runqLatency',
+                                    type: 'runqLatency'
+                                };
+                                threadObj.eventList.push(obj);
+                            }
                         }
                         offFlag++;
                     }
@@ -662,7 +714,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                     //     threadObj.eventList.push(eventObj);
                     // }
                 } else {
-                    if (type === '0') {
+                    if (parseInt(type) === 0) {
                         onFlag++;
                     } else {
                         offFlag++;
@@ -740,7 +792,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
          * 临时解决方案：后台返回trace数据格式不再是10交替出现的，解决方案过滤油url的数据，没有url的数据用作后续数据分析
          * isEntry: 1 => trace的开始时间; isEntry: 0 => trace的结束时间 
          */
-        sameTraceList = _.filter(sameTraceList, item => item.url.length === 0);
+        _.remove(sameTraceList, item => item.url && item.url.length > 0);
         item.traceList = [];
         for(let i = 0;i < sameTraceList.length; i++) {
             if (i % 2 === 0 && sameTraceList[i+1]) {
@@ -775,7 +827,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
         let locks: IJavaLock[] = [];
         _.forEach(traceData, (item: IThread) => {
             _.forEach(item.eventList, event => {
-                if (event.endTime > requestStartTimestamp - 2 && event.startTime < requestEndTimestamp + 2) {
+                if (event.endTime > requestStartTimestamp - 2 && event.startTime < requestEndTimestamp + 2 && !event.onOff) {
                     let nEvent = _.cloneDeep(event);
                     let {stime, etime, time} = timeHandle(event.startTime, event.endTime, event.time, [requestStartTimestamp - 2, requestEndTimestamp + 2], false);
                     nEvent.startTime = stime;
@@ -796,6 +848,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
             });
         });
         let requestEventByType = _.groupBy(requestEvent, 'type');
+        delete requestEventByType.runqLatency;
         _.forEach(requestEventByType, (list, key) => {
             let sevent: IEvent = _.find(eventList, {type: key}) as IEvent;
             let time = parseFloat(_.sum(_.map(list, 'time')).toFixed(2));

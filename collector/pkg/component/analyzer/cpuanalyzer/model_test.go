@@ -18,3 +18,23 @@ func TestMarshalSomeFields(t *testing.T) {
 	}
 	t.Log(string(cpuEvents))
 }
+
+func TestCPUType_MarshalJSON(t *testing.T) {
+	ct := CPUType_FILE
+	data, err := ct.MarshalJSON()
+	if err != nil {
+		t.Failed()
+	}
+	t.Log(string(data))
+}
+
+func TestCPUType_UnmarshalJSON(t *testing.T) {
+	data := []byte{49}
+
+	var ct CPUType
+	err := ct.UnmarshalJSON(data)
+	if err != nil {
+		t.Failed()
+	}
+	t.Log(ct)
+}
