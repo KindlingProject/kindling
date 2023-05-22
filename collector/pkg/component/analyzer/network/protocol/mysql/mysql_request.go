@@ -72,6 +72,23 @@ func parseMysqlQuery() protocol.ParsePkgFn {
 	}
 }
 
+/*
+===== PayLoad =====
+1              COM_QUIT<01>
+*/
+func fastfailMysqlQuit() protocol.FastFailFn {
+	return func(message *protocol.PayloadMessage) bool {
+		return message.Data[4] != 1
+	}
+}
+
+func parseMysqlQuit() protocol.ParsePkgFn {
+	return func(message *protocol.PayloadMessage) (bool, bool) {
+		message.AddBoolAttribute(constlabels.Oneway, true)
+		return true, true
+	}
+}
+
 var sqlPrefixs = []string{
 	"select",
 	"insert",

@@ -17,6 +17,8 @@ const (
 	DnsRcode  = "dns_rcode"
 	DnsIp     = "dns_ip"
 
+	Oneway = "one_way"
+
 	Sql        = "sql"
 	SqlErrCode = "sql_error_code"
 	SqlErrMsg  = "sql_error_msg"
