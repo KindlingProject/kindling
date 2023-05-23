@@ -35,6 +35,7 @@ func TestMySqlProtocol(t *testing.T) {
 		"mysql/server-trace-query-split.yml",
 		"mysql/server-trace-query.yml",
 		"mysql/server-trace-oneway.yml",
+		"mysql/server-trace-query-cmd.yml",
 	)
 }
 

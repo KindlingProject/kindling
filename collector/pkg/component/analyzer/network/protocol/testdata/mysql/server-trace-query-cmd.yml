@@ -1,5 +1,5 @@
 trace:
-  key: query
+  key: query-cmd
   requests:
     -
       name: "recvfrom"
@@ -9,7 +9,7 @@ trace:
         res: 24
         data:
           - "hex|14000000"
-          - "03|SELECT * FROM dummy"
+          - "030001|SELECT * FROM dummy"
   responses:
     -
       name: "sendto"
@@ -58,7 +58,7 @@ trace:
         protocol: "mysql"
         content_key: "select dummy *"
         sql: "SELECT * FROM dummy"
-        request_payload: ".....SELECT * FROM dummy"
+        request_payload: ".......SELECT * FROM dummy"
         response_payload: ".....9....def.container-monitor.dummy.dummy.name.name.-...........;....def.conta"
         is_error: false
         error_type: 0
