@@ -51,6 +51,12 @@ func parseMysqlPrepare() protocol.ParsePkgFn {
 /*
 ===== PayLoad =====
 1              COM_QUERY<03>
+CLIENT_QUERY_ATTRIBUTES
+
+	1            Number of parameters
+	1            Number of parameter sets. Currently always 1
+	...
+
 string[EOF]    the query the server shall execute
 */
 func fastfailMysqlQuery() protocol.FastFailFn {
@@ -62,12 +68,34 @@ func fastfailMysqlQuery() protocol.FastFailFn {
 func parseMysqlQuery() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		sql := string(message.Data[5:])
+		if len(sql) > 2 && sql[0] == 0x00 && sql[1] == 0x01 {
+			// Only Fix Zero params Case.
+			// TODO Fix One more params case.
+			sql = sql[2:]
+		}
 		if !isSql(sql) {
 			return false, true
 		}
 
 		message.AddUtf8StringAttribute(constlabels.Sql, sql)
 		message.AddUtf8StringAttribute(constlabels.ContentKey, tools.SQL_MERGER.ParseStatement(sql))
+		return true, true
+	}
+}
+
+/*
+===== PayLoad =====
+1              COM_QUIT<01>
+*/
+func fastfailMysqlQuit() protocol.FastFailFn {
+	return func(message *protocol.PayloadMessage) bool {
+		return message.Data[4] != 1
+	}
+}
+
+func parseMysqlQuit() protocol.ParsePkgFn {
+	return func(message *protocol.PayloadMessage) (bool, bool) {
+		message.AddBoolAttribute(constlabels.Oneway, true)
 		return true, true
 	}
 }

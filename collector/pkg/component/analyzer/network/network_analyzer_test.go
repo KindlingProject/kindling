@@ -33,7 +33,10 @@ func TestMySqlProtocol(t *testing.T) {
 	testProtocol(t, "mysql/server-event.yml",
 		"mysql/server-trace-commit.yml",
 		"mysql/server-trace-query-split.yml",
-		"mysql/server-trace-query.yml")
+		"mysql/server-trace-query.yml",
+		"mysql/server-trace-oneway.yml",
+		"mysql/server-trace-query-cmd.yml",
+	)
 }
 
 func TestRedisProtocol(t *testing.T) {
