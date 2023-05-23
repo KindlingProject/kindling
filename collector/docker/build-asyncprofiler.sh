@@ -1,5 +1,5 @@
-ASYNC_PROFILER=async-profiler-1.0.4-linux-x64.tar.gz
-KINDLING_JAVA=kindling-java-1.0.4.tar.gz
+ASYNC_PROFILER=async-profiler-1.0.3-linux-x64.tar.gz
+KINDLING_JAVA=kindling-java-1.0.3.tar.gz
 APM_ALL=apm-all-3.1.0.jar
 
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_BIN")" > /dev/null 2>&1; pwd -P)"

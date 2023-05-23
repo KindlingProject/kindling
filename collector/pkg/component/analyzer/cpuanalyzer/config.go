@@ -20,11 +20,11 @@ type Config struct {
 	// EdgeEventsWindowSize is the size of the duration window that seats the edge events.
 	// The unit is seconds. The greater it is, the more data will be stored.
 	EdgeEventsWindowSize int `mapstructure:"edge_events_window_size"`
-	//JavaTraceDeleteInterval is the interval for cleaning up expired data in javatraces.
-	//The unit is seconds.
+	// JavaTraceDeleteInterval is the interval for cleaning up expired data in javatraces.
+	// The unit is seconds.
 	JavaTraceDeleteInterval int `mapstructure:"java_trace_delete_interval"`
-	//JavaTraceExpirationTime is the expiration time for data in javatraces.
-	//The unit is seconds.
+	// JavaTraceExpirationTime is the expiration time for data in javatraces.
+	// The unit is seconds.
 	JavaTraceExpirationTime int `mapstructure:"java_trace_expiration_time"`
 
 }

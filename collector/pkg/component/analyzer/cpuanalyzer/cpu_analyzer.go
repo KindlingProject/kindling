@@ -27,23 +27,17 @@ const (
 )
 
 type CpuAnalyzer struct {
-	cfg              *Config
-	cpuPidEvents     map[uint32]map[uint32]*TimeSegments
-	routineSize      *atomic.Int32
-	lock             sync.RWMutex
-	telemetry        *component.TelemetryTools
-	tidExpiredQueue  *tidDeleteQueue
-	javaTraces       map[JavaTracesKey]*TransactionIdEvent
-	nextConsumers    []consumer.Consumer
-	metadata         *kubernetes.K8sMetaDataCache
-	cleanerTicker    *time.Ticker
-	stopProfileChan  chan struct{}
-}
-
-type JavaTracesKey struct{
-	TraceId     	string 
-	PidString   	string 
-	StartTime   	time.Time 
+	cfg                  *Config
+	cpuPidEvents          map[uint32]map[uint32]*TimeSegments
+	routineSize           *atomic.Int32
+	lock                  sync.RWMutex
+	telemetry             *component.TelemetryTools
+	tidExpiredQueue       *tidDeleteQueue
+	javaTraces            map[string]*TransactionIdEvent
+	javaTraceExpiredQueue *javaTraceDeleteQueue
+	nextConsumers         []consumer.Consumer
+	metadata              *kubernetes.K8sMetaDataCache
+	stopProfileChan       chan struct{}
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -65,26 +59,15 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
-	ca.javaTraces = make(map[JavaTracesKey]*TransactionIdEvent, 100000)
+	ca.javaTraces = make(map[string]*TransactionIdEvent, 100000)
 	newSelfMetrics(telemetry.MeterProvider, ca)
 	return ca
 }
 
 func (ca *CpuAnalyzer) Start() error {
-	ca.cleanerTicker = time.NewTicker(time.Duration(ca.cfg.JavaTraceDeleteInterval) * time.Second)
-	go func() {
-		for range ca.cleanerTicker.C {
-			ca.lock.Lock()
-			now := time.Now()
-			for key:= range ca.javaTraces {
-				if now.Sub(key.StartTime) > time.Duration(ca.cfg.JavaTraceExpirationTime)*time.Second {
-					delete(ca.javaTraces, key)
-					fmt.Print("Expired data has been released,pid = " + key.PidString)
-				}
-			}
-			ca.lock.Unlock()
-		}
-	}()
+	interval := time.Duration(ca.cfg.JavaTraceDeleteInterval) * time.Second
+	expiredDuration :=time.Duration(ca.cfg.JavaTraceExpirationTime) * time.Second
+	go ca.JavaTraceDelete(interval,expiredDuration)
 	return nil
 }
 
@@ -92,7 +75,6 @@ func (ca *CpuAnalyzer) Shutdown() error {
 	if enableProfile {
 		_ = ca.StopProfile()
 	}
-	ca.cleanerTicker.Stop()
 	return nil
 }
 
@@ -136,17 +118,13 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 }
 
 func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
-	javatracekey := &JavaTracesKey{
-		TraceId: ev.TraceId,
-		PidString: ev.PidString,
-		StartTime: time.Now(),
-	}
+	key := ev.TraceId+ev.PidString
 	if ev.IsEntry == 1 {
-		ca.javaTraces[*javatracekey] = ev
+		ca.javaTraces[key] = ev
 	} else {
-		oldEvent,ok := ca.javaTraces[*javatracekey]
+		oldEvent,ok := ca.javaTraces[key]
 		if(!ok){
-			ca.telemetry.Logger.Warnf("No javaTraces traceid=%d, pid=%s", javatracekey.TraceId,javatracekey.PidString)
+			ca.telemetry.Logger.Warnf("No javaTraces traceid=%s, pid=%s", ev.TraceId,ev.PidString)
 			return
 		}
 		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
@@ -179,6 +157,7 @@ func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 			ReceiveDataGroupAsSignal(dataGroup)
 		}
 	}
+	ca.javaTraceExpiredQueue.Push(deleteVal{key: key,enterTime: time.Now()})
 }
 
 func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {
