@@ -59,6 +59,7 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
+	ca.javaTraceExpiredQueue = newJavaTraceDeleteQueue()
 	ca.javaTraces = make(map[string]*TransactionIdEvent, 100000)
 	newSelfMetrics(telemetry.MeterProvider, ca)
 	return ca
