@@ -449,6 +449,9 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 	}
 
 	if mps.responses == nil {
+		if requestMsg.GetAttributes().GetBoolValue(constlabels.Oneway) {
+			return []*model.DataGroup{}
+		}
 		return na.getRecords(mps, parser.GetProtocol(), requestMsg.GetAttributes())
 	}
 

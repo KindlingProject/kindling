@@ -5,14 +5,15 @@ import (
 )
 
 /*
-      Request                                         Response
-       /            \                                            /     |    \
-prepare   query                                err   ok  eof
+		    Request                                       Response
+		/     |       \                                 /     |    \
+	 prepare query   quit                              err   ok    eof
 */
 func NewMysqlParser() *protocol.ProtocolParser {
 	requestParser := protocol.CreatePkgParser(fastfailMysqlRequest(), parseMysqlRequest())
 	requestParser.Add(fastfailMysqlPrepare(), parseMysqlPrepare())
 	requestParser.Add(fastfailMysqlQuery(), parseMysqlQuery())
+	requestParser.Add(fastfailMysqlQuit(), parseMysqlQuit())
 
 	responseParser := protocol.CreatePkgParser(fastfailMysqlResponse(), parseMysqlResponse())
 	responseParser.Add(fastfailMysqlErr(), parseMysqlErr())
