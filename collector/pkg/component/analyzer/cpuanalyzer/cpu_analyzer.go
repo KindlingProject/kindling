@@ -120,6 +120,7 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 
 func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 	key := ev.TraceId+ev.PidString
+	ca.javaTraceExpiredQueue.Push(deleteVal{key: key,enterTime: time.Now()})
 	if ev.IsEntry == 1 {
 		ca.javaTraces[key] = ev
 	} else {
@@ -158,7 +159,6 @@ func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
 			ReceiveDataGroupAsSignal(dataGroup)
 		}
 	}
-	ca.javaTraceExpiredQueue.Push(deleteVal{key: key,enterTime: time.Now()})
 }
 
 func (ca *CpuAnalyzer) ConsumeJavaFutexEvent(event *model.KindlingEvent) {

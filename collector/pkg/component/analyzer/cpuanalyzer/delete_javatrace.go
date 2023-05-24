@@ -2,6 +2,7 @@ package cpuanalyzer
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -43,6 +44,7 @@ func (ca *CpuAnalyzer) JavaTraceDelete(interval time.Duration, expiredDuration t
 		case <-ca.stopProfileChan:
 			return
 		case <-time.After(interval):
+			ca.telemetry.Logger.Debug("Start regular cleaning of javatrace...")
 			now := time.Now()
 			func() {
 				ca.javaTraceExpiredQueue.queueMutex.Lock()
@@ -63,8 +65,7 @@ func (ca *CpuAnalyzer) JavaTraceDelete(interval time.Duration, expiredDuration t
 						if event == nil {
 							ca.javaTraceExpiredQueue.Pop()
 						} else {
-							// ca.telemetry.Logger.Debugf("Delete expired thread... pid=%s, tid=%s", event.PidString, event.TraceId)
-							fmt.Printf("Delete expired thread... pid=%s, tid=%s", event.PidString, event.TraceId)
+							ca.telemetry.Logger.Debugf("Delete expired javatrace... pid=%s, tid=%s", event.PidString, event.TraceId)
 							delete(ca.javaTraces, val.key)
 							ca.javaTraceExpiredQueue.Pop()
 						}
