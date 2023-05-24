@@ -1,8 +1,6 @@
 package cpuanalyzer
 
 import (
-	"fmt"
-	"strconv"
 	"sync"
 	"time"
 )
