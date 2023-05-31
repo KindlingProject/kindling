@@ -31,21 +31,24 @@ var (
 type PayloadMessage struct {
 	Data         []byte
 	Offset       int
+	Protocol     model.L4Proto
 	attributeMap *model.AttributeMap
 }
 
-func NewRequestMessage(data []byte) *PayloadMessage {
+func NewRequestMessage(data []byte, protocol model.L4Proto) *PayloadMessage {
 	return &PayloadMessage{
 		Data:         data,
 		Offset:       0,
+		Protocol:     protocol,
 		attributeMap: model.NewAttributeMap(),
 	}
 }
 
-func NewResponseMessage(data []byte, attributeMap *model.AttributeMap) *PayloadMessage {
+func NewResponseMessage(data []byte, attributeMap *model.AttributeMap, protocol model.L4Proto) *PayloadMessage {
 	return &PayloadMessage{
 		Data:         data,
 		Offset:       0,
+		Protocol:     protocol,
 		attributeMap: attributeMap,
 	}
 }

@@ -442,7 +442,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 	}
 
 	// Mergable Data
-	requestMsg := protocol.NewRequestMessage(mps.requests.getData())
+	requestMsg := protocol.NewRequestMessage(mps.requests.getData(), mps.requests.event.Ctx.FdInfo.GetProtocol())
 	if !parser.ParseRequest(requestMsg) {
 		// Parse failure
 		return nil
@@ -455,7 +455,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 		return na.getRecords(mps, parser.GetProtocol(), requestMsg.GetAttributes())
 	}
 
-	responseMsg := protocol.NewResponseMessage(mps.responses.getData(), requestMsg.GetAttributes())
+	responseMsg := protocol.NewResponseMessage(mps.responses.getData(), requestMsg.GetAttributes(), mps.responses.event.Ctx.FdInfo.GetProtocol())
 	if !parser.ParseResponse(responseMsg) {
 		// Parse failure
 		return nil
@@ -471,7 +471,7 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 	parsedReqMsgs := make([]*protocol.PayloadMessage, size)
 	for i := 0; i < size; i++ {
 		req := mps.requests.getEvent(i)
-		requestMsg := protocol.NewRequestMessage(req.GetData())
+		requestMsg := protocol.NewRequestMessage(req.GetData(), mps.requests.event.Ctx.FdInfo.GetProtocol())
 		if !parser.ParseRequest(requestMsg) {
 			// Parse failure
 			return nil
@@ -497,12 +497,12 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 		size := mps.responses.size()
 		for i := 0; i < size; i++ {
 			resp := mps.responses.getEvent(i)
-			responseMsg := protocol.NewResponseMessage(resp.GetData(), model.NewAttributeMap())
+			responseMsg := protocol.NewResponseMessage(resp.GetData(), model.NewAttributeMap(), mps.responses.event.Ctx.FdInfo.GetProtocol())
 			if !parser.ParseResponse(responseMsg) {
 				// Parse failure
 				return nil
 			}
-			// Match Request with repsone
+			// Match Request with response
 			matchIdx := parser.PairMatch(parsedReqMsgs, responseMsg)
 			if matchIdx == -1 {
 				return nil
