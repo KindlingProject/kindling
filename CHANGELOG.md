@@ -9,6 +9,7 @@
 ### Enhancements
 - ⚠️Breaking change: Refactor the data format of on/off CPU events from "string" to "array". Note that the old data format cannot be parsed using the new version of the front-end.([#512](https://github.com/KindlingProject/kindling/pull/512) [#520](https://github.com/KindlingProject/kindling/pull/520))
 ### Bug fixes
+- Fix the bug where the DNS domain is not obtained when DNS transport over TCP. ([#524](https://github.com/KindlingProject/kindling/pull/524))
 - Fix panic: send on closed channel. ([#519](https://github.com/KindlingProject/kindling/pull/519))
 - Fix the bug that the event detail panel doesn't hide when switching profiles.（[#513](https://github.com/KindlingProject/kindling/pull/513)）
 - Fix span data deduplication issue.（[#511](https://github.com/KindlingProject/kindling/pull/511)）
