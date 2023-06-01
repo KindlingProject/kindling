@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
+	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 )
 
@@ -19,25 +20,29 @@ func fastfailDnsResponse() protocol.FastFailFn {
 	}
 }
 
-/**
-Header
-   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
- +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
- |                      ID                       |
- +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
- |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
- +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
- |                    QDCOUNT                    |
- +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
- |                    ANCOUNT                    |
- +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
- |                    NSCOUNT                    |
- +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
- |                    ARCOUNT                    |
- +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+/*
+Header format
+
+	  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                      ID                       |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    QDCOUNT                    |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    ANCOUNT                    |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    NSCOUNT                    |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    ARCOUNT                    |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
 func parseDnsResponse() protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
+		if message.Protocol == model.L4Proto_TCP {
+			message.Offset += 2
+		}
 		offset := message.Offset
 		id, _ := message.ReadUInt16(offset)
 		flags, _ := message.ReadUInt16(offset + 2)
