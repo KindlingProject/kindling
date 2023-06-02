@@ -16,7 +16,7 @@ type deleteVal struct {
 }
 
 func newJavaTraceDeleteQueue() *javaTraceDeleteQueue {
-	return &javaTraceDeleteQueue{queue: make([]deleteVal,0)}
+	return &javaTraceDeleteQueue{queue: make([]deleteVal, 0)}
 }
 
 func (dq *javaTraceDeleteQueue) GetFront() *deleteVal {
@@ -57,8 +57,8 @@ func (ca *CpuAnalyzer) JavaTraceDelete(interval time.Duration, expiredDuration t
 					}
 
 					func() {
-						ca.lock.Lock()
-						defer ca.lock.Unlock()
+						ca.jtlock.Lock()
+						defer ca.jtlock.Unlock()
 						event := ca.javaTraces[val.key]
 						if event == nil {
 							ca.javaTraceExpiredQueue.Pop()

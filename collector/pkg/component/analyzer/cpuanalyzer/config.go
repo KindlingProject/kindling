@@ -26,17 +26,16 @@ type Config struct {
 	// JavaTraceExpirationTime is the expiration time for data in javatraces.
 	// The unit is seconds.
 	JavaTraceExpirationTime int `mapstructure:"java_trace_expiration_time"`
-
 }
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		SamplingInterval:      5,
-		OpenJavaTraceSampling: false,
-		JavaTraceSlowTime:     500,
-		SegmentSize:           40,
-		EdgeEventsWindowSize:  2,
-		JavaTraceDeleteInterval: 10,
-		JavaTraceExpirationTime: 30,
+		SamplingInterval:        5,
+		OpenJavaTraceSampling:   false,
+		JavaTraceSlowTime:       500,
+		SegmentSize:             40,
+		EdgeEventsWindowSize:    2,
+		JavaTraceDeleteInterval: 20,
+		JavaTraceExpirationTime: 120,
 	}
 }

@@ -27,10 +27,11 @@ const (
 )
 
 type CpuAnalyzer struct {
-	cfg                  *Config
+	cfg                   *Config
 	cpuPidEvents          map[uint32]map[uint32]*TimeSegments
 	routineSize           *atomic.Int32
 	lock                  sync.RWMutex
+	jtlock                sync.RWMutex
 	telemetry             *component.TelemetryTools
 	tidExpiredQueue       *tidDeleteQueue
 	javaTraces            map[string]*TransactionIdEvent
@@ -67,8 +68,8 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 
 func (ca *CpuAnalyzer) Start() error {
 	interval := time.Duration(ca.cfg.JavaTraceDeleteInterval) * time.Second
-	expiredDuration :=time.Duration(ca.cfg.JavaTraceExpirationTime) * time.Second
-	go ca.JavaTraceDelete(interval,expiredDuration)
+	expiredDuration := time.Duration(ca.cfg.JavaTraceExpirationTime) * time.Second
+	go ca.JavaTraceDelete(interval, expiredDuration)
 	return nil
 }
 
@@ -119,14 +120,16 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 }
 
 func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
-	key := ev.TraceId+ev.PidString
-	ca.javaTraceExpiredQueue.Push(deleteVal{key: key,enterTime: time.Now()})
+	ca.jtlock.Lock()
+	defer ca.jtlock.Unlock()
+	key := ev.TraceId + ev.PidString
+	ca.javaTraceExpiredQueue.Push(deleteVal{key: key, enterTime: time.Now()})
 	if ev.IsEntry == 1 {
 		ca.javaTraces[key] = ev
 	} else {
-		oldEvent,ok := ca.javaTraces[key]
-		if(!ok){
-			ca.telemetry.Logger.Warnf("No javaTraces traceid=%s, pid=%s", ev.TraceId,ev.PidString)
+		oldEvent, ok := ca.javaTraces[key]
+		if !ok {
+			ca.telemetry.Logger.Warnf("No javaTraces traceid=%s, pid=%s", ev.TraceId, ev.PidString)
 			return
 		}
 		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
