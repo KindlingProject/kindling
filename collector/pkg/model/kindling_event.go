@@ -305,6 +305,12 @@ func (k *KindlingEvent) GetCtx() *Context {
 	return &k.Ctx
 }
 
+type WorkloadInfo struct {
+	Namespace    string
+	WorkloadName string
+	WorkloadKind string
+}
+
 type KeyValue struct {
 	// Arguments' Name or Attributions' Name.
 	Key string

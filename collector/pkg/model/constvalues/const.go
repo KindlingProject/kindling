@@ -22,6 +22,10 @@ const (
 )
 
 const (
+	K8sWorkLoad = "k8s_workload"
+)
+
+const (
 	ProtocolHttp     = "http"
 	ProtocolHttp2    = "http2"
 	ProtocolGrpc     = "grpc"
