@@ -9,8 +9,11 @@ interface IParams1 {
     isServer: boolean;
     podName?: string;
 }
-export const getTraceList = (params: IParams1) => {
-    return axios.get(basicUrl + '/camera/trace', {params});
+// export const getTraceList = (params: IParams1) => {
+//     return axios.get(basicUrl + '/camera/trace', {params});
+// }
+export const getTraceList = (params) => {
+    return axios.get(basicUrl + '/esserver/getTraceList', {params});
 }
 
 interface IParams2 {
@@ -18,8 +21,11 @@ interface IParams2 {
     startTimestamp: number;
     endTimestamp: number;
 }
+// export const getTraceData = (params: IParams2) => {
+//     return axios.get(basicUrl + '/camera/onoffcpu', {params});
+// }
 export const getTraceData = (params: IParams2) => {
-    return axios.get(basicUrl + '/camera/onoffcpu', {params});
+    return axios.get(basicUrl + '/esserver/onoffcpu', {params});
 }
 
 interface IParams3 {

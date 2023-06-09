@@ -5,6 +5,7 @@
 
 ## Unreleased
 ### New features
+- Added support for displaying trace-profiling data by querying from Elasticsearch. ([#528](https://github.com/KindlingProject/kindling/pull/528))
 - Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindling.harmonycloud.cn/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
 ### Enhancements
 - MySQL CommandLine Case: Ignore quit command and get sql with CLIENT_QUERY_ATTRIBUTES([#523](https://github.com/KindlingProject/kindling/pull/523))
