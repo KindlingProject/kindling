@@ -621,9 +621,18 @@ function Thread() {
                     <span>应用运行分析</span>
                     {
                         showESQuery ? <React.Fragment>
-                            <Input type="number" style={{ width: 100 }} value={pid} onChange={changePid} />
-                            <Input type="number" style={{ width: 180 }} value={testStartTimestamp} onChange={changeStartTimestamp} />
-                            <Input type="number" style={{ width: 180 }} value={testEndTimestamp} onChange={changeEndTimestamp} />
+                            <div className='top-input-warp'>
+                                <span>pid</span>
+                                <Input type="number" style={{ width: 100 }} value={pid} onChange={changePid} />
+                            </div>
+                            <div className='top-input-warp'>
+                                <span>startTime</span>
+                                <Input type="number" style={{ width: 180 }} value={testStartTimestamp} onChange={changeStartTimestamp} />
+                            </div>
+                            <div className='top-input-warp'>
+                                <span>endTime</span>
+                                <Input type="number" style={{ width: 180 }} value={testEndTimestamp} onChange={changeEndTimestamp} />
+                            </div>
                             <Select style={{ width: 100 }} value={testProtocl} onChange={v => setTestProtocl(v)}>
                                 {
                                     protoclList.map(item => <Select.Option key={item.value} value={item.value}>{item.field}</Select.Option>)
