@@ -6,6 +6,7 @@
   "author": "thousand",
   "license": "MIT",
   "dependencies": {
+    "@elastic/elasticsearch": "^6.8.3",
     "async": "^3.2.4",
     "compression": "^1.7.4",
     "connect-history-api-fallback": "^2.0.0",
