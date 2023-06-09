@@ -16,27 +16,6 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const settings = require('./settings');
 const port = settings.port;
 
-const restream = function (proxyReq, req) {
-    let masterIp = req.headers.authorization;
-    proxyReq.setHeader('Authorization', masterIp || '');
-};
-const esserverAdress = 'http://' + settings.apmServerConfig.host + ':' + settings.apmServerConfig.port;
-const esserverProxy = createProxyMiddleware('/camera', {
-    target: esserverAdress,
-    secure: false,
-    changeOrigin: true,
-    // onProxyReq: restream,
-    // onProxyRes: async function (proxyRes, req, res) {
-    //     // console.log(proxyRes, 'proxyRes');
-    //     if (typeof req.session.username === 'undefined') {
-    //         req.session.destroy();
-    //         res.status(401).json({
-    //             msg: noAuthorizeMsg,
-    //         });
-    //     }
-    // },
-});
-app.use(esserverProxy);
 const profileAddress = 'http://' + settings.profileConfig.host + ':' + settings.profileConfig.port;
 const profileProxy = createProxyMiddleware('/profile', {
     target: profileAddress,
@@ -73,6 +52,7 @@ app.get("/test", function(req, res, next) {
 });
 
 app.use('/file', require('./routers/file.js'));
+app.use('/esserver', require('./routers/esServer.js'));
 
 var httpServer = http.createServer(app);
 // var httpsServer = https.createServer(credentials, app);
