@@ -182,6 +182,13 @@ func newNetRequestLabelSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.DnsDomain, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.KafkaTopic, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.RocketMQErrCode, VType: aggregator.IntType},
+
+		// grpc request scheme authority path
+		aggregator.LabelSelector{Name: constlabels.Scheme, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Authority, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.Path, VType: aggregator.StringType},
+		// rpc status code
+		aggregator.LabelSelector{Name: constlabels.GrpcStatusCode, VType: aggregator.IntType},
 	)
 }
 

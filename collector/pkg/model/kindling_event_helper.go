@@ -284,11 +284,11 @@ func (k *KindlingEvent) IsRequest() (bool, error) {
 		switch k.Name {
 		case constnames.ReadEvent, constnames.RecvFromEvent, constnames.RecvMsgEvent, constnames.ReadvEvent:
 			fallthrough
-		case constnames.PReadEvent, constnames.PReadvEvent:
+		case constnames.PReadEvent, constnames.PReadvEvent, constnames.GrpcHeaderClientRecv, constnames.GrpcHeaderServerRecv:
 			return k.isRequest(true)
 		case constnames.WriteEvent, constnames.SendToEvent, constnames.SendMsgEvent, constnames.WritevEvent:
 			fallthrough
-		case constnames.SendMMsgEvent, constnames.PWriteEvent, constnames.PWritevEvent:
+		case constnames.SendMMsgEvent, constnames.PWriteEvent, constnames.PWritevEvent, constnames.GrpcHeaderEncoder:
 			return k.isRequest(false)
 		default:
 			break

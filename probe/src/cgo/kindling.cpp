@@ -695,12 +695,15 @@ void init_kindling_event(kindling_event_t_for_go* p_kindling_event, void** pp_ki
     p_kindling_event->context.tinfo.containerId = (char*)malloc(sizeof(char) * 256);
     p_kindling_event->context.fdInfo.filename = (char*)malloc(sizeof(char) * 1024);
     p_kindling_event->context.fdInfo.directory = (char*)malloc(sizeof(char) * 1024);
-
     for (int i = 0; i < 16; i++) {
       p_kindling_event->userAttributes[i].key = (char*)malloc(sizeof(char) * 128);
       p_kindling_event->userAttributes[i].value = (char*)malloc(sizeof(char) * EVENT_DATA_SIZE);
     }
   }
+  else{
+    ((kindling_event_t_for_go*)*pp_kindling_event)->latency = 0;
+  }
+
 }
 
 void print_event(sinsp_evt* s_evt) {
@@ -898,6 +901,10 @@ uint16_t get_kindling_source(uint16_t etype) {
       case PPME_TCP_DROP_E:
       case PPME_TCP_RETRANCESMIT_SKB_E:
         return KRPOBE;
+      case PPME_GRPC_HEADER_ENCODE_E:
+      case PPME_GRPC_HEADER_SERVER_RECV_E:
+      case PPME_GRPC_HEADER_CLIENT_RECV_E:
+        return UPROBE;
         // TODO add cases of tracepoint, kprobe, uprobe
       default:
         return SYSCALL_ENTER;

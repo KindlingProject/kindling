@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -101,6 +102,9 @@ func (na *NetworkAnalyzer) ConsumableEvents() []string {
 		constnames.SendMsgEvent,
 		constnames.RecvMsgEvent,
 		constnames.SendMMsgEvent,
+		constnames.GrpcHeaderEncoder,
+		constnames.GrpcHeaderServerRecv,
+		constnames.GrpcHeaderClientRecv,
 	}
 }
 
@@ -186,7 +190,7 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 		return na.analyseConnect(evt)
 	}
 
-	if evt.GetDataLen() <= 0 || evt.GetResVal() < 0 {
+	if evt.GetUintUserAttribute("streamid") <= 0 && (evt.GetDataLen() <= 0 || evt.GetResVal() < 0) {
 		// TODO: analyse udp
 		return nil
 	}
@@ -319,6 +323,11 @@ func (na *NetworkAnalyzer) analyseResponse(evt *model.KindlingEvent) error {
 
 	oldPairs.mergeResponse(evt)
 	na.requestMonitor.Store(oldPairs.getKey(), oldPairs)
+
+	if evt.GetUintUserAttribute("end_stream") == 1 {
+		_ = na.distributeTraceMetric(oldPairs, nil)
+	}
+
 	return nil
 }
 
@@ -376,6 +385,11 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 }
 
 func (na *NetworkAnalyzer) parseProtocols(mps *messagePairs) []*model.DataGroup {
+	// check grpc protocol
+	if mps.requests.event.GetUintUserAttribute("streamid") > 0 {
+		return na.getRecords(mps, protocol.GRPC, generateGrpcAttributeMap(mps))
+	}
+
 	// Step 1:  Static Config for port and protocol set in config file
 	port := mps.getPort()
 	staticProtocol, found := na.staticPortMap[port]
@@ -623,6 +637,12 @@ func (na *NetworkAnalyzer) getRecords(mps *messagePairs, protocol string, attrib
 	ret.UpdateAddIntMetric(constvalues.RequestIo, int64(mps.getRquestSize()))
 	ret.UpdateAddIntMetric(constvalues.ResponseIo, int64(mps.getResponseSize()))
 
+	//TODO: get grpc frame data size, then update these value
+	if evt.GetUintUserAttribute("streamid") != 0 {
+		ret.UpdateAddIntMetric(constvalues.RequestIo, 0)
+		ret.UpdateAddIntMetric(constvalues.ResponseIo, 0)
+	}
+
 	ret.Timestamp = evt.GetStartTime()
 
 	return []*model.DataGroup{ret}
@@ -731,4 +751,51 @@ func (na *NetworkAnalyzer) getResponseSlowThreshold(protocol string) int {
 		return value
 	}
 	return na.cfg.getResponseSlowThreshold()
+}
+
+func generateGrpcAttributeMap(mps *messagePairs) *model.AttributeMap {
+	attributeMap := model.NewAttributeMap()
+	if mps == nil || mps.requests == nil {
+		return attributeMap
+	}
+
+	request := mps.requests.getEvent(0)
+	if request != nil {
+		attributeMap.AddStringValue(constlabels.Scheme, strings.ReplaceAll(request.GetStringUserAttribute("scheme"), "\x00", ""))
+		attributeMap.AddStringValue(constlabels.Authority, strings.ReplaceAll(request.GetStringUserAttribute("authority"), "\x00", ""))
+		attributeMap.AddStringValue(constlabels.Path, strings.ReplaceAll(request.GetStringUserAttribute("path"), "\x00", ""))
+	}
+
+	if mps.responses == nil {
+		return attributeMap
+	}
+
+	firstResp := mps.responses.getEvent(0)
+	if firstResp != nil {
+		status := firstResp.GetStringUserAttribute("status")
+		status = strings.ReplaceAll(status, "\x00", "")
+		if status != "" {
+			statusCode, _ := strconv.ParseInt(status, 10, 64)
+			attributeMap.AddIntValue(constlabels.HttpStatusCode, statusCode)
+			if statusCode >= 400 {
+				attributeMap.AddBoolValue(constlabels.IsError, true)
+				attributeMap.AddIntValue(constlabels.ErrorType, int64(constlabels.ProtocolError))
+			}
+		}
+	}
+
+	lastResp := mps.responses.getEvent(mps.responses.size() - 1)
+	if lastResp != nil {
+		grpcStatus := lastResp.GetStringUserAttribute("grpc_status")
+		grpcStatus = strings.ReplaceAll(grpcStatus, "\x00", "")
+		if grpcStatus != "" {
+			grpcStatusCode, _ := strconv.ParseInt(grpcStatus, 10, 64)
+			attributeMap.AddIntValue(constlabels.GrpcStatusCode, grpcStatusCode)
+			if grpcStatusCode > 0 {
+				attributeMap.AddBoolValue(constlabels.IsError, true)
+				attributeMap.AddIntValue(constlabels.ErrorType, int64(constlabels.GrpcError))
+			}
+		}
+	}
+	return attributeMap
 }

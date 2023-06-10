@@ -12,6 +12,12 @@ const (
 	HttpStatusCode   = "http_status_code"
 	HttpContinue     = "http_continue"
 
+	GrpcStatusCode = "grpc_status_code"
+	Scheme         = "scheme"
+	Authority      = "authority"
+	Path           = "path"
+	StreamId       = "stream_id"
+
 	DnsId     = "dns_id"
 	DnsDomain = "dns_domain"
 	DnsRcode  = "dns_rcode"

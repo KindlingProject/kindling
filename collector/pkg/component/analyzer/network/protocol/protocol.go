@@ -8,6 +8,7 @@ const (
 	REDIS     = "redis"
 	DUBBO     = "dubbo"
 	ROCKETMQ  = "rocketmq"
+	GRPC      = "grpc"
 	NOSUPPORT = "NOSUPPORT"
 )
 

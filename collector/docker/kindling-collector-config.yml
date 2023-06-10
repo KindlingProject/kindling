@@ -33,6 +33,9 @@ receivers:
       - name: kretprobe-tcp_connect
       - name: kprobe-tcp_set_state
       - name: tracepoint-procexit
+      - name: uprobe-grpc_header_encoder
+      - name: uprobe-grpc_header_server_recv
+      - name: uprobe-grpc_header_client_recv
     process_filter:
       # the length of a comm should be no more than 16
       comms:
@@ -110,6 +113,8 @@ analyzers:
         slow_threshold: 100
       - key: "rocketmq"
         ports: [ 9876, 10911 ]
+        slow_threshold: 500
+      - key: "grpc"
         slow_threshold: 500
 
 processors:
