@@ -5,14 +5,14 @@ import './topology/node';
 import './topology/edge';
 import { nodeTooltip } from './topology/tooltip';
 import TopoLegend from './topology/legend';
-import { metricList, layoutOptions, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, 
+import { metricList, layoutOptions, directionOptions, viewRadioOptions, showServiceOptions, NodeDataProps, EdgeDataProps, transformWorkload,
   transformData, getNodeTypes, nsRelationHandle, connFailNSRelationHandle, workloadRelationHandle, connFailWorkloadRelationHandle, TopologyProps, topoMerge } from './topology/services'; 
 import { buildLayout, serviceLineUpdate, updateLinesAndNodes } from './topology/topology'
-import FilterList, { SelectOption } from './topology/filter';
 import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
-import { stylesFactory, Select, RadioButtonGroup, Icon, Tooltip, Spinner, InlineField } from '@grafana/ui';
+import { stylesFactory, Select, RadioButtonGroup, Icon, Tooltip, Spinner } from '@grafana/ui';
+import { locationService } from '@grafana/runtime';
 
 interface VolumeProps {
   maxSentVolume: number; 
@@ -22,20 +22,17 @@ interface VolumeProps {
 }
 
 let SGraph: any;
-let filterOpts: any;
 let topoData: any, connFailTopoData: any, nodeData: NodeDataProps, edgeData: EdgeDataProps;
 let connFailTopo: TopologyProps;
 interface Props extends PanelProps<SimpleOptions> {}
 export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, replaceVariables }) => {
   let graphRef: any = useRef();
   // const theme = useTheme();
-  // const namespace = replaceVariables('$namespace');
-  // const workload = replaceVariables('$workload');
+  const namespace = replaceVariables('$namespace');
+  const workload = replaceVariables('$workload');
+  const [_location, setLocation] = useState(locationService.getLocation())
+
   const styles = getStyles();
-  const [namespace, setNamespace] = useState<string>('all'); 
-  const [namespaceList, setNamespaceList] = useState<SelectOption[]>([]); 
-  const [workload, setWorkload] = useState<string>('all'); 
-  const [workloadList, setWorkloadList] = useState<SelectOption[]>([]); 
   const [graphData, setGraphData] = useState<any>({}); 
   const [layout, setLayout] = useState<string>('dagre'); 
   const [loading, setLoading] = useState<boolean>(true); 
@@ -62,7 +59,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       container: 'kindling_topo',
       width: width - 240,
       height: height,
-      fitView: true,
+      // fitView: true,
       fitViewPadding: 10,
       maxZoom: 1.5,
       minZoom: 0.25,
@@ -123,8 +120,9 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
    * 重新回去拓扑绘制数据时，更新对应的节点的类型数组和边上流量max、min的数值
    */
   const handleResult = (gdata: any) => {
-    let nodeTypesList = getNodeTypes(gdata.nodes);
-    setNodeTypesList(nodeTypesList);
+    let typeList = getNodeTypes(gdata.nodes);
+    console.log('nodeTypesList', typeList);
+    setNodeTypesList(typeList);
     let volumeData: VolumeProps = {
       maxSentVolume: _.max(_.map(gdata.edges, 'sentVolume')),
       maxReceiveVolume: _.max(_.map(gdata.edges, 'receiveVolume')),
@@ -139,16 +137,16 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       nodes: [],
       edges: []
     };
-    if (namespace === 'all') {
+    if (namespace.indexOf(',') > -1) {
       let result: any = nsRelationHandle(topoData, nodeData, edgeData);
       connFailResult = connFailNSRelationHandle(connFailTopoData);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     } else {
-      let showPod = workload !== 'all';
+      let showPod = workload.indexOf(',') === -1;
       setView(showPod ? 'pod_view' : 'workload_view');
-      let result: any = workloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, topoData, nodeData, edgeData, showPod, showService);
-      connFailResult = connFailWorkloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, connFailTopoData, showPod, showService);
+      let result: any = workloadRelationHandle(transformWorkload(workload), namespace, topoData, nodeData, edgeData, showPod, showService);
+      connFailResult = connFailWorkloadRelationHandle(transformWorkload(workload), namespace, connFailTopoData, showPod, showService);
       nodes = [].concat(result.nodes);
       edges = [].concat(result.edges);
     }
@@ -158,8 +156,6 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       edges: edges
     }
     connFailTopo = _.cloneDeep(connFailResult);
-    // console.log('topo', gdata);
-    // console.log('connFailTopo', connFailTopo);
     setGraphData(gdata);
     if (lineMetric === 'connFail') {
       const data = topoMerge(gdata, connFailTopo);
@@ -202,10 +198,6 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
     // console.log('edgeData', edgeData);
     // console.log('nodeData', nodeData);
 
-    filterOpts = new FilterList(topoData, namespace);
-    setNamespaceList(filterOpts.namespaceList);
-    setWorkloadList(filterOpts.workloadList);
-
     buildtopoData();
   }
 
@@ -216,7 +208,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
         draw(data);
       } else {
         draw(graphData);
-      }
+      }  
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout]);
@@ -229,9 +221,9 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
 
   useEffect(() => {
     buildtopoData();
-    if (namespace !== 'all') {
+    if (namespace.indexOf(',') === -1) {
       setShowCheckbox(true);
-      if (workload !== 'all') {
+      if (workload.indexOf(',') === -1) {
         setShowView(true);
       } else {
         setShowView(false);
@@ -243,7 +235,18 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [namespace, workload]);
 
+
   useEffect(() => {
+    const history = locationService.getHistory()
+    const unlisten = history.listen((location: any) => {
+      console.log('location', location);
+      setLocation(location)
+    })
+    return unlisten
+  }, []);
+
+  useEffect(() => {
+    console.log(data);
     if (data.state === 'Done') {
       setLoading(false);
       initData();
@@ -251,15 +254,6 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
 	// eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  const namespaceChange = (opt: any) => {
-    setNamespace(opt.value);
-    filterOpts.changeNamespace(opt.value);
-    setWorkloadList(filterOpts.workloadList);
-    setWorkload('all');
-  }
-  const workloadChange = (opt: any) => {
-    setWorkload(opt.value);
-  }
   // When the segment indicator is switched, the corresponding segment style is updated
   const lineMetricChange = (opt: any) => {
     setLineMetric(opt.value);
@@ -296,7 +290,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   const changeShowService = () => {
     let show = !showService ? true : false;
     setShowService(show);
-    let { nodes, edges } = workloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, topoData, nodeData, edgeData, view === 'pod_view', show);
+    let { nodes, edges } = workloadRelationHandle(transformWorkload(workload), namespace, topoData, nodeData, edgeData, view === 'pod_view', show);
     let gdata = {
       nodes: nodes,
       edges: edges
@@ -308,7 +302,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   // toggle View Mode。Switch between the workload view and pod view
   const changeView = (value: any) => {
     setView(value);
-    let { nodes, edges } = workloadRelationHandle(workload === 'all' ? _.map(workloadList, 'value').toString() : workload, namespace, topoData, nodeData, edgeData, value === 'pod_view', showService);
+    let { nodes, edges } = workloadRelationHandle(transformWorkload(workload), namespace, topoData, nodeData, edgeData, value === 'pod_view', showService);
     let gdata = {
       nodes: nodes,
       edges: edges
@@ -329,7 +323,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
       )}
     >
       <div className={styles.topLineMetric}>
-        <div className={styles.filterWarp}>
+        {/* <div className={styles.filterWarp}>
           <div>
             <InlineField label="Namespace">
              <Select value={namespace} options={namespaceList} onChange={namespaceChange}/>
@@ -340,7 +334,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
              <Select value={workload} options={workloadList} onChange={workloadChange}/>
             </InlineField>
           </div>
-        </div>
+        </div> */}
         <div className={styles.metricSelect}>
           <span style={{ width: '170px' }}>Call Line Metric</span>
           <Select value={lineMetric} options={metricList} onChange={lineMetricChange}/>
