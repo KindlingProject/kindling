@@ -34,6 +34,7 @@ const (
 	TcpRttMetricName        = "kindling_tcp_srtt_microseconds"
 	TcpRetransmitMetricName = "kindling_tcp_retransmit_total"
 	TcpDropMetricName       = "kindling_tcp_packet_loss_total"
+	K8sWorkLoadMetricName   = "kindling_k8s_workload_info"
 
 	TcpConnectTotalMetric    = "kindling_tcp_connect_total"
 	TcpConnectDurationMetric = "kindling_tcp_connect_duration_nanoseconds_total"

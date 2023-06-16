@@ -1,4 +1,4 @@
-package loganalyzer
+package noopanalyzer
 
 import (
 	"fmt"
@@ -10,9 +10,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const Type analyzer.Type = "loganalyzer"
+const Type analyzer.Type = "noopanalyzer"
 
-type LogAnalyzer struct {
+type NoopAnalyzer struct {
 	cfg           *Config
 	nextConsumers []consumer.Consumer
 	telemetry     *component.TelemetryTools
@@ -21,20 +21,20 @@ type LogAnalyzer struct {
 func New(cfg interface{}, telemetry *component.TelemetryTools, consumer []consumer.Consumer) analyzer.Analyzer {
 	config, ok := cfg.(*Config)
 	if !ok {
-		telemetry.Logger.Panic("Cannot convert loganalyzer config")
+		telemetry.Logger.Panic("Cannot convert noopanalyzer config")
 	}
-	return &LogAnalyzer{
+	return &NoopAnalyzer{
 		cfg:           config,
 		nextConsumers: consumer,
 		telemetry:     telemetry,
 	}
 }
 
-func (a *LogAnalyzer) Start() error {
+func (a *NoopAnalyzer) Start() error {
 	return nil
 }
 
-func (a *LogAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
+func (a *NoopAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if ce := a.telemetry.Logger.Check(zapcore.InfoLevel, ""); ce != nil {
 		a.telemetry.Logger.Debug(fmt.Sprintf("Receive event: %+v", event))
 	}
@@ -44,15 +44,15 @@ func (a *LogAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	return nil
 }
 
-func (a *LogAnalyzer) Shutdown() error {
+func (a *NoopAnalyzer) Shutdown() error {
 	return nil
 }
 
-func (a *LogAnalyzer) Type() analyzer.Type {
+func (a *NoopAnalyzer) Type() analyzer.Type {
 	return Type
 }
 
-func (a *LogAnalyzer) ConsumableEvents() []string {
+func (a *NoopAnalyzer) ConsumableEvents() []string {
 	return []string{analyzer.ConsumeAllEvents}
 }
 

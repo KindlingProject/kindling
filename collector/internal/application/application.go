@@ -10,8 +10,9 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/cpuanalyzer"
-	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/loganalyzer"
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/k8sinfoanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network"
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/noopanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpconnectanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/tcpmetricanalyzer"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
@@ -82,7 +83,8 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterExporter(otelexporter.Otel, otelexporter.NewExporter, &otelexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(tcpmetricanalyzer.TcpMetric.String(), tcpmetricanalyzer.NewTcpMetricAnalyzer, &tcpmetricanalyzer.Config{})
 	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
-	a.componentsFactory.RegisterAnalyzer(loganalyzer.Type.String(), loganalyzer.New, &loganalyzer.Config{})
+	a.componentsFactory.RegisterAnalyzer(noopanalyzer.Type.String(), noopanalyzer.New, &noopanalyzer.Config{})
+	a.componentsFactory.RegisterAnalyzer(k8sinfoanalyzer.Type.String(), k8sinfoanalyzer.New, k8sinfoanalyzer.NewDefaultConfig())
 	a.componentsFactory.RegisterProcessor(aggregateprocessor.Type, aggregateprocessor.New, aggregateprocessor.NewDefaultConfig())
 	a.componentsFactory.RegisterAnalyzer(tcpconnectanalyzer.Type.String(), tcpconnectanalyzer.New, tcpconnectanalyzer.NewDefaultConfig())
 	a.componentsFactory.RegisterExporter(cameraexporter.Type, cameraexporter.New, cameraexporter.NewDefaultConfig())
@@ -134,9 +136,10 @@ func (a *Application) buildPipeline() error {
 
 	cpuAnalyzerFactory := a.componentsFactory.Analyzers[cpuanalyzer.CpuProfile.String()]
 	cpuAnalyzer := cpuAnalyzerFactory.NewFunc(cpuAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(cpuanalyzer.CpuProfile.String()), []consumer.Consumer{cameraExporter})
-
+	k8sInfoAnalyzerFactory := a.componentsFactory.Analyzers[k8sinfoanalyzer.Type.String()]
+	k8sInfoAnalyzer := k8sInfoAnalyzerFactory.NewFunc(k8sInfoAnalyzerFactory.Config, a.telemetry.GetTelemetryTools(k8sinfoanalyzer.Type.String()), []consumer.Consumer{otelExporter})
 	// Initialize receiver packaged with multiple analyzers
-	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer, tcpConnectAnalyzer, cpuAnalyzer)
+	analyzerManager, err := analyzer.NewManager(networkAnalyzer, tcpAnalyzer, tcpConnectAnalyzer, cpuAnalyzer, k8sInfoAnalyzer)
 	if err != nil {
 		return fmt.Errorf("error happened while creating analyzer manager: %w", err)
 	}

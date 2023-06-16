@@ -82,6 +82,14 @@ export interface EdgeDataProps {
     edgePackageLostData: any[];
 }
 
+export const transformWorkload = (workload: string) => {
+    if (workload.indexOf(',') > -1) {
+        let list = workload.match(/[^{},\s]+/g);
+        return list!.toString();
+    } else {
+        return workload;
+    }
+}
 
 /**
  * Grafana data format conversion to facilitate subsequent debugging
@@ -464,7 +472,7 @@ export const detailRelationHandle = (nodes: any[], edges: any[], namespace: stri
                     id: `${tdata[`${pre}_namespace`]}_${tdata[`${pre}_workload_name`]}`,
                     name: tdata[`${pre}_workload_name`],
                     namespace: tdata[`${pre}_namespace`],
-                    nodeType: tdata[`${pre}_workload_kind`],
+                    nodeType: tdata[`${pre}_workload_kind`] || 'unknow',
                     showNamespace: tdata[`${pre}_namespace`] !== namespace
                 };
             }

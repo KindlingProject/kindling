@@ -2,6 +2,7 @@ import { formatTime, formatCount, formatKMBT, formatPercent } from './tooltip';
 
 // Create a topology layout based on the Layout field in the configuration
 export const buildLayout = (type: string, direction: string) => {
+    console.log(type, direction);
     const layout: any = {
         type: 'dagre',
         rankdir: direction,
@@ -19,7 +20,7 @@ export const buildLayout = (type: string, direction: string) => {
             gpuEnabled: true
             // type: 'gForce', // 布局名称
             // center: [0, 0],
-            // preventOverlap: true, // 布局参数，是否允许重叠
+            // preventOverlap: false, // 布局参数，是否允许重叠
             // nodeSize: 40, // 布局参数，节点大小，用于判断节点是否重叠
             // linkDistance: 150, // 布局参数，边长  
         };

@@ -117,6 +117,10 @@ analyzers:
       - key: "rocketmq"
         ports: [ 9876, 10911 ]
         slow_threshold: 500
+  k8sinfoanalyzer:
+    # SendDataGroupInterval is the datagroup sending interval.
+    # The unit is seconds.
+    sampling_interval: 15
 
 processors:
   k8smetadataprocessor:
@@ -198,6 +202,7 @@ exporters:
       kindling_tcp_packet_loss_total: counter
       kindling_tcp_connect_total: counter
       kindling_tcp_connect_duration_nanoseconds_total: counter
+      kindling_k8s_workload_info: gauge
     # Export data in the following ways: ["prometheus", "otlp", "stdout"]
     # Note: configure the corresponding section to make everything ok
     export_kind: prometheus
