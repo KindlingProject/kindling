@@ -135,10 +135,15 @@
   "templating": {
     "list": [
       {
+        "current": {
+          "selected": false,
+          "text": "kube-system",
+          "value": "kube-system"
+        },
         "datasource": "Prometheus",
         "definition": "kindling_topology_request_total",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Namespace",
         "multi": false,
         "name": "namespace",
