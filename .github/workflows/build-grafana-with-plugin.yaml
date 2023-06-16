@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: grafana-ci
+name: Grafana-CI
 
 # Controls when the workflow will run
 on:
@@ -14,35 +14,26 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  buildgrafana:
+  build-grafana:
     if: github.repository == 'KindlingProject/kindling'
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    env:
-      RELEASE: ${{ github.event.release.name }}
-
+    permissions:
+      contents: write
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out
+      - name: Set TAG
+        run: echo "TAG=latesttest" >> $GITHUB_ENV
       - uses: actions/checkout@v3
-      - name: version
-        run: echo "version=latest-alpha" >> $GITHUB_ENV
-
-      - name: get release version
-        if: ${{startsWith(github.ref.name,'release-')}}
-        run: name=`echo ${{github.ref.name}}`; echo version=${name#*release-} >> $GITHUB_ENV
-
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
           context: ${{ github.workspace }}/grafana-plugins
           file: ${{ github.workspace }}/grafana-plugins/Dockerfile
           push: true
-          tags: kindlingproject/kindling-grafana:${{env.version}}
+          tags: kindlingproject/kindling-grafana:${{env.TAG}}
