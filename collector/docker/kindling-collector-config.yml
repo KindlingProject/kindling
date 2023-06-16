@@ -111,6 +111,10 @@ analyzers:
       - key: "rocketmq"
         ports: [ 9876, 10911 ]
         slow_threshold: 500
+  k8sinfoanalyzer:
+    # SendDataGroupInterval is the datagroup sending interval.
+    # The unit is seconds.
+    sampling_interval: 15
 
 processors:
   k8smetadataprocessor:

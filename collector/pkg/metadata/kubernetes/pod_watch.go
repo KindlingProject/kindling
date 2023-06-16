@@ -21,7 +21,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
-	"github.com/Kindling-project/kindling/collector/pkg/model/constvalues"
 )
 
 type podMap struct {
@@ -32,22 +31,28 @@ type podMap struct {
 }
 
 type workloadMap struct {
-	Info  map[string]map[string]*model.WorkloadInfo
+	Info  map[string]map[string]*WorkloadInfo
 	mutex sync.RWMutex
+}
+
+type WorkloadInfo struct {
+	Namespace    string
+	WorkloadName string
+	WorkloadKind string
 }
 
 var globalPodInfo = newPodMap()
 var globalWorkload = newWorkloadMap()
 
 func GetWorkloadDataGroup() []*model.DataGroup {
-	globalWorkload.mutex.Lock()
-	dataGroups := make([]*model.DataGroup, 1000000)
+	globalWorkload.mutex.RLock()
+	dataGroups := make([]*model.DataGroup, 0)
 	for _, workloadInfoMap := range globalWorkload.Info {
 		for _, workloadInfo := range workloadInfoMap {
 			dataGroups = append(dataGroups, &model.DataGroup{
 				Name: constnames.K8sWorkloadMetricGroupName,
 				Metrics: []*model.Metric{
-					model.NewIntMetric(constvalues.K8sWorkLoad, 1),
+					model.NewIntMetric(constnames.K8sWorkLoadMetricName, 1),
 				},
 				Labels: model.NewAttributeMapWithValues(map[string]model.AttributeValue{
 					constlabels.Namespace:    model.NewStringValue(workloadInfo.Namespace),
@@ -57,7 +62,7 @@ func GetWorkloadDataGroup() []*model.DataGroup {
 			})
 		}
 	}
-	globalWorkload.mutex.Unlock()
+	globalWorkload.mutex.RUnlock()
 	return dataGroups
 }
 
@@ -70,7 +75,7 @@ func newPodMap() *podMap {
 
 func newWorkloadMap() *workloadMap {
 	return &workloadMap{
-		Info:  make(map[string]map[string]*model.WorkloadInfo),
+		Info:  make(map[string]map[string]*WorkloadInfo),
 		mutex: sync.RWMutex{},
 	}
 }
@@ -83,29 +88,26 @@ func (m *podMap) add(info *K8sPodInfo) {
 	}
 	podInfoMap[info.PodName] = info
 	m.Info[info.Namespace] = podInfoMap
-	globalWorkload.add(&model.WorkloadInfo{
-		Namespace:    info.Namespace,
-		WorkloadName: info.WorkloadName,
-		WorkloadKind: info.WorkloadKind,
-	})
 	m.mutex.Unlock()
 }
 
-func (m *podMap) delete(namespace string, name string) {
+func (m *podMap) delete(namespace string, name string) *K8sPodInfo {
 	m.mutex.Lock()
 	podInfoMap, ok := m.Info[namespace]
+	var podInfo *K8sPodInfo
 	if ok {
+		podInfo = podInfoMap[name]
 		delete(podInfoMap, name)
 	}
-	globalWorkload.delete(namespace, name)
 	m.mutex.Unlock()
+	return podInfo
 }
 
-func (m *workloadMap) add(info *model.WorkloadInfo) {
+func (m *workloadMap) add(info *WorkloadInfo) {
 	m.mutex.Lock()
 	workloadInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
-		workloadInfoMap = make(map[string]*model.WorkloadInfo)
+		workloadInfoMap = make(map[string]*WorkloadInfo)
 	}
 	workloadInfoMap[info.WorkloadName] = info
 	m.Info[info.Namespace] = workloadInfoMap
@@ -120,10 +122,6 @@ func (m *workloadMap) delete(namespace string, name string) {
 		delete(workloadInfoMap, name)
 	}
 	m.mutex.Unlock()
-
-}
-
-func (m *podMap) send() {
 
 }
 
@@ -280,6 +278,11 @@ func onAdd(obj interface{}) {
 		}
 	}
 	globalPodInfo.add(cachePodInfo)
+	globalWorkload.add(&WorkloadInfo{
+		Namespace:    cachePodInfo.Namespace,
+		WorkloadName: cachePodInfo.WorkloadName,
+		WorkloadKind: cachePodInfo.WorkloadKind,
+	})
 }
 
 func getControllerKindName(pod *corev1.Pod) (workloadKind string, workloadName string) {

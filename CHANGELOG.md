@@ -5,6 +5,7 @@
 
 ## Unreleased
 ### New features
+- Provide a new metric called kindling_k8s_workload_info, which supports workload filtering for k8s, thus preventing frequent crashes of Grafana topology. （[#530](https://github.com/KindlingProject/kindling/pull/530)）
 - Added support for displaying trace-profiling data by querying from Elasticsearch. ([#528](https://github.com/KindlingProject/kindling/pull/528))
 - Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindling.harmonycloud.cn/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
 ### Enhancements
@@ -177,4 +178,6 @@ In this release, we have a new contributor @llhhbc. Thanks and welcome! 🥳
 - Support network performance, DNS performance, service network maps, and workload performance analysis.
 - Support HTTP, MySQL, and REDIS request analysis.
 - Provide a Grafana-plugin with four built-in dashboards to support basic analysis features.
+
+
 

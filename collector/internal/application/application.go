@@ -84,7 +84,7 @@ func (a *Application) registerFactory() {
 	a.componentsFactory.RegisterAnalyzer(tcpmetricanalyzer.TcpMetric.String(), tcpmetricanalyzer.NewTcpMetricAnalyzer, &tcpmetricanalyzer.Config{})
 	a.componentsFactory.RegisterExporter(logexporter.Type, logexporter.New, &logexporter.Config{})
 	a.componentsFactory.RegisterAnalyzer(noopanalyzer.Type.String(), noopanalyzer.New, &noopanalyzer.Config{})
-	a.componentsFactory.RegisterAnalyzer(k8sinfoanalyzer.Type.String(), noopanalyzer.New, &noopanalyzer.Config{})
+	a.componentsFactory.RegisterAnalyzer(k8sinfoanalyzer.Type.String(), k8sinfoanalyzer.New, k8sinfoanalyzer.NewDefaultConfig())
 	a.componentsFactory.RegisterProcessor(aggregateprocessor.Type, aggregateprocessor.New, aggregateprocessor.NewDefaultConfig())
 	a.componentsFactory.RegisterAnalyzer(tcpconnectanalyzer.Type.String(), tcpconnectanalyzer.New, tcpconnectanalyzer.NewDefaultConfig())
 	a.componentsFactory.RegisterExporter(cameraexporter.Type, cameraexporter.New, cameraexporter.NewDefaultConfig())
