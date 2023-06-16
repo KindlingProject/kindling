@@ -26,10 +26,6 @@ jobs:
     steps:
       # Checks-out
       - uses: actions/checkout@v3
-
-      - name: setup-docker
-        uses: docker-practice/actions-setup-docker@1.0.9
-
       - name: version
         run: echo "version=latest-alpha" >> $GITHUB_ENV
 
@@ -46,7 +42,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: ./grafana-plugins
-          file: ./grafana-plugins/docker/Dockerfile
+          context: ${{ github.workspace }}/grafana-plugins
+          file: ${{ github.workspace }}/grafana-plugins/Dockerfile
           push: true
           tags: kindlingproject/kindling-grafana:${{env.version}}
