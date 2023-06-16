@@ -9,6 +9,7 @@
 - Added support for displaying trace-profiling data by querying from Elasticsearch. ([#528](https://github.com/KindlingProject/kindling/pull/528))
 - Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindling.harmonycloud.cn/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
 ### Enhancements
+- Upgrade the Grafana version to 8.5.26 ([#533](https://github.com/KindlingProject/kindling/pull/533))
 - MySQL CommandLine Case: Ignore quit command and get sql with CLIENT_QUERY_ATTRIBUTES([#523](https://github.com/KindlingProject/kindling/pull/523))
 - ⚠️Breaking change: Refactor the data format of on/off CPU events from "string" to "array". Note that the old data format cannot be parsed using the new version of the front-end.([#512](https://github.com/KindlingProject/kindling/pull/512) [#520](https://github.com/KindlingProject/kindling/pull/520))
 ### Bug fixes
