@@ -45,4 +45,5 @@ const (
 	TcpDropMetricGroupName       = "tcp_drop_metric_group"
 	NodeMetricGroupName          = "node_metric_metric_group"
 	TcpConnectMetricGroupName    = "tcp_connect_metric_group"
+	K8sWorkloadMetricGroupName   = "k8s_workload_metric_group"
 )

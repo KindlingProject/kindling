@@ -62,7 +62,10 @@ func podDeleteLoop(interval time.Duration, gracePeriod time.Duration, stopCh cha
 
 func deletePodInfo(podInfo *deletedPodInfo) {
 	if podInfo.name != "" {
-		globalPodInfo.delete(podInfo.namespace, podInfo.name)
+		deletePodInfo, ok := globalPodInfo.delete(podInfo.namespace, podInfo.name)
+		if ok {
+			globalWorkload.delete(deletePodInfo.Namespace, deletePodInfo.WorkloadName)
+		}
 	}
 	if len(podInfo.containerIds) != 0 {
 		for i := 0; i < len(podInfo.containerIds); i++ {

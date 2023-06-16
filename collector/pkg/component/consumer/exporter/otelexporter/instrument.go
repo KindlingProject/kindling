@@ -31,6 +31,7 @@ type instrumentFactory struct {
 
 	traceAsMetricSelector *aggregator.LabelSelectors
 	TcpRttMillsSelector   *aggregator.LabelSelectors
+	K8sWorkloadSelector   *aggregator.LabelSelectors
 }
 
 func newInstrumentFactory(meter metric.Meter, telemetry *component.TelemetryTools, customLabels []attribute.KeyValue) *instrumentFactory {
@@ -47,11 +48,15 @@ func newInstrumentFactory(meter metric.Meter, telemetry *component.TelemetryTool
 				constnames.TraceAsMetric: {
 					{Kind: defaultaggregator.LastKind, OutputName: constnames.TraceAsMetric},
 				},
+				constnames.K8sWorkLoadMetricName: {
+					{Kind: defaultaggregator.LastKind, OutputName: constnames.K8sWorkLoadMetricName},
+				},
 			},
 		}),
 
 		traceAsMetricSelector: newTraceAsMetricSelectors(),
 		TcpRttMillsSelector:   newTcpRttMicroSecondsSelectors(),
+		K8sWorkloadSelector:   newK8sWorkloadSelector(),
 	}
 }
 func (i *instrumentFactory) getInstrument(metricName string, kind MetricAggregationKind) instrument {
@@ -119,6 +124,8 @@ func (i *instrumentFactory) getSelector(metricName string) *aggregator.LabelSele
 		return i.traceAsMetricSelector
 	case constnames.TcpRttMetricName:
 		return i.TcpRttMillsSelector
+	case constnames.K8sWorkLoadMetricName:
+		return i.K8sWorkloadSelector
 	default:
 		return nil
 	}
@@ -187,6 +194,14 @@ func newTcpRttMicroSecondsSelectors() *aggregator.LabelSelectors {
 		aggregator.LabelSelector{Name: constlabels.DstPort, VType: aggregator.IntType},
 		aggregator.LabelSelector{Name: constlabels.DstContainerId, VType: aggregator.StringType},
 		aggregator.LabelSelector{Name: constlabels.DstContainer, VType: aggregator.StringType},
+	)
+}
+
+func newK8sWorkloadSelector() *aggregator.LabelSelectors {
+	return aggregator.NewLabelSelectors(
+		aggregator.LabelSelector{Name: constlabels.Namespace, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.WorkloadKind, VType: aggregator.StringType},
+		aggregator.LabelSelector{Name: constlabels.WorkloadName, VType: aggregator.StringType},
 	)
 }
 
