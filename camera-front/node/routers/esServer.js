@@ -45,7 +45,13 @@ router.get('/getTraceList', (req, res, next) => {
                 bool: {
                     must: query
                 }
-            }
+            },
+            size: 100,
+            sort: [
+                {
+                    'timestamp': {"order" : "desc"}
+                }
+            ]
         },
     }, {
         headers: {
