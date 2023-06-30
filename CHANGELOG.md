@@ -18,6 +18,8 @@
 - Fix the bug that the event detail panel doesn't hide when switching profiles.（[#513](https://github.com/KindlingProject/kindling/pull/513)）
 - Fix span data deduplication issue.（[#511](https://github.com/KindlingProject/kindling/pull/511)）
 
+In this release, we have a new contributor @hwz779866221. Thanks and welcome! 🥳
+
 ## v0.7.2 - 2023-04-24
 ### Enhancements
 - Add an option `WithMemory` to OpenTelemetry's Prometheus exporter. It allows users to control whether metrics that haven't been updated in the most recent interval are reported. ([#501](https://github.com/KindlingProject/kindling/pull/501))
