@@ -162,7 +162,7 @@
         "datasource": "Prometheus",
         "definition": "label_values(kindling_k8s_workload_info{namespace=\"$namespace\"}, workload_name)",
         "hide": 0,
-        "includeAll": true,
+        "includeAll": false,
         "label": "workload",
         "multi": false,
         "name": "workload",
