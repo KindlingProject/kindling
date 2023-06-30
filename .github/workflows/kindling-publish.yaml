@@ -33,6 +33,12 @@ jobs:
           docker push kindlingproject/kindling-camera-front:latest
           docker tag kindlingproject/kindling-camera-front:latesttest kindlingproject/kindling-camera-front:${{ env.RELEASE }}
           docker push kindlingproject/kindling-camera-front:${{ env.RELEASE }}
+
+          docker pull kindlingproject/kindling-grafana:latesttest
+          docker tag kindlingproject/kindling-grafana:latesttest kindlingproject/kindling-grafana:latest
+          docker push kindlingproject/kindling-grafana:latest
+          docker tag kindlingproject/kindling-grafana:latesttest kindlingproject/kindling-grafana:${{ env.RELEASE }}
+          docker push kindlingproject/kindling-kindling-grafana:${{ env.RELEASE }}
       - name: Prepare Deploy
         run: |
           sed -i 's#kindlingproject/kindling-agent:latest#kindlingproject/kindling-agent:${{ env.RELEASE }}#g' deploy/agent/kindling-deploy.yml
