@@ -32,6 +32,8 @@ type CKindlingEventForGo C.struct_kindling_event_t_for_go
 
 type CEventParamsForSubscribe C.struct_event_params_for_subscribe
 
+type CaptureStatistic C.struct_capture_statistics_for_go
+
 type CgoReceiver struct {
 	cfg             *Config
 	analyzerManager *analyzerpackage.Manager
@@ -65,7 +67,6 @@ func (r *CgoReceiver) Start() error {
 	if res == 1 {
 		return fmt.Errorf("fail to init probe")
 	}
-	go r.getCaptureStatistics()
 	go r.catchSignalUp()
 	time.Sleep(2 * time.Second)
 	r.suppressEventsComm()
@@ -239,8 +240,10 @@ func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, sto
 	return "cgoreceiver", r.StartProfile, r.StopProfile
 }
 
-func (r *CgoReceiver) getCaptureStatistics() {
-	C.getCaptureStatistics()
+func (r *CgoReceiver) getCaptureStatistics() CaptureStatistic {
+	var captureStatistics C.struct_capture_statistics_for_go
+	C.getCaptureStatistics((*C.struct_capture_statistics_for_go)(&captureStatistics))
+	return CaptureStatistic(captureStatistics)
 }
 
 func (r *CgoReceiver) catchSignalUp() {

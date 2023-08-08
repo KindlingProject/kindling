@@ -22,5 +22,6 @@ void subEventForGo(char* eventName, char* category, void *params) { sub_event(ev
 void startProfileDebug(int pid, int tid) { start_profile_debug(pid, tid); }
 void stopProfileDebug() { stop_profile_debug(); }
 
-void getCaptureStatistics() { get_capture_statistics(); }
+void getCaptureStatistics(struct capture_statistics_for_go* stats) { get_capture_statistics(stats); }
 void catchSignalUp() { sig_set_up(); }
+

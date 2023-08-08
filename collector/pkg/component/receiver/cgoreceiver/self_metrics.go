@@ -17,6 +17,7 @@ var once sync.Once
 const (
 	eventReceivedMetric = "kindling_telemetry_cgoreceiver_events_total"
 	channelSizeMetric   = "kindling_telemetry_cgoreceiver_channel_size"
+	eventStatMetric     = "kindling_telemetry_cgoreceiver_events"
 )
 
 func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
@@ -32,6 +33,19 @@ func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(int64(len(receiver.eventChannel)))
 			}, metric.WithDescription("The current number of events contained in the channel. The maximum size is 300,000."))
+		meter.NewInt64GaugeObserver(eventStatMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				stat := receiver.getCaptureStatistics()
+				result.Observe(int64(stat.evts), attribute.String("label", "evts"))
+				result.Observe(int64(stat.drops), attribute.String("label", "drops"))
+				result.Observe(int64(stat.drops_buffer), attribute.String("label", "drops_buffer"))
+				result.Observe(int64(stat.drops_pf), attribute.String("label", "drops_pf"))
+				result.Observe(int64(stat.drops_bug), attribute.String("label", "drops_bug"))
+				result.Observe(int64(stat.preemptions), attribute.String("label", "preemptions"))
+				result.Observe(int64(stat.suppressed), attribute.String("label", "suppressed"))
+				result.Observe(int64(stat.tids_suppressed), attribute.String("label", "tids_suppressed"))
+			}, metric.WithDescription("The events stat"))
+
 	})
 }
 
