@@ -50,77 +50,35 @@
           "instant": true,
           "interval": "",
           "legendFormat": "",
-          "refId": "I"
-        },
-        {
-          "expr": "increase(kindling_topology_request_request_bytes_total{src_namespace=~\"$namespace\", src_workload_name=~\"$workload\"}[$__range]) or increase(kindling_topology_request_request_bytes_total{dst_namespace=~\"$namespace\", dst_workload_name=~\"$workload\"}[$__range])",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
           "refId": "B"
-        },
-        {
-          "expr": "increase(kindling_topology_request_response_bytes_total{src_namespace=~\"$namespace\", src_workload_name=~\"$workload\"}[$__range]) or increase(kindling_topology_request_response_bytes_total{dst_namespace=~\"$namespace\", dst_workload_name=~\"$workload\"}[$__range])",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         },
         {
           "expr": "sum (increase(kindling_entity_request_total{namespace=~\"$namespace\", workload_name=~\"$workload\"}[$__range])) by (namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
-          "refId": "D"
+          "refId": "C"
         },
         {
           "expr": "sum (increase(kindling_entity_request_duration_nanoseconds_total{namespace=~\"$namespace\", workload_name=~\"$workload\"}[$__range])) by (namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
-          "refId": "E"
+          "refId": "D"
         },
         {
           "expr": "sum(increase(kindling_entity_request_send_bytes_total{namespace=~\"$namespace\", workload_name=~\"$workload\"}[$__range])) by(namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
-          "refId": "G"
+          "refId": "E"
         },
         {
           "expr": "sum(increase(kindling_entity_request_receive_bytes_total{namespace=~\"$namespace\", workload_name=~\"$workload\"}[$__range])) by(namespace, workload_name, pod)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
-          "refId": "H"
-        },
-        {
-          "expr": "increase(kindling_tcp_retransmit_total{src_namespace=~\"$namespace\", src_workload_name=~\"$workload\"}[$__range]) or increase(kindling_tcp_retransmit_total{dst_namespace=~\"$namespace\", dst_workload_name=~\"$workload\"}[$__range])",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "J"
-        },
-        {
-          "expr": "avg_over_time(kindling_tcp_srtt_microseconds{src_namespace=~\"$namespace\", src_workload_name=~\"$workload\"}[$__range]) or avg_over_time(kindling_tcp_srtt_microseconds{dst_namespace=~\"$namespace\", dst_workload_name=~\"$workload\"}[$__range])",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "K"
-        },
-        {
-          "expr": "increase(kindling_tcp_packet_loss_total{src_namespace=~\"$namespace\", src_workload_name=~\"$workload\"}[$__range]) or increase(kindling_tcp_packet_loss_total{dst_namespace=~\"$namespace\", dst_workload_name=~\"$workload\"}[$__range])",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
           "refId": "F"
-        },
-        {
-          "expr": "increase(kindling_tcp_connect_total{src_namespace=~\"$namespace\", src_workload_name=~\"$workload\"}[$__range]) or increase(kindling_tcp_connect_total{dst_namespace=~\"$namespace\", dst_workload_name=~\"$workload\"}[$__range])",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "L"
         }
       ],
       "timeFrom": null,
