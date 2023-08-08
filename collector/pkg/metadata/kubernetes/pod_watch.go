@@ -31,24 +31,26 @@ type podMap struct {
 	mutex sync.RWMutex
 }
 
-type WorkloadMap struct {
-	Info  map[string]map[string]*WorkloadInfo
+type workloadMap struct {
+	Info  map[string]map[string]*workloadInfo
 	mutex sync.RWMutex
 }
 
-type WorkloadInfo struct {
+type workloadInfo struct {
 	Namespace    string
 	WorkloadName string
 	WorkloadKind string
 }
 
 var globalPodInfo = newPodMap()
-var workloadMap = newWorkloadMap()
+
+// only restore local pods info and will send to promethus.And fasten the filter speed.
+var localWorkloadMap = newWorkloadMap()
 
 func GetWorkloadDataGroup() []*model.DataGroup {
-	workloadMap.mutex.RLock()
+	localWorkloadMap.mutex.RLock()
 	dataGroups := make([]*model.DataGroup, 0)
-	for _, workloadInfoMap := range workloadMap.Info {
+	for _, workloadInfoMap := range localWorkloadMap.Info {
 		for _, workloadInfo := range workloadInfoMap {
 			dataGroups = append(dataGroups, &model.DataGroup{
 				Name: constnames.K8sWorkloadMetricGroupName,
@@ -63,7 +65,7 @@ func GetWorkloadDataGroup() []*model.DataGroup {
 			})
 		}
 	}
-	workloadMap.mutex.RUnlock()
+	localWorkloadMap.mutex.RUnlock()
 	return dataGroups
 }
 
@@ -74,9 +76,9 @@ func newPodMap() *podMap {
 	}
 }
 
-func newWorkloadMap() *WorkloadMap {
-	return &WorkloadMap{
-		Info:  make(map[string]map[string]*WorkloadInfo),
+func newWorkloadMap() *workloadMap {
+	return &workloadMap{
+		Info:  make(map[string]map[string]*workloadInfo),
 		mutex: sync.RWMutex{},
 	}
 }
@@ -104,11 +106,11 @@ func (m *podMap) delete(namespace string, name string) (*K8sPodInfo, bool) {
 	return podInfo, ok
 }
 
-func (m *WorkloadMap) add(info *WorkloadInfo) {
+func (m *workloadMap) add(info *workloadInfo) {
 	m.mutex.Lock()
 	workloadInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
-		workloadInfoMap = make(map[string]*WorkloadInfo)
+		workloadInfoMap = make(map[string]*workloadInfo)
 	}
 	workloadInfoMap[info.WorkloadName] = info
 	m.Info[info.Namespace] = workloadInfoMap
@@ -116,7 +118,7 @@ func (m *WorkloadMap) add(info *WorkloadInfo) {
 
 }
 
-func (m *WorkloadMap) delete(namespace string, name string) {
+func (m *workloadMap) delete(namespace string, name string) {
 	m.mutex.Lock()
 	workloadInfoMap, ok := m.Info[namespace]
 	if ok {
@@ -281,7 +283,7 @@ func onAdd(obj interface{}) {
 	globalPodInfo.add(cachePodInfo)
 	//workloadMap only restore the workload in this machine
 	if pod.Spec.NodeName == os.Getenv("NODE_NAME") {
-		workloadMap.add(&WorkloadInfo{
+		localWorkloadMap.add(&workloadInfo{
 			Namespace:    cachePodInfo.Namespace,
 			WorkloadName: cachePodInfo.WorkloadName,
 			WorkloadKind: cachePodInfo.WorkloadKind,

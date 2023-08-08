@@ -64,7 +64,7 @@ func deletePodInfo(podInfo *deletedPodInfo) {
 	if podInfo.name != "" {
 		deletePodInfo, ok := globalPodInfo.delete(podInfo.namespace, podInfo.name)
 		if ok {
-			workloadMap.delete(deletePodInfo.Namespace, deletePodInfo.WorkloadName)
+			localWorkloadMap.delete(deletePodInfo.Namespace, deletePodInfo.WorkloadName)
 		}
 	}
 	if len(podInfo.containerIds) != 0 {
