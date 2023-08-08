@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"os"
 	_ "path/filepath"
 	"regexp"
 	"strings"
@@ -30,7 +31,7 @@ type podMap struct {
 	mutex sync.RWMutex
 }
 
-type workloadMap struct {
+type WorkloadMap struct {
 	Info  map[string]map[string]*WorkloadInfo
 	mutex sync.RWMutex
 }
@@ -42,12 +43,12 @@ type WorkloadInfo struct {
 }
 
 var globalPodInfo = newPodMap()
-var globalWorkload = newWorkloadMap()
+var workloadMap = newWorkloadMap()
 
 func GetWorkloadDataGroup() []*model.DataGroup {
-	globalWorkload.mutex.RLock()
+	workloadMap.mutex.RLock()
 	dataGroups := make([]*model.DataGroup, 0)
-	for _, workloadInfoMap := range globalWorkload.Info {
+	for _, workloadInfoMap := range workloadMap.Info {
 		for _, workloadInfo := range workloadInfoMap {
 			dataGroups = append(dataGroups, &model.DataGroup{
 				Name: constnames.K8sWorkloadMetricGroupName,
@@ -62,7 +63,7 @@ func GetWorkloadDataGroup() []*model.DataGroup {
 			})
 		}
 	}
-	globalWorkload.mutex.RUnlock()
+	workloadMap.mutex.RUnlock()
 	return dataGroups
 }
 
@@ -73,8 +74,8 @@ func newPodMap() *podMap {
 	}
 }
 
-func newWorkloadMap() *workloadMap {
-	return &workloadMap{
+func newWorkloadMap() *WorkloadMap {
+	return &WorkloadMap{
 		Info:  make(map[string]map[string]*WorkloadInfo),
 		mutex: sync.RWMutex{},
 	}
@@ -103,7 +104,7 @@ func (m *podMap) delete(namespace string, name string) (*K8sPodInfo, bool) {
 	return podInfo, ok
 }
 
-func (m *workloadMap) add(info *WorkloadInfo) {
+func (m *WorkloadMap) add(info *WorkloadInfo) {
 	m.mutex.Lock()
 	workloadInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
@@ -115,7 +116,7 @@ func (m *workloadMap) add(info *WorkloadInfo) {
 
 }
 
-func (m *workloadMap) delete(namespace string, name string) {
+func (m *WorkloadMap) delete(namespace string, name string) {
 	m.mutex.Lock()
 	workloadInfoMap, ok := m.Info[namespace]
 	if ok {
@@ -278,11 +279,14 @@ func onAdd(obj interface{}) {
 		}
 	}
 	globalPodInfo.add(cachePodInfo)
-	globalWorkload.add(&WorkloadInfo{
-		Namespace:    cachePodInfo.Namespace,
-		WorkloadName: cachePodInfo.WorkloadName,
-		WorkloadKind: cachePodInfo.WorkloadKind,
-	})
+	//workloadMap only restore the workload in this machine
+	if pod.Spec.NodeName == os.Getenv("NODE_NAME") {
+		workloadMap.add(&WorkloadInfo{
+			Namespace:    cachePodInfo.Namespace,
+			WorkloadName: cachePodInfo.WorkloadName,
+			WorkloadKind: cachePodInfo.WorkloadKind,
+		})
+	}
 }
 
 func getControllerKindName(pod *corev1.Pod) (workloadKind string, workloadName string) {
