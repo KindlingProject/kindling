@@ -33,7 +33,7 @@ func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(int64(len(receiver.eventChannel)))
 			}, metric.WithDescription("The current number of events contained in the channel. The maximum size is 300,000."))
-		meter.NewInt64GaugeObserver(eventStatMetric,
+		meter.NewInt64CounterObserver(eventStatMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				stat := receiver.getCaptureStatistics()
 				result.Observe(int64(stat.evts), attribute.String("label", "evts"))
