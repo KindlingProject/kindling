@@ -44,7 +44,8 @@ type workloadInfo struct {
 
 var globalPodInfo = newPodMap()
 
-// only restore local pods info and will send to promethus.And fasten the filter speed.
+// localWorkloadMap only stores the workload whose pods are in the local Node. 
+// The workload metadata will be sent to prometheus and used to filter metrics.
 var localWorkloadMap = newWorkloadMap()
 
 func GetWorkloadDataGroup() []*model.DataGroup {
