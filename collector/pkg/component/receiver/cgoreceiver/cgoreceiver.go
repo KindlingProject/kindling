@@ -35,13 +35,15 @@ type CEventParamsForSubscribe C.struct_event_params_for_subscribe
 type CaptureStatistic C.struct_capture_statistics_for_go
 
 type CgoReceiver struct {
-	cfg             *Config
-	analyzerManager *analyzerpackage.Manager
-	shutdownWG      sync.WaitGroup
-	telemetry       *component.TelemetryTools
-	eventChannel    chan *model.KindlingEvent
-	stopCh          chan interface{}
-	stats           eventCounter
+	cfg               *Config
+	analyzerManager   *analyzerpackage.Manager
+	shutdownWG        sync.WaitGroup
+	telemetry         *component.TelemetryTools
+	eventChannel      chan *model.KindlingEvent
+	stopCh            chan interface{}
+	stats             eventCounter
+	probeCounter      *probeCounter
+	probeCounterMutex sync.RWMutex
 }
 
 func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
@@ -240,10 +242,31 @@ func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, sto
 	return "cgoreceiver", r.StartProfile, r.StopProfile
 }
 
-func (r *CgoReceiver) getCaptureStatistics() CaptureStatistic {
+func (r *CgoReceiver) getCaptureStatisticsByInterval() {
+	timer := time.NewTicker(15 * time.Second)
+	for {
+		select {
+		case <-timer.C:
+			r.getCaptureStatistics()
+		case <-r.stopCh:
+			return
+		}
+	}
+}
+
+func (r *CgoReceiver) getCaptureStatistics() {
 	var captureStatistics C.struct_capture_statistics_for_go
 	C.getCaptureStatistics((*C.struct_capture_statistics_for_go)(&captureStatistics))
-	return CaptureStatistic(captureStatistics)
+	r.probeCounterMutex.Lock()
+	defer r.probeCounterMutex.Unlock()
+	r.probeCounter.evts = int64(captureStatistics.evts)
+	r.probeCounter.drops = int64(captureStatistics.drops)
+	r.probeCounter.dropsBuffer = int64(captureStatistics.dropsBuffer)
+	r.probeCounter.dropsPf = int64(captureStatistics.dropsPf)
+	r.probeCounter.dropsBug = int64(captureStatistics.dropsBug)
+	r.probeCounter.preemptions = int64(captureStatistics.preemptions)
+	r.probeCounter.suppressed = int64(captureStatistics.suppressed)
+	r.probeCounter.tidsSuppressed = int64(captureStatistics.tidsSuppressed)
 }
 
 func (r *CgoReceiver) catchSignalUp() {
