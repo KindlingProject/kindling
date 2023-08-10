@@ -54,7 +54,6 @@ func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 			}, metric.WithDescription("The dropped events"))
 		meter.NewInt64CounterObserver(preemptionsMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
-				receiver.telemetry.Logger.Infof("stat.preemptions = ", receiver.probeCounter.preemptions)
 				receiver.probeCounterMutex.RLock()
 				result.Observe(receiver.probeCounter.preemptions)
 				receiver.probeCounterMutex.RUnlock()

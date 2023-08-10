@@ -32,8 +32,6 @@ type CKindlingEventForGo C.struct_kindling_event_t_for_go
 
 type CEventParamsForSubscribe C.struct_event_params_for_subscribe
 
-type CaptureStatistic C.struct_capture_statistics_for_go
-
 type CgoReceiver struct {
 	cfg               *Config
 	analyzerManager   *analyzerpackage.Manager
@@ -57,6 +55,7 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 		telemetry:       telemetry,
 		eventChannel:    make(chan *model.KindlingEvent, 3e5),
 		stopCh:          make(chan interface{}, 1),
+		probeCounter:    &probeCounter{},
 	}
 	cgoReceiver.stats = newDynamicStats(cfg.SubscribeInfo)
 	newSelfMetrics(telemetry.MeterProvider, cgoReceiver)
@@ -77,6 +76,7 @@ func (r *CgoReceiver) Start() error {
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
 	go r.startGetEvent()
+	go r.getCaptureStatisticsByInterval(15 * time.Second)
 	return nil
 }
 
@@ -242,8 +242,8 @@ func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, sto
 	return "cgoreceiver", r.StartProfile, r.StopProfile
 }
 
-func (r *CgoReceiver) getCaptureStatisticsByInterval() {
-	timer := time.NewTicker(15 * time.Second)
+func (r *CgoReceiver) getCaptureStatisticsByInterval(interval time.Duration) {
+	timer := time.NewTicker(interval)
 	for {
 		select {
 		case <-timer.C:
