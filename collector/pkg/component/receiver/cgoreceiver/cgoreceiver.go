@@ -261,12 +261,12 @@ func (r *CgoReceiver) getCaptureStatistics() {
 	defer r.probeCounterMutex.Unlock()
 	r.probeCounter.evts = int64(captureStatistics.evts)
 	r.probeCounter.drops = int64(captureStatistics.drops)
-	r.probeCounter.dropsBuffer = int64(captureStatistics.dropsBuffer)
-	r.probeCounter.dropsPf = int64(captureStatistics.dropsPf)
-	r.probeCounter.dropsBug = int64(captureStatistics.dropsBug)
+	r.probeCounter.dropsBuffer = int64(captureStatistics.drops_buffer)
+	r.probeCounter.dropsPf = int64(captureStatistics.drops_pf)
+	r.probeCounter.dropsBug = int64(captureStatistics.drops_bug)
 	r.probeCounter.preemptions = int64(captureStatistics.preemptions)
 	r.probeCounter.suppressed = int64(captureStatistics.suppressed)
-	r.probeCounter.tidsSuppressed = int64(captureStatistics.tidsSuppressed)
+	r.probeCounter.tidsSuppressed = int64(captureStatistics.tids_suppressed)
 }
 
 func (r *CgoReceiver) catchSignalUp() {
