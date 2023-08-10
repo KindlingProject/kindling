@@ -15,14 +15,19 @@ import (
 var once sync.Once
 
 const (
-	eventReceivedMetric = "kindling_telemetry_cgoreceiver_events_total"
-	channelSizeMetric   = "kindling_telemetry_cgoreceiver_channel_size"
-	eventStatMetric     = "kindling_telemetry_cgoreceiver_events"
+	eventReceivedMetric    = "kindling_telemetry_cgoreceiver_events_total"
+	channelSizeMetric      = "kindling_telemetry_cgoreceiver_channel_size"
+	probeEventMetric       = "kindling_telemetry_cgoreceiver_probe_event_total"
+	dropProbeEventMetric   = "kindling_telemetry_cgoreceiver_dropped_probe_event_total"
+	preemptionsMetric      = "kindling_telemetry_cgoreceiver_preemptions_total"
+	skippedEventMetric     = "kindling_telemetry_cgoreceiver_skipped_events_total"
+	suppressedThreadMetric = "kindling_telemetry_cgoreceiver_suppressed_thread_total"
 )
 
 func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 	once.Do(func() {
 		meter := metric.Must(meterProvider.Meter("kindling"))
+		stat := receiver.getCaptureStatistics()
 		meter.NewInt64CounterObserver(eventReceivedMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				for name, value := range receiver.stats.getStats() {
@@ -33,18 +38,31 @@ func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(int64(len(receiver.eventChannel)))
 			}, metric.WithDescription("The current number of events contained in the channel. The maximum size is 300,000."))
-		meter.NewInt64CounterObserver(eventStatMetric,
+		meter.NewInt64CounterObserver(probeEventMetric,
 			func(ctx context.Context, result metric.Int64ObserverResult) {
-				stat := receiver.getCaptureStatistics()
-				result.Observe(int64(stat.evts), attribute.String("label", "evts"))
-				result.Observe(int64(stat.drops), attribute.String("label", "drops"))
-				result.Observe(int64(stat.drops_buffer), attribute.String("label", "drops_buffer"))
-				result.Observe(int64(stat.drops_pf), attribute.String("label", "drops_pf"))
-				result.Observe(int64(stat.drops_bug), attribute.String("label", "drops_bug"))
-				result.Observe(int64(stat.preemptions), attribute.String("label", "preemptions"))
-				result.Observe(int64(stat.suppressed), attribute.String("label", "suppressed"))
-				result.Observe(int64(stat.tids_suppressed), attribute.String("label", "tids_suppressed"))
-			}, metric.WithDescription("The events stat"))
+				result.Observe(int64(stat.evts))
+			}, metric.WithDescription("The events seen by driver"))
+		meter.NewInt64CounterObserver(dropProbeEventMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				receiver.telemetry.Logger.Infof("stat.drops_buffer = ", stat.drops_buffer)
+				result.Observe(int64(stat.drops_buffer), attribute.String("reason", "full buffer"))
+				result.Observe(int64(stat.drops_pf), attribute.String("reason", "invalid memory access"))
+				result.Observe(int64(stat.drops_bug), attribute.String("reason", "invalid condition"))
+				result.Observe(int64(stat.drops-stat.drops_buffer-stat.drops_pf-stat.drops_bug), attribute.String("reason", "others"))
+			}, metric.WithDescription("The dropped events"))
+		meter.NewInt64CounterObserver(preemptionsMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				receiver.telemetry.Logger.Infof("stat.preemptions = ", stat.preemptions)
+				result.Observe(int64(stat.preemptions))
+			}, metric.WithDescription("The preemptions"))
+		meter.NewInt64CounterObserver(skippedEventMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				result.Observe(int64(stat.suppressed))
+			}, metric.WithDescription("Number of events skipped due to the tid being in a set of suppressed tids"))
+		meter.NewInt64CounterObserver(suppressedThreadMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				result.Observe(int64(stat.tids_suppressed))
+			}, metric.WithDescription("Number of threads currently being suppressed"))
 
 	})
 }
