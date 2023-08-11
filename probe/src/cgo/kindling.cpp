@@ -20,6 +20,8 @@ sinsp_evt_formatter* formatter = nullptr;
 bool printEvent = false;
 int cnt = 0;
 int MAX_USERATTR_NUM = 8;
+int64_t kindlingModCount = 0;
+int64_t kindlingModNumber = 0;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
 vector<QObject*> qls;
@@ -44,6 +46,8 @@ char* duration_char = new char[32];
 char* span_char = new char[1024];
 
 int16_t event_filters[1024][16];
+
+long skipEvent = 0;
 
 void init_sub_label() {
   for (auto e : kindling_to_sysdig) {
@@ -140,6 +144,19 @@ int init_probe() {
   if (isPrintEvent != nullptr && strncmp("true", isPrintEvent, sizeof(isPrintEvent)) == 0) {
     printEvent = true;
   }
+  
+  char* kindlingModCountString = getenv("kindling_mod_count");
+  if (kindlingModCountString != nullptr){
+    kindlingModCount = static_cast<int64_t>(std::stoi(kindlingModCountString));;
+  }
+  cout << "kindlingModCount" << kindlingModCount << endl;
+
+  char* kindlingModNumberString = getenv("kindling_mod_number");
+  if (kindlingModNumberString != nullptr){
+    kindlingModNumber = static_cast<int64_t>(std::stoi(kindlingModNumberString));;
+  }
+  cout << "kindlingModNumber" << kindlingModNumber << endl;
+  
   init_sub_label();
   string output_format =
       "*%evt.num %evt.outputtime %evt.cpu %container.name (%container.id) %proc.name "
