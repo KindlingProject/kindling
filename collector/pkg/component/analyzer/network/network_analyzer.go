@@ -50,6 +50,8 @@ type NetworkAnalyzer struct {
 	udpMessagePairSize int64
 	telemetry          *component.TelemetryTools
 
+	eventChan chan *model.KindlingEvent
+
 	// snaplen is the maximum data size the event could accommodate bytes.
 	// It is set by setting the environment variable SNAPLEN. See https://github.com/KindlingProject/kindling/pull/387.
 	snaplen int
@@ -62,6 +64,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		dataGroupPool: NewDataGroupPool(),
 		nextConsumers: consumers,
 		telemetry:     telemetry,
+		eventChan:     make(chan *model.KindlingEvent, 1000), // buffer size can be adjusted
 	}
 	if config.EnableConntrack {
 		connConfig := &conntracker.Config{
@@ -77,6 +80,8 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 
 	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 	na.snaplen = getSnaplenEnv()
+	go na.ProcessEvents() // start the event processing in its own goroutine
+
 	return na
 }
 
@@ -157,6 +162,17 @@ func (na *NetworkAnalyzer) Type() analyzer.Type {
 }
 
 func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
+	na.eventChan <- evt
+	return nil
+}
+
+func (na *NetworkAnalyzer) ProcessEvents() {
+	for evt := range na.eventChan {
+		na.processEvent(evt)
+	}
+}
+
+func (na *NetworkAnalyzer) processEvent(evt *model.KindlingEvent) error {
 	if evt.Category != model.Category_CAT_NET {
 		return nil
 	}
@@ -209,6 +225,7 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 	} else {
 		return na.analyseResponse(evt)
 	}
+	// ... original logic of ConsumeEvent ...
 }
 
 func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
