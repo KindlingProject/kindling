@@ -44,7 +44,7 @@ type workloadInfo struct {
 
 var globalPodInfo = newPodMap()
 
-// localWorkloadMap only stores the workload whose pods are in the local Node. 
+// localWorkloadMap only stores the workload whose pods are in the local Node.
 // The workload metadata will be sent to prometheus and used to filter metrics.
 var localWorkloadMap = newWorkloadMap()
 
@@ -282,8 +282,9 @@ func onAdd(obj interface{}) {
 		}
 	}
 	globalPodInfo.add(cachePodInfo)
+	nodeName, _ := os.LookupEnv("MY_NODE_NAME")
 	//workloadMap only restore the workload in this machine
-	if pod.Spec.NodeName == os.Getenv("NODE_NAME") {
+	if cachePodInfo.NodeName == nodeName {
 		localWorkloadMap.add(&workloadInfo{
 			Namespace:    cachePodInfo.Namespace,
 			WorkloadName: cachePodInfo.WorkloadName,
