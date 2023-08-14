@@ -9,6 +9,7 @@
 int runForGo() { return init_probe(); }
 
 int getKindlingEvent(void** kindlingEvent) { return getEvent(kindlingEvent); }
+int getKindlingEvents(void** kindlingEvents) { return get_events(kindlingEvents); }
 
 int startProfile() { return start_profile(); }
 int stopProfile() { return stop_profile(); }

@@ -89,6 +89,18 @@ void sub_event(char* eventName, char* category, event_params_for_subscribe param
   }
 }
 
+#define MAX_EVENTS 10  
+int get_events(void** kindlingEvents) {
+    int count = 0;
+    for (int i = 0; i < MAX_EVENTS; i++) {
+        if (getEvent(&kindlingEvents[i]) != 1) {
+            break;
+        }
+        count++;
+    }
+    return count;  
+}
+
 void suppress_events_comm(string comm) {
   printCurrentTime();
   cout << "suppress_events for process " << comm << endl;
