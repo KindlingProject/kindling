@@ -149,13 +149,13 @@ int init_probe() {
   if (kindlingModCountString != nullptr){
     kindlingModCount = static_cast<int64_t>(std::stoi(kindlingModCountString));;
   }
-  cout << "kindlingModCount" << kindlingModCount << endl;
+  cout << "kindlingModCount : " << kindlingModCount << endl;
 
   char* kindlingModNumberString = getenv("kindling_mod_number");
   if (kindlingModNumberString != nullptr){
     kindlingModNumber = static_cast<int64_t>(std::stoi(kindlingModNumberString));;
   }
-  cout << "kindlingModNumber" << kindlingModNumber << endl;
+  cout << "kindlingModNumber : " << kindlingModNumber << endl;
   
   init_sub_label();
   string output_format =
