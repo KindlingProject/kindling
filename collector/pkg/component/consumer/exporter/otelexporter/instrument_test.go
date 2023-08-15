@@ -46,7 +46,7 @@ func Test_instrumentFactory_recordLastValue(t *testing.T) {
 			NeedTraceAsResourceSpan: true,
 			NeedTraceAsMetric:       true,
 			NeedPodDetail:           true,
-			StoreExternalSrcIP:      true,
+			StoreExternalSrcIP:      false,
 		},
 	}
 
