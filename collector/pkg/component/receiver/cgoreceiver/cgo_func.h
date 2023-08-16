@@ -18,7 +18,7 @@ char* startAttachAgent(int pid);
 char* stopAttachAgent(int pid);
 void startProfileDebug(int pid, int tid);
 void stopProfileDebug();
-void getCaptureStatistics();
+void getCaptureStatistics(struct capture_statistics_for_go* stats);
 void catchSignalUp();
 #ifdef __cplusplus
 }
@@ -26,7 +26,16 @@ void catchSignalUp();
 #endif
 
 #endif //SYSDIG_CGO_FUNC_H
-
+struct capture_statistics_for_go{
+    int evts;
+    int drops;
+    int drops_buffer;
+    int drops_pf;
+    int drops_bug;
+    int preemptions;
+    int suppressed;
+    int tids_suppressed;
+};
 struct event_params_for_subscribe {
 	char *name;
 	char *value;

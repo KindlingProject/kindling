@@ -33,13 +33,15 @@ type CKindlingEventForGo C.struct_kindling_event_t_for_go
 type CEventParamsForSubscribe C.struct_event_params_for_subscribe
 
 type CgoReceiver struct {
-	cfg             *Config
-	analyzerManager *analyzerpackage.Manager
-	shutdownWG      sync.WaitGroup
-	telemetry       *component.TelemetryTools
-	eventChannel    chan *model.KindlingEvent
-	stopCh          chan interface{}
-	stats           eventCounter
+	cfg               *Config
+	analyzerManager   *analyzerpackage.Manager
+	shutdownWG        sync.WaitGroup
+	telemetry         *component.TelemetryTools
+	eventChannel      chan *model.KindlingEvent
+	stopCh            chan interface{}
+	stats             eventCounter
+	probeCounter      *probeCounter
+	probeCounterMutex sync.RWMutex
 }
 
 func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, analyzerManager *analyzerpackage.Manager) receiver.Receiver {
@@ -53,6 +55,7 @@ func NewCgoReceiver(config interface{}, telemetry *component.TelemetryTools, ana
 		telemetry:       telemetry,
 		eventChannel:    make(chan *model.KindlingEvent, 3e5),
 		stopCh:          make(chan interface{}, 1),
+		probeCounter:    &probeCounter{},
 	}
 	cgoReceiver.stats = newDynamicStats(cfg.SubscribeInfo)
 	newSelfMetrics(telemetry.MeterProvider, cgoReceiver)
@@ -65,7 +68,6 @@ func (r *CgoReceiver) Start() error {
 	if res == 1 {
 		return fmt.Errorf("fail to init probe")
 	}
-	go r.getCaptureStatistics()
 	go r.catchSignalUp()
 	time.Sleep(2 * time.Second)
 	r.suppressEventsComm()
@@ -74,6 +76,7 @@ func (r *CgoReceiver) Start() error {
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
 	go r.startGetEvent()
+	go r.getCaptureStatisticsByInterval(15 * time.Second)
 	return nil
 }
 
@@ -239,8 +242,31 @@ func (r *CgoReceiver) ProfileModule() (submodule string, start func() error, sto
 	return "cgoreceiver", r.StartProfile, r.StopProfile
 }
 
+func (r *CgoReceiver) getCaptureStatisticsByInterval(interval time.Duration) {
+	timer := time.NewTicker(interval)
+	for {
+		select {
+		case <-timer.C:
+			r.getCaptureStatistics()
+		case <-r.stopCh:
+			return
+		}
+	}
+}
+
 func (r *CgoReceiver) getCaptureStatistics() {
-	C.getCaptureStatistics()
+	var captureStatistics C.struct_capture_statistics_for_go
+	C.getCaptureStatistics((*C.struct_capture_statistics_for_go)(&captureStatistics))
+	r.probeCounterMutex.Lock()
+	defer r.probeCounterMutex.Unlock()
+	r.probeCounter.evts = int64(captureStatistics.evts)
+	r.probeCounter.drops = int64(captureStatistics.drops)
+	r.probeCounter.dropsBuffer = int64(captureStatistics.drops_buffer)
+	r.probeCounter.dropsPf = int64(captureStatistics.drops_pf)
+	r.probeCounter.dropsBug = int64(captureStatistics.drops_bug)
+	r.probeCounter.preemptions = int64(captureStatistics.preemptions)
+	r.probeCounter.suppressed = int64(captureStatistics.suppressed)
+	r.probeCounter.tidsSuppressed = int64(captureStatistics.tids_suppressed)
 }
 
 func (r *CgoReceiver) catchSignalUp() {

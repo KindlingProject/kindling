@@ -6,6 +6,7 @@
 ## Unreleased
 ### Bug fixes
 - Fix the bug where sending repetitive k8s_info_workload. Now each node only sends its own info.（[#554](https://github.com/KindlingProject/kindling/pull/554)）
+- Provide a new self metric for probe events. (skipped events/dropped events)([#553](https://github.com/KindlingProject/kindling/pull/553))
 ## v0.8.0 - 2023-06-30
 ### New features
 - Provide a new metric called kindling_k8s_workload_info, which supports workload filtering for k8s, thus preventing frequent crashes of Grafana topology. Please refer to the [doc](http://kindling.harmonycloud.cn/docs/usage/grafana-topology-plugin/) for any limitations.（[#530](https://github.com/KindlingProject/kindling/pull/530)）
