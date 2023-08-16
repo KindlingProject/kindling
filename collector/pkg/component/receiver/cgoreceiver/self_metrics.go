@@ -15,8 +15,13 @@ import (
 var once sync.Once
 
 const (
-	eventReceivedMetric = "kindling_telemetry_cgoreceiver_events_total"
-	channelSizeMetric   = "kindling_telemetry_cgoreceiver_channel_size"
+	eventReceivedMetric    = "kindling_telemetry_cgoreceiver_events_total"
+	channelSizeMetric      = "kindling_telemetry_cgoreceiver_channel_size"
+	probeEventMetric       = "kindling_telemetry_cgoreceiver_probe_event_total"
+	dropProbeEventMetric   = "kindling_telemetry_cgoreceiver_dropped_probe_event_total"
+	preemptionsMetric      = "kindling_telemetry_cgoreceiver_preemptions_total"
+	skippedEventMetric     = "kindling_telemetry_cgoreceiver_skipped_events_total"
+	suppressedThreadMetric = "kindling_telemetry_cgoreceiver_suppressed_thread_total"
 )
 
 func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
@@ -32,6 +37,40 @@ func newSelfMetrics(meterProvider metric.MeterProvider, receiver *CgoReceiver) {
 			func(ctx context.Context, result metric.Int64ObserverResult) {
 				result.Observe(int64(len(receiver.eventChannel)))
 			}, metric.WithDescription("The current number of events contained in the channel. The maximum size is 300,000."))
+		meter.NewInt64CounterObserver(probeEventMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				receiver.probeCounterMutex.RLock()
+				result.Observe(receiver.probeCounter.evts)
+				receiver.probeCounterMutex.RUnlock()
+			}, metric.WithDescription("The events seen by driver"))
+		meter.NewInt64CounterObserver(dropProbeEventMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				receiver.probeCounterMutex.RLock()
+				result.Observe(receiver.probeCounter.dropsBuffer, attribute.String("reason", "full buffer"))
+				result.Observe(receiver.probeCounter.dropsPf, attribute.String("reason", "invalid memory access"))
+				result.Observe(receiver.probeCounter.dropsBug, attribute.String("reason", "invalid condition"))
+				result.Observe(receiver.probeCounter.drops-receiver.probeCounter.dropsBuffer-receiver.probeCounter.dropsPf-receiver.probeCounter.dropsBug, attribute.String("reason", "others"))
+				receiver.probeCounterMutex.RUnlock()
+			}, metric.WithDescription("The dropped events"))
+		meter.NewInt64CounterObserver(preemptionsMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				receiver.probeCounterMutex.RLock()
+				result.Observe(receiver.probeCounter.preemptions)
+				receiver.probeCounterMutex.RUnlock()
+			}, metric.WithDescription("The preemptions"))
+		meter.NewInt64CounterObserver(skippedEventMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				receiver.probeCounterMutex.RLock()
+				result.Observe(receiver.probeCounter.suppressed)
+				receiver.probeCounterMutex.RUnlock()
+			}, metric.WithDescription("Number of events skipped due to the tid being in a set of suppressed tids"))
+		meter.NewInt64CounterObserver(suppressedThreadMetric,
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				receiver.probeCounterMutex.RLock()
+				result.Observe(receiver.probeCounter.tidsSuppressed)
+				receiver.probeCounterMutex.RUnlock()
+			}, metric.WithDescription("Number of threads currently being suppressed"))
+
 	})
 }
 
@@ -42,6 +81,17 @@ type eventCounter interface {
 
 type atomicInt64Counter struct {
 	v int64
+}
+
+type probeCounter struct {
+	evts           int64
+	drops          int64
+	dropsBuffer    int64
+	dropsPf        int64
+	dropsBug       int64
+	preemptions    int64
+	suppressed     int64
+	tidsSuppressed int64
 }
 
 func (c *atomicInt64Counter) add(value int64) {
