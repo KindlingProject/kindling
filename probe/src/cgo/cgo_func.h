@@ -19,7 +19,7 @@ char* startAttachAgent(int pid);
 char* stopAttachAgent(int pid);
 void startProfileDebug(int pid, int tid);
 void stopProfileDebug();
-void getCaptureStatistics();
+void getCaptureStatistics(struct capture_statistics_for_go* stats);
 void catchSignalUp();
 #ifdef __cplusplus
 }

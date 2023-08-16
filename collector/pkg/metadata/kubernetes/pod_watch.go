@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"os"
 	_ "path/filepath"
 	"regexp"
 	"strings"
@@ -31,23 +32,26 @@ type podMap struct {
 }
 
 type workloadMap struct {
-	Info  map[string]map[string]*WorkloadInfo
+	Info  map[string]map[string]*workloadInfo
 	mutex sync.RWMutex
 }
 
-type WorkloadInfo struct {
+type workloadInfo struct {
 	Namespace    string
 	WorkloadName string
 	WorkloadKind string
 }
 
 var globalPodInfo = newPodMap()
-var globalWorkload = newWorkloadMap()
+
+// localWorkloadMap only stores the workload whose pods are in the local Node.
+// The workload metadata will be sent to prometheus and used to filter metrics.
+var localWorkloadMap = newWorkloadMap()
 
 func GetWorkloadDataGroup() []*model.DataGroup {
-	globalWorkload.mutex.RLock()
+	localWorkloadMap.mutex.RLock()
 	dataGroups := make([]*model.DataGroup, 0)
-	for _, workloadInfoMap := range globalWorkload.Info {
+	for _, workloadInfoMap := range localWorkloadMap.Info {
 		for _, workloadInfo := range workloadInfoMap {
 			dataGroups = append(dataGroups, &model.DataGroup{
 				Name: constnames.K8sWorkloadMetricGroupName,
@@ -62,7 +66,7 @@ func GetWorkloadDataGroup() []*model.DataGroup {
 			})
 		}
 	}
-	globalWorkload.mutex.RUnlock()
+	localWorkloadMap.mutex.RUnlock()
 	return dataGroups
 }
 
@@ -75,7 +79,7 @@ func newPodMap() *podMap {
 
 func newWorkloadMap() *workloadMap {
 	return &workloadMap{
-		Info:  make(map[string]map[string]*WorkloadInfo),
+		Info:  make(map[string]map[string]*workloadInfo),
 		mutex: sync.RWMutex{},
 	}
 }
@@ -103,11 +107,11 @@ func (m *podMap) delete(namespace string, name string) (*K8sPodInfo, bool) {
 	return podInfo, ok
 }
 
-func (m *workloadMap) add(info *WorkloadInfo) {
+func (m *workloadMap) add(info *workloadInfo) {
 	m.mutex.Lock()
 	workloadInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
-		workloadInfoMap = make(map[string]*WorkloadInfo)
+		workloadInfoMap = make(map[string]*workloadInfo)
 	}
 	workloadInfoMap[info.WorkloadName] = info
 	m.Info[info.Namespace] = workloadInfoMap
@@ -278,11 +282,15 @@ func onAdd(obj interface{}) {
 		}
 	}
 	globalPodInfo.add(cachePodInfo)
-	globalWorkload.add(&WorkloadInfo{
-		Namespace:    cachePodInfo.Namespace,
-		WorkloadName: cachePodInfo.WorkloadName,
-		WorkloadKind: cachePodInfo.WorkloadKind,
-	})
+	nodeName, _ := os.LookupEnv("MY_NODE_NAME")
+	//workloadMap only restore the workload in this machine
+	if cachePodInfo.NodeName == nodeName {
+		localWorkloadMap.add(&workloadInfo{
+			Namespace:    cachePodInfo.Namespace,
+			WorkloadName: cachePodInfo.WorkloadName,
+			WorkloadKind: cachePodInfo.WorkloadKind,
+		})
+	}
 }
 
 func getControllerKindName(pod *corev1.Pod) (workloadKind string, workloadName string) {

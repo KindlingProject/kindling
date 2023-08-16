@@ -50,11 +50,12 @@ char* stop_attach_agent(int64_t pid);
 
 void attach_agent(int64_t pid, char* error_message, bool is_attach);
 
-void get_capture_statistics();
+void get_capture_statistics(struct capture_statistics_for_go* stats);
 
 uint16_t get_protocol(scap_l4_proto proto);
 uint16_t get_type(ppm_param_type type);
 uint16_t get_kindling_source(uint16_t etype);
+
 
 void suppress_events_comm(string comm);
 
@@ -65,6 +66,16 @@ struct event {
 struct event_params_for_subscribe {
   char *name;
   char *value;
+};
+struct capture_statistics_for_go{
+    int evts;
+    int drops;
+    int drops_buffer;
+    int drops_pf;
+    int drops_bug;
+    int preemptions;
+    int suppressed;
+    int tids_suppressed;
 };
 void sub_event(char* eventName, char* category, event_params_for_subscribe params[]);
 struct kindling_event_t_for_go {
