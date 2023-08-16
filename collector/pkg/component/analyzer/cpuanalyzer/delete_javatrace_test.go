@@ -21,7 +21,7 @@ func TestJavaTraceDeleteQueue(t *testing.T) {
 	mycfg := &Config{SegmentSize: 40, JavaTraceDeleteInterval: 15, JavaTraceExpirationTime: 10}
 	ca = &CpuAnalyzer{javaTraces: jt, telemetry: testTelemetry, cfg: mycfg}
 	ca.javaTraceExpiredQueue = newJavaTraceDeleteQueue()
-	ca.Start()
+	go ca.JavaTraceDelete(1*time.Second, 1*time.Second)
 	for i := 0; i < 20; i++ {
 
 		ev := new(TransactionIdEvent)
@@ -36,14 +36,14 @@ func TestJavaTraceDeleteQueue(t *testing.T) {
 		ca.javaTraceExpiredQueue.Push(*val)
 		t.Logf("pid=%s, tid=%s enter time=%s\n", ev.PidString, ev.TraceId, val.enterTime.Format("2006-01-02 15:04:05.000"))
 		cnt++
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 	time.Sleep(10 * timeDuration)
 
-	if cnt != quitCnt {
-		t.Fatalf("The number of javatraces that entering and exiting the queue is not equal! enterCount=%d, exitCount=%d\n", cnt, quitCnt)
+	if len(ca.javaTraceExpiredQueue.queue) != 0 {
+		t.Fatalf("The number of javatraces that entering and exiting the queue is not equal! enterCount=%d\n", cnt)
 	} else {
-		t.Logf("All javatraces have cleaned normally. enterCount=%d, exitCount=%d\n", cnt, quitCnt)
+		t.Logf("All javatraces have cleaned normally. enterCount=%d\n", cnt)
 	}
 	time.Sleep(10 * time.Minute)
 
