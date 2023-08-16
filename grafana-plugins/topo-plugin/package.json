@@ -13,10 +13,10 @@
   "author": "yiqianxu",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@grafana/data": "latest",
-    "@grafana/toolkit": "latest",
-    "@grafana/ui": "latest",
-    "@grafana/runtime": "latest",
+    "@grafana/data": "^9.0.0",
+    "@grafana/toolkit": "^9.0.0",
+    "@grafana/ui": "^9.0.0",
+    "@grafana/runtime": "^9.0.0",
     "@types/react-dom": "^18.0.6",
     "emotion": "10.0.27"
   },

@@ -12,7 +12,7 @@ import { PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { css, cx } from 'emotion';
 import { stylesFactory, Select, RadioButtonGroup, Icon, Tooltip, Spinner } from '@grafana/ui';
-import { locationService } from '@grafana/runtime';
+// import { locationService } from '@grafana/runtime';
 
 interface VolumeProps {
   maxSentVolume: number; 
@@ -30,7 +30,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   // const theme = useTheme();
   const namespace = replaceVariables('$namespace');
   const workload = replaceVariables('$workload');
-  const [_location, setLocation] = useState(locationService.getLocation())
+  // const [_location, setLocation] = useState(locationService.getLocation())
 
   const styles = getStyles();
   const [graphData, setGraphData] = useState<any>({}); 
@@ -236,14 +236,14 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, r
   }, [namespace, workload]);
 
 
-  useEffect(() => {
-    const history = locationService.getHistory()
-    const unlisten = history.listen((location: any) => {
-      console.log('location', location);
-      setLocation(location)
-    })
-    return unlisten
-  }, []);
+  // useEffect(() => {
+  //   const history = locationService.getHistory()
+  //   const unlisten = history.listen((location: any) => {
+  //     console.log('location', location);
+  //     setLocation(location)
+  //   })
+  //   return unlisten
+  // }, []);
 
   useEffect(() => {
     console.log(data);

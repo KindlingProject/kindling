@@ -794,20 +794,30 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
          */
         _.remove(sameTraceList, item => item.url && item.url.length > 0);
         item.traceList = [];
+        let startTimeList: any[] = [], endTimeList: any[] = [];
         for(let i = 0;i < sameTraceList.length; i++) {
-            if (i % 2 === 0 && sameTraceList[i+1]) {
-                let startTime = formatTimsToMS(sameTraceList[i].timestamp);
-                let endTime = formatTimsToMS(sameTraceList[i + 1].timestamp);
-                if (startTime > requestStartTimestamp - 5 && endTime < requestEndTimestamp + 5) {
-                    item.traceList.push({
-                        traceId: sameTraceList[i].traceId,
-                        startTime: startTime,
-                        endTime: endTime,
-                        time: formatTimsToMS(sameTraceList[i + 1].timestamp - sameTraceList[i].timestamp),
-                    });
-                }   
+            if (parseInt(sameTraceList[i].isEntry) === 1 && startTimeList.length === endTimeList.length) {
+                startTimeList.push({
+                    traceId: sameTraceList[i].traceId,
+                    startTime: formatTimsToMS(sameTraceList[i].timestamp)
+                });
+            }
+            if (parseInt(sameTraceList[i].isEntry) === 0 && startTimeList.length - endTimeList.length === 1 && startTimeList[startTimeList.length - 1].traceId === sameTraceList[i].traceId) {
+                endTimeList.push({
+                    traceId: sameTraceList[i].traceId,
+                    endTime: formatTimsToMS(sameTraceList[i].timestamp)
+                });
             }
         }
+        // console.log(sameTraceList, startTimeList, endTimeList);
+        _.forEach(startTimeList, (opt, index) => {
+            item.traceList.push({
+                traceId: opt.traceId,
+                startTime: opt.startTime,
+                endTime: endTimeList[index].endTime,
+                time: endTimeList[index].endTime - opt.startTime 
+            });
+        });
     });
     
 

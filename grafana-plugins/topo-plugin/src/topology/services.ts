@@ -377,6 +377,7 @@ export const workloadRelationHandle = (workload: string, namespace: string, topo
     });
     nodes = detailNodesHandle(nodes, nodeData);
     edges = detailEdgesHandle(nodes, edges, edgeData, serviceLine);
+    _.remove(edges, edge => edge.source === edge.target);
     return { nodes, edges };
 }
 /**

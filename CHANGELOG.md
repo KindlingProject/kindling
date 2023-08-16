@@ -4,11 +4,16 @@
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
 ## Unreleased
+### Bug fixes
+- Fix the bug where sending repetitive k8s_info_workload. Now each node only sends its own info.（[#554](https://github.com/KindlingProject/kindling/pull/554)）
+- Provide a new self metric for probe events. (skipped events/dropped events)([#553](https://github.com/KindlingProject/kindling/pull/553))
+## v0.8.0 - 2023-06-30
 ### New features
-- Provide a new metric called kindling_k8s_workload_info, which supports workload filtering for k8s, thus preventing frequent crashes of Grafana topology. （[#530](https://github.com/KindlingProject/kindling/pull/530)）
+- Provide a new metric called kindling_k8s_workload_info, which supports workload filtering for k8s, thus preventing frequent crashes of Grafana topology. Please refer to the [doc](http://kindling.harmonycloud.cn/docs/usage/grafana-topology-plugin/) for any limitations.（[#530](https://github.com/KindlingProject/kindling/pull/530)）
 - Added support for displaying trace-profiling data by querying from Elasticsearch. ([#528](https://github.com/KindlingProject/kindling/pull/528))
 - Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindling.harmonycloud.cn/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
 ### Enhancements
+- Upgrade the Grafana version to 8.5.26 ([#533](https://github.com/KindlingProject/kindling/pull/533))
 - MySQL CommandLine Case: Ignore quit command and get sql with CLIENT_QUERY_ATTRIBUTES([#523](https://github.com/KindlingProject/kindling/pull/523))
 - ⚠️Breaking change: Refactor the data format of on/off CPU events from "string" to "array". Note that the old data format cannot be parsed using the new version of the front-end.([#512](https://github.com/KindlingProject/kindling/pull/512) [#520](https://github.com/KindlingProject/kindling/pull/520))
 ### Bug fixes
@@ -16,6 +21,8 @@
 - Fix panic: send on closed channel. ([#519](https://github.com/KindlingProject/kindling/pull/519))
 - Fix the bug that the event detail panel doesn't hide when switching profiles.（[#513](https://github.com/KindlingProject/kindling/pull/513)）
 - Fix span data deduplication issue.（[#511](https://github.com/KindlingProject/kindling/pull/511)）
+
+In this release, we have a new contributor @hwz779866221. Thanks and welcome! 🥳
 
 ## v0.7.2 - 2023-04-24
 ### Enhancements
