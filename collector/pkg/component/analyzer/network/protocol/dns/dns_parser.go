@@ -6,29 +6,28 @@ import (
 )
 
 const (
-	DNSHeaderSize  = 12
-	MaxNumRR       = 25
-	MaxMessageSize = 512
+	DNSHeaderSize = 12
 
 	maxDomainNameWireOctets         = 255 // See RFC 1035 section 2.3.4
 	maxCompressionPointers          = (maxDomainNameWireOctets+1)/2 - 2
 	maxDomainNamePresentationLength = 61*4 + 1 + 63*4 + 1 + 63*4 + 1 + 63*4 + 1
 )
 
-/**
+/*
+*
 https://www.rfc-editor.org/rfc/rfc1035
 
-  +---------------------+
-  |        Header       |
-  +---------------------+
-  |       Question      | the question for the name server
-  +---------------------+
-  |        Answer       | RRs answering the question
-  +---------------------+
-  |      Authority      | RRs pointing toward an authority
-  +---------------------+
-  |      Additional     | RRs holding additional information
-  +---------------------+
+	+---------------------+
+	|        Header       |
+	+---------------------+
+	|       Question      | the question for the name server
+	+---------------------+
+	|        Answer       | RRs answering the question
+	+---------------------+
+	|      Authority      | RRs pointing toward an authority
+	+---------------------+
+	|      Additional     | RRs holding additional information
+	+---------------------+
 */
 func NewDnsParser() *protocol.ProtocolParser {
 	requestParser := protocol.CreatePkgParser(fastfailDnsRequest(), parseDnsRequest())

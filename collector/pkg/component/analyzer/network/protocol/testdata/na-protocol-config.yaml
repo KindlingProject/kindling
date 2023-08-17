@@ -28,6 +28,7 @@ analyzers:
       - key: "dns"
         ports: [ 53 ]
         slow_threshold: 100
+        disable_discern: true
       - key: "rocketmq"
         slow_threshold: 500
       - key: "NOSUPPORT"

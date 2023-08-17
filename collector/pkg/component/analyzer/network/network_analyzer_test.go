@@ -46,6 +46,8 @@ func TestRedisProtocol(t *testing.T) {
 
 func TestDnsProtocol(t *testing.T) {
 	testProtocol(t, "dns/server-event.yml",
+		"dns/server-trace.yml")
+	testProtocol(t, "dns/server-event.yml",
 		"dns/server-trace-multi.yml")
 	testProtocol(t, "dns/client-event.yml",
 		"dns/client-trace-sendmmg.yml")
