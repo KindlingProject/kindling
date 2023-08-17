@@ -179,7 +179,7 @@ exporters:
     adapter_config:
       need_trace_as_metric: true
       need_pod_detail: true
-      store_external_src_ip: true
+      store_external_src_ip: false
       # When using otlp-grpc / stdout exporter , this option supports to
       # send trace data in the format of ResourceSpan
       need_trace_as_span: false

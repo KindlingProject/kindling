@@ -7,10 +7,10 @@
 #include <fstream>
 #include <iostream>
 #include <thread>
+#include "converter/cpu_converter.h"
 #include "scap_open_exception.h"
 #include "sinsp_capture_interrupt_exception.h"
 #include "utils.h"
-#include "converter/cpu_converter.h"
 
 cpu_converter* cpuConverter;
 fstream debug_file_log;
@@ -307,15 +307,20 @@ int getEvent(void** pp_kindling_event) {
       case SCAP_FD_IPV6_SOCK:
         p_kindling_event->context.fdInfo.protocol = get_protocol(fdInfo->get_l4proto());
         p_kindling_event->context.fdInfo.role = fdInfo->is_role_server();
-        memcpy(p_kindling_event->context.fdInfo.sip, fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sip.m_b, sizeof(fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sip.m_b));
-        memcpy(p_kindling_event->context.fdInfo.dip, fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dip.m_b, sizeof(fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dip.m_b));
+        memcpy(p_kindling_event->context.fdInfo.sip,
+               fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sip.m_b,
+               sizeof(fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sip.m_b));
+        memcpy(p_kindling_event->context.fdInfo.dip,
+               fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dip.m_b,
+               sizeof(fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dip.m_b));
         p_kindling_event->context.fdInfo.sport = fdInfo->m_sockinfo.m_ipv6info.m_fields.m_sport;
         p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv6info.m_fields.m_dport;
         break;
       case SCAP_FD_IPV6_SERVSOCK:
         p_kindling_event->context.fdInfo.protocol = get_protocol(fdInfo->get_l4proto());
         p_kindling_event->context.fdInfo.role = fdInfo->is_role_server();
-        memcpy(p_kindling_event->context.fdInfo.dip, fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b, sizeof(fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b));
+        memcpy(p_kindling_event->context.fdInfo.dip, fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b,
+               sizeof(fdInfo->m_sockinfo.m_ipv6serverinfo.m_ip.m_b));
         p_kindling_event->context.fdInfo.dport = fdInfo->m_sockinfo.m_ipv6serverinfo.m_port;
         break;
       case SCAP_FD_UNIX_SOCK:
@@ -388,15 +393,14 @@ int getEvent(void** pp_kindling_event) {
       userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
       break;
     }
-    case PPME_TCP_RETRANCESMIT_SKB_E:{
+    case PPME_TCP_RETRANCESMIT_SKB_E: {
       auto pTuple = ev->get_param_value_raw("tuple");
       userAttNumber = setTuple(p_kindling_event, pTuple, userAttNumber);
 
       auto segs = ev->get_param_value_raw("segs");
-      if (segs != NULL){
+      if (segs != NULL) {
         strcpy(p_kindling_event->userAttributes[userAttNumber].key, "segs");
-        memcpy(p_kindling_event->userAttributes[userAttNumber].value, segs->m_val,
-               segs->m_len);
+        memcpy(p_kindling_event->userAttributes[userAttNumber].value, segs->m_val, segs->m_len);
         p_kindling_event->userAttributes[userAttNumber].len = segs->m_len;
         p_kindling_event->userAttributes[userAttNumber].valueType = INT32;
         userAttNumber++;
@@ -1044,7 +1048,7 @@ void attach_agent(int64_t pid, char* error_message, bool is_attach) {
 }
 
 char* start_attach_agent(int64_t pid) {
-  char* error_message = (char*) malloc(1024 * sizeof(char));
+  char* error_message = (char*)malloc(1024 * sizeof(char));
   error_message[0] = '\0';
   if (!inspector) {
     strcpy(error_message, "Please start profile first");
@@ -1055,7 +1059,7 @@ char* start_attach_agent(int64_t pid) {
 }
 
 char* stop_attach_agent(int64_t pid) {
-  char* error_message = (char*) malloc(1024 * sizeof(char));
+  char* error_message = (char*)malloc(1024 * sizeof(char));
   error_message[0] = '\0';
   if (!inspector) {
     strcpy(error_message, "Please start profile first");
@@ -1113,40 +1117,28 @@ void print_profile_debug_info(sinsp_evt* sevt) {
   }
 }
 
-void get_capture_statistics() {
+void get_capture_statistics(struct capture_statistics_for_go* stats) {
   scap_stats s;
-  while (1) {
-    printCurrentTime();
-    inspector->get_capture_stats(&s);
-    printf("seen by driver: %" PRIu64 "\n", s.n_evts);
-    if (s.n_drops != 0) {
-      printf("Number of dropped events: %" PRIu64 "\n", s.n_drops);
-    }
-    if (s.n_drops_buffer != 0) {
-      printf("Number of dropped events caused by full buffer: %" PRIu64 "\n", s.n_drops_buffer);
-    }
-    if (s.n_drops_pf != 0) {
-      printf("Number of dropped events caused by invalid memory access: %" PRIu64 "\n",
-             s.n_drops_pf);
-    }
-    if (s.n_drops_bug != 0) {
-      printf(
-          "Number of dropped events caused by an invalid condition in the kernel instrumentation: "
-          "%" PRIu64 "\n",
-          s.n_drops_bug);
-    }
-    if (s.n_preemptions != 0) {
-      printf("Number of preemptions: %" PRIu64 "\n", s.n_preemptions);
-    }
-    if (s.n_suppressed != 0) {
-      printf("Number of events skipped due to the tid being in a set of suppressed tids: %" PRIu64
-             "\n",
-             s.n_suppressed);
-    }
-    if (s.n_tids_suppressed != 0) {
-      printf("Number of threads currently being suppressed: %" PRIu64 "\n", s.n_tids_suppressed);
-    }
-    fflush(stdout);
-    sleep(10);
-  }
+  printCurrentTime();
+  inspector->get_capture_stats(&s);
+  stats->evts = s.n_evts;
+  printf("seen by driver: %d \n", stats->evts);
+  stats->drops = s.n_drops;
+  printf("Number of dropped events: %d \n", stats->drops);
+  stats->drops_buffer = s.n_drops_buffer;
+  printf("Number of dropped events caused by full buffer: %d \n", stats->drops_buffer);
+  stats->drops_pf = s.n_drops_pf;
+  printf("Number of dropped events caused by invalid memory access: %d \n",
+         stats->drops_pf);
+  stats->drops_bug = s.n_drops_bug;
+  printf(
+      "Number of dropped events caused by an invalid condition in the kernel instrumentation: %d \n", stats->drops_bug);
+  stats->preemptions = s.n_preemptions;
+  printf("Number of preemptions: %d \n", stats->preemptions);
+  stats->suppressed = s.n_suppressed;
+  printf("Number of events skipped due to the tid being in a set of suppressed tids: %d \n",
+         stats->suppressed);
+  stats->tids_suppressed = s.n_tids_suppressed;
+  printf("Number of threads currently being suppressed: %d \n", stats->tids_suppressed);
+  fflush(stdout);
 }
