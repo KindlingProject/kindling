@@ -168,9 +168,11 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 			for _, event := range events {
 				_ = na.ConsumeEvent(event)
 			}
-			if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
-				var oldPairs = pairInterface.(*messagePairs)
-				_ = na.distributeTraceMetric(oldPairs, nil)
+			if model.L4Proto(eventCommon.Ctx.Fd.Protocol) == model.L4Proto_TCP {
+				if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
+					var oldPairs = pairInterface.(*messagePairs)
+					_ = na.distributeTraceMetric(oldPairs, nil)
+				}
 			}
 			trace.Validate(t, results)
 		})

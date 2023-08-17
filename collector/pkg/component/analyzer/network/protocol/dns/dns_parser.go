@@ -29,11 +29,18 @@ https://www.rfc-editor.org/rfc/rfc1035
 	|      Additional     | RRs holding additional information
 	+---------------------+
 */
-func NewDnsParser() *protocol.ProtocolParser {
-	requestParser := protocol.CreatePkgParser(fastfailDnsRequest(), parseDnsRequest())
-	responseParser := protocol.CreatePkgParser(fastfailDnsResponse(), parseDnsResponse())
+func NewTcpDnsParser() *protocol.ProtocolParser {
+	requestParser := protocol.CreatePkgParser(fastfailDnsRequest(), parseTcpDnsRequest())
+	responseParser := protocol.CreatePkgParser(fastfailDnsResponse(), parseTcpDnsResponse())
 
 	return protocol.NewProtocolParser(protocol.DNS, requestParser, responseParser, dnsPair())
+}
+
+func NewUdpDnsParser() *protocol.ProtocolParser {
+	requestParser := protocol.CreatePkgParser(fastfailDnsRequest(), parseUdpDnsRequest())
+	responseParser := protocol.CreatePkgParser(fastfailDnsResponse(), parseUdpDnsResponse())
+
+	return protocol.NewProtocolParser(protocol.DNS, requestParser, responseParser, nil)
 }
 
 func dnsPair() protocol.PairMatch {

@@ -352,30 +352,14 @@ func (mp *messagePair) getDuration() uint64 {
 	return mp.response.Timestamp + mp.request.GetLatency() - mp.request.Timestamp
 }
 
-// DNS will send different ip and port data with sharing fd and pid socket.
 type messagePairKey struct {
-	pid   uint32
-	fd    int32
-	sip   string
-	dip   string
-	sport uint32
-	dport uint32
+	pid uint32
+	fd  int32
 }
 
 func getMessagePairKey(evt *model.KindlingEvent) messagePairKey {
-	if evt.IsUdp() == 1 {
-		return messagePairKey{
-			pid:   evt.GetPid(),
-			fd:    evt.GetFd(),
-			sip:   evt.GetSip(),
-			dip:   evt.GetDip(),
-			sport: evt.GetSport(),
-			dport: evt.GetDport(),
-		}
-	} else {
-		return messagePairKey{
-			pid: evt.GetPid(),
-			fd:  evt.GetFd(),
-		}
+	return messagePairKey{
+		pid: evt.GetPid(),
+		fd:  evt.GetFd(),
 	}
 }
