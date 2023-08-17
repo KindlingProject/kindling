@@ -29,7 +29,7 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		EventChannelSize:      100000,
+		EventChannelSize:      10000,
 		EnableTimeoutCheck:    true,
 		ConnectTimeout:        100,
 		FdReuseTimeout:        15,
