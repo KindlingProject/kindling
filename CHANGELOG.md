@@ -5,11 +5,11 @@
 
 ## Unreleased
 ### Enhancements
-- Set default values of `store_external_src_ip` and `StoreExternalSrcIP` to false to reduce occurrences of unexpected src IP data.  ([#562](https://github.com/KindlingProject/kindling/pull/562))
-- Optimized the `networkanalyzer` component of the probe analyzer by utilizing Go's goroutines, enabling concurrent execution.
+- Set default values of `store_external_src_ip` and `StoreExternalSrcIP` to false to reduce occurrences of unexpected src IP data. ([#562](https://github.com/KindlingProject/kindling/pull/562))
+- Optimized the `networkanalyzer` component of the probe analyzer by utilizing Go's goroutines, enabling concurrent execution. ([#558](https://github.com/KindlingProject/kindling/pull/558))
 
 ### Bug fixes
-- Fix the bug where sending repetitive k8s_info_workload. Now each node only sends its own info.（[#554](https://github.com/KindlingProject/kindling/pull/554)）
+- Fix the bug where sending repetitive k8s_info_workload. Now each node only sends its own info.([#554](https://github.com/KindlingProject/kindling/pull/554))
 - Provide a new self metric for probe events. (skipped events/dropped events)([#553](https://github.com/KindlingProject/kindling/pull/553))
 
 ## v0.8.0 - 2023-06-30
