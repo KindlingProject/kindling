@@ -1,5 +1,6 @@
 analyzers:
   networkanalyzer:
+    event_channel_size: 10000
     connect_timeout: 100
     fd_reuse_timeout: 60
     no_response_threshold: 120
