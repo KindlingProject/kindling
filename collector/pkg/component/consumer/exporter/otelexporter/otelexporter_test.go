@@ -167,7 +167,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 			NeedTraceAsResourceSpan: true,
 			NeedTraceAsMetric:       true,
 			NeedPodDetail:           true,
-			StoreExternalSrcIP:      true,
+			StoreExternalSrcIP:      false,
 		},
 	}
 

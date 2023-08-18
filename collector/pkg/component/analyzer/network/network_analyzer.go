@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
@@ -50,6 +51,9 @@ type NetworkAnalyzer struct {
 	udpMessagePairSize int64
 	telemetry          *component.TelemetryTools
 
+	eventChan chan *model.KindlingEvent
+	stopChan  chan bool
+	
 	// snaplen is the maximum data size the event could accommodate bytes.
 	// It is set by setting the environment variable SNAPLEN. See https://github.com/KindlingProject/kindling/pull/387.
 	snaplen int
@@ -62,6 +66,9 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		dataGroupPool: NewDataGroupPool(),
 		nextConsumers: consumers,
 		telemetry:     telemetry,
+		
+		eventChan: make(chan *model.KindlingEvent, config.EventChannelSize), 
+		stopChan:  make(chan bool),
 	}
 	if config.EnableConntrack {
 		connConfig := &conntracker.Config{
@@ -77,6 +84,8 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 
 	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
 	na.snaplen = getSnaplenEnv()
+	
+
 	return na
 }
 
@@ -144,10 +153,13 @@ func (na *NetworkAnalyzer) Start() error {
 	na.parsers = parsers
 
 	rand.Seed(time.Now().UnixNano())
+	go na.ConsumeEventFromChannel() 
 	return nil
 }
 
 func (na *NetworkAnalyzer) Shutdown() error {
+	close(na.stopChan)
+	
 	// TODO: implement
 	return nil
 }
@@ -157,6 +169,25 @@ func (na *NetworkAnalyzer) Type() analyzer.Type {
 }
 
 func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
+	na.eventChan <- evt
+	return nil
+}
+
+func (na *NetworkAnalyzer) ConsumeEventFromChannel() {
+	for {
+		select {
+		case evt := <-na.eventChan:
+			err := na.processEvent(evt)
+			if err != nil {
+				na.telemetry.Logger.Error("error happened when processing event: ", zap.Error(err))
+			}
+		case <-na.stopChan:
+			return
+		}
+	}
+}
+
+func (na *NetworkAnalyzer) processEvent(evt *model.KindlingEvent) error {
 	if evt.Category != model.Category_CAT_NET {
 		return nil
 	}
@@ -209,6 +240,7 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 	} else {
 		return na.analyseResponse(evt)
 	}
+	// ... original logic of ConsumeEvent ...
 }
 
 func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
@@ -231,6 +263,9 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 				}
 				return true
 			})
+		case <-na.stopChan:
+			timer.Stop()
+			return
 		}
 	}
 }
