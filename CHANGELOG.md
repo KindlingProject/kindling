@@ -10,6 +10,7 @@
 - Optimized the `networkanalyzer` component of the probe analyzer by utilizing Go's goroutines, enabling concurrent execution. ([#558](https://github.com/KindlingProject/kindling/pull/558))
 
 ### Bug fixes
+- Enhance dns with udp which is out of order.([#565](https://github.com/KindlingProject/kindling/pull/565))
 - Fix the bug where sending repetitive k8s_info_workload. Now each node only sends its own info.([#554](https://github.com/KindlingProject/kindling/pull/554))
 - Provide a new self metric for probe events. (skipped events/dropped events)([#553](https://github.com/KindlingProject/kindling/pull/553))
 
