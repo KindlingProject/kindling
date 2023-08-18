@@ -24,9 +24,9 @@ void stop_perf();
 
 void exipre_window_cache();
 
-int getEvent(void** kindlingEvent);
+int getEvent(uint64_t interval, void** kindlingEvent, int* event_count);
 
-int get_events(void** kindlingEvents);
+int get_events_by_interval(uint64_t interval, void** kindlingEvent, void* count);
 
 uint16_t get_kindling_category(sinsp_evt* sEvt);
 

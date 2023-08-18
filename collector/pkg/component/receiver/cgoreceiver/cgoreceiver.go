@@ -82,16 +82,18 @@ func (r *CgoReceiver) Start() error {
 }
 
 func (r *CgoReceiver) startGetEvents() {
-    var pKindlingEvents [10]unsafe.Pointer
+	var count = 0
+    var pKindlingEvents [1000]unsafe.Pointer
     r.shutdownWG.Add(1)
+
     for {
         select {
         case <-r.stopCh:
             r.shutdownWG.Done()
             return
         default:
-            count := int(C.getKindlingEvents(&pKindlingEvents[0]))
-            for i := 0; i < count; i++ {
+            evt_count := int(C.getEventsByInterval(C.int(100000000), &pKindlingEvents[0], (unsafe.Pointer)(&count)))
+            for i := 0; i < evt_count; i++ {
                 event := convertEvent((*CKindlingEventForGo)(pKindlingEvents[i]))
                 r.eventChannel <- event
                 r.stats.add(event.Name, 1)

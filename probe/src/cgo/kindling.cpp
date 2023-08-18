@@ -44,6 +44,7 @@ char* duration_char = new char[32];
 char* span_char = new char[1024];
 
 int16_t event_filters[1024][16];
+uint64_t receiver_ts = 0;
 
 void init_sub_label() {
   for (auto e : kindling_to_sysdig) {
@@ -89,16 +90,22 @@ void sub_event(char* eventName, char* category, event_params_for_subscribe param
   }
 }
 
-#define MAX_EVENTS 10  
-int get_events(void** kindlingEvents) {
-    int count = 0;
-    for (int i = 0; i < MAX_EVENTS; i++) {
-        if (getEvent(&kindlingEvents[i]) != 1) {
-            break;
+#define MAX_EVENTS 998
+int get_events_by_interval(uint64_t interval, void** kindlingEvents, void* count) {
+  uint64_t tmp_ts = receiver_ts;
+  int i = 0;
+    while (true) {
+      if (getEvent(interval, &kindlingEvents[i], (int*)count) == 1){
+        if(i >= MAX_EVENTS) {
+          break;
         }
-        count++;
+        i++;
+      }
+      if (tmp_ts != receiver_ts) {
+        break;
+      }
     }
-    return count;  
+  return i;  
 }
 
 void suppress_events_comm(string comm) {
@@ -173,7 +180,7 @@ int init_probe() {
   return 0;
 }
 
-int getEvent(void** pp_kindling_event) {
+int getEvent(uint64_t interval, void** pp_kindling_event, int* event_count) {
   int32_t res;
   sinsp_evt* ev;
   res = inspector->next(&ev);
@@ -204,6 +211,7 @@ int getEvent(void** pp_kindling_event) {
   }
   uint16_t kindling_category = get_kindling_category(ev);
   uint16_t ev_type = ev->get_type();
+  int evtcnt = *event_count;
 
   print_event(ev);
   if (ev_type != PPME_CPU_ANALYSIS_E && is_profile_debug && threadInfo->m_tid == debug_tid &&
@@ -450,6 +458,11 @@ int getEvent(void** pp_kindling_event) {
   }
   strcpy(p_kindling_event->context.tinfo.comm, tmp_comm);
   strcpy(p_kindling_event->context.tinfo.containerId, (char*)threadInfo->m_container_id.data());
+  evtcnt++;
+  *event_count = evtcnt;
+  if (ev->get_ts() - receiver_ts >= interval || *event_count > 998) {
+    receiver_ts = ev->get_ts();
+  }
   return 1;
 }
 

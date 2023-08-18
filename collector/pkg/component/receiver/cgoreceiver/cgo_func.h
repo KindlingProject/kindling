@@ -9,8 +9,7 @@
 extern "C" {
 #endif
 int runForGo();
-int getKindlingEvent(void **kindlingEvent);
-int getKindlingEvents(void** kindlingEvent);
+int getEventsByInterval(int interval, void** kindlingEvent, void* count);
 void suppressEventsCommForGo(char *comm);
 void subEventForGo(char* eventName, char* category, void *params);
 int startProfile();
