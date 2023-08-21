@@ -166,7 +166,7 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 			results = []*model.DataGroup{}
 			events := trace.getSortedEvents(eventCommon)
 			for _, event := range events {
-				_ = na.ConsumeEvent(event)
+				_ = na.processEvent(event)
 			}
 			if model.L4Proto(eventCommon.Ctx.Fd.Protocol) == model.L4Proto_TCP {
 				if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
