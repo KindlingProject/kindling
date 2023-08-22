@@ -4,14 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 func TestReadBytes(t *testing.T) {
 	// ff 0 4 t e s t
 	data := []byte{0xff, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74}
-	message := NewRequestMessage(data, model.L4Proto_TCP)
+	message := NewRequestMessage(data)
 
 	tests := []struct {
 		name   string
@@ -43,7 +41,7 @@ func TestReadBytes(t *testing.T) {
 func TestReadInt16(t *testing.T) {
 	// ff 0 4 t e s t
 	data := []byte{0xff, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74}
-	message := NewRequestMessage(data, model.L4Proto_TCP)
+	message := NewRequestMessage(data)
 
 	tests := []struct {
 		name   string
@@ -73,7 +71,7 @@ func TestReadInt16(t *testing.T) {
 func TestReadInt32(t *testing.T) {
 	// ff 0 0 0 4 t e s t
 	data := []byte{0xff, 0x00, 0x00, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74}
-	message := NewRequestMessage(data, model.L4Proto_TCP)
+	message := NewRequestMessage(data)
 
 	tests := []struct {
 		name   string
@@ -103,7 +101,7 @@ func TestReadInt32(t *testing.T) {
 func TestReadNullableString(t *testing.T) {
 	// ff 0 4 t e s t
 	data := []byte{0xff, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74}
-	message := NewRequestMessage(data, model.L4Proto_TCP)
+	message := NewRequestMessage(data)
 
 	tests := []struct {
 		name   string

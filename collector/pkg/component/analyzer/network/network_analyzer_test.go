@@ -46,6 +46,8 @@ func TestRedisProtocol(t *testing.T) {
 
 func TestDnsProtocol(t *testing.T) {
 	testProtocol(t, "dns/server-event.yml",
+		"dns/server-trace.yml")
+	testProtocol(t, "dns/server-event.yml",
 		"dns/server-trace-multi.yml")
 	testProtocol(t, "dns/client-event.yml",
 		"dns/client-trace-sendmmg.yml")
@@ -164,11 +166,13 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 			results = []*model.DataGroup{}
 			events := trace.getSortedEvents(eventCommon)
 			for _, event := range events {
-				_ = na.ConsumeEvent(event)
+				_ = na.processEvent(event)
 			}
-			if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
-				var oldPairs = pairInterface.(*messagePairs)
-				_ = na.distributeTraceMetric(oldPairs, nil)
+			if model.L4Proto(eventCommon.Ctx.Fd.Protocol) == model.L4Proto_TCP {
+				if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
+					var oldPairs = pairInterface.(*messagePairs)
+					_ = na.distributeTraceMetric(oldPairs, nil)
+				}
 			}
 			trace.Validate(t, results)
 		})

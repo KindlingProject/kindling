@@ -2,13 +2,26 @@ package dns
 
 import (
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
-	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 )
 
 func fastfailDnsRequest() protocol.FastFailFn {
 	return func(message *protocol.PayloadMessage) bool {
-		return len(message.Data) <= DNSHeaderSize || len(message.Data) > MaxMessageSize
+		return len(message.Data) <= DNSHeaderSize
+	}
+}
+
+func parseTcpDnsRequest() protocol.ParsePkgFn {
+	return func(message *protocol.PayloadMessage) (bool, bool) {
+		// Length
+		message.Offset += 2
+		return parseDnsRequest(message)
+	}
+}
+
+func parseUdpDnsRequest() protocol.ParsePkgFn {
+	return func(message *protocol.PayloadMessage) (bool, bool) {
+		return parseDnsRequest(message)
 	}
 }
 
@@ -30,51 +43,19 @@ Header format
 	|                    ARCOUNT                    |
 	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
-func parseDnsRequest() protocol.ParsePkgFn {
-	return func(message *protocol.PayloadMessage) (bool, bool) {
-		if message.Protocol == model.L4Proto_TCP {
-			message.Offset += 2
-		}
-		offset := message.Offset
-		id, _ := message.ReadUInt16(offset)
-		flags, _ := message.ReadUInt16(offset + 2)
+func parseDnsRequest(message *protocol.PayloadMessage) (bool, bool) {
+	offset := message.Offset
+	id, _ := message.ReadUInt16(offset)
 
-		qr := (flags >> 15) & 0x1
-		opcode := (flags >> 11) & 0xf
-		rcode := flags & 0xf
-
-		numOfQuestions, _ := message.ReadUInt16(offset + 4)
-		numOfAnswers, _ := message.ReadUInt16(offset + 6)
-		numOfAuth, _ := message.ReadUInt16(offset + 8)
-		numOfAddl, _ := message.ReadUInt16(offset + 10)
-		numOfRR := numOfQuestions + numOfAnswers + numOfAuth + numOfAddl
-
-		/*
-			QR: Request(0) Response(1)
-			Kind of query in this message
-				0	a standard query (QUERY)
-				1	an inverse query (IQUERY)
-				2	a server status request (STATUS)
-				3-15 	reserved for future use
-
-			Response code
-				0	No error condition
-				1 	Format error
-				2 	Server failure
-				3	Name Error
-				4 	Not Implemented
-				5 	Refused
-				6-15 	Reserved for future use.
-		*/
-		if qr != 0 || opcode > 2 || rcode > 5 || numOfQuestions == 0 || numOfAnswers > 0 || numOfRR > MaxNumRR {
-			return false, true
-		}
-		domain, err := readQuery(message, numOfQuestions)
-		if err != nil {
-			return false, true
-		}
-		message.AddIntAttribute(constlabels.DnsId, int64(id))
-		message.AddStringAttribute(constlabels.DnsDomain, domain)
-		return true, true
+	numOfQuestions, _ := message.ReadUInt16(offset + 4)
+	if numOfQuestions == 0 {
+		return false, true
 	}
+	domain, err := readQuery(message, numOfQuestions)
+	if err != nil {
+		return false, true
+	}
+	message.AddIntAttribute(constlabels.DnsId, int64(id))
+	message.AddStringAttribute(constlabels.DnsDomain, domain)
+	return true, true
 }

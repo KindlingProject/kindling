@@ -1,8 +1,9 @@
 package factory
 
 import (
-	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/rocketmq"
 	"sync"
+
+	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/rocketmq"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol/dns"
@@ -18,6 +19,7 @@ type ParserFactory struct {
 	cachePortParsersMap map[uint32][]*protocol.ProtocolParser
 	mutex               sync.Mutex
 	protocolParsers     map[string]*protocol.ProtocolParser
+	udpDnsParser        *protocol.ProtocolParser
 
 	config *config
 }
@@ -36,11 +38,16 @@ func NewParserFactory(options ...Option) *ParserFactory {
 	factory.protocolParsers[protocol.MYSQL] = mysql.NewMysqlParser()
 	factory.protocolParsers[protocol.REDIS] = redis.NewRedisParser()
 	factory.protocolParsers[protocol.DUBBO] = dubbo.NewDubboParser()
-	factory.protocolParsers[protocol.DNS] = dns.NewDnsParser()
+	factory.protocolParsers[protocol.DNS] = dns.NewTcpDnsParser()
 	factory.protocolParsers[protocol.ROCKETMQ] = rocketmq.NewRocketMQParser()
 	factory.protocolParsers[protocol.NOSUPPORT] = generic.NewGenericParser()
 
+	factory.udpDnsParser = dns.NewUdpDnsParser()
 	return factory
+}
+
+func (f *ParserFactory) GetUdpDnsParser() *protocol.ProtocolParser {
+	return f.udpDnsParser
 }
 
 func (f *ParserFactory) GetParser(key string) *protocol.ProtocolParser {
