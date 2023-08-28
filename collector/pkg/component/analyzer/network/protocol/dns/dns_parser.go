@@ -29,16 +29,16 @@ https://www.rfc-editor.org/rfc/rfc1035
 	|      Additional     | RRs holding additional information
 	+---------------------+
 */
-func NewTcpDnsParser() *protocol.ProtocolParser {
+func NewTcpDnsParser(ignoreDnsRcode3Error bool) *protocol.ProtocolParser {
 	requestParser := protocol.CreatePkgParser(fastfailDnsRequest(), parseTcpDnsRequest())
-	responseParser := protocol.CreatePkgParser(fastfailDnsResponse(), parseTcpDnsResponse())
+	responseParser := protocol.CreatePkgParser(fastfailDnsResponse(), parseTcpDnsResponse(ignoreDnsRcode3Error))
 
 	return protocol.NewProtocolParser(protocol.DNS, requestParser, responseParser, dnsPair())
 }
 
-func NewUdpDnsParser() *protocol.ProtocolParser {
+func NewUdpDnsParser(ignoreDnsRcode3Error bool) *protocol.ProtocolParser {
 	requestParser := protocol.CreatePkgParser(fastfailDnsRequest(), parseUdpDnsRequest())
-	responseParser := protocol.CreatePkgParser(fastfailDnsResponse(), parseUdpDnsResponse())
+	responseParser := protocol.CreatePkgParser(fastfailDnsResponse(), parseUdpDnsResponse(ignoreDnsRcode3Error))
 
 	return protocol.NewProtocolParser(protocol.DNS, requestParser, responseParser, nil)
 }

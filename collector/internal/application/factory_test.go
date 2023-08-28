@@ -61,6 +61,8 @@ func TestConstructConfig(t *testing.T) {
 			},
 		},
 		UrlClusteringMethod: "blank",
+		
+		IgnoreDnsRcode3Error: false,
 	}
 	assert.Equal(t, expectedNetworkConfig, networkConfig)
 }

@@ -85,7 +85,7 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		na.conntracker, _ = conntracker.NewConntracker(connConfig)
 	}
 
-	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
+	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod), factory.WithIgnoreDnsRcode3Error(na.cfg.IgnoreDnsRcode3Error))
 	na.snaplen = getSnaplenEnv()
 
 	return na

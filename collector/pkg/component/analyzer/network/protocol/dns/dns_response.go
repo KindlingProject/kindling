@@ -19,16 +19,16 @@ func fastfailDnsResponse() protocol.FastFailFn {
 	}
 }
 
-func parseTcpDnsResponse() protocol.ParsePkgFn {
+func parseTcpDnsResponse(ignoreDnsRcode3Error bool) protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
 		message.Offset += 2
-		return parseDnsResponse(message)
+		return parseDnsResponse(message, ignoreDnsRcode3Error)
 	}
 }
 
-func parseUdpDnsResponse() protocol.ParsePkgFn {
+func parseUdpDnsResponse(ignoreDnsRcode3Error bool) protocol.ParsePkgFn {
 	return func(message *protocol.PayloadMessage) (bool, bool) {
-		return parseDnsResponse(message)
+		return parseDnsResponse(message, ignoreDnsRcode3Error)
 	}
 }
 
@@ -50,7 +50,7 @@ Header format
 	|                    ARCOUNT                    |
 	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
-func parseDnsResponse(message *protocol.PayloadMessage) (bool, bool) {
+func parseDnsResponse(message *protocol.PayloadMessage, ignoreDnsRcode3Error bool) (bool, bool) {
 	offset := message.Offset
 	id, _ := message.ReadUInt16(offset)
 	flags, _ := message.ReadUInt16(offset + 2)
@@ -76,7 +76,7 @@ func parseDnsResponse(message *protocol.PayloadMessage) (bool, bool) {
 	}
 	message.AddIntAttribute(constlabels.DnsId, int64(id))
 	message.AddIntAttribute(constlabels.DnsRcode, int64(rcode))
-	if rcode > 0 {
+	if (rcode > 0 && rcode != 3) || (rcode == 3 && !ignoreDnsRcode3Error) {
 		message.AddBoolAttribute(constlabels.IsError, true)
 		message.AddIntAttribute(constlabels.ErrorType, int64(constlabels.ProtocolError))
 	}
