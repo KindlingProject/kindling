@@ -8,6 +8,7 @@
 - Expand the histogram bucket of otelexpoerter (Add 1500ms). ([#563](https://github.com/KindlingProject/kindling/pull/563))
 - Set default values of `store_external_src_ip` and `StoreExternalSrcIP` to false to reduce occurrences of unexpected src IP data. ([#562](https://github.com/KindlingProject/kindling/pull/562))
 - Optimized the `networkanalyzer` component of the probe analyzer by utilizing Go's goroutines, enabling concurrent execution. ([#558](https://github.com/KindlingProject/kindling/pull/558))
+- Added a new configuration option ignore_dns_rcode3_error to allow users to specify whether DNS responses with RCODE 3 should be treated as errors. ([#566](https://github.com/KindlingProject/kindling/pull/566))
 
 ### Bug fixes
 - Enhance dns with udp which is out of order.([#565](https://github.com/KindlingProject/kindling/pull/565))
