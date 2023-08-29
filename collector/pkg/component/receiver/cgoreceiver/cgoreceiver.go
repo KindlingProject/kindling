@@ -75,29 +75,33 @@ func (r *CgoReceiver) Start() error {
 	// Wait for the C routine running
 	time.Sleep(2 * time.Second)
 	go r.consumeEvents()
-	go r.startGetEvent()
+	go r.startGetEvents()
 	go r.getCaptureStatisticsByInterval(15 * time.Second)
+
 	return nil
 }
 
-func (r *CgoReceiver) startGetEvent() {
-	var pKindlingEvent unsafe.Pointer
-	r.shutdownWG.Add(1)
-	for {
-		select {
-		case <-r.stopCh:
-			r.shutdownWG.Done()
-			return
-		default:
-			res := int(C.getKindlingEvent(&pKindlingEvent))
-			if res == 1 {
-				event := convertEvent((*CKindlingEventForGo)(pKindlingEvent))
-				r.eventChannel <- event
-				r.stats.add(event.Name, 1)
-			}
-		}
-	}
+func (r *CgoReceiver) startGetEvents() {
+	var count = 0
+    var pKindlingEvents [1000]unsafe.Pointer
+    r.shutdownWG.Add(1)
+
+    for {
+        select {
+        case <-r.stopCh:
+            r.shutdownWG.Done()
+            return
+        default:
+            evt_count := int(C.getEventsByInterval(C.int(100000000), &pKindlingEvents[0], (unsafe.Pointer)(&count)))
+            for i := 0; i < evt_count; i++ {
+                event := convertEvent((*CKindlingEventForGo)(pKindlingEvents[i]))
+                r.eventChannel <- event
+                r.stats.add(event.Name, 1)
+            }
+        }
+    }
 }
+
 
 func (r *CgoReceiver) consumeEvents() {
 	r.shutdownWG.Add(1)

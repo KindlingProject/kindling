@@ -8,7 +8,9 @@
 
 int runForGo() { return init_probe(); }
 
-int getKindlingEvent(void** kindlingEvent) { return getEvent(kindlingEvent); }
+int getEventsByInterval(int interval, void** kindlingEvent, void* count) { 
+    return get_events_by_interval((uint64_t)interval, kindlingEvent, count); 
+}
 
 int startProfile() { return start_profile(); }
 int stopProfile() { return stop_profile(); }
