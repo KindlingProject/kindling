@@ -52,7 +52,7 @@ func TestDnsProtocol(t *testing.T) {
 	testProtocol(t, "dns/client-event.yml",
 		"dns/client-trace-sendmmg.yml")
 	testProtocol(t, "dns/client-event.yml",
-		"dns/client-trace-dns3.yml")	
+		"dns/client-trace-dns3.yml")
 	testProtocol(t, "dns/client-event-tcp.yml",
 		"dns/client-trace-tcp.yml")
 }
@@ -136,7 +136,7 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 			protocol.SetPayLoadLength(config.Key, config.PayloadLength)
 			na.slowThresholdMap[config.Key] = config.Threshold
 		}
-		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
+		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod), factory.WithIgnoreDnsRcode3Error(na.cfg.IgnoreDnsRcode3Error))
 		na.snaplen = 200
 		// Do not start the timeout check otherwise the test maybe fail
 		na.cfg.EnableTimeoutCheck = false
