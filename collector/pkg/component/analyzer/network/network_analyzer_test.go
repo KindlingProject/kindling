@@ -51,6 +51,8 @@ func TestDnsProtocol(t *testing.T) {
 		"dns/server-trace-multi.yml")
 	testProtocol(t, "dns/client-event.yml",
 		"dns/client-trace-sendmmg.yml")
+	testProtocol(t, "dns/client-event.yml",
+		"dns/client-trace-dns3.yml")	
 	testProtocol(t, "dns/client-event-tcp.yml",
 		"dns/client-trace-tcp.yml")
 }
