@@ -38,11 +38,11 @@ func NewParserFactory(options ...Option) *ParserFactory {
 	factory.protocolParsers[protocol.MYSQL] = mysql.NewMysqlParser()
 	factory.protocolParsers[protocol.REDIS] = redis.NewRedisParser()
 	factory.protocolParsers[protocol.DUBBO] = dubbo.NewDubboParser()
-	factory.protocolParsers[protocol.DNS] = dns.NewTcpDnsParser()
+	factory.protocolParsers[protocol.DNS] = dns.NewTcpDnsParser(factory.config.ignoreDnsRcode3Error)
 	factory.protocolParsers[protocol.ROCKETMQ] = rocketmq.NewRocketMQParser()
 	factory.protocolParsers[protocol.NOSUPPORT] = generic.NewGenericParser()
 
-	factory.udpDnsParser = dns.NewUdpDnsParser()
+	factory.udpDnsParser = dns.NewUdpDnsParser(factory.config.ignoreDnsRcode3Error)
 	return factory
 }
 

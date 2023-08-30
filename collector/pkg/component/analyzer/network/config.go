@@ -18,6 +18,7 @@ type Config struct {
 	ResponseSlowThreshold int `mapstructure:"response_slow_threshold"`
 
 	EnableConntrack       bool   `mapstructure:"enable_conntrack"`
+	IgnoreDnsRcode3Error  bool   `mapstructure:"ignore_dns_rcode3_error"`
 	ConntrackMaxStateSize int    `mapstructure:"conntrack_max_state_size"`
 	ConntrackRateLimit    int    `mapstructure:"conntrack_rate_limit"`
 	ProcRoot              string `mapstructure:"proc_root"`
@@ -36,6 +37,7 @@ func NewDefaultConfig() *Config {
 		NoResponseThreshold:   120,
 		ResponseSlowThreshold: 500,
 		EnableConntrack:       true,
+		IgnoreDnsRcode3Error:  false,
 		ConntrackMaxStateSize: 131072,
 		ConntrackRateLimit:    500,
 		ProcRoot:              "/proc",

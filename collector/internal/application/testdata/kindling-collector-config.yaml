@@ -13,6 +13,10 @@ analyzers:
         payload_length: 100
         slow_threshold: 200
     url_clustering_method: blank
+    # Whether to ignore DNS responses with RCODE 3 (Name Error) as errors. 
+    # Useful in Kubernetes clusters using ClusterFirst DNS policy, where KubeDNS may return RCODE 3 for public domains.
+    # Set to true to treat RCODE 3 as non-errors, default is false.
+    ignore_dns_rcode3_error: true
 processors:
   k8smetadataprocessor:
     # Set "enable" false if you want to run the agent in the non-Kubernetes environment.
