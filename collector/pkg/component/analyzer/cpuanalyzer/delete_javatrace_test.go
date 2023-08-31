@@ -9,10 +9,7 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 )
 
-var (
-	cnt     int
-	quitCnt int
-)
+var cnt int
 
 func TestJavaTraceDeleteQueue(t *testing.T) {
 
@@ -22,8 +19,8 @@ func TestJavaTraceDeleteQueue(t *testing.T) {
 	ca = &CpuAnalyzer{javaTraces: jt, telemetry: testTelemetry, cfg: mycfg}
 	ca.javaTraceExpiredQueue = newJavaTraceDeleteQueue()
 	go ca.JavaTraceDelete(1*time.Second, 1*time.Second)
-	for i := 0; i < 20; i++ {
 
+	for i := 0; i < 20; i++ {
 		ev := new(TransactionIdEvent)
 		ev.TraceId = strconv.Itoa(rand.Intn(10000))
 		ev.PidString = strconv.Itoa(rand.Intn(10000))
@@ -36,15 +33,13 @@ func TestJavaTraceDeleteQueue(t *testing.T) {
 		ca.javaTraceExpiredQueue.Push(*val)
 		t.Logf("pid=%s, tid=%s enter time=%s\n", ev.PidString, ev.TraceId, val.enterTime.Format("2006-01-02 15:04:05.000"))
 		cnt++
-		time.Sleep(1 * time.Second)
 	}
-	time.Sleep(10 * timeDuration)
+	time.Sleep(5 * time.Second)
 
-	if len(ca.javaTraceExpiredQueue.queue) != 0 {
-		t.Fatalf("The number of javatraces that entering and exiting the queue is not equal! enterCount=%d\n", cnt)
+	if len(ca.javaTraces) != 0 {
+		t.Fatalf("The number of javatraces that entering and exiting the queue is not equal! "+
+			"enterCount=%d , len of javatrace is : %d\n", cnt, len(ca.javaTraces))
 	} else {
 		t.Logf("All javatraces have cleaned normally. enterCount=%d\n", cnt)
 	}
-	time.Sleep(10 * time.Minute)
-
 }
