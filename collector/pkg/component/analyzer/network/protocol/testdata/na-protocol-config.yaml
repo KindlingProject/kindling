@@ -1,10 +1,12 @@
 analyzers:
   networkanalyzer:
+    event_channel_size: 10000
     connect_timeout: 100
     fd_reuse_timeout: 60
     no_response_threshold: 120
     response_slow_threshold: 500
     enable_conntrack: false
+    ignore_dns_rcode3_error: true
     conntrack_max_state_size: 131072
     conntrack_rate_limit: 500
     proc_root: /proc
@@ -28,6 +30,7 @@ analyzers:
       - key: "dns"
         ports: [ 53 ]
         slow_threshold: 100
+        disable_discern: true
       - key: "rocketmq"
         slow_threshold: 500
       - key: "NOSUPPORT"

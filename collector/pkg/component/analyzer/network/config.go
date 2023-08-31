@@ -10,6 +10,7 @@ const (
 type Config struct {
 	// This option is set only for testing. We enable it by default otherwise the function will not work.
 	EnableTimeoutCheck  bool
+	EventChannelSize    int `mapstructure:"event_channel_size"`
 	ConnectTimeout      int `mapstructure:"connect_timeout"`
 	FdReuseTimeout      int `mapstructure:"fd_reuse_timeout"`
 	NoResponseThreshold int `mapstructure:"no_response_threshold"`
@@ -17,6 +18,7 @@ type Config struct {
 	ResponseSlowThreshold int `mapstructure:"response_slow_threshold"`
 
 	EnableConntrack       bool   `mapstructure:"enable_conntrack"`
+	IgnoreDnsRcode3Error  bool   `mapstructure:"ignore_dns_rcode3_error"`
 	ConntrackMaxStateSize int    `mapstructure:"conntrack_max_state_size"`
 	ConntrackRateLimit    int    `mapstructure:"conntrack_rate_limit"`
 	ProcRoot              string `mapstructure:"proc_root"`
@@ -28,12 +30,14 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
+		EventChannelSize:      10000,
 		EnableTimeoutCheck:    true,
 		ConnectTimeout:        100,
 		FdReuseTimeout:        15,
 		NoResponseThreshold:   120,
 		ResponseSlowThreshold: 500,
 		EnableConntrack:       true,
+		IgnoreDnsRcode3Error:  false,
 		ConntrackMaxStateSize: 131072,
 		ConntrackRateLimit:    500,
 		ProcRoot:              "/proc",

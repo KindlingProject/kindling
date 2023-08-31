@@ -291,7 +291,7 @@ func newExporters(context context.Context, cfg *Config, telemetry *component.Tel
 }
 
 var exponentialInt64Boundaries = []float64{10, 25, 50, 80, 130, 200, 300,
-	400, 500, 700, 1000, 2000, 5000, 30000}
+	400, 500, 700, 1000, 1500, 2000, 5000, 30000}
 
 // exponentialInt64NanoSecondsBoundaries applies a multiplier to the exponential
 // Int64Boundaries: [ 5M, 10M, 20M, 40M, ...]

@@ -64,6 +64,8 @@ analyzers:
     need_process_info: false
   tcpmetricanalyzer:
   networkanalyzer:
+    # how many events can be held in the channel simultaneously before it's considered full.
+    event_channel_size: 10000 
     connect_timeout: 100
     # How many seconds to wait until we consider a request as complete.
     fd_reuse_timeout: 2
@@ -73,6 +75,10 @@ analyzers:
     response_slow_threshold: 500
     # Whether enable conntrack module to find pod's ip when calling service
     enable_conntrack: true
+    # Whether to ignore DNS responses with RCODE 3 (Name Error) as errors. 
+    # Useful in Kubernetes clusters using ClusterFirst DNS policy, where KubeDNS may return RCODE 3 for public domains.
+    # Set to true to treat RCODE 3 as non-errors, default is false.
+    ignore_dns_rcode3_error: false
     conntrack_max_state_size: 131072
     conntrack_rate_limit: 500
     proc_root: /proc

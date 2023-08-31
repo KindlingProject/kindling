@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/hex"
 	"math/rand"
 	"os"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer"
@@ -43,12 +45,17 @@ type NetworkAnalyzer struct {
 	protocolMap      map[string]*protocol.ProtocolParser
 	parserFactory    *factory.ParserFactory
 	parsers          []*protocol.ProtocolParser
+	udpDnsParser     *protocol.ProtocolParser
 
 	dataGroupPool      DataGroupPool
+	dnsRequestMonitor  sync.Map
 	requestMonitor     sync.Map
 	tcpMessagePairSize int64
 	udpMessagePairSize int64
 	telemetry          *component.TelemetryTools
+
+	eventChan chan *model.KindlingEvent
+	stopChan  chan bool
 
 	// snaplen is the maximum data size the event could accommodate bytes.
 	// It is set by setting the environment variable SNAPLEN. See https://github.com/KindlingProject/kindling/pull/387.
@@ -62,6 +69,9 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		dataGroupPool: NewDataGroupPool(),
 		nextConsumers: consumers,
 		telemetry:     telemetry,
+
+		eventChan: make(chan *model.KindlingEvent, config.EventChannelSize),
+		stopChan:  make(chan bool),
 	}
 	if config.EnableConntrack {
 		connConfig := &conntracker.Config{
@@ -75,8 +85,9 @@ func NewNetworkAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, co
 		na.conntracker, _ = conntracker.NewConntracker(connConfig)
 	}
 
-	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
+	na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod), factory.WithIgnoreDnsRcode3Error(na.cfg.IgnoreDnsRcode3Error))
 	na.snaplen = getSnaplenEnv()
+
 	return na
 }
 
@@ -143,11 +154,17 @@ func (na *NetworkAnalyzer) Start() error {
 	parsers = append(parsers, na.parserFactory.GetGenericParser())
 	na.parsers = parsers
 
+	// Add Udp Dns
+	na.udpDnsParser = na.parserFactory.GetUdpDnsParser()
+
 	rand.Seed(time.Now().UnixNano())
+	go na.ConsumeEventFromChannel()
 	return nil
 }
 
 func (na *NetworkAnalyzer) Shutdown() error {
+	close(na.stopChan)
+
 	// TODO: implement
 	return nil
 }
@@ -157,6 +174,25 @@ func (na *NetworkAnalyzer) Type() analyzer.Type {
 }
 
 func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
+	na.eventChan <- evt
+	return nil
+}
+
+func (na *NetworkAnalyzer) ConsumeEventFromChannel() {
+	for {
+		select {
+		case evt := <-na.eventChan:
+			err := na.processEvent(evt)
+			if err != nil {
+				na.telemetry.Logger.Error("error happened when processing event: ", zap.Error(err))
+			}
+		case <-na.stopChan:
+			return
+		}
+	}
+}
+
+func (na *NetworkAnalyzer) processEvent(evt *model.KindlingEvent) error {
 	if evt.Category != model.Category_CAT_NET {
 		return nil
 	}
@@ -176,7 +212,49 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 
 	// if not dns and udp == 1, return
 	if fd.GetProtocol() == model.L4Proto_UDP {
-		if _, ok := na.protocolMap[protocol.DNS]; !ok {
+		if protocolName, ok := na.staticPortMap[evt.GetDport()]; !ok || protocolName != protocol.DNS {
+			return nil
+		}
+		isRequest, err := evt.IsRequest()
+		if err != nil {
+			return err
+		}
+
+		udpKey := getUdpKey(evt)
+		if isRequest {
+			// We have only seen DNS queries use "sendmmsg" to send requests until now.
+			// Here we consider different messages as different requests which is what we have figured.
+			if evt.Name == constnames.SendMMsgEvent {
+				evtSlices := model.ConvertSendmmsg(evt)
+				for _, e := range evtSlices {
+					na.consumeUdpDnsRequest(e, udpKey)
+				}
+			} else {
+				na.consumeUdpDnsRequest(evt, udpKey)
+			}
+			return nil
+		} else {
+			if responseAttributes, success := parseDnsUdpResponse(na.udpDnsParser, evt); success {
+				if udpDnsInterface, exist := na.dnsRequestMonitor.Load(udpKey); exist {
+					dnsUdpCache := udpDnsInterface.(*DnsUdpCache)
+					matchRequest, size := dnsUdpCache.getMatchRequest(responseAttributes)
+					if size <= 0 {
+						// Clean Empty UdpCache.
+						na.dnsRequestMonitor.Delete(udpKey)
+					}
+					if matchRequest != nil {
+						mp := &messagePair{
+							request:  matchRequest,
+							response: evt,
+						}
+						records := make([]*model.DataGroup, 0)
+						records = append(records, na.getRecordWithSinglePair(mp, protocol.DNS, responseAttributes))
+						return na.distributeRecords(records)
+					}
+				}
+			} else {
+				na.telemetry.Logger.Warnf("Fail to parse dns response: %s", hex.EncodeToString(evt.GetData()))
+			}
 			return nil
 		}
 	}
@@ -211,6 +289,15 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 	}
 }
 
+func (na *NetworkAnalyzer) consumeUdpDnsRequest(evt *model.KindlingEvent, key udpKey) {
+	if parsedRequest, successs := parseDnsUdpRequest(na.udpDnsParser, evt); successs {
+		udpDnsInterface, _ := na.dnsRequestMonitor.LoadOrStore(key, newDnsUdpCache())
+		udpDnsInterface.(*DnsUdpCache).addRequest(parsedRequest)
+	} else {
+		na.telemetry.Logger.Warnf("Fail to parse dns request: %s", hex.EncodeToString(evt.GetData()))
+	}
+}
+
 func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 	timer := time.NewTicker(1 * time.Second)
 	for {
@@ -231,6 +318,31 @@ func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
 				}
 				return true
 			})
+			na.dnsRequestMonitor.Range(func(k, v interface{}) bool {
+				dnsCache := v.(*DnsUdpCache)
+				dnsCache.requestCache.Range(func(k2, v2 interface{}) bool {
+					udpReq := v2.(*udpRequest)
+					var duration = time.Now().UnixNano()/1000000000 - int64(udpReq.event.Timestamp)/1000000000
+					if duration >= int64(na.cfg.getNoResponseThreshold()) {
+						dnsCache.deleteRequest(k2)
+						// No Response Request
+						records := make([]*model.DataGroup, 0)
+						mp := &messagePair{
+							request: udpReq.event,
+						}
+						records = append(records, na.getRecordWithSinglePair(mp, protocol.DNS, udpReq.attritutes))
+						_ = na.distributeRecords(records)
+					}
+					return true
+				})
+				if dnsCache.isEmpty() {
+					na.dnsRequestMonitor.Delete(k)
+				}
+				return true
+			})
+		case <-na.stopChan:
+			timer.Stop()
+			return
 		}
 	}
 }
@@ -362,6 +474,10 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	// Case 2 Request 498   Connect/Request                         Request
 	// Case 3 Normal             Connect/Request/Response   Request/Response
 	records := na.parseProtocols(oldPairs)
+	return na.distributeRecords(records)
+}
+
+func (na *NetworkAnalyzer) distributeRecords(records []*model.DataGroup) error {
 	for _, record := range records {
 		if ce := na.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
 			na.telemetry.Logger.Debug("NetworkAnalyzer To NextProcess:\n" + record.String())
@@ -442,7 +558,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 	}
 
 	// Mergable Data
-	requestMsg := protocol.NewRequestMessage(mps.requests.getData(), mps.requests.event.Ctx.FdInfo.GetProtocol())
+	requestMsg := protocol.NewRequestMessage(mps.requests.getData())
 	if !parser.ParseRequest(requestMsg) {
 		// Parse failure
 		return nil
@@ -455,7 +571,7 @@ func (na *NetworkAnalyzer) parseProtocol(mps *messagePairs, parser *protocol.Pro
 		return na.getRecords(mps, parser.GetProtocol(), requestMsg.GetAttributes())
 	}
 
-	responseMsg := protocol.NewResponseMessage(mps.responses.getData(), requestMsg.GetAttributes(), mps.responses.event.Ctx.FdInfo.GetProtocol())
+	responseMsg := protocol.NewResponseMessage(mps.responses.getData(), requestMsg.GetAttributes())
 	if !parser.ParseResponse(responseMsg) {
 		// Parse failure
 		return nil
@@ -471,7 +587,7 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 	parsedReqMsgs := make([]*protocol.PayloadMessage, size)
 	for i := 0; i < size; i++ {
 		req := mps.requests.getEvent(i)
-		requestMsg := protocol.NewRequestMessage(req.GetData(), mps.requests.event.Ctx.FdInfo.GetProtocol())
+		requestMsg := protocol.NewRequestMessage(req.GetData())
 		if !parser.ParseRequest(requestMsg) {
 			// Parse failure
 			return nil
@@ -497,7 +613,7 @@ func (na *NetworkAnalyzer) parseMultipleRequests(mps *messagePairs, parser *prot
 		size := mps.responses.size()
 		for i := 0; i < size; i++ {
 			resp := mps.responses.getEvent(i)
-			responseMsg := protocol.NewResponseMessage(resp.GetData(), model.NewAttributeMap(), mps.responses.event.Ctx.FdInfo.GetProtocol())
+			responseMsg := protocol.NewResponseMessage(resp.GetData(), model.NewAttributeMap())
 			if !parser.ParseResponse(responseMsg) {
 				// Parse failure
 				return nil

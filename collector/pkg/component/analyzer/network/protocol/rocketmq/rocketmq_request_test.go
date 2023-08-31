@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network/protocol"
-	"github.com/Kindling-project/kindling/collector/pkg/model"
 )
 
 func Test_parseHeader(t *testing.T) {
@@ -24,7 +23,7 @@ func Test_parseHeader(t *testing.T) {
 					1, 23, 4, 20, 123, 213, 4, 2, 34, 12, 23, 1, 23, 4, 20, 123,
 					213, 4, 2, 34, 12, 0, 0, 0, 0, 20, 123, 213, 4, 254, 34, 12,
 					23, 1, 23, 4, 20, 123, 213, 4, 2, 34, 12, 23, 1, 23, 4, 20,
-					123, 213, 4, 2, 34, 12, 23}, model.L4Proto_TCP),
+					123, 213, 4, 2, 34, 12, 23}),
 				header: &rocketmqHeader{ExtFields: map[string]string{}},
 			},
 		},

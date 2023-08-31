@@ -46,9 +46,13 @@ func TestRedisProtocol(t *testing.T) {
 
 func TestDnsProtocol(t *testing.T) {
 	testProtocol(t, "dns/server-event.yml",
+		"dns/server-trace.yml")
+	testProtocol(t, "dns/server-event.yml",
 		"dns/server-trace-multi.yml")
 	testProtocol(t, "dns/client-event.yml",
 		"dns/client-trace-sendmmg.yml")
+	testProtocol(t, "dns/client-event.yml",
+		"dns/client-trace-dns3.yml")
 	testProtocol(t, "dns/client-event-tcp.yml",
 		"dns/client-trace-tcp.yml")
 }
@@ -132,7 +136,7 @@ func prepareNetworkAnalyzer() *NetworkAnalyzer {
 			protocol.SetPayLoadLength(config.Key, config.PayloadLength)
 			na.slowThresholdMap[config.Key] = config.Threshold
 		}
-		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod))
+		na.parserFactory = factory.NewParserFactory(factory.WithUrlClusteringMethod(na.cfg.UrlClusteringMethod), factory.WithIgnoreDnsRcode3Error(na.cfg.IgnoreDnsRcode3Error))
 		na.snaplen = 200
 		// Do not start the timeout check otherwise the test maybe fail
 		na.cfg.EnableTimeoutCheck = false
@@ -164,11 +168,13 @@ func testProtocol(t *testing.T, eventYaml string, traceYamls ...string) {
 			results = []*model.DataGroup{}
 			events := trace.getSortedEvents(eventCommon)
 			for _, event := range events {
-				_ = na.ConsumeEvent(event)
+				_ = na.processEvent(event)
 			}
-			if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
-				var oldPairs = pairInterface.(*messagePairs)
-				_ = na.distributeTraceMetric(oldPairs, nil)
+			if model.L4Proto(eventCommon.Ctx.Fd.Protocol) == model.L4Proto_TCP {
+				if pairInterface, ok := na.requestMonitor.Load(getMessagePairKey(events[0])); ok {
+					var oldPairs = pairInterface.(*messagePairs)
+					_ = na.distributeTraceMetric(oldPairs, nil)
+				}
 			}
 			trace.Validate(t, results)
 		})
