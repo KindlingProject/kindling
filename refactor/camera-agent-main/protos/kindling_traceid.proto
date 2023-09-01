@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = ".;model";
+
+package kindling;
+
+// The Grpc service definition.
+service TraceIdService {
+    rpc SendTraceIds (TraceIds) returns (TraceIds) {}
+}
+
+message TraceIds {
+    int64 queryTime = 1;
+    repeated string traceIds = 2;
+}

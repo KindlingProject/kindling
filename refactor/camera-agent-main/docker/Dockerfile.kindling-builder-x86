@@ -1,0 +1,38 @@
+FROM centos:7
+
+RUN yum install -y  epel-release \
+                    patch \
+                    glibc-static \
+                    make \
+                    gcc-c++ \
+                    libstdc++-static \
+                    elfutils-libelf-devel \
+                    qt5-qtbase-devel \
+                    openssl-devel \
+                    git \
+                    docker \
+    && yum clean all
+
+RUN curl -SL https://cmake.org/files/v3.12/cmake-3.12.2-Linux-x86_64.tar.gz \
+    | tar -zxC /opt \
+    && ln -sf /opt/cmake-3.12.2-Linux-x86_64/bin/* /usr/bin/
+
+
+ENV PATH $PATH:/root/.cargo/bin
+ENV RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
+ENV RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
+ENV RUSTUP_IO_THREADS 1
+
+WORKDIR /source
+
+# Install Rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+COPY ./config ~/.cargo/config
+
+# Add Rust binaries to PATH
+ENV PATH $PATH:/root/.cargo/bin
+
+# Set the default toolchain
+RUN /root/.cargo/bin/rustup default stable
+
+CMD ["/build.sh"]

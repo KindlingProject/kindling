@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camera-front-config
+  namespace: kindling
+data:
+  settings.js: |
+    const setting = {
+        esServerConfig: {
+            host: 'localhost',
+            port: '9200',
+            trace_index: 'span_trace_group_dev',
+            onoffcpu_index: 'camera_event_group_dev'
+        },
+        serverConfig: {
+            host: 'localhost',
+            port: '8080',
+        },
+        profileConfig: {
+            host: 'localhost',
+            port: '9503',
+        },
+        traceFilePath: '/tmp/kindling',
+        ratelimit: {
+            windowMs: 10 * 60 * 1000,
+            max: 500
+        },
+        port: 9504,
+    };
+    module.exports = setting;

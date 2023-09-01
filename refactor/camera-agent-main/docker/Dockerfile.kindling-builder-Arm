@@ -1,0 +1,23 @@
+FROM centos:centos7
+
+RUN yum install -y \
+    epel-release \
+    patch \
+    glibc-static \
+    make \
+    gcc-c++ \
+    libstdc++-static \
+    elfutils-libelf-devel \
+    qt5-qtbase-devel \
+    git \
+    && yum clean all
+
+# CMake in yum repository is too old(2.8.12), but 3.5.1 or higher is required.
+RUN curl -SL https://cmake.org/files/v3.26/cmake-3.26.0-linux-aarch64.tar.gz \
+    | tar -zxC /opt \
+    && ln -sf /opt/cmake-3.26.0-linux-aarch64/bin/* /usr/bin/
+
+RUN curl -SL https://dl.google.com/go/go1.20.3.linux-arm64.tar.gz \
+    | tar -zxC /usr/local
+
+ENV PATH=$PATH:/usr/local/go/bin

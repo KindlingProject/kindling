@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option go_package = ".;model";
+
+package kindling;
+
+// The Grpc service definition.
+service P9XService {
+    rpc QueryP9x (P9xRequest) returns (P9xResponse) {}
+}
+
+message P9xRequest {
+    string ip = 1;
+}
+
+message P9xResponse {
+    repeated P9xData datas = 1;
+}
+
+message P9xData {
+    string url = 1;
+    string containerId = 2;
+    double value = 3;
+}

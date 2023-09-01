@@ -1,0 +1,8 @@
+[submodule "probe/libs/agent-libs"]
+	path = probe/libs/agent-libs
+	url = http://10.10.103.61:31200/kindling-profiling/agent-libs.git
+	branch = kindling-dev
+[submodule "src/probe/libs/agent-libs"]
+	path = src/probe/libs/agent-libs
+	url = http://10.10.103.61:31200/kindling-profiling/agent-libs.git
+	branch = kindling-dev

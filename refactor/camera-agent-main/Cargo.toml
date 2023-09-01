@@ -1,0 +1,47 @@
+[package]
+name = "camera-agent"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_derive = "1.0"
+serde_yaml = "0.9.21"
+byteorder = "1.4.3"
+chrono = "0.4"
+log = "0.4"
+log4rs = "1.2.0"
+sysinfo = "0.29.2"
+crossbeam = "0.8.2"
+hostname = "0.3.1"
+
+ntp = "0.5.0"
+
+# Grpc
+grpc            = "0.8.3"
+protobuf        = "~2.18.2"
+futures         = "~0.3"
+grpc-protobuf = "0.8.3"
+
+# [build-dependencies]
+# protoc-rust-grpc = "0.8.3"
+serde_json = {version="1.0"}
+elasticsearch = "7.17.7-alpha.1"
+async-trait = "0.1.68"
+tokio = {version = "1.28.2", features = ["full"] }
+warp = "0.3"
+
+# Exporter: Prometheus + Opentelemetry
+prometheus = "0.13"
+hyper = { version = "0.14", features = ["full"] }
+opentelemetry_api = "0.19.0"
+opentelemetry_sdk = "0.19.0"
+opentelemetry-prometheus = "0.12.0"
+opentelemetry = { version = "0.19.0", features = ["rt-tokio"] }
+
+# Open This for improve flamegraph output
+# [profile.release]
+# debug = true

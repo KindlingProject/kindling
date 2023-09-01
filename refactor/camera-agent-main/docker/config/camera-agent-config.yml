@@ -1,0 +1,52 @@
+analyzers:
+  cpuanalyzer:
+    # segment_size defines how many segments(seconds) can be cached to wait for sending.
+    # The elder segments will be overwritten by the newer ones, so don't set it too low.
+    segment_size: 40
+  traceidanalyzer:
+    # open_java_trace_sampling is the switch for whether to use Java-Trace to trigger sampling.
+    open_java_trace_sampling: true
+    # Set Slow Time Threshold(ms).
+    java_trace_slow_time: 500
+    # Set the max wait time(s) for traceId.
+    java_trace_wait_second: 30
+processors:
+  sampleprocessor:
+    # sample_trace_repeat_num is the times of recheck trace is sampled.
+    sample_trace_repeat_num: 3
+    # Set the max wait time for sampled traceIds.
+    sample_trace_wait_time: 30
+    # Set duration for save 1 trace after hit same url.
+    sample_url_hit_duration: 5
+    # Ignore trace whose duration is less than the threshold(ms).
+    sample_trace_ignore_threshold: 100
+    # Set the threshold(ms) for slow, if set 0, then use p90 * rate.
+    sample_trace_threshold: 0
+    # Set the query interval(s) for update p9x.
+    promethues_query_interval: 30
+    # Set the rate for p9x value.
+    query_p9x_increase_rate: 1.1
+    # Store Profile when trace is tailBase stored.
+    store_profile_tailbase: false
+    # Set Receiver Ip
+    receiver_ip: 127.0.0.1
+    # Set Receiver Ip
+    receiver_port: 29090
+exporters:
+  cameraexporter:
+    # Options: ["file", "elasticsearch", "noop"]
+    storage: elasticsearch
+    # Effective when storage is "file"
+    file_config:
+      storage_path: /tmp/kindling
+      # Max file count for each process
+      max_file_count_each_process: 50
+    # Effective when storage is "elasticsearch"
+    es_config:
+      es_host: http://10.10.103.96:9200
+      index_suffix: dev
+  metricexporter:
+    # Options: ["log", "prometheus"]
+    type: prometheus
+    prometheus:
+      port: 9500

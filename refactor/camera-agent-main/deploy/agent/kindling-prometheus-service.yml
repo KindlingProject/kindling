@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: kindling-agent
+  name: kindling
+  namespace: kindling
+spec:
+  clusterIP: None
+  ports:
+  - name: metrics
+    port: 9500
+    protocol: TCP
+    targetPort: 9500
+  - name: observability-metrics
+    port: 9501
+    protocol: TCP
+    targetPort: 9501
+  selector:
+    k8s-app: kindling-agent
+  sessionAffinity: None
+  type: ClusterIP

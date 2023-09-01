@@ -1,0 +1,19 @@
+analyzers:
+  traceidanalyzer:
+    # open_java_trace_sampling is the switch for whether to use Java-Trace to trigger sampling.
+    open_java_trace_sampling: true
+  cpuanalyzer:
+
+processors:
+  sampleprocessor:
+    store_profile_tailbase: false
+
+exporters:
+  cameraexporter:
+    # Options: ["file", "elasticsearch"]
+    storage: file
+    # Effective when storage is "file"
+    file_config:
+    es_config:
+  prometheus:
+    port: 9500
