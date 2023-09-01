@@ -16,6 +16,7 @@
 
 ### Bug fixes
 - Fix the bug where DNS resolution would fail when UDP packets were received out of order. ([#565](https://github.com/KindlingProject/kindling/pull/565))
+- Add periodic cleanup of javatraces data to prevent continuous memory growth when trace-profiling is enabled. ([#514](https://github.com/KindlingProject/kindling/pull/514))
 
 In this release, we have a new contributor @YDMsama. Thanks and welcome! 🥳
 
