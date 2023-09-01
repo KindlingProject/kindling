@@ -5,6 +5,10 @@ const setting = {
         trace_index: 'single_net_request_metric_group_dev',
         onoffcpu_index: 'camera_event_group_dev'
     },
+    serverConfig: {
+        host: '10.10.103.96',
+        port: '8081',
+    },
     profileConfig: {
         host: 'localhost',
         port: '9503',
@@ -14,6 +18,6 @@ const setting = {
         windowMs: 10 * 60 * 1000,
         max: 500
     },
-    port: 9504,
+    port: 9900,
 };
 module.exports = setting;

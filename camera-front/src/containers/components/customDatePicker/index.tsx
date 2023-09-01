@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState } from 'react';
+import React, { CSSProperties, useEffect, useState } from 'react';
 import { Button, Select, Tooltip } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import RangeCalendar from 'rc-calendar/lib/RangeCalendar';
@@ -62,6 +62,7 @@ const timeRange: ITime[] = [
 interface Props {
     timeInfo?: any; // 时间对象
     onChange?: (timeInfo) => void;
+    showNavgite: boolean;
     placement?: 'left' | 'right';
 }
 function CustomDatePicker(props: Props) {
@@ -258,6 +259,8 @@ function CustomDatePicker(props: Props) {
             setInputValue(inputValue);
             setIsRecent(timeInfo.isRecent);
             setSelectTimeRange([moment(from), moment(to)]);
+        } else {
+            changeRange(timeRange[0].value);
         }
     }, [timeInfo])
     return (
@@ -279,12 +282,16 @@ function CustomDatePicker(props: Props) {
                         ))
                     }
                 </Select>
-                <Tooltip placement='bottom' title={`查看后移${(_.find(timeRange, { value: rangeValue }) as ITime).text}时间`}>
-                    <Button icon={<ArrowLeftOutlined />} className='f-ml8' onClick={subTime} />
-                </Tooltip>
-                <Tooltip placement='bottom' title={`查看前移${(_.find(timeRange, { value: rangeValue }) as ITime).text}时间`}>
-                    <Button icon={<ArrowRightOutlined />} disabled={isRecent} onClick={addTime} className='f-ml8' />
-                </Tooltip>
+                {
+                    props.showNavgite ? <React.Fragment>
+                        <Tooltip placement='bottom' title={`查看后移${(_.find(timeRange, { value: rangeValue }) as ITime).text}时间`}>
+                            <Button icon={<ArrowLeftOutlined />} className='f-ml8' onClick={subTime} />
+                        </Tooltip>
+                        <Tooltip placement='bottom' title={`查看前移${(_.find(timeRange, { value: rangeValue }) as ITime).text}时间`}>
+                            <Button icon={<ArrowRightOutlined />} disabled={isRecent} onClick={addTime} className='f-ml8' />
+                        </Tooltip>
+                    </React.Fragment> : null
+                }
             </div>
             <div className={isDisableOk ? 'calender_disable_ok' : ''} style={{ display: displayBlock, ...datePickerStyle }}>
                 <div style={{ position: 'relative' }}>

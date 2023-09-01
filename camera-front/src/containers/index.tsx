@@ -3,6 +3,10 @@ import { Outlet } from "react-router-dom";
 import Header from './components/header';
 
 class HomeWarp extends Component {
+    componentDidMount(): void {
+        let body = document.getElementsByTagName('body')[0];
+        body.className = `light-theme`;
+    }
     render() {
         return (
             <div className="home">

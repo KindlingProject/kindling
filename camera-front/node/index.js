@@ -24,6 +24,17 @@ const profileProxy = createProxyMiddleware('/profile', {
 });
 app.use(profileProxy);
 
+const serverAddress = 'http://' + settings.serverConfig.host + ':' + settings.serverConfig.port;
+const serverProxy = createProxyMiddleware('/cause', {
+    target: serverAddress,
+    secure: false,
+    changeOrigin: true,
+    pathRewrite: {
+        '^/cause': ''
+    }
+});
+app.use(serverProxy);
+
 const limiter = rateLimit({
     windowMs: settings.ratelimit.windowMs,
     max: settings.ratelimit.max
