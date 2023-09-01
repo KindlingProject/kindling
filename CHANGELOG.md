@@ -5,16 +5,19 @@
 
 ## Unreleased
 ### Enhancements
+- Improve the Grafana plugin's performance by reducing the amount of data requiring queries. Now the plugin queries through Grafana's api proxy. ([#555](https://github.com/KindlingProject/kindling/pull/555))
 - Expand the histogram bucket of otelexpoerter (Add 1500ms). ([#563](https://github.com/KindlingProject/kindling/pull/563))
 - Set default values of `store_external_src_ip` and `StoreExternalSrcIP` to false to reduce occurrences of unexpected src IP data. ([#562](https://github.com/KindlingProject/kindling/pull/562))
-- Optimized the `networkanalyzer` component of the probe analyzer by utilizing Go's goroutines, enabling concurrent execution. ([#558](https://github.com/KindlingProject/kindling/pull/558))
-- Added a new configuration option ignore_dns_rcode3_error to allow users to specify whether DNS responses with RCODE 3 should be treated as errors. ([#566](https://github.com/KindlingProject/kindling/pull/566))
-- Improved event processing efficiency with batch event retrieval in cgo. ([#560](https://github.com/KindlingProject/kindling/pull/560))
+- Increase maximum throughput capacity for event handling. Optimized the `networkanalyzer` component of the probe analyzer by utilizing Go's goroutines, enabling concurrent execution. ([#558](https://github.com/KindlingProject/kindling/pull/558))
+- Add a new configuration option ignore_dns_rcode3_error to allow users to specify whether DNS responses with RCODE 3 should be treated as errors. ([#566](https://github.com/KindlingProject/kindling/pull/566))
+- Improve event processing efficiency with batch event retrieval in cgo. ([#560](https://github.com/KindlingProject/kindling/pull/560))
+- Reduce the data volume of the `kindling_k8s_workload_info` metric by having each agent only send workloads present on its own node.([#554](https://github.com/KindlingProject/kindling/pull/554))
+- Provide a new self metric for probe events, including the count of skipped and dropped events. ([#553](https://github.com/KindlingProject/kindling/pull/553))
 
 ### Bug fixes
-- Enhance dns with udp which is out of order.([#565](https://github.com/KindlingProject/kindling/pull/565))
-- Fix the bug where sending repetitive k8s_info_workload. Now each node only sends its own info.([#554](https://github.com/KindlingProject/kindling/pull/554))
-- Provide a new self metric for probe events. (skipped events/dropped events)([#553](https://github.com/KindlingProject/kindling/pull/553))
+- Fix the bug where DNS resolution would fail when UDP packets were received out of order. ([#565](https://github.com/KindlingProject/kindling/pull/565))
+
+In this release, we have a new contributor @YDMsama. Thanks and welcome! 🥳
 
 ## v0.8.0 - 2023-06-30
 ### New features
