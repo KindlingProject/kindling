@@ -31,6 +31,9 @@ function Header(props: any) {
             case 'stack':
                 path = '/stack';
                 break;
+            case 'cause':
+                path = '/traceList';
+                break;
             default:
                 path = '/';
         }
@@ -84,6 +87,9 @@ function Header(props: any) {
                     {/* <Menu.Item key="stack" icon={<RadarChartOutlined />}>
                         堆栈分析
                     </Menu.Item> */}
+                    <Menu.Item key="cause" icon={<RadarChartOutlined />}>
+                        根因推导
+                    </Menu.Item>
                 </Menu>
             </div>
             <div className={style.home_header_right}>

@@ -60,3 +60,20 @@ export const getFileDetail = (params: any) => {
 export const toggleProfile = (params: any) => {
     return axios.post(basicUrl + '/profile', params);
 }
+
+// 根因推导相关接口
+export const getTraceTopology = (traceId) => {
+    return axios.get(basicUrl + `/cause/query/relationship/${traceId}`);
+}
+
+export const getCauseTraceList = (params) => {
+    return axios.post(basicUrl + `/cause/query/traceIds`, params);
+}
+
+export const getCauseReports = (traceId, spanId) => {
+    return axios.get(basicUrl + `/cause/flows/run/${traceId}/${spanId}`);
+}
+
+export const getCauseReportsMoreInfo = (url) => {
+    return axios.get(basicUrl + `/cause${url}`);
+}
