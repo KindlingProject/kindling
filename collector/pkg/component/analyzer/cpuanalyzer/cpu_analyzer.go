@@ -27,17 +27,18 @@ const (
 )
 
 type CpuAnalyzer struct {
-	cfg             *Config
-	cpuPidEvents    map[uint32]map[uint32]*TimeSegments
-	routineSize     *atomic.Int32
-	lock            sync.RWMutex
-	telemetry       *component.TelemetryTools
-	tidExpiredQueue *tidDeleteQueue
-	javaTraces      map[string]*TransactionIdEvent
-	nextConsumers   []consumer.Consumer
-	metadata        *kubernetes.K8sMetaDataCache
-
-	stopProfileChan chan struct{}
+	cfg                   *Config
+	cpuPidEvents          map[uint32]map[uint32]*TimeSegments
+	routineSize           *atomic.Int32
+	lock                  sync.RWMutex
+	jtlock                sync.RWMutex
+	telemetry             *component.TelemetryTools
+	tidExpiredQueue       *tidDeleteQueue
+	javaTraces            map[string]*TransactionIdEvent
+	javaTraceExpiredQueue *javaTraceDeleteQueue
+	nextConsumers         []consumer.Consumer
+	metadata              *kubernetes.K8sMetaDataCache
+	stopProfileChan       chan struct{}
 }
 
 func (ca *CpuAnalyzer) Type() analyzer.Type {
@@ -59,13 +60,16 @@ func NewCpuAnalyzer(cfg interface{}, telemetry *component.TelemetryTools, consum
 	}
 	ca.cpuPidEvents = make(map[uint32]map[uint32]*TimeSegments, 100000)
 	ca.tidExpiredQueue = newTidDeleteQueue()
+	ca.javaTraceExpiredQueue = newJavaTraceDeleteQueue()
 	ca.javaTraces = make(map[string]*TransactionIdEvent, 100000)
 	newSelfMetrics(telemetry.MeterProvider, ca)
 	return ca
 }
 
 func (ca *CpuAnalyzer) Start() error {
-	// Disable receiving and sending the profiling data by default.
+	interval := time.Duration(ca.cfg.JavaTraceDeleteInterval) * time.Second
+	expiredDuration := time.Duration(ca.cfg.JavaTraceExpirationTime) * time.Second
+	go ca.JavaTraceDelete(interval, expiredDuration)
 	return nil
 }
 
@@ -116,10 +120,18 @@ func (ca *CpuAnalyzer) ConsumeTransactionIdEvent(event *model.KindlingEvent) {
 }
 
 func (ca *CpuAnalyzer) analyzerJavaTraceTime(ev *TransactionIdEvent) {
+	ca.jtlock.Lock()
+	defer ca.jtlock.Unlock()
+	key := ev.TraceId + ev.PidString
+	ca.javaTraceExpiredQueue.Push(deleteVal{key: key, enterTime: time.Now()})
 	if ev.IsEntry == 1 {
-		ca.javaTraces[ev.TraceId+ev.PidString] = ev
+		ca.javaTraces[key] = ev
 	} else {
-		oldEvent := ca.javaTraces[ev.TraceId+ev.PidString]
+		oldEvent, ok := ca.javaTraces[key]
+		if !ok {
+			ca.telemetry.Logger.Warnf("No javaTraces traceid=%s, pid=%s", ev.TraceId, ev.PidString)
+			return
+		}
 		pid, _ := strconv.ParseInt(ev.PidString, 10, 64)
 		spendTime := ev.Timestamp - oldEvent.Timestamp
 		contentKey := oldEvent.Url

@@ -51,6 +51,12 @@ analyzers:
     # edge_events_window_size is the size of the duration window that seats the edge events.
     # The unit is second. The greater it is, the more data will be stored.
     edge_events_window_size: 2
+    # java_trace_delete_interval is the interval for cleaning up expired data in javatraces.
+    # The unit is seconds.
+    java_trace_delete_interval: 20
+    # java_trace_expiration_time is the expiration time for data in javatraces.
+    # The unit is seconds.
+    java_trace_expiration_time: 120
   tcpconnectanalyzer:
     channel_size: 10000
     wait_event_second: 10
@@ -59,7 +65,7 @@ analyzers:
   tcpmetricanalyzer:
   networkanalyzer:
     # how many events can be held in the channel simultaneously before it's considered full.
-    event_channel_size: 10000 
+    event_channel_size: 10000
     connect_timeout: 100
     # How many seconds to wait until we consider a request as complete.
     fd_reuse_timeout: 2
@@ -69,7 +75,7 @@ analyzers:
     response_slow_threshold: 500
     # Whether enable conntrack module to find pod's ip when calling service
     enable_conntrack: true
-    # Whether to ignore DNS responses with RCODE 3 (Name Error) as errors. 
+    # Whether to ignore DNS responses with RCODE 3 (Name Error) as errors.
     # Useful in Kubernetes clusters using ClusterFirst DNS policy, where KubeDNS may return RCODE 3 for public domains.
     # Set to true to treat RCODE 3 as non-errors, default is false.
     ignore_dns_rcode3_error: false
