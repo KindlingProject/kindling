@@ -228,6 +228,13 @@ exporters:
       endpoint: 10.10.10.10:8080
     stdout:
       collect_period: 15s
+    memcleanup:
+      # unit: Hour
+      # set 0 to disable
+      restart_period: 12
+      # unit: Day
+      # set 0 to disable (restart at night)
+      restart_every_n_days: 0
 
 observability:
   logger:
