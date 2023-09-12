@@ -13,10 +13,12 @@
 - Improve event processing efficiency with batch event retrieval in cgo. ([#560](https://github.com/KindlingProject/kindling/pull/560))
 - Reduce the data volume of the `kindling_k8s_workload_info` metric by having each agent only send workloads present on its own node.([#554](https://github.com/KindlingProject/kindling/pull/554))
 - Provide a new self metric for probe events, including the count of skipped and dropped events. ([#553](https://github.com/KindlingProject/kindling/pull/553))
+- Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours or days. Default setting is a restart every 12 hours. ([#577](https://github.com/KindlingProject/kindling/pull/577))
 
 ### Bug fixes
 - Fix the bug where DNS resolution would fail when UDP packets were received out of order. ([#565](https://github.com/KindlingProject/kindling/pull/565))
 - Add periodic cleanup of javatraces data to prevent continuous memory growth when trace-profiling is enabled. ([#514](https://github.com/KindlingProject/kindling/pull/514))
+- Implement automatic restarts for OtelExporter to mitigate slow memory growth due to label data. ([#577](https://github.com/KindlingProject/kindling/pull/577))
 
 In this release, we have a new contributor @YDMsama. Thanks and welcome! 🥳
 
