@@ -42,7 +42,7 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, t
   const [graphData, setGraphData] = useState<any>({}); 
   const [layout, setLayout] = useState<'dagre' | 'force'>('dagre'); 
   const [loading, setLoading] = useState<boolean>(false); 
-  const [showCheckbox, setShowCheckbox] = useState<boolean>(true); // 是否显示show services的切换选项
+  const [showCheckbox] = useState<boolean>(true); // 是否显示show services的切换选项
   const [showService, setShowService] = useState<boolean>(false); // show services
   const [showView, setShowView] = useState<boolean>(false); // 单个workload拓扑视图下  workload与pod切换的选项
   const [firstChangeDir, setFirstChangeDir] = useState<boolean>(false);
@@ -199,11 +199,9 @@ export const TopologyPanel: React.FC<Props> = ({ options, data, width, height, t
     setLineMetric('latency');
     setActiveMetricList(initActiveMetricList);
     if (namespace.indexOf(',') > -1) {
-      setShowCheckbox(true);
-      setShowView(workload.indexOf(',') === -1)
+      setShowView(workload.indexOf(',') === -1);
     } else {
-      setShowCheckbox(false);
-      setShowView(false);
+      setShowView(workload.indexOf(',') === -1);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [namespace, workload]);
