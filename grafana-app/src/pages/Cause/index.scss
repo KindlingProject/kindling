@@ -1,0 +1,124 @@
+
+$fontColor: #b8b8b8;
+.cause_warp {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.report_content {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 50px;
+    display: flex;
+}
+.topology_warp {
+    width: 30%;
+    height: 100%;
+    margin-right: 8px;
+    .chart_warp {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        .chart_btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+    }
+}
+.trace_topology_modal {
+    width: 80vw;
+}
+.report_warp {
+    flex: 1;
+    height: 100%;
+    margin-left: 8px;
+    overflow-y: auto;
+}
+.commonLine {
+    height: 24px;
+    line-height: 24px;
+    border-radius: 2px;
+    color: #FFFFFF;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: bold;
+}
+.duration_warp {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0;
+    .duration_item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        >span {
+            &:first-child {
+                text-align: end;
+                width: 80px;
+                display: inline-block;
+                margin-right: 10px;
+                font-size: smaller;
+                color: $fontColor;
+            }
+            &:last-child {
+                margin-left: 5px;
+                font-size: 12px;
+                color: $fontColor;
+                font-weight: 500;
+            }
+        }
+        .health_line {
+            @extend .commonLine;
+            min-width: 20px;
+            background-color: #5fe061;
+        }
+        .abnormal_line {
+            @extend .commonLine;
+            width: 80%;
+            background-color: #ff3c3c;
+        }
+    }
+}
+
+.conclusion_tag {
+    display: inline-flex;
+    padding: 2px 5px;
+    border-radius: 2px;
+    background: rgba(242, 73, 92, 0.15);
+    border: 1px solid rgb(151, 11, 27);
+    color: rgb(247, 144, 156);
+    font-weight: 400;
+    gap: 2px;
+    font-size: 0.857143rem;
+    line-height: 1.5;
+    align-items: center;
+}
+
+.log_warp {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid #7c7c7c;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    li {
+        padding: 5px 10px;
+        &:not(:last-child) {
+            border-bottom: 1px solid #7c7c7c;
+        }
+    }
+}
+
+
+.trace_list_warp {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+}

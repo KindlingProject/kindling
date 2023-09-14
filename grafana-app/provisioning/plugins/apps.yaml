@@ -1,0 +1,5 @@
+apiVersion: 1
+
+apps:
+  - type: 'kindling-demo-app'
+    disabled: false
