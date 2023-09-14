@@ -5,6 +5,10 @@
 
 ## Unreleased
 ### Enhancements
+- Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours or days. Default setting is a restart every 12 hours. ([#577](https://github.com/KindlingProject/kindling/pull/577))
+
+## v0.8.1 - 2023-09-01
+### Enhancements
 - Improve the Grafana plugin's performance by reducing the amount of data requiring queries. Now the plugin queries through Grafana's api proxy. ([#555](https://github.com/KindlingProject/kindling/pull/555))
 - Expand the histogram bucket of otelexpoerter (Add 1500ms). ([#563](https://github.com/KindlingProject/kindling/pull/563))
 - Set default values of `store_external_src_ip` and `StoreExternalSrcIP` to false to reduce occurrences of unexpected src IP data. ([#562](https://github.com/KindlingProject/kindling/pull/562))
@@ -13,12 +17,10 @@
 - Improve event processing efficiency with batch event retrieval in cgo. ([#560](https://github.com/KindlingProject/kindling/pull/560))
 - Reduce the data volume of the `kindling_k8s_workload_info` metric by having each agent only send workloads present on its own node.([#554](https://github.com/KindlingProject/kindling/pull/554))
 - Provide a new self metric for probe events, including the count of skipped and dropped events. ([#553](https://github.com/KindlingProject/kindling/pull/553))
-- Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours or days. Default setting is a restart every 12 hours. ([#577](https://github.com/KindlingProject/kindling/pull/577))
 
 ### Bug fixes
 - Fix the bug where DNS resolution would fail when UDP packets were received out of order. ([#565](https://github.com/KindlingProject/kindling/pull/565))
 - Add periodic cleanup of javatraces data to prevent continuous memory growth when trace-profiling is enabled. ([#514](https://github.com/KindlingProject/kindling/pull/514))
-- Implement automatic restarts for OtelExporter to mitigate slow memory growth due to label data. ([#577](https://github.com/KindlingProject/kindling/pull/577))
 
 In this release, we have a new contributor @YDMsama. Thanks and welcome! 🥳
 
