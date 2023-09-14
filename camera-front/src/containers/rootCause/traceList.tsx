@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { List, Form, Input, Button, message } from 'antd';
 import CustomDatePicker from '@/containers/components/customDatePicker';
 import _ from 'lodash';
@@ -30,6 +30,10 @@ function TraceLsit() {
             })
         })
     }
+
+    useEffect(() => {
+        onSearch();
+    }, [])
 
     return (
         <div className='cause_tracelist_warp'> 

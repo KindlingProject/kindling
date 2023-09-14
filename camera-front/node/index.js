@@ -3,11 +3,8 @@
 const express = require('express');
 const app = express();
 const http = require('http');
-const serveStatic = require('serve-static');
 const bodyParser = require('body-parser');
 const _ = require('lodash');
-const async = require('async');
-const path = require('path');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const history = require('connect-history-api-fallback');
@@ -48,12 +45,9 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(compression());
-// app.use(history());
+app.use(history());
 
 app.use(express.static('../dist'));
-console.log(__dirname);
-// app.set('views', path.join(__dirname, 'dist'));
-// app.use(serveStatic(path.join(__dirname, 'dist')));
 
 app.get("/test", function(req, res, next) {
     // res.render("test.html");

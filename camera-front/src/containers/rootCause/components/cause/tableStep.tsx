@@ -71,7 +71,7 @@ function TableStep({ data }: IProps) {
             }])
         } else {
             columnList.splice(1, 0, {
-                title: '调用值',
+                title: '值',
                 dataIndex: 'current',
                 render: (text, record: ITData) => {
                     if (record.currentAction) {
@@ -115,7 +115,7 @@ function TableStep({ data }: IProps) {
                 <Table size='small' columns={columns} dataSource={tableData} bordered pagination={false}></Table>
                 <div className='step-conclusion'>
                     <span>分析结论：</span>
-                    <Tag color="error">{data.conclusion}</Tag>
+                    <Tag color="error" className='custom-tag'>{data.conclusion}</Tag>
                 </div>
             </div>
         </div>

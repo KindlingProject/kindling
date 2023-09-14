@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from './request';
 
 console.log('env.DEV', import.meta.env.DEV);
 const basicUrl = import.meta.env.DEV ? '/api' : '';
@@ -61,9 +61,17 @@ export const toggleProfile = (params: any) => {
     return axios.post(basicUrl + '/profile', params);
 }
 
-// 根因推导相关接口
+
+// export const getTraceTopology = (params) => {
+//     return axios.get(basicUrl + '/esserver/getTraceData', {params});
+// }
+
 export const getTraceTopology = (traceId) => {
     return axios.get(basicUrl + `/cause/query/relationship/${traceId}`);
+}
+
+export const getSingleTraceTopology = (traceId) => {
+    return axios.get(basicUrl + `/cause/query/mutatedtraces/${traceId}`);
 }
 
 export const getCauseTraceList = (params) => {

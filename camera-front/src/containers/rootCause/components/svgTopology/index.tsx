@@ -37,12 +37,11 @@ function SingleLinkTopology({ data }: IProps) {
         container.innerHTML = ''
 
         const nodeOrder = getNodeOrder(data);
-        const maxTime = _.chain(data.nodes).map(node => [node.list[0].p90, node.list[0].totalTime]).flatten().max().value();
-        console.log('maxTime', maxTime);
-        const WIDTH = chartRef.current.clientWidth;
-        const HEIGHT = chartRef.current.clientHeight;
+        const maxTime = _.chain(data.nodes).map(node => [node.selfP90, node.selfTime, (node.p90 - node.selfP90), (node.totalTime - node.selfTime)]).flatten().max().value();
 
-        const svg = d3.select('#nodeChart').append('svg').style('width', WIDTH);
+        const WIDTH = chartRef.current.clientWidth;
+
+        const svg = d3.select('#nodeChart').append('svg').style('width', WIDTH).style('height', data.nodes.length * 150 + 20);
         const g = svg.append('g').attr('id', 'chart_warp');
 
         const nodeWarp = g.append('g').attr('id', 'node_warp');
@@ -84,64 +83,110 @@ function SingleLinkTopology({ data }: IProps) {
                 .attr('x', 70)
                 .attr('y', 50);
                 
-            let timeInfo = node.list[0];
-            const timeY = 80;
+            const timeY = 100;
             const timeX = 100;
-            const timeMaxWidth = WIDTH - 100;
+
+            const selfTimeMaxWidth = (WIDTH - timeX) * 0.4
+            const otherTimeMaxWidth = (WIDTH - timeX) * 0.6
             const timeTextYOffest = 15;
+
+            nodeG.append("line")
+                .attr('class', 'time_line')
+                .attr("x1", timeX + selfTimeMaxWidth + 1)
+                .attr("y1", timeY - 20)  
+                .attr("x2", timeX + selfTimeMaxWidth + 1)
+                .attr("y2", timeY + 65);
+
+            nodeG.append('text')
+                .text('selfTime')
+                .attr('style', 'font-size: 11px')
+                .attr('x', function() {
+                    let textlen = this.getComputedTextLength();
+                    return timeX + selfTimeMaxWidth - textlen - 5;
+                })
+                .attr('y', timeY - 10);
+
+            nodeG.append('text')
+                .text('otherTime')
+                .attr('style', 'font-size: 11px')
+                .attr('x', timeX + selfTimeMaxWidth + 7)
+                .attr('y', timeY - 10);
+            
+            // 绘制P90
             nodeG.append('text')
                 .text('P90')
                 .attr('class', 'time_title')
                 .attr('x', 70)
                 .attr('y', timeY + timeTextYOffest);
-            const p90Width = timeMaxWidth * (timeInfo.p90 / maxTime);
-            const errWidth = timeMaxWidth * (timeInfo.totalTime / maxTime);
+
+            const selfP90Width = selfTimeMaxWidth * (node.selfP90 / maxTime);
+            const p90OtherWidth = otherTimeMaxWidth * ((node.p90 - node.selfP90) / maxTime);
             nodeG.append('rect')
                 .attr('class', 'time_rect')
-                .attr('width', p90Width)
+                .attr('width', selfP90Width < 2 ? 2 : selfP90Width)
                 .attr('height', 20)
                 .attr('fill', '#5fe061')
-                .attr('x', timeX)
+                .attr('x', timeX + selfTimeMaxWidth - selfP90Width - 2)
                 .attr('y', timeY);
-
             nodeG.append('text')
-                .text(formatUnit(timeInfo.p90, 'ns'))
+                .text(formatUnit(node.selfP90, 'ns'))
                 .attr('class', 'time_value')
-                .attr('x', function () {
+                .attr('x', function() {
                     let textlen = this.getComputedTextLength();
-                    if (p90Width < textlen + 20) {
-                        return timeX + p90Width + 5;
-                    } else {
-                        return timeX + p90Width - textlen - 5;
-                    }
+                    return timeX + selfTimeMaxWidth - textlen - 4
                 })
-                .attr('y', timeY + timeTextYOffest);
-
+                .attr('y', timeY + timeTextYOffest - 2);
+            if (node.p90 - node.selfP90 > 0) {
+                nodeG.append('rect')
+                    .attr('class', 'time_rect')
+                    .attr('width', p90OtherWidth < 2 ? 2 : p90OtherWidth)
+                    .attr('height', 20)
+                    .attr('fill', '#5fe061')
+                    .attr('x', timeX + selfTimeMaxWidth + 4)
+                    .attr('y', timeY);
+                nodeG.append('text')
+                    .text(formatUnit(node.p90 - node.selfP90, 'ns'))
+                    .attr('class', 'time_value')
+                    .attr('x', timeX + selfTimeMaxWidth + 6)
+                    .attr('y', timeY + timeTextYOffest - 2);
+            }
+            // 绘制故障时间
+            const selfWidth = selfTimeMaxWidth * (node.selfTime / maxTime);
+            const OtherWidth = otherTimeMaxWidth * ((node.totalTime - node.selfTime) / maxTime);
             nodeG.append('text')
                 .text('故障')
                 .attr('class', 'time_title')
                 .attr('x', 70)
-                .attr('y', timeY + 32 + timeTextYOffest);
+                .attr('y', timeY + 34 + timeTextYOffest);
             nodeG.append('rect')
                 .attr('class', 'time_rect')
-                .attr('width', errWidth)
+                .attr('width', selfWidth < 2 ? 2 : selfWidth)
                 .attr('height', 20)
                 .attr('fill', '#ff3c3c')
-                .attr('x', timeX)
+                .attr('x', timeX + selfTimeMaxWidth - selfWidth - 2)
                 .attr('y', timeY + 32);
             nodeG.append('text')
-                .text(formatUnit(timeInfo.totalTime, 'ns'))
+                .text(formatUnit(node.selfTime, 'ns'))
                 .attr('class', 'time_value')
-                .attr('x', function () {
+                .attr('x', function() {
                     let textlen = this.getComputedTextLength();
-                    if (errWidth < textlen + 20) {
-                        return timeX + errWidth + 5;
-                    } else {
-                        return timeX + errWidth - textlen - 5;
-                    }
+                    return timeX + selfTimeMaxWidth - textlen - 4
                 })
                 .attr('y', timeY + 32 + timeTextYOffest);
-            
+            if (node.totalTime - node.selfTime > 0) {
+                nodeG.append('rect')
+                    .attr('class', 'time_rect')
+                    .attr('width', OtherWidth < 2 ? 2 : OtherWidth)
+                    .attr('height', 20)
+                    .attr('fill', '#ff3c3c')
+                    .attr('x', timeX + selfTimeMaxWidth + 4)
+                    .attr('y', timeY + 32);
+                nodeG.append('text')
+                    .text(formatUnit(node.totalTime - node.selfTime, 'ns'))
+                    .attr('class', 'time_value')
+                    .attr('x', timeX + selfTimeMaxWidth + 6)
+                    .attr('y', timeY + 32 + timeTextYOffest);
+            }            
         }
 
         function drawEdge(edge, idx) {
@@ -152,7 +197,7 @@ function SingleLinkTopology({ data }: IProps) {
             let sNodeRect: any = d3.select(`#node${nodeOrder.indexOf(edge.source)}`).node()!.getBoundingClientRect();
             // @ts-ignore
             let tNodeRect: any = d3.select(`#node${nodeOrder.indexOf(edge.target)}`).node()!.getBoundingClientRect();
-            console.log(nodeWarpRect, sNodeRect, tNodeRect);
+            // console.log(nodeWarpRect, sNodeRect, tNodeRect);
 
             let sx = sNodeRect.x - nodeWarpRect.x,
                 tx = tNodeRect.x - nodeWarpRect.x,
@@ -193,7 +238,7 @@ function SingleLinkTopology({ data }: IProps) {
     }, [data]);
 
     return (
-        <div ref={chartRef} id='nodeChart' style={{ width: '100%', height: '100%' }}></div>
+        <div ref={chartRef} id='nodeChart' style={{ width: '100%', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}></div>
     );
 }
 export default SingleLinkTopology;

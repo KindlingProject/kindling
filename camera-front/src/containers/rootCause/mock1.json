@@ -1,0 +1,317 @@
+{
+    "metadata": {
+        "id": "no_sense_test_id",
+        "timestamp": 1690528780911000000,
+        "node": "node219"
+    },
+    "conclusion": {
+        "message": "sda磁盘IO利用率过高"
+    },
+    "reports": [
+        {
+            "flow_name": "start",
+            "report_name": "trace_entry",
+            "type": "trace_entry",
+            "chart": "table",
+            "source": "metrics",
+            "request": "",
+            "metrics": {
+                "kindling_span_trace_duration_nanoseconds_total": [
+                    {
+                        "labels": {
+                            "key": "duration"
+                        },
+                        "baseline": {
+                            "action": {
+                                "type": "promql",
+                                "text": "histogram_quantile(0.9, sum(rate(kindling_span_trace_duration_nanoseconds_bucket{pid='26271',container_id='',content_key='GET:/diskWrite'}[30m])) by (le))"
+                            },
+                            "value": 320000000
+                        },
+                        "current": {
+                            "action": {},
+                            "value": 1978315908
+                        },
+                        "unit": "ns",
+                        "is_warn": true
+                    }
+                ]
+            },
+            "text": {
+                "content_key": "GET:/diskWrite",
+                "pod": ""
+            },
+            "logs": [
+                {
+                    "id": 123,
+                    "name": "thread-1",
+                    "values": [
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:28:00 ahahaha"
+                    ]
+                }, 
+                {
+                    "id": 124,
+                    "name": "thread-2",
+                    "values": [
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:26:00 hahahahahah<br>2023-09-14 10:27:00 hahahahaha",
+                        "2023-09-14 10:28:00 ahahaha"
+                    ]
+                }
+            ],
+            "conclusion": "响应时间异常 1978ms",
+            "timestamp": 1690528780911000000
+        },
+        {
+            "flow_name": "event",
+            "report_name": "profiling_duration",
+            "type": "profiling_duration",
+            "chart": "table",
+            "source": "metrics",
+            "request": "",
+            "metrics": {
+                "kindling_profiling_duration_nanoseconds_total": [
+                    {
+                        "labels": {
+                            "cpuType": "cpu"
+                        },
+                        "baseline": {
+                            "action": {
+                                "type": "promql",
+                                "text": "histogram_quantile(0.9, sum(rate(kindling_profiling_cpu_duration_nanoseconds_bucket{pid='26271',container_id='',content_key='GET:/diskWrite'}[30m])) by (le))"
+                            },
+                            "value": 50000000
+                        },
+                        "current": {
+                            "action": {},
+                            "value": 60000000
+                        },
+                        "unit": "ns",
+                        "is_warn": false
+                    },
+                    {
+                        "labels": {
+                            "cpuType": "futex"
+                        },
+                        "baseline": {
+                            "action": {
+                                "type": "promql",
+                                "text": "histogram_quantile(0.9, sum(rate(kindling_profiling_futex_duration_nanoseconds_bucket{pid='26271',container_id='',content_key='GET:/diskWrite'}[30m])) by (le))"
+                            },
+                            "value": 120000000
+                        },
+                        "current": {
+                            "action": {},
+                            "value": 120000000
+                        },
+                        "unit": "ns",
+                        "is_warn": false
+                    },
+                    {
+                        "labels": {
+                            "cpuType": "file"
+                        },
+                        "baseline": {
+                            "action": {
+                                "type": "promql",
+                                "text": "histogram_quantile(0.9, sum(rate(kindling_profiling_file_duration_nanoseconds_bucket{pid='26271',container_id='',content_key='GET:/diskWrite'}[30m])) by (le))"
+                            },
+                            "value": 100000000
+                        },
+                        "current": {
+                            "action": {},
+                            "value": 1780000000
+                        },
+                        "unit": "ns",
+                        "is_warn": true
+                    },
+                    {
+                        "labels": {
+                            "cpuType": "other"
+                        },
+                        "baseline": {
+                            "action": {
+                                "type": "promql",
+                                "text": "histogram_quantile(0.9, sum(rate(kindling_profiling_other_duration_nanoseconds_bucket{pid='26271',container_id='',content_key='GET:/diskWrite'}[30m])) by (le))"
+                            },
+                            "value": 50000000
+                        },
+                        "current": {
+                            "action": {},
+                            "value": 50000000
+                        },
+                        "unit": "ns",
+                        "is_warn": false
+                    }
+                ]
+            },
+            "text": {},
+            "conclusion": "文件读写耗时升高",
+            "timestamp": 1690528780911000000
+        },
+        {
+            "flow_name": "io_util",
+            "report_name": "磁盘IO利用率",
+            "type": "metrics_baseline",
+            "chart": "table",
+            "source": "metrics",
+            "request": "",
+            "metrics": {
+                "磁盘IO利用率": [
+                    {
+                        "labels": {
+                            "device": "sda"
+                        },
+                        "unit": "%",
+                        "baseline": {
+                            "action": {
+                                "type": "promql",
+                                "text": "avg by (device) (rate(node_disk_io_time_seconds_total{instance=\"10.10.101.32:9100\"}[30m]))*100"
+                            },
+                            "value": 23.22
+                        },
+                        "current": {
+                            "action": {
+                                "type": "promql",
+                                "text": "sum by (device) (rate(node_disk_io_time_seconds_total{instance=\"10.10.103.219:9100\"}[5m]))*100"
+                            },
+                            "value": 99.22
+                        },
+                        "is_warn": true
+                    },
+                    {
+                        "labels": {
+                            "device": "sr0"
+                        },
+                        "unit": "%",
+                        "baseline": {
+                            "action": {
+                                "type": "promql",
+                                "text": "avg by (device) (rate(node_disk_io_time_seconds_total{instance=\"10.10.101.32:9100\"}[30m]))*100"
+                            },
+                            "value": 0
+                        },
+                        "current": {
+                            "action": {
+                                "type": "promql",
+                                "text": "sum by (device) (rate(node_disk_io_time_seconds_total{instance=\"10.10.103.219:9100\"}[5m]))*100"
+                            },
+                            "value": 0
+                        },
+                        "is_warn": false
+                    }
+                ]
+            },
+            "text": {},
+            "conclusion": "sda磁盘IO利用率过高",
+            "timestamp": 1690528780911000000
+        },
+        {
+            "flow_name": "epoll",
+            "report_name": "EPOLL的具体信息",
+            "type": "tableMetrics",
+            "chart": "",
+            "source": "metrics",
+            "request": "",
+            "metrics": {
+                "epoll耗时": [
+                    {
+                        "labels": {
+                            "epoll发生的fd": "219",
+                            "epoll类型": "为NetRead而进行epoll,通常发生在请求等待响应阶段",
+                            "fd相关信息": "10.244.3.47:44579->10.96.0.10:53",
+                            "是否耗时最长": "否"
+                        },
+                        "baseline": null,
+                        "current": {
+                            "action": null,
+                            "value": 501
+                        },
+                        "unit": "ms",
+                        "is_warn": false
+                    },
+                    {
+                        "labels": {
+                            "epoll发生的fd": "219",
+                            "epoll类型": "为NetWrite而进行epoll,通常发生在tcp建连阶段",
+                            "fd相关信息": "10.244.3.47:38668->10.98.247.157:8080",
+                            "是否耗时最长": "否"
+                        },
+                        "baseline": null,
+                        "current": {
+                            "action": null,
+                            "value": 503
+                        },
+                        "unit": "ms",
+                        "is_warn": false
+                    },
+                    {
+                        "labels": {
+                            "epoll发生的fd": "219",
+                            "epoll类型": "为NetRead而进行epoll,通常发生在请求等待响应阶段",
+                            "fd相关信息": "10.244.3.47:38668->10.98.247.157:8080",
+                            "是否耗时最长": "否"
+                        },
+                        "baseline": null,
+                        "current": {
+                            "action": null,
+                            "value": 1503
+                        },
+                        "unit": "ms",
+                        "is_warn": true
+                    }
+                ]
+            },
+            "text": {},
+            "conclusion": "",
+            "timestamp": 0
+        },
+        {
+            "flow_name": "cpu",
+            "report_name": "flame_graph",
+            "type": "display",
+            "chart": "flame_graph",
+            "source": "request",
+            "request": "/query/flame_graph/1690268322195000000/1690268324173315908/26271/26313",
+            "metrics": {},
+            "text": {},
+            "conclusion": "",
+            "timestamp": 1690268322195000000
+        },
+        {
+            "flow_name": "runq",
+            "report_name": "runq",
+            "type": "display",
+            "chart": "table",
+            "source": "metrics",
+            "request": "",
+            "metrics": {},
+            "conclusion": "",
+            "text": {
+                "cpu_throttled": "18001.968257",
+                "node_throughput": "61.333333",
+                "steal_cpu": "0.000000"
+            }
+        }
+    ]
+}

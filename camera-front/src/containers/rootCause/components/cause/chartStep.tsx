@@ -75,14 +75,14 @@ function TableStep({ data }: IProps) {
         <div className='step-card'>
             <div className='step-title'>{data.report_name}</div>
             <div className='step-content'>
-                <TextTag data={data.text}/>
+                {/* <TextTag data={data.text}/> */}
                 {
                     ChartComponent()
                 }
                 {
                     data.conclusion ? <div className='step-conclusion'>
                         <span>分析结论：</span>
-                        <Tag color="error">{data.conclusion}</Tag>
+                        <Tag color="error" className='custom-tag'>{data.conclusion}</Tag>
                     </div> : null
                 }
             </div>

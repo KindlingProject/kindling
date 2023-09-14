@@ -1,10 +1,10 @@
 import React from 'react';
-import { Descriptions, Tag } from 'antd';
+import { Descriptions, Tag, Collapse, Divider } from 'antd';
 import TimeProgress from '../timeProgress';
-import TextTag from './textTag';
 import { formatUnit } from '@/services/util';
 
 
+const Panel = Collapse.Panel;
 const metric = 'kindling_span_trace_duration_nanoseconds_total';
 interface IProps {
     data: any;
@@ -23,9 +23,25 @@ function CauseStep1({ data }: IProps) {
                 </div>
                 {/* <TextTag data={data.text}/> */}
                 <TimeProgress p90={data.metrics[metric] ? data.metrics[metric][0].baseline.value : 0} data={data.metrics[metric] ? data.metrics[metric][0].current.value : 0} />
+                {
+                    (data.logs && data.logs.length > 0) ? <React.Fragment>
+                        <Divider plain>相关日志</Divider>
+                        <Collapse accordion size="small">
+                            {
+                                data.logs.map(item => <Panel header={`线程名：${item.name}`} key={item.id}>
+                                    <ul className='log_warp'>
+                                        {
+                                            item.values.map((opt, idx) => <li key={idx}>{opt}</li>)
+                                        }
+                                    </ul>
+                                </Panel>)
+                            }
+                        </Collapse> 
+                    </React.Fragment> : null
+                }
                 <div className='step-conclusion'>
                     <span>分析结论：</span>
-                    <Tag color="error">{data.conclusion}</Tag>
+                    <Tag color="error" className='custom-tag'>{data.conclusion}</Tag>
                 </div>
             </div>
         </div>

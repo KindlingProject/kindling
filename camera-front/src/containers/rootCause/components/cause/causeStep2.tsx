@@ -76,7 +76,7 @@ function CauseStep2({data}: IProps) {
             </Table>
             <div className='step-conclusion'>
                 <span>分析结论：</span>
-                <Tag color="error">{data.conclusion}</Tag>
+                <Tag color="error" className='custom-tag'>{data.conclusion}</Tag>
             </div>
         </div>
     );
