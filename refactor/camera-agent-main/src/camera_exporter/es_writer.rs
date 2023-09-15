@@ -125,6 +125,7 @@ mod tests {
             is_server: true,
             is_error: true,
             is_profiled: false,
+            is_normal: false,
             p90: 1000000.0,
             trace_id: "trace_id".to_string(),
             apm_type: "apm_type".to_string(),

@@ -41,7 +41,7 @@ void stop_profile_debug();
 
 void print_profile_debug_info(sinsp_evt* sevt);
 
-void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps);
+void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps, bool needSleep);
 
 char* start_attach_agent(int64_t pid);
 

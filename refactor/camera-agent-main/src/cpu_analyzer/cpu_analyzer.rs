@@ -175,12 +175,22 @@ impl CpuAnalyzer {
     }
 
     pub fn handle_profiling_signal(&mut self, event: &TraceEvent) {
-        self.send_events(
-            event.pid,
-            event.end_time - event.duration,
-            event.end_time,
-            event,
-        );
+        if event.is_normal {
+            self.send_event(
+                event.pid,
+                event.tid,
+                event.end_time - event.duration,
+                event.end_time,
+                event,
+            );
+        } else {
+            self.send_events(
+                event.pid,
+                event.end_time - event.duration,
+                event.end_time,
+                event,
+            );
+        }
     }
 
     pub fn handle_metric_signal(&mut self, mut events: Vec<SignalEvent>) {
@@ -329,6 +339,55 @@ impl CpuAnalyzer {
 
         end_offset = end_offset.min(MAX_SEGMENT_SIZE as i32 - 1);
         Some((start_offset, end_offset, &mut time_segments.segments))
+    }
+
+    pub fn send_event(
+        &mut self,
+        pid: u32,
+        tid: u32,
+        start_time: u64,
+        end_time: u64,
+        trace_event: &TraceEvent,
+    ) {
+        let tid_cpu_events = match self.cpu_pid_events.get_mut(&pid) {
+            Some(tid_cpu_events) => tid_cpu_events,
+            None => {
+                return;
+            }
+        };
+        let time_segments = match tid_cpu_events.get_mut(&tid) {
+            Some(time_segments) => time_segments,
+            None => {
+                return;
+            }
+        };
+
+        let start_time_second = start_time / NANO_TO_SECONDS;
+        let end_time_second = end_time / NANO_TO_SECONDS;
+
+        if end_time_second < time_segments.base_time
+            || start_time_second > time_segments.base_time + (MAX_SEGMENT_SIZE as u64)
+        {
+            return;
+        }
+
+        let start_index = (start_time_second - time_segments.base_time) as i32;
+        let end_index =
+            (end_time_second - time_segments.base_time).min(MAX_SEGMENT_SIZE as u64) as i32;
+
+        let thread_name = time_segments.thread_name.as_str();
+        for i in start_index..=end_index {
+            if let Some(segment) = time_segments.segments.get_by_index_mut(i as usize) {
+                if segment.is_not_empty() {
+                    segment.update_index_timestamp();
+                    // Send To Es.
+                    let profiling_event = segment.to_data_group(pid, tid, thread_name, trace_event);
+                    self.profile_exporter.consume_profiling(profiling_event);
+                    debug!("{:?}", segment);
+                    segment.is_send = 1;
+                }
+            }
+        }
     }
 
     pub fn send_events(

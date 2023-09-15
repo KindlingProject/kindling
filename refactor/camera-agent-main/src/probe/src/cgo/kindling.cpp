@@ -412,7 +412,7 @@ int getEvent(uint64_t interval, kindling_event_t_for_go evts[], int* event_count
     if (strstr(threadInfo->m_comm.c_str(), "java") != NULL) {
       string pid_str = std::to_string(threadInfo->m_pid);
       char* temp_char = (char*)pid_str.data();
-      thread attach(attach_pid, temp_char, true, true, false, false);
+      thread attach(attach_pid, temp_char, true, true, false, false, true);
       attach.join();
     }
   }
@@ -1170,7 +1170,7 @@ uint16_t get_kindling_source(uint16_t etype) {
   }
 }
 
-void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps) {
+void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach, bool is_ps, bool needSleep) {
   char result_buf[1024], command[1024];
   int rc = 0;
   FILE* fp;
@@ -1183,6 +1183,9 @@ void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach
   } else {
     string attach_command_prefix;
     if (is_attach) {
+      if(needSleep) {
+        sleep(60);
+      }
       attach_command_prefix = "./async-profiler/profiler.sh start ";
     } else {
       attach_command_prefix = "./async-profiler/profiler.sh stop ";
@@ -1217,7 +1220,7 @@ void attach_pid(char* pid, bool is_new_start, bool is_attach, bool is_all_attach
       result_buf[strlen(result_buf) - 1] = '\0';
     }
     if (is_ps) {
-      attach_pid(result_buf, false, is_attach, is_all_attach, false);
+      attach_pid(result_buf, false, is_attach, is_all_attach, false, false);
 
     } else {
       printf("%s\r\n", result_buf);
@@ -1325,7 +1328,7 @@ int start_profile() {
   sampled_pid_urls.clear();
   sampled_threads.clear();
   is_start_profile = true;
-  attach_pid(nullptr, false, true, true, true);
+  attach_pid(nullptr, false, true, true, true, false);
   inspector->set_eventmask(PPME_CPU_ANALYSIS_E);
 
   return 0;
@@ -1338,7 +1341,7 @@ int stop_profile() {
   sampled_pid_urls.clear();
   sampled_threads.clear();
   is_start_profile = false;
-  attach_pid(nullptr, false, false, true, true);
+  attach_pid(nullptr, false, false, true, true, false);
   inspector->unset_eventmask(PPME_CPU_ANALYSIS_E);
 
   return 0;

@@ -39,8 +39,12 @@ impl SampleTrace {
         format!("{}-{}", self.event.pid, self.event.content_key)
     }
 
-    fn set_profiled(&mut self) {
-        self.event.is_profiled = true
+    pub fn set_profiled(&mut self, is_profiled: bool) {
+        self.event.is_profiled = is_profiled
+    }
+
+    pub fn set_normal(&mut self, is_normal: bool) {
+        self.event.is_normal = is_normal
     }
 
     fn set_p90(&mut self, p9x: f64) {
@@ -73,6 +77,7 @@ pub struct SampleCache {
     query_time: i64,
     client: TraceIdServiceClient,
     p9x_cache: PrometheusP9xCache,
+    normal_sent_cache: HashMap<(String, String), SystemTime>,
     profiling_signal_sender: Sender<TraceEvent>,
     trace_exporter: Arc<CameraExporter>,
 }
@@ -105,6 +110,7 @@ impl SampleCache {
             client,
             query_time: 0,
             p9x_cache: PrometheusP9xCache::new(host, port),
+            normal_sent_cache: HashMap::new(),
             profiling_signal_sender,
             trace_exporter,
         }
@@ -126,6 +132,31 @@ impl SampleCache {
             Some(_) => false,
             None => self.is_slow(sample_trace),
         }
+    }
+
+    pub fn get_p9x(&self, sample_trace: &SampleTrace) -> f64 {
+        self.p9x_cache.get_p9x(sample_trace)
+    }
+
+    pub fn is_normal_sampled(&mut self, sample_trace: &SampleTrace) -> bool {
+        let key = (
+            sample_trace.get_container_id(),
+            sample_trace.get_content_key(),
+        );
+        match self.normal_sent_cache.get(&key) {
+            Some(_) => false,
+            None => {
+                self.normal_sent_cache.insert(key, SystemTime::now());
+                true
+            }
+        }
+    }
+
+    pub fn store_normal_profiling(&mut self, sample_trace: &SampleTrace) {
+        // Store Profiling Data.
+        self.profiling_signal_sender
+            .send(sample_trace.event.clone())
+            .unwrap();
     }
 
     fn is_slow(&self, sample_trace: &mut SampleTrace) -> bool {
@@ -158,7 +189,7 @@ impl SampleCache {
         if sample_trace.is_sampled {
             return;
         }
-        sample_trace.set_profiled();
+        sample_trace.set_profiled(true);
 
         let now = SystemTime::now();
         // Update Url HitTime when profile is stored.

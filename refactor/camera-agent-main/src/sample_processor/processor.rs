@@ -55,7 +55,8 @@ impl SampleProcessor {
         let thread = thread::Builder::new()
             .name("sample-processor-check".to_owned())
             .spawn(move || {
-                let mut count = p9x_interval;
+                // Collect P9xValues after agent is started.
+                let mut count = 0;
                 loop {
                     do_work(&sample_cache, count);
                     if count == 0 {
@@ -99,11 +100,14 @@ impl SampleProcessor {
     }
 
     pub fn consume(&self, event: TraceEvent, is_sampled: bool) {
-        if event.duration < self.ignore_threshold {
+        let mut trace = SampleTrace::new(event, is_sampled, self.trace_retry_num);
+        if !is_sampled {
+            normal_sample(&self.sample_cache, &mut trace, self.ignore_threshold);
+        }
+        if trace.event.duration < self.ignore_threshold {
             // Ignore Low Valued Datas
             return;
         }
-        let trace = SampleTrace::new(event, is_sampled, self.trace_retry_num);
         process_event(&self.sample_cache, trace, is_sampled);
     }
 }
@@ -133,5 +137,32 @@ fn process_event(sample_cache: &Arc<Mutex<SampleCache>>, mut trace: SampleTrace,
     } else {
         // Store datas into SampleCache for none-error, none slow or hit datas in N seconds.
         cache_guard.cache_sample_trace(trace)
+    }
+}
+
+fn normal_sample(
+    sample_cache: &Arc<Mutex<SampleCache>>,
+    trace: &mut SampleTrace,
+    ignore_threshold: u64,
+) {
+    let mut cache_guard = sample_cache.lock().unwrap();
+    let mut normal_sampled = false;
+    if trace.event.duration < ignore_threshold
+        || (trace.event.duration as f64) < cache_guard.get_p9x(trace)
+    {
+        normal_sampled = cache_guard.is_normal_sampled(trace);
+    }
+    if normal_sampled {
+        // Clone Send Profiling
+        trace.set_profiled(true);
+        cache_guard.store_normal_profiling(trace);
+
+        // Clone Send Trace
+        trace.set_normal(true);
+        cache_guard.store_trace(trace);
+
+        // Reset to false Trace Resued for TailBase Case
+        trace.set_normal(false);
+        trace.set_profiled(false);
     }
 }

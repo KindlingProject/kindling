@@ -128,6 +128,7 @@ pub struct TraceEvent {
     pub is_server: bool,
     pub is_error: bool,
     pub is_profiled: bool,
+    pub is_normal: bool,
     pub p90: f64,
     pub trace_id: String,
     pub apm_type: String,
@@ -151,7 +152,7 @@ impl fmt::Display for TraceEvent {
         write!(
             f,
             "TraceEvent: pid={}, tid={}, protocol={}, content_key={}, http_url={}, \\
-            is_slow={}, is_server={}, is_error={}, is_profiled={} \\
+            is_slow={}, is_server={}, is_error={}, is_profiled={}, is_normal={}, \\
             p90={}, trace_id={}, apm_type={}, apm_span_id={}, duration={}, end_time={}, \\
             container_id={}, container_name={}, workload_name={}, workload_kind={}, pod_ip={}, pod_name={}, namespace={}, node_name: {}, node_ip: {}, offset_ts: {}",
             self.pid,
@@ -163,6 +164,7 @@ impl fmt::Display for TraceEvent {
             self.is_server,
             self.is_error,
             self.is_profiled,
+            self.is_normal,
             self.p90,
             self.apm_type,
             self.trace_id,
@@ -206,6 +208,7 @@ impl TraceEvent {
             is_slow: event.get_duration() > slow_threshold,
             is_server: true,
             is_profiled: false,
+            is_normal: false,
             p90: 0.0,
             tid: event.tid,
             trace_id,
