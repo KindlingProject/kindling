@@ -42,6 +42,6 @@ func (m *HostPortMap) get(ip string, port uint32) (*K8sContainerInfo, bool) {
 func (m *HostPortMap) delete(ip string, port uint32) {
 	key := ip + ":" + strconv.FormatUint(uint64(port), 10)
 	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	delete(m.HostPortInfo, key)
-	m.mutex.Unlock()
 }

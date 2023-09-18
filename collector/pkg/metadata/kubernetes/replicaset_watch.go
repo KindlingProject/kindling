@@ -58,7 +58,7 @@ func (rs *ReplicaSetMap) deleteOwnerReference(key string) {
 	rs.mut.Unlock()
 }
 
-func RsWatch(clientSet *kubernetes.Clientset) {
+func RsWatch(clientSet *kubernetes.Clientset, handler cache.ResourceEventHandler) {
 	stopper := make(chan struct{})
 	defer close(stopper)
 
@@ -67,11 +67,15 @@ func RsWatch(clientSet *kubernetes.Clientset) {
 	informer := rsInformer.Informer()
 	defer runtime.HandleCrash()
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    AddReplicaSet,
-		UpdateFunc: UpdateReplicaSet,
-		DeleteFunc: DeleteReplicaSet,
-	})
+	if handler != nil {
+		informer.AddEventHandler(handler)
+	} else {
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    AddReplicaSet,
+			UpdateFunc: UpdateReplicaSet,
+			DeleteFunc: DeleteReplicaSet,
+		})
+	}
 
 	go factory.Start(stopper)
 

@@ -18,11 +18,17 @@ type Config struct {
 	// Set "Enable" false if you want to run the agent in the non-Kubernetes environment.
 	// Otherwise, the agent will panic if it can't connect to the API-server.
 	Enable bool `mapstructure:"enable"`
+
+	// MetaDataProviderConfig is optional config to use another source of K8sMetadata named metadata-provider
+	// Used to reduce the stress caused by agent directly on APIServer
+	// Set "metadata_provider_config.enable" true and "metadata_provider_config.endpoint" as target service to enable it
+	MetaDataProviderConfig *kubernetes.MetaDataProviderConfig `mapstructure:"metadata_provider_config"`
 }
 
 var DefaultConfig Config = Config{
-	KubeAuthType:      "serviceAccount",
-	KubeConfigDir:     "/root/.kube/config",
-	GraceDeletePeriod: 60,
-	Enable:            true,
+	KubeAuthType:           "serviceAccount",
+	KubeConfigDir:          "/root/.kube/config",
+	GraceDeletePeriod:      60,
+	Enable:                 true,
+	MetaDataProviderConfig: &kubernetes.MetaDataProviderConfig{Enable: false, EnableTrace: false, Endpoint: ""},
 }

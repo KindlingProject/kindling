@@ -12,10 +12,10 @@ func TestWatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot init clientSet, %s", err)
 	}
-	go NodeWatch(clientSet)
-	go RsWatch(clientSet)
-	go ServiceWatch(clientSet)
-	go PodWatch(clientSet, 60*time.Second)
+	go NodeWatch(clientSet, nil)
+	go RsWatch(clientSet, nil)
+	go ServiceWatch(clientSet, nil)
+	go PodWatch(clientSet, 60*time.Second, nil)
 	time.Sleep(2 * time.Second)
 	content, _ := json.Marshal(GlobalRsInfo)
 	fmt.Println(string(content))

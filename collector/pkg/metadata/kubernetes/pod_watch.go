@@ -164,7 +164,7 @@ func (m *podMap) getPodsMatchSelectors(namespace string, selectors map[string]st
 	return retPodInfoSlice
 }
 
-func PodWatch(clientSet *kubernetes.Clientset, graceDeletePeriod time.Duration) {
+func PodWatch(clientSet *kubernetes.Clientset, graceDeletePeriod time.Duration, handler cache.ResourceEventHandler) {
 	stopper := make(chan struct{})
 	defer close(stopper)
 
@@ -180,12 +180,18 @@ func PodWatch(clientSet *kubernetes.Clientset, graceDeletePeriod time.Duration) 
 		runtime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
+
 	go podDeleteLoop(10*time.Second, graceDeletePeriod, stopper)
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    AddPod,
-		UpdateFunc: UpdatePod,
-		DeleteFunc: DeletePod,
-	})
+
+	if handler == nil {
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    AddPod,
+			UpdateFunc: UpdatePod,
+			DeleteFunc: DeletePod,
+		})
+	} else {
+		informer.AddEventHandler(handler)
+	}
 	// TODO: use workqueue to avoid blocking
 	<-stopper
 }

@@ -3,7 +3,7 @@ package metadataclient
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -13,8 +13,6 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
 	"github.com/Kindling-project/kindling/collector/pkg/metadata/metaprovider/api"
 )
-
-type SetPreprocessingMetaDataCache func(cache *kubernetes.K8sMetaDataCache, nodeMap *kubernetes.NodeMap, serviceMap *kubernetes.ServiceMap, rsMap *kubernetes.ReplicaSetMap)
 
 type Client struct {
 	// tls wrap
@@ -31,7 +29,7 @@ func NewMetaDataWrapperClient(endpoint string, debug bool) *Client {
 	}
 }
 
-func (c *Client) ListAndWatch(setup SetPreprocessingMetaDataCache) error {
+func (c *Client) ListAndWatch(setup kubernetes.SetPreprocessingMetaDataCache) error {
 	// handler cache.ResourceEventHandler,
 	resp, err := c.cli.Get(c.endpoint)
 	if err != nil {
@@ -39,7 +37,7 @@ func (c *Client) ListAndWatch(setup SetPreprocessingMetaDataCache) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 500 {
-		return errors.New("Provider Server is not ready yet,please wait")
+		return fmt.Errorf("provider server is not ready yet,please wait")
 	}
 	reader := bufio.NewReaderSize(resp.Body, 1024*32)
 	b, _ := reader.ReadBytes('\n')
@@ -52,13 +50,14 @@ func (c *Client) ListAndWatch(setup SetPreprocessingMetaDataCache) error {
 		// 本次连接失败，等待重试
 		return err
 	}
+
 	if c.debug {
 		formatCache, _ := json.MarshalIndent(listVO.Cache, "", "\t")
 		log.Printf("K8sCache Init:%s\n", string(formatCache))
 	}
 
 	setup(listVO.Cache, listVO.GlobalNodeInfo, listVO.GlobalServiceInfo, listVO.GlobalRsInfo)
-
+	SetEnableTraceFromMPClient(c.debug)
 	for {
 		b, err := reader.ReadBytes('\n')
 		if err != nil {
@@ -86,18 +85,22 @@ func (c *Client) ListAndWatch(setup SetPreprocessingMetaDataCache) error {
 }
 
 func (c *Client) apply(resp *api.MetaDataVO) {
+	var err error
 	switch resp.Type {
 	case "pod":
-		podUnwrapperHander.Apply(resp)
+		err = podUnwrapperHander.Apply(resp)
 	case "service":
-		serviceUnwrapperHander.Apply(resp)
+		err = serviceUnwrapperHander.Apply(resp)
 	case "rs":
-		relicaSetUnwrapperHander.Apply(resp)
+		err = relicaSetUnwrapperHander.Apply(resp)
 	case "node":
-		nodeUnwrapperHander.Apply(resp)
+		err = nodeUnwrapperHander.Apply(resp)
 	default:
 		// TODO Detail
+	}
 
+	if err != nil {
+		log.Panicf("ERROR: convert k8sMetadata falled, err: %v", err)
 	}
 }
 

@@ -21,7 +21,7 @@ type config struct {
 
 	MetaDataProviderConfig *MetaDataProviderConfig `mapstructure:"metadata_provider_config"`
 
-	listAndWatchFromProvider func() error
+	listAndWatchFromProvider func(setup SetPreprocessingMetaDataCache) error
 	podEventHander           cache.ResourceEventHandler
 	rsEventHander            cache.ResourceEventHandler
 	nodeEventHander          cache.ResourceEventHandler
@@ -29,8 +29,11 @@ type config struct {
 }
 
 type MetaDataProviderConfig struct {
-	Enable   bool   `mapstructure:"enable"`
-	Debug    bool   `mapstructure:"debug"`
+	Enable bool `mapstructure:"enable"`
+	// print every K8s Metadata received from mp, used for debug
+	EnableTrace bool `mapstructure:"enable_trace"`
+	// Endpoint is where metadata-provider deloyed and provide service
+	// e.g "http://localhost:9504"
 	Endpoint string `mapstructure:"endpoint"`
 }
 
@@ -66,7 +69,7 @@ func WithFetchReplicaSet(fetch bool) Option {
 	}
 }
 
-func WithMetaDataProviderConfig(mpCfg *MetaDataProviderConfig, listAndWatch func() error) Option {
+func WithMetaDataProviderConfig(mpCfg *MetaDataProviderConfig, listAndWatch func(SetPreprocessingMetaDataCache) error) Option {
 	return func(cfg *config) {
 		cfg.MetaDataProviderConfig = mpCfg
 		cfg.listAndWatchFromProvider = listAndWatch

@@ -65,7 +65,7 @@ func (n *NodeMap) delete(name string) {
 
 var GlobalNodeInfo = newNodeMap()
 
-func NodeWatch(clientSet *kubernetes.Clientset) {
+func NodeWatch(clientSet *kubernetes.Clientset, handler cache.ResourceEventHandler) {
 	stopper := make(chan struct{})
 	defer close(stopper)
 
@@ -81,11 +81,16 @@ func NodeWatch(clientSet *kubernetes.Clientset) {
 		return
 	}
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    AddNode,
-		UpdateFunc: UpdateNode,
-		DeleteFunc: DeleteNode,
-	})
+	if handler != nil {
+		informer.AddEventHandler(handler)
+	} else {
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    AddNode,
+			UpdateFunc: UpdateNode,
+			DeleteFunc: DeleteNode,
+		})
+	}
+
 	// TODO: use workqueue to avoid blocking
 	<-stopper
 }

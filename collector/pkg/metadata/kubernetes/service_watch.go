@@ -89,7 +89,7 @@ func (s *ServiceMap) delete(namespace string, serviceName string) {
 	s.mut.Unlock()
 }
 
-func ServiceWatch(clientSet *kubernetes.Clientset) {
+func ServiceWatch(clientSet *kubernetes.Clientset, handler cache.ResourceEventHandler) {
 	stopper := make(chan struct{})
 	defer close(stopper)
 
@@ -105,11 +105,15 @@ func ServiceWatch(clientSet *kubernetes.Clientset) {
 		return
 	}
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    AddService,
-		UpdateFunc: UpdateService,
-		DeleteFunc: DeleteService,
-	})
+	if handler != nil {
+		informer.AddEventHandler(handler)
+	} else {
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    AddService,
+			UpdateFunc: UpdateService,
+			DeleteFunc: DeleteService,
+		})
+	}
 	// TODO: use workqueue to avoid blocking
 	<-stopper
 }

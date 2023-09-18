@@ -92,15 +92,15 @@ func initWatcherFromAPIServer(k8sConfig config) error {
 		return fmt.Errorf("cannot connect to kubernetes: %w", err)
 	}
 	IsInitSuccess = true
-	go NodeWatch(clientSet)
+	go NodeWatch(clientSet, k8sConfig.nodeEventHander)
 	time.Sleep(1 * time.Second)
 	if k8sConfig.EnableFetchReplicaSet {
-		go RsWatch(clientSet)
+		go RsWatch(clientSet, k8sConfig.rsEventHander)
 		time.Sleep(1 * time.Second)
 	}
-	go ServiceWatch(clientSet)
+	go ServiceWatch(clientSet, k8sConfig.serviceEventHander)
 	time.Sleep(1 * time.Second)
-	go PodWatch(clientSet, k8sConfig.GraceDeletePeriod)
+	go PodWatch(clientSet, k8sConfig.GraceDeletePeriod, k8sConfig.podEventHander)
 	time.Sleep(1 * time.Second)
 	return nil
 }
@@ -126,7 +126,7 @@ func initWatcherFromMetadataProvider(k8sConfig config) error {
 func watchFromMPWithRetry(k8sConfig config) {
 	for {
 		for i := 0; i < 3; i++ {
-			if err := k8sConfig.listAndWatchFromProvider(); err == nil {
+			if err := k8sConfig.listAndWatchFromProvider(SetupCache); err == nil {
 				i = 0
 				// receiver ReWatch signal , clear cache and rewatch from MP
 				// TODO logger

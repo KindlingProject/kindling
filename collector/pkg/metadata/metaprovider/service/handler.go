@@ -46,8 +46,28 @@ func (m *K8sResourceHandler) DeleteObj(obj interface{}) {
 	})
 }
 
+type PodResourceHandler struct {
+	K8sResourceHandler
+}
+
+func (prh *PodResourceHandler) AddPod(obj interface{}) {
+	decreasePodInfo(obj)
+	prh.K8sResourceHandler.AddObj(obj)
+}
+
+func (prh *PodResourceHandler) UpdatePod(objOld interface{}, objNew interface{}) {
+	decreasePodInfo(objOld)
+	decreasePodInfo(objNew)
+	prh.K8sResourceHandler.UpdateObj(objNew, objOld)
+}
+
+func (prh *PodResourceHandler) DeleteObj(obj interface{}) {
+	decreasePodInfo(obj)
+	prh.K8sResourceHandler.DeleteObj(obj)
+}
+
 func NewHandler(typeName string, add api.AddObj, update api.UpdateObj, delete api.DeleteObj, boardcast boardcast) cache.ResourceEventHandlerFuncs {
-	handler := &K8sResourceHandler{
+	handler := K8sResourceHandler{
 		resType:   "pod",
 		add:       add,
 		update:    update,
@@ -56,15 +76,12 @@ func NewHandler(typeName string, add api.AddObj, update api.UpdateObj, delete ap
 	}
 
 	if typeName == "pod" {
-		clearBeforeAdd := func(obj interface{}) {
-			decreasePodInfo(obj)
-			handler.AddObj(obj)
-		}
+		prh := PodResourceHandler{handler}
 
 		return cache.ResourceEventHandlerFuncs{
-			AddFunc:    clearBeforeAdd,
-			UpdateFunc: handler.UpdateObj,
-			DeleteFunc: handler.DeleteObj,
+			AddFunc:    prh.AddObj,
+			UpdateFunc: prh.UpdateObj,
+			DeleteFunc: prh.DeleteObj,
 		}
 	}
 

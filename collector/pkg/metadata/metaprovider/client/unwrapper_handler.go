@@ -3,6 +3,7 @@ package metadataclient
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
 	"github.com/Kindling-project/kindling/collector/pkg/metadata/metaprovider/api"
@@ -11,6 +12,13 @@ import (
 )
 
 type unwrapper func([]byte) (interface{}, error)
+
+// globalOption to show each message received from MP
+var enableTrace bool
+
+func SetEnableTraceFromMPClient(enable bool) {
+	enableTrace = enable
+}
 
 type UnwrapperHandler struct {
 	add    api.AddObj
@@ -26,8 +34,8 @@ var podUnwrapperHander = NewUnwrapperHander(
 	kubernetes.DeletePod,
 	func(b []byte) (interface{}, error) {
 		obj := corev1.Pod{}
-		json.Unmarshal(b, &obj)
-		return &obj, nil
+		err := json.Unmarshal(b, &obj)
+		return &obj, err
 	},
 )
 
@@ -37,8 +45,8 @@ var serviceUnwrapperHander = NewUnwrapperHander(
 	kubernetes.DeleteService,
 	func(b []byte) (interface{}, error) {
 		obj := corev1.Service{}
-		json.Unmarshal(b, &obj)
-		return &obj, nil
+		err := json.Unmarshal(b, &obj)
+		return &obj, err
 	},
 )
 
@@ -48,8 +56,8 @@ var nodeUnwrapperHander = NewUnwrapperHander(
 	kubernetes.DeleteNode,
 	func(b []byte) (interface{}, error) {
 		obj := corev1.Node{}
-		json.Unmarshal(b, &obj)
-		return &obj, nil
+		err := json.Unmarshal(b, &obj)
+		return &obj, err
 	},
 )
 
@@ -59,8 +67,8 @@ var relicaSetUnwrapperHander = NewUnwrapperHander(
 	kubernetes.DeleteReplicaSet,
 	func(b []byte) (interface{}, error) {
 		obj := appv1.ReplicaSet{}
-		json.Unmarshal(b, &obj)
-		return &obj, nil
+		err := json.Unmarshal(b, &obj)
+		return &obj, err
 	},
 )
 
@@ -74,6 +82,9 @@ func NewUnwrapperHander(add api.AddObj, update api.UpdateObj, delete api.DeleteO
 }
 
 func (uw *UnwrapperHandler) Apply(resp *api.MetaDataVO) error {
+	if enableTrace {
+		log.Println(api.MetaDataVO2String(resp))
+	}
 	switch resp.Operation {
 	case string(api.Add):
 		if resp.NewObj == nil {

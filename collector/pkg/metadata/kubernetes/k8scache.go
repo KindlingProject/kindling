@@ -6,6 +6,8 @@ import (
 	"sync"
 )
 
+type SetPreprocessingMetaDataCache func(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMap, rsMap *ReplicaSetMap)
+
 type K8sContainerInfo struct {
 	ContainerId string
 	Name        string
@@ -287,4 +289,33 @@ func (c *K8sMetaDataCache) String() string {
 
 func (c *K8sMetaDataCache) GetNodeNameByIp(ip string) (string, bool) {
 	return GlobalNodeInfo.getNodeName(ip)
+}
+
+func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMap, rsMap *ReplicaSetMap) {
+	if cache != nil {
+		if cache.ContainerIdInfo != nil {
+			for _, containersInfo := range cache.ContainerIdInfo {
+				GlobalPodInfo.add(containersInfo.RefPodInfo)
+			}
+			MetaDataCache.ContainerIdInfo = cache.ContainerIdInfo
+		}
+		if cache.HostPortInfo != nil {
+			MetaDataCache.HostPortInfo = cache.HostPortInfo
+		}
+		if cache.IpContainerInfo != nil {
+			MetaDataCache.IpContainerInfo = cache.IpContainerInfo
+		}
+		if cache.IpServiceInfo != nil {
+			MetaDataCache.IpServiceInfo = cache.IpServiceInfo
+		}
+	}
+	if nodeMap != nil {
+		GlobalNodeInfo = nodeMap
+	}
+	if serviceMap != nil {
+		GlobalServiceInfo = serviceMap
+	}
+	if GlobalRsInfo != nil {
+		GlobalRsInfo = rsMap
+	}
 }
