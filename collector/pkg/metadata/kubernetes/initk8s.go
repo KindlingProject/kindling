@@ -180,9 +180,11 @@ func RLockMetadataCache() {
 	MetaDataCache.cMut.RLock()
 	MetaDataCache.pMut.RLock()
 	MetaDataCache.sMut.RLock()
+	MetaDataCache.HostPortInfo.mutex.RLock()
 }
 
 func RUnlockMetadataCache() {
+	MetaDataCache.HostPortInfo.mutex.RUnlock()
 	MetaDataCache.sMut.RUnlock()
 	MetaDataCache.pMut.RUnlock()
 	MetaDataCache.cMut.RUnlock()

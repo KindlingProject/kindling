@@ -82,7 +82,7 @@ func New() *K8sMetaDataCache {
 		ContainerIdInfo: make(map[string]*K8sContainerInfo),
 		IpContainerInfo: make(map[string]map[uint32]*K8sContainerInfo),
 		IpServiceInfo:   make(map[string]map[uint32]*K8sServiceInfo),
-		HostPortInfo:    newHostPortMap(),
+		HostPortInfo:    NewHostPortMap(),
 	}
 
 	return c
