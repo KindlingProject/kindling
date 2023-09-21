@@ -11,6 +11,7 @@ collector/docker/libso/libkindling.so
 collector/docker/kindling-falcolib-probe.tar.gz
 collector/vendor/
 node_modules
+dist/
 .DS_Store
 *.log
 logs
