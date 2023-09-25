@@ -190,11 +190,6 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					}
 		
 					if currentMetricsData != lastMetricsData {
-						if err != nil {
-							fmt.Println("Error writing to file:", err)
-							continue
-						}
-
 						lastMetricsData = currentMetricsData
 
 						if(otelexporter.restart == true){
@@ -425,13 +420,3 @@ func fetchMetricsFromEndpoint() (string, error) {
 	return string(body), nil
 }
 
-func appendToFile(filename, text string) error {
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(text)
-	return err
-}

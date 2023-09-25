@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	_ "net/http/pprof"
 	"runtime"
 	"strconv"
@@ -140,6 +141,17 @@ func makePreAggNetMetricGroup(i int) *model.DataGroup {
 	metricsGroup.Labels.AddStringValue(constlabels.DstIp, "test-DnatIp")
 	metricsGroup.Labels.AddIntValue(constlabels.DstPort, 8081)
 	return metricsGroup
+}
+
+func appendToFile(filename, text string) error {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(text)
+	return err
 }
 
 func BenchmarkOtelExporter_Consume(b *testing.B) {

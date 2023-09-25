@@ -17,6 +17,7 @@ var (
 
 func StartServer(exporter *prometheus.Exporter, telemetry *component.TelemetryTools, port string) error {
 	mu.Lock()
+	defer mu.Unlock()
 
 	if srv != nil {
 		if err := srv.Shutdown(context.Background()); err != nil {
@@ -35,7 +36,6 @@ func StartServer(exporter *prometheus.Exporter, telemetry *component.TelemetryTo
 	telemetry.Logger.Infof("Prometheus Server listening at port: [%s]", port)
 
 	go func() {
-		mu.Unlock()
 		srv.ListenAndServe()
 		telemetry.Logger.Infof("Prometheus gracefully shutdown the http server...\n")
 	}()
