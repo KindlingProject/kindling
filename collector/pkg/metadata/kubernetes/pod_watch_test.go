@@ -358,3 +358,20 @@ func Test_extractDeploymentName(t *testing.T) {
 		})
 	}
 }
+
+func TestDelete(t *testing.T) {
+	pm := newPodMap()
+
+	info := &K8sPodInfo{
+		Namespace: "test-namespace",
+		PodName:   "test-podname",
+	}
+	pm.add(info)
+
+	deletedPodInfo, ok := pm.delete("test-namespace", "test-podname")
+	assert.True(t, ok, "expected pod to be deleted successfully")
+	assert.Equal(t, info, deletedPodInfo, "deleted pod info should match the added one")
+
+	_, ok = pm.delete("test-namespace", "nonexistent-pod")
+	assert.False(t, ok, "expected pod deletion to fail for nonexistent pod")
+}
