@@ -25,6 +25,7 @@ function Thread() {
     const [testStartTimestamp, setStartTimeStamp] = useState<number | null>(parseInt(getStore('startTimestamp') as string) || null);
     const [testEndTimestamp, setEndTimestamp] = useState<number | null>(parseInt(getStore('endTimestamp') as string) || null);
     const [testProtocl, setTestProtocl] = useState('http');
+    const [testTraceId, settestTraceId] = useState('');
     // node层直接查询文件的相关参数
     const [folderList, setFolderList] = useState([]);
     const [folderName, setFolderName] = useState('');
@@ -133,6 +134,9 @@ function Thread() {
         if (params.pid) {
             fparams.pid = params.pid;
         }
+        if (params.traceId) {
+            fparams.traceId = params.traceId;
+        }
         getTraceList(fparams).then(res => {
             let result: any = [];
             if (params.pid) {
@@ -179,6 +183,10 @@ function Thread() {
             params.from = testStartTimestamp;
             params.to = testEndTimestamp;
         }
+        if (testTraceId) {
+            params.traceId = testTraceId;
+        }
+        console.log('params', params);
         initData(params);
     }
     // node 接口直接读取文件列表
@@ -593,6 +601,9 @@ function Thread() {
         setEndTimestamp(parseInt(e.target.value))
         setStore('endTimestamp', e.target.value);
     }
+    const changeTestTraceId = (e) => {
+        settestTraceId(e.target.value)
+    }
     // 点击复杂视图或者简易视图切换URL重新渲染页面
     const changeView = (type) => {
         setShowComplex(type === 'complex');
@@ -617,7 +628,7 @@ function Thread() {
     return (
         <div className='thread_warp'>
             <header className='thread_header'>
-                <div className='thread_header_text'>
+                <div className='thread_header_text' style={{ display: 'flex', alignItems: 'center' }}>
                     <span>应用运行分析</span>
                     {
                         showESQuery ? <React.Fragment>
@@ -632,6 +643,10 @@ function Thread() {
                             <div className='top-input-warp'>
                                 <span>endTime</span>
                                 <Input type="number" style={{ width: 180 }} value={testEndTimestamp} onChange={changeEndTimestamp} />
+                            </div>
+                            <div className='top-input-warp'>
+                                <span>TraceId</span>
+                                <Input style={{ width: 180 }} value={testTraceId} onChange={changeTestTraceId} />
                             </div>
                             <Select style={{ width: 100 }} value={testProtocl} onChange={v => setTestProtocl(v)}>
                                 {
@@ -857,7 +872,7 @@ function Thread() {
                                         <div className='process_inof' key={item.type} onClick={() => clickRequestEvent(item)}>
                                             <div className='info_warp'>
                                                 <div className='event_name'>
-                                                    <span>{item.type}</span>
+                                                    <span>{item.name}</span>
                                                 </div>
                                                 <span className='event_time'>{item.time}ms</span>
                                             </div>

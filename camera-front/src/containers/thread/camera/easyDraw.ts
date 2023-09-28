@@ -174,7 +174,7 @@ class EasyCamera {
                             .attr('class', 'event_rect')
                             .attr('width', timeWidth)
                             .attr('height', this.barWidth)
-                            .attr('fill', sevent.fillColor)
+                            .attr('fill', sevent?.fillColor || '#1890ff')
                             .attr('x', event.left)
                             .attr('y', this.barPadding);
                         if (timeWidth > 50) {
@@ -423,7 +423,7 @@ class EasyCamera {
                 .attr('class', 'event_rect')
                 .attr('width', this.subEventWidth)
                 .attr('height', this.barWidth)
-                .attr('fill', sevent.fillColor || '#1890ff')
+                .attr('fill', sevent?.fillColor || '#1890ff')
                 .attr('x', subLeft)
                 .attr('y', this.barPadding * 5 + this.barWidth * 2);
             
@@ -994,7 +994,7 @@ class EasyCamera {
     private changeEventRectColor(id, active) {
         let eventType = d3.select(`#${id}`).attr('data-type');
         let sevent = _.find(eventList, {value: eventType});
-        sevent && d3.select(`#${id}`).select('.event_rect').attr('fill', active ? sevent.activeColor : sevent.fillColor);
+        sevent && d3.select(`#${id}`).select('.event_rect').attr('fill', active ? sevent.activeColor : sevent?.fillColor);
     }
     handleEventRectClick(e: any, showActive = false) {
         let id = e.currentTarget.id;

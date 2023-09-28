@@ -154,7 +154,7 @@ export default function Flamegraph(props) {
 
   useEffect(() => {
     // window.addEventListener("resize", onResize);
-    // console.log(data);
+    console.log(data);
     if (data.stackList) {
       if (init) {
         init = false;

@@ -1,0 +1,17 @@
+@import '@/styles/mixins.less';
+
+.trace_warp {
+    .mixin_wh(100%, 100%);
+    .trace_header {
+        .mixin_entrance_page_header();
+    }   
+    .trace_body {
+        display: flex;
+        background-color: var(--main-body-bg-color);
+        height: calc(100% - 84px);
+        position: relative;
+        .trace_content {
+            .mixin_wh(100%, 100%);
+        }
+    }
+}

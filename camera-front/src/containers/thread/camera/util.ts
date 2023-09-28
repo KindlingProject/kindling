@@ -87,6 +87,14 @@ export const eventList: IEvent[] = [
         activeColor: '#F8E8D7',
         color: '#E97A00'
     }, {
+        name: 'net-connect',
+        alias: 'netconnect',
+        value: 'netconnect',
+        type: 'net',
+        fillColor: '#FEF3E6',
+        activeColor: '#F8E8D7',
+        color: '#E97A00'
+    }, {
         name: 'net-read',
         alias: 'netread',
         value: 'netread',
@@ -279,6 +287,13 @@ export const darkEventList: IEvent[] = [
 
 export const netReadTypes = ["read", "recvfrom", "recvmsg", "readv", "pread", "preadv"];
 export const netWriteTypes = ["write", "sendto", "sendmsg", "writev", "pwrite", "pwritev"];
+
+const typeNames = {
+    'on': 'cpu',
+    'futex': '等待时间',
+    'file': '文件操作时间',
+    'net': '网络时间'
+}
 
 export const textHandle = (text: string, num: number) => {
     if (text && text.length > num) {
@@ -589,6 +604,8 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
             // console.log('onInfoList', onInfoList);
             // console.log('offInfoList', offInfoList);
             // console.log('runqList', runqList);
+            console.log(event.stack);
+            console.log(stackList);
             timeTypeList.forEach((type: any, idx) => {
                 let endTime = startTime + timeValueList[idx];
                 if (containTime(timeRange,startTime, endTime)) {
@@ -646,6 +663,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                                     eventObj.stackList.push(stackItem);
                                 });
                             } 
+                            console.log('eventObj.stackList', eventObj.stackList);
                         }
                         if (onInfoList.length > 0 && onInfoList[onFlag]) {
                             let result: any = onOffInfoHandle(onInfoList[onFlag], eventObj, timeRange);
@@ -788,11 +806,14 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
     }
     _.forEach(result, item => {
         let sameTraceList = _.uniqBy(_.filter(item.traceList, item => item.traceId === traceId), 'timestamp');
+        
         /**
          * 临时解决方案：后台返回trace数据格式不再是10交替出现的，解决方案过滤油url的数据，没有url的数据用作后续数据分析
          * isEntry: 1 => trace的开始时间; isEntry: 0 => trace的结束时间 
+         * 解决方案2：解决过滤url后的数据，由于后台采集url的问题还是会出现110这种格式的数据，所以需要匹配第一个出现的1跟第一个出现的0作为traceId的时间
          */
         _.remove(sameTraceList, item => item.url && item.url.length > 0);
+
         item.traceList = [];
         let startTimeList: any[] = [], endTimeList: any[] = [];
         for(let i = 0;i < sameTraceList.length; i++) {
@@ -809,7 +830,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
                 });
             }
         }
-        // console.log(sameTraceList, startTimeList, endTimeList);
+        console.log(sameTraceList, startTimeList, endTimeList);
         _.forEach(startTimeList, (opt, index) => {
             item.traceList.push({
                 traceId: opt.traceId,
@@ -863,6 +884,7 @@ export const dataHandle = (data: any, timeRange, trace: any) => {
             let sevent: IEvent = _.find(eventList, {type: key}) as IEvent;
             let time = parseFloat(_.sum(_.map(list, 'time')).toFixed(2));
             const timeObj = {
+                name: typeNames[key] ? typeNames[key] : key,
                 type: key,
                 eventType: key,
                 color: sevent.color,

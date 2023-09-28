@@ -37,6 +37,7 @@ function Header(props: any) {
             default:
                 path = '/';
         }
+        setActiveMenuKey(key);
         navigate(path);
     }
 
@@ -72,9 +73,9 @@ function Header(props: any) {
         body.className = `${t}-theme`;
     }
 
-    useEffect(() => {
-        requestProfile('status');
-    }, []);
+    // useEffect(() => {
+    //     requestProfile('status');
+    // }, []);
 
     return (
         <div className={style.home_header}>

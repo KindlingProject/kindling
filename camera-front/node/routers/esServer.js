@@ -13,7 +13,7 @@ const onoffCpuIndex = esServerConfig.onoffcpu_index;
 const esClient = new Client({ node: `http://${esServerConfig.host}:${esServerConfig.port}` });
 
 router.get('/getTraceList', (req, res, next) => {
-    let { pid, startTimestamp, endTimestamp, protocol, isServer } = req.query;
+    let { pid, startTimestamp, endTimestamp, protocol, traceId, isServer } = req.query;
     console.log('/esserver/getTraceList:', pid, startTimestamp, endTimestamp, protocol, isServer);
     let query = [
         {
@@ -30,6 +30,11 @@ router.get('/getTraceList', (req, res, next) => {
             match: {'labels.pid': pid}
         });
     }
+    if (traceId) {
+        query.push({
+            match: {'labels.trace_id': traceId}
+        });
+    }
     startTimestamp = startTimestamp * 1000000;
     endTimestamp = endTimestamp * 1000000;
     query.push({
@@ -38,6 +43,7 @@ router.get('/getTraceList', (req, res, next) => {
             'lte': endTimestamp
         }}
     });
+    console.log(JSON.stringify(query));
     esClient.search({
         index: traceIndex,
         body: {
@@ -67,7 +73,6 @@ router.get('/getTraceList', (req, res, next) => {
         } else {
             let hits = result.body.hits.hits;
             let fresult = _.map(hits, '_source');
-
             res.status(200).json(fresult);
         }        
     });
@@ -145,6 +150,7 @@ function handleData(data) {
                 dst_workload_name: item.labels.dst_workload_name,
                 pid: item.labels.pid,
                 protocol: item.labels.protocol,
+                is_entry: item.labels.apm_parent_id === '0',
                 list: [
                     {
                         endTime: timestamp,
@@ -211,7 +217,7 @@ router.get('/getTraceData', async(req, res, next) => {
         // type: '_doc',
         body: {
             query: {
-                match: { 'labels.trace_id.keyword': traceId }
+                match: { 'labels.trace_id': traceId }
             }
         },
     }, {
