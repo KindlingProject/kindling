@@ -24,7 +24,7 @@ func TestK8sMetaDataCache_AddPodByIpPort(t *testing.T) {
 	portContainerInfo := make(map[uint32]*K8sContainerInfo)
 	portContainerInfo[port] = containerInfo
 	cacheManual := New()
-	cacheManual.ipContainerInfo[containerInfo.RefPodInfo.Ip] = portContainerInfo
+	cacheManual.IpContainerInfo[containerInfo.RefPodInfo.Ip] = portContainerInfo
 
 	cacheFunc := New()
 	cacheFunc.AddContainerByIpPort(containerInfo.RefPodInfo.Ip, port, containerInfo)
@@ -81,12 +81,12 @@ func TestK8sMetaDataCache_DeleteServiceByIpPort(t *testing.T) {
 		Selector:    nil,
 	}
 	MetaDataCache.AddServiceByIpPort("192.168.2.1", 80, serviceInfo)
-	if len(MetaDataCache.ipServiceInfo) != 1 &&
-		len(MetaDataCache.ipServiceInfo["192.168.2.1"]) != 1 {
+	if len(MetaDataCache.IpServiceInfo) != 1 &&
+		len(MetaDataCache.IpServiceInfo["192.168.2.1"]) != 1 {
 		t.Fatalf("no service was added")
 	}
 	MetaDataCache.DeleteServiceByIpPort("192.168.2.1", 80)
-	if len(MetaDataCache.ipServiceInfo) != 0 {
+	if len(MetaDataCache.IpServiceInfo) != 0 {
 		t.Fatalf("cache is not empty after deleting service")
 	}
 }

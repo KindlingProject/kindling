@@ -16,6 +16,8 @@ import (
 // AuthType describes the type of authentication to use for the K8s API
 type AuthType string
 
+var ReWatch bool
+
 const (
 	// AuthTypeNone means no auth is required
 	AuthTypeNone AuthType = "none"
@@ -172,4 +174,16 @@ func createRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	}
 
 	return authConf, nil
+}
+
+func RLockMetadataCache() {
+	MetaDataCache.cMut.RLock()
+	MetaDataCache.pMut.RLock()
+	MetaDataCache.sMut.RLock()
+}
+
+func RUnlockMetadataCache() {
+	MetaDataCache.sMut.RUnlock()
+	MetaDataCache.pMut.RUnlock()
+	MetaDataCache.cMut.RUnlock()
 }

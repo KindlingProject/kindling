@@ -1,19 +1,22 @@
 package kubernetes
 
-import "testing"
-import appv1 "k8s.io/api/apps/v1"
-import apimachinery "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	"testing"
+
+	appv1 "k8s.io/api/apps/v1"
+	apimachinery "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func InitGlobalRsInfo() {
-	globalRsInfo = &ReplicaSetMap{
+	GlobalRsInfo = &ReplicaSetMap{
 		Info: make(map[string]Controller),
 	}
 }
 
 func TestOnAddReplicaSet(t *testing.T) {
 	InitGlobalRsInfo()
-	onAddReplicaSet(CreateReplicaSet())
-	owner, ok := globalRsInfo.GetOwnerReference(mapKey("CustomNamespace", "deploy-1a2b3c4d"))
+	AddReplicaSet(CreateReplicaSet())
+	owner, ok := GlobalRsInfo.GetOwnerReference(mapKey("CustomNamespace", "deploy-1a2b3c4d"))
 	if !ok || owner.Kind != "Deployment" || owner.APIVersion != "apps/v1" {
 		t.Errorf("Error")
 	}

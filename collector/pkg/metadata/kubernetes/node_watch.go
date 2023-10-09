@@ -17,18 +17,18 @@ type NodeInfo struct {
 	Labels map[string]string
 }
 
-type nodeMap struct {
+type NodeMap struct {
 	Info  map[string]*NodeInfo
 	mutex sync.RWMutex
 }
 
-func newNodeMap() *nodeMap {
-	return &nodeMap{
+func newNodeMap() *NodeMap {
+	return &NodeMap{
 		Info: make(map[string]*NodeInfo),
 	}
 }
 
-func (n *nodeMap) add(info *NodeInfo) {
+func (n *NodeMap) add(info *NodeInfo) {
 	if info == nil {
 		return
 	}
@@ -37,7 +37,7 @@ func (n *nodeMap) add(info *NodeInfo) {
 	n.mutex.Unlock()
 }
 
-func (n *nodeMap) getNodeName(ip string) (string, bool) {
+func (n *NodeMap) getNodeName(ip string) (string, bool) {
 	n.mutex.RLock()
 	ret, ok := n.Info[ip]
 	n.mutex.RUnlock()
@@ -47,7 +47,7 @@ func (n *nodeMap) getNodeName(ip string) (string, bool) {
 	return ret.Name, true
 }
 
-func (n *nodeMap) getAllNodeAddresses() []string {
+func (n *NodeMap) getAllNodeAddresses() []string {
 	ret := make([]string, 0)
 	n.mutex.RLock()
 	for address := range n.Info {
@@ -57,13 +57,13 @@ func (n *nodeMap) getAllNodeAddresses() []string {
 	return ret
 }
 
-func (n *nodeMap) delete(name string) {
+func (n *NodeMap) delete(name string) {
 	n.mutex.Lock()
 	delete(n.Info, name)
 	n.mutex.Unlock()
 }
 
-var globalNodeInfo = newNodeMap()
+var GlobalNodeInfo = newNodeMap()
 
 func NodeWatch(clientSet *kubernetes.Clientset) {
 	stopper := make(chan struct{})
@@ -103,7 +103,7 @@ func AddNode(obj interface{}) {
 			nI.Ip = nodeAddress.Address
 		}
 	}
-	globalNodeInfo.add(nI)
+	GlobalNodeInfo.add(nI)
 }
 
 func UpdateNode(objOld interface{}, objNew interface{}) {
@@ -125,5 +125,5 @@ func DeleteNode(obj interface{}) {
 			return
 		}
 	}
-	globalNodeInfo.delete(node.Name)
+	GlobalNodeInfo.delete(node.Name)
 }
