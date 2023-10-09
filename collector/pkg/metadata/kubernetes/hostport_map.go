@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"strconv"
 	"sync"
 )
 
@@ -10,25 +11,25 @@ type IpPortKey struct {
 }
 
 type HostPortMap struct {
-	HostPortInfo map[IpPortKey]*K8sContainerInfo
+	HostPortInfo map[string]*K8sContainerInfo
 	mutex        sync.RWMutex
 }
 
 func NewHostPortMap() *HostPortMap {
 	return &HostPortMap{
-		HostPortInfo: make(map[IpPortKey]*K8sContainerInfo),
+		HostPortInfo: make(map[string]*K8sContainerInfo),
 	}
 }
 
 func (m *HostPortMap) add(ip string, port uint32, containerInfo *K8sContainerInfo) {
-	key := IpPortKey{ip, port}
+	key := ip + ":" + strconv.FormatUint(uint64(port), 10)
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.HostPortInfo[key] = containerInfo
 }
 
 func (m *HostPortMap) get(ip string, port uint32) (*K8sContainerInfo, bool) {
-	key := IpPortKey{ip, port}
+	key := ip + ":" + strconv.FormatUint(uint64(port), 10)
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	containerInfo, ok := m.HostPortInfo[key]
@@ -39,8 +40,8 @@ func (m *HostPortMap) get(ip string, port uint32) (*K8sContainerInfo, bool) {
 }
 
 func (m *HostPortMap) delete(ip string, port uint32) {
-	key := IpPortKey{ip, port}
+	key := ip + ":" + strconv.FormatUint(uint64(port), 10)
 	m.mutex.Lock()
-	defer m.mutex.Unlock()
 	delete(m.HostPortInfo, key)
+	m.mutex.Unlock()
 }
