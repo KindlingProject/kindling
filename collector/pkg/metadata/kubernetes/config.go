@@ -1,6 +1,10 @@
 package kubernetes
 
-import "time"
+import (
+	"time"
+
+	"k8s.io/client-go/tools/cache"
+)
 
 // config contains optional settings for connecting to kubernetes.
 type config struct {
@@ -14,6 +18,20 @@ type config struct {
 	// The default value is false. It should be enabled if the ReplicaSet
 	// is used to control pods in the third-party CRD except for Deployment.
 	EnableFetchReplicaSet bool
+
+	MetaDataProviderConfig *MetaDataProviderConfig `mapstructure:"metadata_provider_config"`
+
+	listAndWatchFromProvider func() error
+	podEventHander           cache.ResourceEventHandler
+	rsEventHander            cache.ResourceEventHandler
+	nodeEventHander          cache.ResourceEventHandler
+	serviceEventHander       cache.ResourceEventHandler
+}
+
+type MetaDataProviderConfig struct {
+	Enable   bool   `mapstructure:"enable"`
+	Debug    bool   `mapstructure:"debug"`
+	Endpoint string `mapstructure:"endpoint"`
 }
 
 type Option func(cfg *config)
@@ -45,5 +63,36 @@ func WithGraceDeletePeriod(interval int) Option {
 func WithFetchReplicaSet(fetch bool) Option {
 	return func(cfg *config) {
 		cfg.EnableFetchReplicaSet = fetch
+	}
+}
+
+func WithMetaDataProviderConfig(mpCfg *MetaDataProviderConfig, listAndWatch func() error) Option {
+	return func(cfg *config) {
+		cfg.MetaDataProviderConfig = mpCfg
+		cfg.listAndWatchFromProvider = listAndWatch
+	}
+}
+
+func WithPodEventHander(handler cache.ResourceEventHandler) Option {
+	return func(cfg *config) {
+		cfg.podEventHander = handler
+	}
+}
+
+func WithServiceEventHander(handler cache.ResourceEventHandler) Option {
+	return func(cfg *config) {
+		cfg.serviceEventHander = handler
+	}
+}
+
+func WithNodeEventHander(handler cache.ResourceEventHandler) Option {
+	return func(cfg *config) {
+		cfg.nodeEventHander = handler
+	}
+}
+
+func WithReplicaSetEventHander(handler cache.ResourceEventHandler) Option {
+	return func(cfg *config) {
+		cfg.rsEventHander = handler
 	}
 }

@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -76,24 +77,70 @@ func InitK8sHandler(options ...Option) error {
 			option(&k8sConfig)
 		}
 
-		clientSet, err := initClientSet(string(k8sConfig.KubeAuthType), k8sConfig.KubeConfigDir)
-		if err != nil {
-			retErr = fmt.Errorf("cannot connect to kubernetes: %w", err)
-			return
+		if k8sConfig.MetaDataProviderConfig != nil && k8sConfig.MetaDataProviderConfig.Enable {
+			retErr = initWatcherFromMetadataProvider(k8sConfig)
+		} else {
+			retErr = initWatcherFromAPIServer(k8sConfig)
 		}
-		IsInitSuccess = true
-		go NodeWatch(clientSet)
-		time.Sleep(1 * time.Second)
-		if k8sConfig.EnableFetchReplicaSet {
-			go RsWatch(clientSet)
-			time.Sleep(1 * time.Second)
-		}
-		go ServiceWatch(clientSet)
-		time.Sleep(1 * time.Second)
-		go PodWatch(clientSet, k8sConfig.GraceDeletePeriod)
-		time.Sleep(1 * time.Second)
 	})
 	return retErr
+}
+
+func initWatcherFromAPIServer(k8sConfig config) error {
+	clientSet, err := initClientSet(string(k8sConfig.KubeAuthType), k8sConfig.KubeConfigDir)
+	if err != nil {
+		return fmt.Errorf("cannot connect to kubernetes: %w", err)
+	}
+	IsInitSuccess = true
+	go NodeWatch(clientSet)
+	time.Sleep(1 * time.Second)
+	if k8sConfig.EnableFetchReplicaSet {
+		go RsWatch(clientSet)
+		time.Sleep(1 * time.Second)
+	}
+	go ServiceWatch(clientSet)
+	time.Sleep(1 * time.Second)
+	go PodWatch(clientSet, k8sConfig.GraceDeletePeriod)
+	time.Sleep(1 * time.Second)
+	return nil
+}
+
+func initWatcherFromMetadataProvider(k8sConfig config) error {
+	stopCh := make(chan struct{})
+	// Enable PodDeleteGrace
+	go podDeleteLoop(10*time.Second, k8sConfig.GraceDeletePeriod, stopCh)
+	go watchFromMPWithRetry(k8sConfig)
+
+	// rewatch from MP every 30 minute
+	ReWatch = false
+	go func() {
+		ticker := time.NewTicker(30 * time.Minute)
+		for range ticker.C {
+			clearK8sMap()
+			ReWatch = true
+		}
+	}()
+	return nil
+}
+
+func watchFromMPWithRetry(k8sConfig config) {
+	for {
+		for i := 0; i < 3; i++ {
+			if err := k8sConfig.listAndWatchFromProvider(); err == nil {
+				i = 0
+				// receiver ReWatch signal , clear cache and rewatch from MP
+				// TODO logger
+				log.Printf("clear K8sCache and rewatch from MP")
+				continue
+			} else {
+				log.Printf("listAndWatch From Provider failled! Error: %d", err)
+			}
+		}
+
+		// Failed after 3 times
+		log.Printf("listAndWatch From Provider failled for 3 time, will retry after 1 minute")
+		time.Sleep(1 * time.Minute)
+	}
 }
 
 func initClientSet(authType string, dir string) (*k8s.Clientset, error) {
@@ -174,6 +221,13 @@ func createRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	}
 
 	return authConf, nil
+}
+
+func clearK8sMap() {
+	GlobalPodInfo = newPodMap()
+	GlobalNodeInfo = newNodeMap()
+	GlobalRsInfo = newReplicaSetMap()
+	GlobalServiceInfo = newServiceMap()
 }
 
 func RLockMetadataCache() {
