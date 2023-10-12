@@ -33,9 +33,9 @@ exporters:
     stdout:
       collect_period: 15s
     memcleanup:
-      # unit: Hour
-      # set 0 to disable
+      # If set to true, prometheus server will restart every `restart_period`
+      # to free up memory.
+      enable: false
+      # Specifies the frequency (in hours) to restart the server.
+      # A value of 0 disables the restart.
       restart_period: 12
-      # unit: Day
-      # set 0 to disable (restart at night)
-      restart_every_n_days: 0

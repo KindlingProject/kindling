@@ -5,7 +5,7 @@
 
 ## Unreleased
 ### Enhancements
-- Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours or days. Default setting is a restart every 12 hours. ([#577](https://github.com/KindlingProject/kindling/pull/577))
+- Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours. Disabled by deafult. ([#577](https://github.com/KindlingProject/kindling/pull/577))
 
 ## v0.8.1 - 2023-09-01
 ### Enhancements

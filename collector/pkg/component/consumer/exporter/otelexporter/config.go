@@ -37,6 +37,7 @@ type AdapterConfig struct {
 }
 
 type MemCleanUpConfig struct{
+	Enabled bool `mapstructure:"enable,omitempty"`
 	RestartPeriod int `mapstructure:"restart_period,omitempty"`
 	RestartEveryNDays int `mapstructure:"restart_every_n_days,omitempty"`
 }

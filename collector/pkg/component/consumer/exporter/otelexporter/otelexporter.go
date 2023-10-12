@@ -167,7 +167,7 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 		}()
 
 		if cfg.MemCleanUpConfig != nil {
-			if cfg.MemCleanUpConfig.RestartPeriod != 0 {
+			if cfg.MemCleanUpConfig.RestartPeriod != 0 && cfg.MemCleanUpConfig.Enabled {
 				ticker := time.NewTicker(time.Duration(cfg.MemCleanUpConfig.RestartPeriod) * time.Hour)
 				go func() {
 					for {
@@ -200,7 +200,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 					}
 				}
 			}()
-
+			
+			cfg.MemCleanUpConfig.RestartEveryNDays = 0
 			if cfg.MemCleanUpConfig.RestartEveryNDays != 0 {
 				go func() {
 					for {
