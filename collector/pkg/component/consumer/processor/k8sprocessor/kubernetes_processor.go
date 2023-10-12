@@ -4,6 +4,8 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer"
@@ -26,6 +28,7 @@ type K8sMetadataProcessor struct {
 	localNodeIp   string
 	localNodeName string
 	telemetry     *component.TelemetryTools
+	labelSelecotr labels.Selector
 }
 
 func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools, nextConsumer consumer.Consumer) processor.Processor {
@@ -62,7 +65,7 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 	if localNodeName, err = getHostNameFromEnv(); err != nil {
 		telemetry.Logger.Warn("Local NodeName can not found", zap.Error(err))
 	}
-	return &K8sMetadataProcessor{
+	res := &K8sMetadataProcessor{
 		config:        config,
 		metadata:      kubernetes.MetaDataCache,
 		nextConsumer:  nextConsumer,
@@ -70,11 +73,21 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 		localNodeName: localNodeName,
 		telemetry:     telemetry,
 	}
+	if config.LabelSelector != nil {
+		res.labelSelecotr, err = v1.LabelSelectorAsSelector(config.LabelSelector)
+		if err != nil {
+			telemetry.Logger.Warn("load label selector failed %v, skip label selector. ", zap.Error(err))
+		}
+	}
+	return res
 }
 
 func (p *K8sMetadataProcessor) Consume(dataGroup *model.DataGroup) error {
 	if !p.config.Enable {
 		return p.nextConsumer.Consume(dataGroup)
+	}
+	if p.labelSelecotr != nil && !p.labelSelecotr.Matches(labels.Set(dataGroup.Labels.ToStringMap())) {
+		return nil
 	}
 	name := dataGroup.Name
 	switch name {

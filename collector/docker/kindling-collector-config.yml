@@ -144,6 +144,63 @@ processors:
     # The default value is false. It should be enabled if the ReplicaSet
     # is used to control pods in the third-party CRD except for Deployment.
     enable_fetch_replicaset: false
+    # Add label filter by container info labels.
+    # label key can be:
+    # {
+    #		"comm": "webserver",
+    #		"container_id": "c9e4f11a1cac",
+    #		"dnat_ip": "",
+    #		"dnat_port": -1,
+    #		"dns_domain": "",
+    #		"dns_id": 0,
+    #		"dns_rcode": 0,
+    #		"dst_container": "",
+    #		"dst_container_id": "",
+    #		"dst_ip": "10.106.113.249",
+    #		"dst_namespace": "",
+    #		"dst_node": "",
+    #		"dst_node_ip": "",
+    #		"dst_pod": "",
+    #		"dst_port": 3306,
+    #		"dst_service": "",
+    #		"dst_workload_kind": "",
+    #		"dst_workload_name": "",
+    #		"error_type": 0,
+    #		"http_method": "",
+    #		"http_status_code": 0,
+    #		"http_url": "",
+    #		"is_error": false,
+    #		"is_server": false,
+    #		"is_slow": false,
+    #		"pid": 8647,
+    #		"protocol": "mysql",
+    #		"request_payload": ".....SET NAMES utf8",
+    #		"request_tid": 8810,
+    #		"response_payload": "...........",
+    #		"response_tid": 8810,
+    #		"sql": "SET NAMES utf8",
+    #		"src_container": "",
+    #		"src_container_id": "",
+    #		"src_ip": "10.0.0.19",
+    #		"src_namespace": "",
+    #		"src_node": "",
+    #		"src_node_ip": "",
+    #		"src_pod": "",
+    #		"src_port": 33748,
+    #		"src_service": "",
+    #		"src_workload_kind": "",
+    #		"src_workload_name": ""
+    #	}
+    # https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/label-selector/
+    label_selector: {}
+    #  matchExpressions:
+    #  - key: aaa
+    #    operator: In
+    #    values:
+    #    - fa
+    #    - fb
+    #  matchLabels:
+    #    container_id: b38b8f2f4e53
   aggregateprocessor:
     # Aggregation duration window size. The unit is second.
     ticker_interval: 5
