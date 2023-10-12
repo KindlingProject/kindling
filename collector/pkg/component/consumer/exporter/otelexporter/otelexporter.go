@@ -166,8 +166,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			}
 		}()
 
-		if cfg.MemCleanUpConfig != nil {
-			if cfg.MemCleanUpConfig.RestartPeriod != 0 && cfg.MemCleanUpConfig.Enabled {
+		if cfg.MemCleanUpConfig != nil && cfg.MemCleanUpConfig.Enabled {
+			if cfg.MemCleanUpConfig.RestartPeriod != 0 {
 				ticker := time.NewTicker(time.Duration(cfg.MemCleanUpConfig.RestartPeriod) * time.Hour)
 				go func() {
 					for {
