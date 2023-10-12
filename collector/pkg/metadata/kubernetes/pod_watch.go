@@ -99,12 +99,16 @@ func (m *podMap) delete(namespace string, name string) (*K8sPodInfo, bool) {
 	m.mutex.Lock()
 	podInfoMap, ok := m.Info[namespace]
 	var podInfo *K8sPodInfo
-	if ok {
-		podInfo = podInfoMap[name]
-		delete(podInfoMap, name)
+	if !ok {
+		return nil, false
 	}
+	podInfo, ok = podInfoMap[name]
+	if !ok {
+		return nil, false
+	}
+	delete(podInfoMap, name)
 	m.mutex.Unlock()
-	return podInfo, ok
+	return podInfo, true
 }
 
 func (m *workloadMap) add(info *workloadInfo) {
