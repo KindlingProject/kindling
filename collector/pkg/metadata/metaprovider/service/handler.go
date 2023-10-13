@@ -68,7 +68,7 @@ func (prh *PodResourceHandler) DeleteObj(obj interface{}) {
 
 func NewHandler(typeName string, add api.AddObj, update api.UpdateObj, delete api.DeleteObj, boardcast boardcast) cache.ResourceEventHandlerFuncs {
 	handler := K8sResourceHandler{
-		resType:   "pod",
+		resType:   typeName,
 		add:       add,
 		update:    update,
 		delete:    delete,
