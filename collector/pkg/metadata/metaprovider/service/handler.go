@@ -92,10 +92,22 @@ func NewHandler(typeName string, add api.AddObj, update api.UpdateObj, delete ap
 	}
 }
 
-func decreasePodInfo(objOld interface{}) {
-	pod := objOld.(*corev1.Pod)
-	//  Clear unnecessary Message
-	pod.ManagedFields = nil
-	pod.Spec.Volumes = nil
-	pod.Status.Conditions = nil
+func decreasePodInfo(obj interface{}) {
+	pod, ok := obj.(*corev1.Pod)
+	if !ok {
+		deletedState, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return
+		}
+		pod, ok = deletedState.Obj.(*corev1.Pod)
+		if !ok {
+			return
+		}
+	}
+
+	if pod != nil {
+		pod.ManagedFields = nil
+		pod.Spec.Volumes = nil
+		pod.Status.Conditions = nil
+	}
 }
