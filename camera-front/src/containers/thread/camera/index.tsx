@@ -5,7 +5,7 @@ import tooltipPng from '@/assets/images/tooltip.png';
 import tooltipPng2 from '@/assets/images/tooltip2.png';
 import _ from 'lodash';
 import './index.less';
-import { IOption } from './types'; 
+import { IOption } from './types';
 import Camera from './draw2';
 import EasyCamera from './easyDraw';
 import { toggleProfile } from '@/request';
@@ -42,18 +42,18 @@ class CameraWarp extends React.Component<IProps, IState> {
             events: ['on', 'net', 'file']
         }
     }
-    camera = new Camera({...this.props.option, parentRef: this});
-    easyCamera = new EasyCamera({...this.props.option, parentRef: this});
+    camera = new Camera({ ...this.props.option, parentRef: this });
+    easyCamera = new EasyCamera({ ...this.props.option, parentRef: this });
     observer: any = null;
-    
+
     componentDidMount() {
         this.print();
         this.addMutationObserver();
     }
     componentDidUpdate(prevProps: Readonly<IProps>): void {
         if (!_.isEqual(prevProps.option.data, this.props.option.data)) {
-            this.camera = new Camera({...this.props.option, parentRef: this});
-            this.easyCamera = new EasyCamera({...this.props.option, parentRef: this});
+            this.camera = new Camera({ ...this.props.option, parentRef: this });
+            this.easyCamera = new EasyCamera({ ...this.props.option, parentRef: this });
             this.setState({
                 supportAddLine: false,
                 supportBrush: false,
@@ -94,7 +94,7 @@ class CameraWarp extends React.Component<IProps, IState> {
     }
 
     print = () => {
-        const {option} = this.props;
+        const { option } = this.props;
         // console.log('print', option.showComplex, option.data);
         if (option.data && option.data.length > 0) {
             if (option.showComplex) {
@@ -174,7 +174,7 @@ class CameraWarp extends React.Component<IProps, IState> {
     }
 
     changeEvents = (event) => {
-        let {events} = this.state;
+        let { events } = this.state;
         if (events.indexOf(event) > -1) {
             events.splice(events.indexOf(event), 1);
         } else {
@@ -201,8 +201,8 @@ class CameraWarp extends React.Component<IProps, IState> {
     }
 
     render() {
-        const {option, onViewChange} = this.props;
-        const {supportAddLine, supportBrush, showRunq, showJavaLock, showLog, supportTrace, showEventChart, installLoading, events} = this.state;
+        const { option, onViewChange } = this.props;
+        const { supportAddLine, supportBrush, showRunq, showJavaLock, showLog, supportTrace, showEventChart, installLoading, events } = this.state;
         return (
             <div id="camera_chart_warp">
                 <div className='header'>
@@ -211,7 +211,7 @@ class CameraWarp extends React.Component<IProps, IState> {
                             <Button size="small" onClick={this.toggleSupportAddLine} style={{ marginRight: 10 }}>{supportAddLine ? '取消关键时刻' : '添加关键时刻'}</Button>
                             <Button size="small" onClick={this.traceAnaliysis} type={supportTrace ? 'primary' : 'default'} ghost={supportTrace} style={{ marginRight: 10 }}>
                                 Trace分析
-                                <Tooltip title="开启Trace分析后，线程轴仅展示与本次请求业务关联的线程，收起其他系统线程"><QuestionCircleOutlined/></Tooltip>
+                                <Tooltip title="开启Trace分析后，线程轴仅展示与本次请求业务关联的线程，收起其他系统线程"><QuestionCircleOutlined /></Tooltip>
                             </Button>
                             <Button size="small" onClick={() => onViewChange('sample')}>简易视图</Button>
                         </div> : <div>
@@ -225,37 +225,37 @@ class CameraWarp extends React.Component<IProps, IState> {
                         {
                             option.showComplex && <React.Fragment>
                                 <Tooltip title="区域缩放">
-                                    <GatewayOutlined className={`operate_icon ${supportBrush && 'active'}`} onClick={this.toggleChartBrush}/>
+                                    <GatewayOutlined className={`operate_icon ${supportBrush && 'active'}`} onClick={this.toggleChartBrush} />
                                 </Tooltip>
                                 <Tooltip title="区域缩放还原">
-                                    <RollbackOutlined className='operate_icon' onClick={this.resetChartBrush}/>
+                                    <RollbackOutlined className='operate_icon' onClick={this.resetChartBrush} />
                                 </Tooltip>
                             </React.Fragment>
                         }
                         {
                             showEventChart && !option.showComplex && <React.Fragment>
                                 <span>CPU事件</span>
-                                <Switch checked={events.indexOf('on') > -1} onChange={() => this.changeEvents('on')} size='small'/>
+                                <Switch checked={events.indexOf('on') > -1} onChange={() => this.changeEvents('on')} size='small' />
                                 <span>Net事件</span>
-                                <Switch checked={events.indexOf('net') > -1} onChange={() => this.changeEvents('net')} size='small'/>
+                                <Switch checked={events.indexOf('net') > -1} onChange={() => this.changeEvents('net')} size='small' />
                                 <span>File事件</span>
-                                <Switch checked={events.indexOf('file') > -1} onChange={() => this.changeEvents('file')} size='small'/>
+                                <Switch checked={events.indexOf('file') > -1} onChange={() => this.changeEvents('file')} size='small' />
                             </React.Fragment>
                         }
                         {
                             option.showComplex || showEventChart ? <React.Fragment>
                                 <span>runq</span>
-                                <Switch checked={showRunq} onChange={this.toggleRunqBtn} size='small'/>
+                                <Switch checked={showRunq} onChange={this.toggleRunqBtn} size='small' />
                                 <span>Java Lock</span>
-                                <Switch checked={showJavaLock} onChange={this.toggleJavaLockBtn} size='small'/>
+                                <Switch checked={showJavaLock} onChange={this.toggleJavaLockBtn} size='small' />
                                 <span>Log事件</span>
-                                <Switch checked={showLog} onChange={this.toggleLogBtn} size='small'/>
+                                <Switch checked={showLog} onChange={this.toggleLogBtn} size='small' />
                             </React.Fragment> : null
                         }
                         <div className='operate_tooltip'>
-                            <QuestionCircleOutlined className='operate_icon'/>
-                            <img alt='图例' src={option.showComplex ? tooltipPng : tooltipPng2}/>
-                        </div>  
+                            <QuestionCircleOutlined className='operate_icon' />
+                            <img alt='图例' src={option.showComplex ? tooltipPng : tooltipPng2} />
+                        </div>
                     </div>
                 </div>
                 <div id='camera' className='camera_charts'>
@@ -267,17 +267,17 @@ class CameraWarp extends React.Component<IProps, IState> {
                                 option.showComplex ? null : (option.spanList.length > 0 ? <div id='span_chart'>
                                     <svg id='span_svg'></svg>
                                 </div> : <div className='empty_span_warp'>
-                                    <div className='empty_span_text'>未检测到支持Span分析的Tracing探针，为不影响使用，请您及时安装。(点击查看<a href='http://kindling.harmonycloud.cn/docs/reference/kindling-java-agent/kindling-java-compatibility/' target="_blank">支持的探针列表</a>)</div>
+                                    <div className='empty_span_text'>未检测到支持Span分析的Tracing探针，为不影响使用，请您及时安装。(点击查看<a href='http://kindlingx.com/docs/reference/kindling-java-agent/kindling-java-compatibility/' target="_blank">支持的探针列表</a>)</div>
                                     <div className='empty_span_text'>或点击下方按钮，让Trace Profiling自动为您的应用(目前只支持Java应用)安装探针。</div>
                                     <Button type="primary" onClick={this.installProfile} loading={installLoading}>立即自动安装</Button>
                                 </div>)
                             }
-                            <div className='main_chart' id="event_chart" style={option.showComplex ? {} : {height: '60%'}}>
+                            <div className='main_chart' id="event_chart" style={option.showComplex ? {} : { height: '60%' }}>
                                 <svg id='camera_svg'></svg>
                             </div>
-                            <div className='bottom_xaxis_warp' style={option.showComplex ? {} : {height: '35px'}}>
+                            <div className='bottom_xaxis_warp' style={option.showComplex ? {} : { height: '35px' }}>
                                 <svg id='bottom_xaxis_svg'></svg>
-                            </div> 
+                            </div>
                             <div id='tooltip_warp' className='camera_tooltip'></div>
                         </> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
                     }
@@ -285,7 +285,7 @@ class CameraWarp extends React.Component<IProps, IState> {
             </div>
         )
     }
-    
+
 }
 
 // function dataEqual(prevProps, nextProps) {

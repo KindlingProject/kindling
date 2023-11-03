@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useSearchParams  } from "react-router-dom";
-import { Button, Input, Tag, Checkbox, Select, AutoComplete, message, Spin, Progress, TreeSelect, Tooltip, Modal} from 'antd';
+import { useSearchParams } from "react-router-dom";
+import { Button, Input, Tag, Checkbox, Select, AutoComplete, message, Spin, Progress, TreeSelect, Tooltip, Modal } from 'antd';
 import { SyncOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined, UpOutlined, ArrowLeftOutlined, ArrowRightOutlined, FilterOutlined, FullscreenOutlined, FullscreenExitOutlined, ExclamationCircleOutlined, DeleteOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import CustomDatePicker from '@/containers/components/customDatePicker';
@@ -33,7 +33,7 @@ function Thread() {
     const [traceUrlList, setTraceUrlList] = useState<string[]>([]);
     const [traceUrl, setTraceUrl] = useState<string>('');
     const [testFileName, setTestFileName] = useState('');
-    
+
     const [tiemValue, setTimeValue] = useState();
     const [traceList, setTraceList] = useState<any[]>([]);
     const [nowTrace, setNowTrace] = useState<any>({});
@@ -73,7 +73,7 @@ function Thread() {
 
     const getTraceDetail = (trace: any) => {
         let traceStartTimestamp = Math.floor(trace.timestamp / 1000000);
-        let totalTime = _.find(trace.metrics, {Name: 'request_total_time'});
+        let totalTime = _.find(trace.metrics, { Name: 'request_total_time' });
         let traceEndTimestamp = Math.floor((trace.timestamp + totalTime.Data.Value) / 1000000);
         const requestTimes = [traceStartTimestamp, traceEndTimestamp];
         let startTimestamp = traceStartTimestamp - 2 * 1000;
@@ -194,7 +194,7 @@ function Thread() {
     // node 接口，根据对应的文件目录获取该目录下的所有profile文件，并从文件名中解析url列表
     const getAllTraceFile = (folder, init = true, file = '') => {
         setFolderName(folder);
-        getFileList({folderName: folder}).then(res => {
+        getFileList({ folderName: folder }).then(res => {
             if (res.data.success && res.data.data.length > 0) {
                 // let urlList: string[] = _.uniq(_.map(res.data.data, 'contentKey'));
                 let urlFileList = _.groupBy(res.data.data, 'contentKey');
@@ -207,7 +207,7 @@ function Thread() {
                     setTraceFileList(fileList);
                     selectFileName(fileList[0].fileName, folder);
                 } else {
-                    let fileObj = _.find(res.data.data, {fileName: file});
+                    let fileObj = _.find(res.data.data, { fileName: file });
                     if (fileObj) {
                         let url = fileObj.contentKey;
                         setTraceUrl(url);
@@ -236,19 +236,19 @@ function Thread() {
     const selectFileName = (fileName, folder) => {
         setTestFileName(fileName);
         setShowEventDetail(false);
-        getFileDetail({folderName: folder, fileName}).then(res => {
+        getFileDetail({ folderName: folder, fileName }).then(res => {
             if (res.data.success) {
-                let {trace: traceData, cpuEvents} = res.data.data;
+                let { trace: traceData, cpuEvents } = res.data.data;
                 setTraceList([traceData]);
                 setNowTrace(traceData);
                 // console.log('traceData', traceData);
                 if (traceData.labels?.trace_id) {
                     setTraceId(traceData.labels.trace_id);
-                } 
+                }
                 setNowTraceIdx(0);
 
                 let traceStartTimestamp = Math.ceil(traceData.timestamp / 1000000);
-                let totalTime = _.find(traceData.metrics, {Name: 'request_total_time'});
+                let totalTime = _.find(traceData.metrics, { Name: 'request_total_time' });
                 let traceEndTimestamp = Math.ceil((traceData.timestamp + totalTime.Data.Value) / 1000000);
                 const requestTimes = [traceStartTimestamp, traceEndTimestamp];
                 let startTimestamp = traceStartTimestamp - 2 * 1000;
@@ -257,7 +257,7 @@ function Thread() {
                 if (cpuEvents.length > 0) {
                     const { data, spanTreeList, eventlist, traceTimes, requestInfo, traceId: ftraceId } = dataHandle(cpuEvents, [startTimestamp, endTimestamp], traceData);
                     const { threadList, fileList } = buildFilterList(data);
-                    
+
                     if (!ftraceId) {
                         setProfileModalVisible(true);
                     }
@@ -310,7 +310,7 @@ function Thread() {
                 setStore('pid', pid);
                 setStore('startTimestamp', stime);
                 setStore('endTimestamp', etime);
-                initData({pid: pid, from: stime, to: etime, protocol: protocl});
+                initData({ pid: pid, from: stime, to: etime, protocol: protocl });
             }
         }
         let theme: any = searchParams.get('theme') || 'light';
@@ -463,7 +463,7 @@ function Thread() {
         console.log('event', evt);
         if (evt) {
             if (evt.type === 'net' && evt.tid && evt.info) {
-                let threadData: IThread = _.find(nowTraceData, {tid: evt.tid});
+                let threadData: IThread = _.find(nowTraceData, { tid: evt.tid });
                 console.log(threadData);
                 let time = evt.eventType === 'netread' ? evt.endTime : evt.startTime;
                 let type = '';
@@ -503,7 +503,7 @@ function Thread() {
                             setNowEvent(event);
                         }
                     }
-                }); 
+                });
                 if (!armed) {
                     setNowEvent(evt);
                 }
@@ -562,7 +562,7 @@ function Thread() {
 
     useEffect(() => {
         if (chartTid) {
-            let thread = _.find(threadList, {tid: chartTid});
+            let thread = _.find(threadList, { tid: chartTid });
             if (_.findIndex(selectThreadList, { value: chartTid }) === -1) {
                 let list = [...selectThreadList, ...[{ label: thread.name, value: thread.tid }]];
                 setSelectThreadList(list);
@@ -638,10 +638,10 @@ function Thread() {
                                     protoclList.map(item => <Select.Option key={item.value} value={item.value}>{item.field}</Select.Option>)
                                 }
                             </Select>
-                            <Button onClick={init2}>查询</Button>   
+                            <Button onClick={init2}>查询</Button>
                         </React.Fragment> : <React.Fragment>
                             <span className='small_title' style={{ marginLeft: 10 }}>Container：</span>
-                            <TreeSelect style={{ width: 180, marginRight: 10 }} dropdownStyle={{ maxHeight: 400, overflow: 'auto' }} dropdownMatchSelectWidth={280} value={folderName} treeData={folderList} treeDefaultExpandAll showSearch onChange={selectFolder}/>
+                            <TreeSelect style={{ width: 180, marginRight: 10 }} dropdownStyle={{ maxHeight: 400, overflow: 'auto' }} dropdownMatchSelectWidth={280} value={folderName} treeData={folderList} treeDefaultExpandAll showSearch onChange={selectFolder} />
                             <span className='small_title'>Trace：</span>
                             <Select value={traceUrl} style={{ width: 120, marginRight: 10 }} dropdownMatchSelectWidth={240} onChange={changeTraceUrl}>
                                 {
@@ -655,18 +655,18 @@ function Thread() {
                                 }
                             </Select>
                             <div className="profile_tooltip">
-                                <Tooltip title={'1. 仅针对慢请求(响应时间>500ms)的Trace进行采样。\n2. 同一Trace，5s内采样一次。\n3. 满足上述条件，触发Trace调用之后，需等待5s左右，刷新当前页面，方可看到最新采样记录。'} overlayStyle={{whiteSpace: 'break-spaces'}}>
+                                <Tooltip title={'1. 仅针对慢请求(响应时间>500ms)的Trace进行采样。\n2. 同一Trace，5s内采样一次。\n3. 满足上述条件，触发Trace调用之后，需等待5s左右，刷新当前页面，方可看到最新采样记录。'} overlayStyle={{ whiteSpace: 'break-spaces' }}>
                                     <QuestionCircleOutlined />
                                     <span>采样规则</span>
                                 </Tooltip>
                             </div>
                         </React.Fragment>
-                    }         
+                    }
                 </div>
                 <div className='thread_header_operation'>
                     {
                         showESQuery ? <>
-                            <CustomDatePicker timeInfo={tiemValue} onChange={timeChange}/>
+                            <CustomDatePicker timeInfo={tiemValue} onChange={timeChange} />
                             <Button onClick={() => window.location.reload()} icon={<SyncOutlined />} className='f-ml8' />
                         </> : null
                     }
@@ -729,7 +729,7 @@ function Thread() {
                             </div>
                             {
                                 hideFilterFieldList.indexOf('log') === -1 ? <div className='field_body'>
-                                    <Input value={logValue} onChange={(e) => setLogValue(e.target.value)} onKeyDown={logKeyDown}/>
+                                    <Input value={logValue} onChange={(e) => setLogValue(e.target.value)} onKeyDown={logKeyDown} />
                                     {
                                         selectLogList.length > 0 ? <ul className='event_legend_list'>
                                             <Checkbox.Group value={selectLogList} onChange={removeLog}>
@@ -757,7 +757,7 @@ function Thread() {
                                 hideFilterFieldList.indexOf('file') === -1 ? <div className='field_body'>
                                     <AutoComplete value={fileValue} options={fileList} style={{ width: '100%' }} defaultOpen={false} onSelect={addSelectFile} filterOption={(input, option: any) =>
                                         option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                                    } onKeyDown={fileKeyDown} onChange={v => setFileValue(v)}/>
+                                    } onKeyDown={fileKeyDown} onChange={v => setFileValue(v)} />
                                     {
                                         selectFileList.length > 0 ? <ul className='event_legend_list'>
                                             <Checkbox.Group value={selectFileList} onChange={removeSelectFile}>
@@ -811,16 +811,16 @@ function Thread() {
                             <h3>{nowTrace?.labels?.http_method}：{nowTrace?.labels?.http_url}</h3>
                             <div>
                                 <Tag>Trace ID：{nowTrace?.labels ? (traceId ? <span>{traceId}</span> : <Tooltip title="请先安装Skywalking探针，否则无法标注关键线程">
-                                    <ExclamationCircleOutlined className='shinning_icon' onClick={() => setProfileModalVisible(true)}/>
+                                    <ExclamationCircleOutlined className='shinning_icon' onClick={() => setProfileModalVisible(true)} />
                                 </Tooltip>) : null}</Tag>
                                 {
                                     (!_.isEmpty(nowTrace) && !traceId) && <Tag color="error" onClick={() => setProfileModalVisible(true)} style={{ cursor: 'pointer' }}>未检测到Tracing探针</Tag>
                                 }
                                 {
                                     (traceId && allSpanList.length > 0) && (nowTrace.labels.trace_type === 'harmonycloud' ? <Tag color="blue">
-                                        已检测到Kindling APM演示探针 
+                                        已检测到Kindling APM演示探针
                                         <Tooltip title="点击卸载">
-                                            <DeleteOutlined style={{ color: '#fc1313' }} onClick={() => toggleInstallProfile('stop_attach_agent')}/>
+                                            <DeleteOutlined style={{ color: '#fc1313' }} onClick={() => toggleInstallProfile('stop_attach_agent')} />
                                         </Tooltip>
                                         {
                                             unistallLoading && <SyncOutlined spin />
@@ -828,7 +828,7 @@ function Thread() {
                                     </Tag> : <Tag>已检测到Tracing探针</Tag>)
                                 }
                                 <Tag>协议类型：{nowTrace?.labels?.protocol}</Tag>
-                                <Tag>响应时间：{formatTimeNs(_.find(nowTrace?.metrics, {Name: 'request_total_time'})?.Data.Value || 0)}</Tag>
+                                <Tag>响应时间：{formatTimeNs(_.find(nowTrace?.metrics, { Name: 'request_total_time' })?.Data.Value || 0)}</Tag>
                                 <Tag>TimeStamp：{nowTrace?.timestamp ? moment(Math.floor(nowTrace?.timestamp / 1000000)).format('YYYY-MM-DD HH:mm:ss') : ''}</Tag>
                             </div>
                         </div>
@@ -839,21 +839,21 @@ function Thread() {
                                     <Button icon={<ArrowRightOutlined />} className='f-ml8' onClick={() => toggleTrace('next')} disabled={nowTraceIdx === (traceList.length - 1) || traceList.length === 0} />
                                 </React.Fragment> : null
                             }
-                            <Button icon={showFullScreen ? <FullscreenExitOutlined/> : <FullscreenOutlined/>} className='f-ml8' onClick={fullScreen}/>
+                            <Button icon={showFullScreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />} className='f-ml8' onClick={fullScreen} />
                         </div>
                     </div>
                     <Modal visible={profileModalVisible} title="提醒" onCancel={() => setProfileModalVisible(false)} footer={<div className='profile_modal_footer'>
                         <Button onClick={() => setProfileModalVisible(false)}>稍候自行安装</Button>
                         <Button type="primary" onClick={() => toggleInstallProfile('start_attach_agent')} loading={profileModalLoading}>立即自动安装</Button>
                     </div>}>
-                        <div className='profile_modal_text'>未检测到支持的Tracing探针，为不影响Trace的Span和线程分析，请您及时安装。(点击查看<a href='http://kindling.harmonycloud.cn/docs/reference/kindling-java-agent/kindling-java-compatibility/' target="_blank">支持的探针列表</a>)</div>
+                        <div className='profile_modal_text'>未检测到支持的Tracing探针，为不影响Trace的Span和线程分析，请您及时安装。(点击查看<a href='http://kindlingx.com/docs/reference/kindling-java-agent/kindling-java-compatibility/' target="_blank">支持的探针列表</a>)</div>
                         <div className='profile_modal_text'>或点击下方按钮，让Trace Profiling自动为您的应用(目前只支持Java应用)安装探针。</div>
                     </Modal>
                     {
                         (requestEventInfo.length > 0 && showComplex) ? <div className='process_over_warp'>
                             <div className='request_info_process_warp'>
-                                { 
-                                    requestEventInfo.map(item => 
+                                {
+                                    requestEventInfo.map(item =>
                                         <div className='process_inof' key={item.type} onClick={() => clickRequestEvent(item)}>
                                             <div className='info_warp'>
                                                 <div className='event_name'>
@@ -862,7 +862,7 @@ function Thread() {
                                                 <span className='event_time'>{item.time}ms</span>
                                             </div>
                                             <div className='process_warp'>
-                                                <Progress type="circle" percent={item.timeRate} width={60} trailColor={(getStore('theme') || 'light') === 'light' ? '#3790FF12' : '#696969'} strokeColor='#3790FF' showInfo={false}/>
+                                                <Progress type="circle" percent={item.timeRate} width={60} trailColor={(getStore('theme') || 'light') === 'light' ? '#3790FF12' : '#696969'} strokeColor='#3790FF' showInfo={false} />
                                                 <div className='process_center_text'>
                                                     <span>{item.timeRate}%</span>
                                                 </div>

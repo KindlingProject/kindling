@@ -1,10 +1,10 @@
 # Kindling
 
 [![License](https://img.shields.io/badge/license-Apache2.0-blue.svg)](https://github.com/KindlingProject/kindling/blob/main/LICENSE)
-[![Doc](https://img.shields.io/badge/docs-latest-green.svg)](http://kindling.harmonycloud.cn/docs/overview-and-concepts/overview/) 
+[![Doc](https://img.shields.io/badge/docs-latest-green.svg)](http://kindlingx.com/docs/overview-and-concepts/overview/) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/KindlingProject/kindling/collector)](https://goreportcard.com/report/github.com/KindlingProject/kindling/collector)
 
-Visit our [Kindling website](http://kindling.harmonycloud.cn/) for more information.
+Visit our [Kindling website](http://kindlingx.com/) for more information.
 
 ## What is Kindling
 
@@ -91,11 +91,11 @@ The standard version will be open-sourced in 2023.
 
 ## Get started
 
-You can deploy Kindling easily, check out the [Installation Guide](http://kindling.harmonycloud.cn/docs/installation/kindling-agent/requirements/) for details.
+You can deploy Kindling easily, check out the [Installation Guide](http://kindlingx.com/docs/installation/kindling-agent/requirements/) for details.
 
 ## Documentation
 
-The Kindling documentation is available on our [Kindling website](http://kindling.harmonycloud.cn/docs/overview-and-concepts/overview/)
+The Kindling documentation is available on our [Kindling website](http://kindlingx.com/docs/overview-and-concepts/overview/)
 
 ## Contributing 
 
