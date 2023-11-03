@@ -2,7 +2,12 @@ package otelexporter
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
+	"os"
+	_ "net/http/pprof"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -138,6 +143,17 @@ func makePreAggNetMetricGroup(i int) *model.DataGroup {
 	return metricsGroup
 }
 
+func appendToFile(filename, text string) error {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(text)
+	return err
+}
+
 func BenchmarkOtelExporter_Consume(b *testing.B) {
 	dimension := 100000
 
@@ -258,6 +274,353 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = otelexporter.Consume(metricsGroupsSlice[recordCounter%dimension])
 		recordCounter++
+	}
+
+	log.Printf("Test Finished!")
+}
+
+func BenchmarkMemTest(b *testing.B) {
+	testDuration := time.Minute
+	endTime := time.Now().Add(30*testDuration)
+	metricCounter := 4
+	recordCounter := 0
+	memTicker := time.NewTicker(1 * time.Second)
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+	
+	go func() {
+		for range memTicker.C {
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+			stats := fmt.Sprintf("Alloc = %v MiB, Metric Count: %d, Record Count: %d\n", m.Alloc/1024/1024, metricCounter, recordCounter)
+			log.Printf(stats)
+			err := appendToFile("metrics_data.txt", stats)
+			if err != nil {
+				log.Println("Error writing to file:", err)
+			}
+		}
+	}()
+
+	cfg := &Config{
+		ExportKind:   PrometheusKindExporter, 
+		PromCfg:      &PrometheusConfig{
+			Port: ":9500", 
+			WithMemory: false, 
+		},
+		OtlpGrpcCfg:  &OtlpGrpcConfig{CollectPeriod: 15 * time.Second, Endpoint: "10.10.10.10:8080"},
+		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
+		CustomLabels: nil,
+		MemCleanUpConfig: &MemCleanUpConfig{
+			RestartPeriod: 12,
+			RestartEveryNDays: 12,
+		},
+
+		MetricAggregationMap: map[string]MetricAggregationKind{
+			"kindling_entity_request_total":                          MACounterKind,
+			"kindling_entity_request_duration_nanoseconds_total":     MACounterKind,
+			"kindling_entity_request_average_duration_nanoseconds":   MAHistogramKind,
+			"kindling_entity_request_send_bytes_total":               MACounterKind,
+			"kindling_entity_request_receive_bytes_total":            MACounterKind,
+			"kindling_topology_request_total":                        MACounterKind,
+			"kindling_topology_request_duration_nanoseconds_total":   MACounterKind,
+			"kindling_topology_request_average_duration_nanoseconds": MAHistogramKind,
+			"kindling_topology_request_request_bytes_total":          MACounterKind,
+			"kindling_topology_request_response_bytes_total":         MACounterKind,
+			"kindling_trace_request_duration_nanoseconds":            MAGaugeKind,
+			"kindling_tcp_srtt_microseconds":                         MAGaugeKind,
+			"kindling_tcp_retransmit_total":                          MACounterKind,
+			"kindling_tcp_packet_loss_total":                         MACounterKind,
+		},
+		AdapterConfig: &AdapterConfig{
+			NeedTraceAsResourceSpan: false,
+			NeedTraceAsMetric:       true,
+			NeedPodDetail:           true,
+			StoreExternalSrcIP:      false,
+		},
+	}
+
+	telemetry := component.NewDefaultTelemetryTools()
+	otelexporter := NewExporter(cfg, telemetry)
+
+	i := 0
+
+	metricsGroup := &model.DataGroup{
+		Name: constnames.AggregatedNetRequestMetricGroup,
+		Metrics: []*model.Metric{
+			model.NewIntMetric(constvalues.ResponseIo, 1234567891),
+			model.NewIntMetric(constvalues.RequestTotalTime, int64(i)),
+			model.NewIntMetric(constvalues.RequestIo, 4500),
+			model.NewIntMetric(constvalues.RequestCount, 4500),
+		},
+		Labels:    model.NewAttributeMap(),
+		Timestamp: 19900909090,
+	}
+	
+	metricsGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.SrcWorkloadName, "test-SrcWorkloadName"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.SrcWorkloadKind, "test-SrcWorkloadKind"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.SrcService, "test-SrcService"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.SrcIp, "test-SrcIp"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.DstNode, "test-DstNode"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.DstNamespace, "test-DstNamespace"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.DstPod, "test-DstPod"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.DstWorkloadName, "test-DstWorkloadName"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.DstWorkloadKind, "test-DstWorkloadKind"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.DstService, "test-DstService"+strconv.Itoa(i))
+
+	metricsGroup.Labels.AddStringValue(constlabels.SrcContainer, "test-SrcContainer"+strconv.Itoa(i))
+	metricsGroup.Labels.AddStringValue(constlabels.SrcContainerId, "test-SrcContainerId"+strconv.Itoa(i))
+
+	metricsGroup.Labels.AddStringValue(constlabels.Protocol, "http")
+	metricsGroup.Labels.AddStringValue(constlabels.StatusCode, "200")
+
+	// Topology data preferentially use D Nat Ip and D Nat Port
+	metricsGroup.Labels.AddStringValue(constlabels.DstIp, "test-DnatIp")
+
+	for time.Now().Before(endTime){
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcWorkloadName, "test-SrcWorkloadName"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcWorkloadKind, "test-SrcWorkloadKind"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcService, "test-SrcService"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcIp, "test-SrcIp"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.DstNode, "test-DstNode"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.DstNamespace, "test-DstNamespace"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.DstPod, "test-DstPod"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.DstWorkloadName, "test-DstWorkloadName"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.DstWorkloadKind, "test-DstWorkloadKind"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.DstService, "test-DstService"+strconv.Itoa(i))
+
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcContainer, "test-SrcContainer"+strconv.Itoa(i))
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcContainerId, "test-SrcContainerId"+strconv.Itoa(i))
+
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.Protocol, "http")
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.StatusCode, "200")
+
+		newMetricsGroup := &model.DataGroup{
+			Name: constnames.AggregatedNetRequestMetricGroup,
+			Metrics: []*model.Metric{
+				model.NewIntMetric(constvalues.ResponseIo, 1234567891),
+				model.NewIntMetric(constvalues.RequestTotalTime, int64(i)),
+				model.NewIntMetric(constvalues.RequestIo, 4500),
+				model.NewIntMetric(constvalues.RequestCount, 4500),
+			},
+			Labels:    metricsGroup.Labels,
+			Timestamp: 19900909090,
+		}
+
+		_ = otelexporter.Consume(newMetricsGroup)
+		recordCounter++
+		i++
+		time.Sleep(time.Second)  //event amount control
+	}
+
+	log.Printf("Test Finished!")
+}
+
+func BenchmarkLabelTest(b *testing.B) {
+	testDuration := time.Minute
+	endTime := time.Now().Add(30*testDuration)
+	metricCounter := 4
+	recordCounter := 0
+	memTicker := time.NewTicker(1 * time.Second)
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
+	go func() {
+		for range memTicker.C {
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+			stats := fmt.Sprintf("Alloc = %v MiB, Metric Count: %d, Record Count: %d\n", m.Alloc/1024/1024, metricCounter, recordCounter)
+			log.Printf(stats)
+			err := appendToFile("metrics_data.txt", stats)
+			if err != nil {
+				log.Println("Error writing to file:", err)
+			}
+		}
+	}()
+
+	cfg := &Config{
+		ExportKind:   PrometheusKindExporter, 
+		PromCfg:      &PrometheusConfig{
+			Port: ":9500", 
+			WithMemory: false, 
+		},
+		OtlpGrpcCfg:  &OtlpGrpcConfig{CollectPeriod: 15 * time.Second, Endpoint: "10.10.10.10:8080"},
+		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
+		CustomLabels: nil,
+		MemCleanUpConfig: &MemCleanUpConfig{
+			RestartPeriod: 12,
+			RestartEveryNDays: 12,
+		},
+
+		MetricAggregationMap: map[string]MetricAggregationKind{
+			"kindling_entity_request_total":                          MACounterKind,
+			"kindling_entity_request_duration_nanoseconds_total":     MACounterKind,
+			"kindling_entity_request_average_duration_nanoseconds":   MAHistogramKind,
+			"kindling_entity_request_send_bytes_total":               MACounterKind,
+			"kindling_entity_request_receive_bytes_total":            MACounterKind,
+			"kindling_topology_request_total":                        MACounterKind,
+			"kindling_topology_request_duration_nanoseconds_total":   MACounterKind,
+			"kindling_topology_request_average_duration_nanoseconds": MAHistogramKind,
+			"kindling_topology_request_request_bytes_total":          MACounterKind,
+			"kindling_topology_request_response_bytes_total":         MACounterKind,
+			"kindling_trace_request_duration_nanoseconds":            MAGaugeKind,
+			"kindling_tcp_srtt_microseconds":                         MAGaugeKind,
+			"kindling_tcp_retransmit_total":                          MACounterKind,
+			"kindling_tcp_packet_loss_total":                         MACounterKind,
+		},
+		AdapterConfig: &AdapterConfig{
+			NeedTraceAsResourceSpan: false,
+			NeedTraceAsMetric:       true,
+			NeedPodDetail:           true,
+			StoreExternalSrcIP:      false,
+		},
+	}
+
+	telemetry := component.NewDefaultTelemetryTools()
+	otelexporter := NewExporter(cfg, telemetry)
+
+	i := 0
+
+	metricsGroup := &model.DataGroup{
+		Name: constnames.AggregatedNetRequestMetricGroup,
+		Metrics: []*model.Metric{
+			model.NewIntMetric(constvalues.RequestTotalTime, int64(i)),
+		},
+		Labels:    model.NewAttributeMap(),
+		Timestamp: 19900909090,
+	}
+	
+	metricsGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+
+
+	for time.Now().Before(endTime){
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
+
+
+		newMetricsGroup := &model.DataGroup{
+			Name: constnames.AggregatedNetRequestMetricGroup,
+			Metrics: []*model.Metric{
+				model.NewIntMetric(constvalues.RequestTotalTime, int64(i)),
+			},
+			Labels:    metricsGroup.Labels,
+			Timestamp: 19900909090,
+		}
+
+		_ = otelexporter.Consume(newMetricsGroup)
+		recordCounter++
+		i++
+		time.Sleep(time.Second)  //event amount control
+	}
+
+	log.Printf("Test Finished!")
+}
+
+
+func BenchmarkMetricTest(b *testing.B) {
+	testDuration := time.Minute
+	endTime := time.Now().Add(30*testDuration)
+	metricCounter := 4
+	recordCounter := 0
+	memTicker := time.NewTicker(1 * time.Second)
+	
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+	
+	go func() {
+		for range memTicker.C {
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+			stats := fmt.Sprintf("Alloc = %v MiB, Metric Count: %d, Record Count: %d\n", m.Alloc/1024/1024, metricCounter, recordCounter)
+			log.Printf(stats)
+			err := appendToFile("metrics_data.txt", stats)
+			if err != nil {
+				log.Println("Error writing to file:", err)
+			}
+		}
+	}()
+
+	cfg := &Config{
+		ExportKind:   PrometheusKindExporter, 
+		PromCfg:      &PrometheusConfig{
+			Port: ":9500", 
+			WithMemory: false, 
+		},
+		OtlpGrpcCfg:  &OtlpGrpcConfig{CollectPeriod: 15 * time.Second, Endpoint: "10.10.10.10:8080"},
+		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
+		CustomLabels: nil,
+		MemCleanUpConfig: &MemCleanUpConfig{
+			RestartPeriod: 30,
+			RestartEveryNDays: 12,
+		},
+
+		MetricAggregationMap: map[string]MetricAggregationKind{
+			"kindling_entity_request_total":                          MACounterKind,
+			"kindling_entity_request_duration_nanoseconds_total":     MACounterKind,
+			"kindling_entity_request_average_duration_nanoseconds":   MAHistogramKind,
+			"kindling_entity_request_send_bytes_total":               MACounterKind,
+			"kindling_entity_request_receive_bytes_total":            MACounterKind,
+			"kindling_topology_request_total":                        MACounterKind,
+			"kindling_topology_request_duration_nanoseconds_total":   MACounterKind,
+			"kindling_topology_request_average_duration_nanoseconds": MAHistogramKind,
+			"kindling_topology_request_request_bytes_total":          MACounterKind,
+			"kindling_topology_request_response_bytes_total":         MACounterKind,
+			"kindling_trace_request_duration_nanoseconds":            MAGaugeKind,
+			"kindling_tcp_srtt_microseconds":                         MAGaugeKind,
+			"kindling_tcp_retransmit_total":                          MACounterKind,
+			"kindling_tcp_packet_loss_total":                         MACounterKind,
+		},
+		AdapterConfig: &AdapterConfig{
+			NeedTraceAsResourceSpan: false,
+			NeedTraceAsMetric:       true,
+			NeedPodDetail:           true,
+			StoreExternalSrcIP:      false,
+		},
+	}
+
+	telemetry := component.NewDefaultTelemetryTools()
+	otelexporter := NewExporter(cfg, telemetry)
+
+	i := 0
+
+	metricsGroup := &model.DataGroup{
+		Name: constnames.AggregatedNetRequestMetricGroup,
+		Metrics: []*model.Metric{
+			model.NewIntMetric(constvalues.RequestCount, 1),
+		},
+		Labels:    model.NewAttributeMap(),
+		Timestamp: 19900909090,
+	}
+	
+	metricsGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode")
+
+
+	for time.Now().Before(endTime){
+		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNode, "test-SrcNode")
+
+
+		newMetricsGroup := &model.DataGroup{
+			Name: constnames.AggregatedNetRequestMetricGroup,
+			Metrics: []*model.Metric{
+				model.NewIntMetric(constvalues.RequestCount, 1),
+			},
+			Labels:    metricsGroup.Labels,
+			Timestamp: 19900909090,
+		}
+
+		_ = otelexporter.Consume(newMetricsGroup)
+		recordCounter++
+		i++
+		time.Sleep(time.Second)  //event amount control
 	}
 
 	log.Printf("Test Finished!")

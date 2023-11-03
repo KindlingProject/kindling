@@ -12,6 +12,7 @@ type Config struct {
 	CustomLabels         map[string]string                `mapstructure:"custom_labels"`
 	MetricAggregationMap map[string]MetricAggregationKind `mapstructure:"metric_aggregation_map"`
 	AdapterConfig        *AdapterConfig                   `mapstructure:"adapter_config"`
+	MemCleanUpConfig     *MemCleanUpConfig                `mapstructure:"memcleanup"`
 }
 
 type PrometheusConfig struct {
@@ -33,4 +34,10 @@ type AdapterConfig struct {
 	NeedTraceAsMetric       bool `mapstructure:"need_trace_as_metric"`
 	NeedPodDetail           bool `mapstructure:"need_pod_detail"`
 	StoreExternalSrcIP      bool `mapstructure:"store_external_src_ip"`
+}
+
+type MemCleanUpConfig struct{
+	Enabled bool `mapstructure:"enable,omitempty"`
+	RestartPeriod int `mapstructure:"restart_period,omitempty"`
+	RestartEveryNDays int `mapstructure:"restart_every_n_days,omitempty"`
 }

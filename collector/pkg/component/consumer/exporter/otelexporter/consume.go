@@ -14,6 +14,9 @@ import (
 )
 
 func (e *OtelExporter) Consume(dataGroup *model.DataGroup) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
 	if dataGroup == nil {
 		// no need consume
 		return nil

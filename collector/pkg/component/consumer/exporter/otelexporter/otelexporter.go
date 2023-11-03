@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -44,6 +47,8 @@ const (
 )
 
 var serviceName string
+var expCounter int = 0
+var lastMetricsData string
 
 type OtelOutputExporters struct {
 	metricExporter exportmetric.Exporter
@@ -59,6 +64,10 @@ type OtelExporter struct {
 	customLabels         []attribute.KeyValue
 	instrumentFactory    *instrumentFactory
 	telemetry            *component.TelemetryTools
+	exp                  *prometheus.Exporter
+	rs                   *resource.Resource
+	mu                   sync.Mutex
+	restart            bool
 
 	adapters []adapter.Adapter
 }
@@ -135,6 +144,9 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
+			exp:                  exp, 
+			rs:                   rs,
+			restart:            false,
 			adapters: []adapter.Adapter{
 				adapter.NewNetAdapter(customLabels, &adapter.NetAdapterConfig{
 					StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
@@ -153,6 +165,59 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 				telemetry.Logger.Warn("error starting otelexporter prometheus server: ", zap.Error(err))
 			}
 		}()
+
+		if cfg.MemCleanUpConfig != nil && cfg.MemCleanUpConfig.Enabled {
+			if cfg.MemCleanUpConfig.RestartPeriod != 0 {
+				ticker := time.NewTicker(time.Duration(cfg.MemCleanUpConfig.RestartPeriod) * time.Hour)
+				go func() {
+					for {
+						select {
+						case <-ticker.C:
+							otelexporter.restart = true
+						}
+					}
+				}()
+			}
+		
+			go func() {
+				metricsTicker := time.NewTicker(250 * time.Millisecond)
+				for {
+					<-metricsTicker.C
+					currentMetricsData, err := fetchMetricsFromEndpoint()
+					if err != nil {
+						fmt.Println("Error fetching metrics:", err)
+						continue
+					}
+		
+					if currentMetricsData != lastMetricsData {
+						lastMetricsData = currentMetricsData
+
+						if(otelexporter.restart == true){
+							otelexporter.NewMeter(otelexporter.telemetry)
+							otelexporter.restart = false
+							expCounter++
+						}
+					}
+				}
+			}()
+			
+			cfg.MemCleanUpConfig.RestartEveryNDays = 0
+			if cfg.MemCleanUpConfig.RestartEveryNDays != 0 {
+				go func() {
+					for {
+						now := time.Now()
+						next := now.Add(time.Duration(cfg.MemCleanUpConfig.RestartEveryNDays) * time.Hour * 24)
+						next = time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
+						duration := next.Sub(now)
+
+						time.Sleep(duration)
+
+						otelexporter.restart = true
+					}
+				}()
+			}
+		}
+
 	} else {
 		var collectPeriod time.Duration
 
@@ -301,3 +366,58 @@ var exponentialInt64NanosecondsBoundaries = func(bounds []float64) (asint []floa
 	}
 	return
 }(exponentialInt64Boundaries)
+
+func (e *OtelExporter) NewMeter(telemetry *component.TelemetryTools) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	config := prometheus.Config{}
+
+	newController := controller.New(
+		otelprocessor.NewFactory(
+			selector.NewWithHistogramDistribution(
+				histogram.WithExplicitBoundaries(exponentialInt64NanosecondsBoundaries),
+			),
+			aggregation.CumulativeTemporalitySelector(),
+			otelprocessor.WithMemory(e.cfg.PromCfg.WithMemory),
+		),
+		controller.WithResource(e.rs),
+	)
+
+	exp, err := prometheus.New(config, newController)
+	if err != nil {
+		telemetry.Logger.Panic("failed to initialize prometheus exporter %v", zap.Error(err))
+		return nil
+	}
+
+	if err := e.metricController.Stop(context.Background()); err != nil {
+		return fmt.Errorf("failed to stop old controller: %w", err)
+	}
+
+	e.exp = exp
+	e.metricController = newController
+	e.instrumentFactory = newInstrumentFactory(e.exp.MeterProvider().Meter(MeterName), e.telemetry, e.customLabels)
+
+	go func() {
+		if err := StartServer(e.exp, e.telemetry, e.cfg.PromCfg.Port); err != nil {
+			telemetry.Logger.Warn("error starting otelexporter prometheus server: ", zap.Error(err))
+		}
+	}()
+	
+	return nil
+}
+
+func fetchMetricsFromEndpoint() (string, error) {
+	resp, err := http.Get("http://127.0.0.1:9500/metrics")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+

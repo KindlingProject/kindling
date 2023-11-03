@@ -5,6 +5,10 @@
 
 ## Unreleased
 ### Enhancements
+- Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours. Disabled by deafult. ([#577](https://github.com/KindlingProject/kindling/pull/577))
+
+## v0.8.1 - 2023-09-01
+### Enhancements
 - Improve the Grafana plugin's performance by reducing the amount of data requiring queries. Now the plugin queries through Grafana's api proxy. ([#555](https://github.com/KindlingProject/kindling/pull/555))
 - Expand the histogram bucket of otelexpoerter (Add 1500ms). ([#563](https://github.com/KindlingProject/kindling/pull/563))
 - Set default values of `store_external_src_ip` and `StoreExternalSrcIP` to false to reduce occurrences of unexpected src IP data. ([#562](https://github.com/KindlingProject/kindling/pull/562))
