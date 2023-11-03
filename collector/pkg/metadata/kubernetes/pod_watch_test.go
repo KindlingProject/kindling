@@ -32,37 +32,37 @@ func TestTruncateContainerId(t *testing.T) {
 }
 
 func TestOnAdd(t *testing.T) {
-	globalPodInfo = &podMap{
+	GlobalPodInfo = &podMap{
 		Info: make(map[string]map[string]*K8sPodInfo),
 	}
-	globalServiceInfo = &ServiceMap{
+	GlobalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
 	}
-	globalRsInfo = &ReplicaSetMap{
+	GlobalRsInfo = &ReplicaSetMap{
 		Info: make(map[string]Controller),
 	}
 	// First add service, and then add pod
-	onAddService(CreateService())
-	onAddReplicaSet(CreateReplicaSet())
-	onAdd(CreatePod(true))
+	AddService(CreateService())
+	AddReplicaSet(CreateReplicaSet())
+	AddPod(CreatePod(true))
 	t.Log(MetaDataCache)
 	// Delete podInfo must not affect serviceMap
-	onDelete(CreatePod(true))
+	DeletePod(CreatePod(true))
 	t.Log(MetaDataCache)
 	// Empty all the metadata
-	onDeleteService(CreateService())
+	DeleteService(CreateService())
 	t.Log(MetaDataCache)
 }
 
 // ISSUE https://github.com/KindlingProject/kindling/issues/229
 func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
-	globalPodInfo = &podMap{
+	GlobalPodInfo = &podMap{
 		Info: make(map[string]map[string]*K8sPodInfo),
 	}
-	globalServiceInfo = &ServiceMap{
+	GlobalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
 	}
-	globalRsInfo = &ReplicaSetMap{
+	GlobalRsInfo = &ReplicaSetMap{
 		Info: make(map[string]Controller),
 	}
 	// Firstly deployment created and add old RS and old POD
@@ -77,19 +77,19 @@ func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
 	newPOD := CreatePod(true)
 	newPOD.SetResourceVersion("new")
 	newPOD.OwnerReferences[0].Controller = &controller
-	onAddReplicaSet(oldRs)
-	onAdd(oldPOD)
+	AddReplicaSet(oldRs)
+	AddPod(oldPOD)
 
 	// Secondly POD&RS were been updated
 
 	go func() {
 		for i := 0; i < 1000; i++ {
-			OnUpdateReplicaSet(oldRs, newRs)
+			UpdateReplicaSet(oldRs, newRs)
 		}
 	}()
 
 	for i := 0; i < 100; i++ {
-		OnUpdate(oldPOD, newPOD)
+		UpdatePod(oldPOD, newPOD)
 		// Thirdly check the pod's workload_kind
 		pod, ok := MetaDataCache.GetPodByContainerId(TruncateContainerId(newPOD.Status.ContainerStatuses[0].ContainerID))
 		require.True(t, ok, "failed to get target POD")
@@ -98,19 +98,19 @@ func TestOnAddPodWhileReplicaSetUpdating(t *testing.T) {
 }
 
 func TestOnAddLowercaseWorkload(t *testing.T) {
-	globalPodInfo = &podMap{
+	GlobalPodInfo = &podMap{
 		Info: make(map[string]map[string]*K8sPodInfo),
 	}
-	globalServiceInfo = &ServiceMap{
+	GlobalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
 	}
-	globalRsInfo = &ReplicaSetMap{
+	GlobalRsInfo = &ReplicaSetMap{
 		Info: make(map[string]Controller),
 	}
 	higherCase := "DaemonSet"
 	lowerCase := "daemonset"
 	isController := true
-	onAdd(&corev1.Pod{
+	AddPod(&corev1.Pod{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			OwnerReferences: []metav1.OwnerReference{{
@@ -212,14 +212,14 @@ func TestUpdateAndDelayDelete(t *testing.T) {
 	}
 	podIp := addObj.Status.PodIP
 	port := addObj.Spec.Containers[0].Ports[0].ContainerPort
-	onAdd(addObj)
+	AddPod(addObj)
 	_, ok := MetaDataCache.GetContainerByIpPort(podIp, uint32(port))
 	if !ok {
 		t.Fatalf("Not found container [%s:%d]", podIp, port)
 	}
 	stopCh := make(chan struct{})
 	go podDeleteLoop(100*time.Millisecond, 500*time.Millisecond, stopCh)
-	OnUpdate(addObj, updateObj)
+	UpdatePod(addObj, updateObj)
 
 	// Check if the new container can be found
 	assertFindPod(t, updateObj)
@@ -247,10 +247,10 @@ func TestUpdateAndDelayDeleteWhenOnlyPodIpChanged(t *testing.T) {
 	updateObj := new(corev1.Pod)
 	_ = json.Unmarshal([]byte(updateObjJson), updateObj)
 
-	onAdd(addObj)
+	AddPod(addObj)
 	stopCh := make(chan struct{})
 	go podDeleteLoop(100*time.Millisecond, 500*time.Millisecond, stopCh)
-	OnUpdate(addObj, updateObj)
+	UpdatePod(addObj, updateObj)
 
 	// Check if the new container can be found
 	assertFindPod(t, updateObj)
@@ -277,10 +277,10 @@ func TestUpdateAndDelayDeleteWhenOnlyPortChanged(t *testing.T) {
 	updateObj := new(corev1.Pod)
 	_ = json.Unmarshal([]byte(updateObjJson), updateObj)
 
-	onAdd(addObj)
+	AddPod(addObj)
 	stopCh := make(chan struct{})
 	go podDeleteLoop(100*time.Millisecond, 500*time.Millisecond, stopCh)
-	OnUpdate(addObj, updateObj)
+	UpdatePod(addObj, updateObj)
 
 	// Check if new container can be found
 	assertFindPod(t, updateObj)
@@ -318,12 +318,12 @@ func TestDelayDeleteThenAddWithSameIP(t *testing.T) {
 	stopCh := make(chan struct{})
 	go podDeleteLoop(20*time.Millisecond, 100*time.Millisecond, stopCh)
 
-	onAdd(addObj)
+	AddPod(addObj)
 	// Check if the container can be found
 	assertFindPod(t, addObj)
 
-	onDelete(deletedObj)
-	onAdd(newAddObj)
+	DeletePod(deletedObj)
+	AddPod(newAddObj)
 	time.Sleep(200 * time.Millisecond)
 
 	// Check if the new container can be found

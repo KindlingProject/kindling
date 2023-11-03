@@ -7,13 +7,13 @@ import (
 
 func TestDeleteLoop(t *testing.T) {
 	pod := CreatePod(true)
-	onAdd(pod)
+	AddPod(pod)
 	verifyIfPodExist(true, t)
 	if len(podDeleteQueue) != 0 {
 		t.Fatalf("PodDeleteQueue should be 0, but is %d", len(podDeleteQueue))
 	}
 
-	onDelete(pod)
+	DeletePod(pod)
 	verifyIfPodExist(true, t)
 	if len(podDeleteQueue) != 1 {
 		t.Fatalf("PodDeleteQueue should be 1, but is %d", len(podDeleteQueue))
@@ -44,7 +44,7 @@ func TestDeleteLoop(t *testing.T) {
 }
 
 func verifyIfPodExist(exist bool, t *testing.T) {
-	_, ok := globalPodInfo.get("CustomNamespace", "deploy-1a2b3c4d-5e6f7")
+	_, ok := GlobalPodInfo.get("CustomNamespace", "deploy-1a2b3c4d-5e6f7")
 	if ok != exist {
 		t.Fatalf("Finding pod at globalPodInfo. Expect %v, but get %v", false, ok)
 	}

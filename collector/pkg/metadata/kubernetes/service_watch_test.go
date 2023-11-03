@@ -116,40 +116,40 @@ func TestServiceMap_GetServiceMatchLabels(t *testing.T) {
 }
 
 func TestOnAddService(t *testing.T) {
-	globalPodInfo = &podMap{
+	GlobalPodInfo = &podMap{
 		Info: make(map[string]map[string]*K8sPodInfo),
 	}
-	globalServiceInfo = &ServiceMap{
+	GlobalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
 	}
-	globalRsInfo = &ReplicaSetMap{
+	GlobalRsInfo = &ReplicaSetMap{
 		Info: make(map[string]Controller),
 	}
 	// First add pod, and then add service
-	onAddReplicaSet(CreateReplicaSet())
-	onAdd(CreatePod(true))
-	onAddService(CreateService())
+	AddReplicaSet(CreateReplicaSet())
+	AddPod(CreatePod(true))
+	AddService(CreateService())
 	t.Log(MetaDataCache)
 	// Delete service must empty the serviceInfo referenced by podInfo
-	onDeleteService(CreateService())
+	DeleteService(CreateService())
 	t.Log(MetaDataCache)
 	// Empty all the metadata
-	onDelete(CreatePod(true))
+	DeletePod(CreatePod(true))
 	t.Log(MetaDataCache)
 }
 
 func TestServiceMap_Delete(t *testing.T) {
-	globalPodInfo = &podMap{
+	GlobalPodInfo = &podMap{
 		Info: make(map[string]map[string]*K8sPodInfo),
 	}
-	globalServiceInfo = &ServiceMap{
+	GlobalServiceInfo = &ServiceMap{
 		ServiceMap: make(map[string]map[string]*K8sServiceInfo),
 	}
-	globalRsInfo = &ReplicaSetMap{
+	GlobalRsInfo = &ReplicaSetMap{
 		Info: make(map[string]Controller),
 	}
-	onAddService(CreateService())
-	onAdd(CreatePod(true))
+	AddService(CreateService())
+	AddPod(CreatePod(true))
 	containerId := "1a2b3c4d5e6f"
 	podFromCache, ok := MetaDataCache.GetPodByContainerId(containerId)
 	if !ok {
@@ -169,7 +169,7 @@ func TestServiceMap_Delete(t *testing.T) {
 	if !reflect.DeepEqual(serviceFromCache, expectedService) {
 		t.Errorf("Before delete method is invoked %v is expected, but get %v", expectedService, serviceFromCache)
 	}
-	globalServiceInfo.delete("CustomNamespace", "CustomService")
+	GlobalServiceInfo.delete("CustomNamespace", "CustomService")
 	expectedService = &K8sServiceInfo{
 		Ip:          "",
 		ServiceName: "",

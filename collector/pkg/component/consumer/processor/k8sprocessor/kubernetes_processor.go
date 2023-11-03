@@ -12,6 +12,8 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constlabels"
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
+
+	mpclient "github.com/Kindling-project/kindling/collector/pkg/metadata/metaprovider/client"
 )
 
 const (
@@ -49,6 +51,10 @@ func NewKubernetesProcessor(cfg interface{}, telemetry *component.TelemetryTools
 		kubernetes.WithGraceDeletePeriod(config.GraceDeletePeriod),
 		kubernetes.WithFetchReplicaSet(config.EnableFetchReplicaSet),
 	)
+	if config.MetaDataProviderConfig != nil && config.MetaDataProviderConfig.Enable {
+		cli := mpclient.NewMetaDataWrapperClient(config.MetaDataProviderConfig.Endpoint, config.MetaDataProviderConfig.EnableTrace)
+		options = append(options, kubernetes.WithMetaDataProviderConfig(config.MetaDataProviderConfig, cli.ListAndWatch))
+	}
 	err := kubernetes.InitK8sHandler(options...)
 	if err != nil {
 		telemetry.Logger.Panicf("Failed to initialize [%s]: %v. Set the option 'enable' false if you want to run the agent in the non-Kubernetes environment.", K8sMetadata, err)

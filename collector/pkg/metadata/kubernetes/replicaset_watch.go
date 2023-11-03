@@ -24,7 +24,7 @@ type ReplicaSetMap struct {
 	mut  sync.RWMutex
 }
 
-var globalRsInfo = newReplicaSetMap()
+var GlobalRsInfo = newReplicaSetMap()
 var rsUpdateMutex sync.RWMutex
 
 type Controller struct {
@@ -58,7 +58,7 @@ func (rs *ReplicaSetMap) deleteOwnerReference(key string) {
 	rs.mut.Unlock()
 }
 
-func RsWatch(clientSet *kubernetes.Clientset) {
+func RsWatch(clientSet *kubernetes.Clientset, handler cache.ResourceEventHandler) {
 	stopper := make(chan struct{})
 	defer close(stopper)
 
@@ -67,11 +67,15 @@ func RsWatch(clientSet *kubernetes.Clientset) {
 	informer := rsInformer.Informer()
 	defer runtime.HandleCrash()
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    onAddReplicaSet,
-		UpdateFunc: OnUpdateReplicaSet,
-		DeleteFunc: onDeleteReplicaSet,
-	})
+	if handler != nil {
+		informer.AddEventHandler(handler)
+	} else {
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    AddReplicaSet,
+			UpdateFunc: UpdateReplicaSet,
+			DeleteFunc: DeleteReplicaSet,
+		})
+	}
 
 	go factory.Start(stopper)
 
@@ -83,7 +87,7 @@ func RsWatch(clientSet *kubernetes.Clientset) {
 	<-stopper
 }
 
-func onAddReplicaSet(obj interface{}) {
+func AddReplicaSet(obj interface{}) {
 	rs := obj.(*appv1.ReplicaSet)
 	ownerRef := metav1.GetControllerOfNoCopy(rs)
 	if ownerRef == nil {
@@ -94,10 +98,10 @@ func onAddReplicaSet(obj interface{}) {
 		Kind:       ownerRef.Kind,
 		APIVersion: ownerRef.APIVersion,
 	}
-	globalRsInfo.put(mapKey(rs.Namespace, rs.Name), controller)
+	GlobalRsInfo.put(mapKey(rs.Namespace, rs.Name), controller)
 }
 
-func OnUpdateReplicaSet(objOld interface{}, objNew interface{}) {
+func UpdateReplicaSet(objOld interface{}, objNew interface{}) {
 	oldRs := objOld.(*appv1.ReplicaSet)
 	newRs := objNew.(*appv1.ReplicaSet)
 	if newRs.ResourceVersion == oldRs.ResourceVersion {
@@ -105,12 +109,12 @@ func OnUpdateReplicaSet(objOld interface{}, objNew interface{}) {
 	}
 	rsUpdateMutex.Lock()
 	// TODO: re-implement the updated logic to reduce computation
-	onDeleteReplicaSet(objOld)
-	onAddReplicaSet(objNew)
+	DeleteReplicaSet(objOld)
+	AddReplicaSet(objNew)
 	rsUpdateMutex.Unlock()
 }
 
-func onDeleteReplicaSet(obj interface{}) {
+func DeleteReplicaSet(obj interface{}) {
 	// Maybe get DeletedFinalStateUnknown instead of *corev1.Pod.
 	// Fix https://github.com/KindlingProject/kindling/issues/445
 	rs, ok := obj.(*appv1.ReplicaSet)
@@ -124,5 +128,5 @@ func onDeleteReplicaSet(obj interface{}) {
 			return
 		}
 	}
-	globalRsInfo.deleteOwnerReference(mapKey(rs.Namespace, rs.Name))
+	GlobalRsInfo.deleteOwnerReference(mapKey(rs.Namespace, rs.Name))
 }

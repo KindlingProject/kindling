@@ -29,7 +29,7 @@ type ServiceMap struct {
 	mut        sync.RWMutex
 }
 
-var globalServiceInfo = newServiceMap()
+var GlobalServiceInfo = newServiceMap()
 var serviceUpdatedMutex sync.Mutex
 
 func newServiceMap() *ServiceMap {
@@ -89,7 +89,7 @@ func (s *ServiceMap) delete(namespace string, serviceName string) {
 	s.mut.Unlock()
 }
 
-func ServiceWatch(clientSet *kubernetes.Clientset) {
+func ServiceWatch(clientSet *kubernetes.Clientset, handler cache.ResourceEventHandler) {
 	stopper := make(chan struct{})
 	defer close(stopper)
 
@@ -105,16 +105,20 @@ func ServiceWatch(clientSet *kubernetes.Clientset) {
 		return
 	}
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    onAddService,
-		UpdateFunc: OnUpdateService,
-		DeleteFunc: onDeleteService,
-	})
+	if handler != nil {
+		informer.AddEventHandler(handler)
+	} else {
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    AddService,
+			UpdateFunc: UpdateService,
+			DeleteFunc: DeleteService,
+		})
+	}
 	// TODO: use workqueue to avoid blocking
 	<-stopper
 }
 
-func onAddService(obj interface{}) {
+func AddService(obj interface{}) {
 	service := obj.(*corev1.Service)
 	sI := &K8sServiceInfo{
 		Ip:          service.Spec.ClusterIP,
@@ -123,9 +127,9 @@ func onAddService(obj interface{}) {
 		isNodePort:  service.Spec.Type == "NodePort",
 		Selector:    service.Spec.Selector,
 	}
-	globalServiceInfo.add(sI)
+	GlobalServiceInfo.add(sI)
 	// When new service is added, podInfo should be updated
-	podInfoSlice := globalPodInfo.getPodsMatchSelectors(sI.Namespace, sI.Selector)
+	podInfoSlice := GlobalPodInfo.getPodsMatchSelectors(sI.Namespace, sI.Selector)
 	for _, podInfo := range podInfoSlice {
 		for _, containerId := range podInfo.ContainerIds {
 			if podInfo, ok := MetaDataCache.GetPodByContainerId(containerId); ok {
@@ -150,7 +154,7 @@ func onAddService(obj interface{}) {
 	for _, port := range service.Spec.Ports {
 		MetaDataCache.AddServiceByIpPort(service.Spec.ClusterIP, uint32(port.Port), sI)
 		if sI.isNodePort {
-			nodeAddresses := globalNodeInfo.getAllNodeAddresses()
+			nodeAddresses := GlobalNodeInfo.getAllNodeAddresses()
 			for _, nodeAddress := range nodeAddresses {
 				MetaDataCache.AddServiceByIpPort(nodeAddress, uint32(port.NodePort), sI)
 			}
@@ -158,7 +162,7 @@ func onAddService(obj interface{}) {
 	}
 }
 
-func OnUpdateService(objOld interface{}, objNew interface{}) {
+func UpdateService(objOld interface{}, objNew interface{}) {
 	oldSvc := objOld.(*corev1.Service)
 	newSvc := objNew.(*corev1.Service)
 	if oldSvc.ResourceVersion == newSvc.ResourceVersion {
@@ -166,12 +170,12 @@ func OnUpdateService(objOld interface{}, objNew interface{}) {
 	}
 	serviceUpdatedMutex.Lock()
 	// TODO: re-implement the updated logic to reduce computation
-	onDeleteService(objOld)
-	onAddService(objNew)
+	DeleteService(objOld)
+	AddService(objNew)
 	serviceUpdatedMutex.Unlock()
 }
 
-func onDeleteService(obj interface{}) {
+func DeleteService(obj interface{}) {
 	// Maybe get DeletedFinalStateUnknown instead of *corev1.Pod.
 	// Fix https://github.com/KindlingProject/kindling/issues/445
 	service, ok := obj.(*corev1.Service)
@@ -186,7 +190,7 @@ func onDeleteService(obj interface{}) {
 		}
 	}
 	// 'delete' will delete all such service in MetaDataCache
-	globalServiceInfo.delete(service.Namespace, service.Name)
+	GlobalServiceInfo.delete(service.Namespace, service.Name)
 	ip := service.Spec.ClusterIP
 	if ip == "" || ip == "None" {
 		return
@@ -194,7 +198,7 @@ func onDeleteService(obj interface{}) {
 	for _, port := range service.Spec.Ports {
 		MetaDataCache.DeleteServiceByIpPort(ip, uint32(port.Port))
 		if service.Spec.Type == "NodePort" {
-			nodeAddresses := globalNodeInfo.getAllNodeAddresses()
+			nodeAddresses := GlobalNodeInfo.getAllNodeAddresses()
 			for _, nodeAddress := range nodeAddresses {
 				MetaDataCache.DeleteServiceByIpPort(nodeAddress, uint32(port.NodePort))
 			}
