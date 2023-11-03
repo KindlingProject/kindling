@@ -26,9 +26,9 @@ In this release, we have a new contributor @YDMsama. Thanks and welcome! 🥳
 
 ## v0.8.0 - 2023-06-30
 ### New features
-- Provide a new metric called kindling_k8s_workload_info, which supports workload filtering for k8s, thus preventing frequent crashes of Grafana topology. Please refer to the [doc](http://kindling.harmonycloud.cn/docs/usage/grafana-topology-plugin/) for any limitations.([#530](https://github.com/KindlingProject/kindling/pull/530))
+- Provide a new metric called kindling_k8s_workload_info, which supports workload filtering for k8s, thus preventing frequent crashes of Grafana topology. Please refer to the [doc](http://kindlingx.com/docs/usage/grafana-topology-plugin/) for any limitations.([#530](https://github.com/KindlingProject/kindling/pull/530))
 - Added support for displaying trace-profiling data by querying from Elasticsearch. ([#528](https://github.com/KindlingProject/kindling/pull/528))
-- Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindling.harmonycloud.cn/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
+- Display scheduler run queue latency on Trace-Profiling chart. To learn more about the concept of 'Run Queue Latency', refer to [this blog post](https://www.brendangregg.com/blog/2016-10-08/linux-bcc-runqlat.html). You can also find a use case for this feature in [this blog post](http://kindlingx.com/blogs/use-cases/optimize-cpu/). ([#494](https://github.com/KindlingProject/kindling/pull/494))
 ### Enhancements
 - Upgrade the Grafana version to 8.5.26 ([#533](https://github.com/KindlingProject/kindling/pull/533))
 - MySQL CommandLine Case: Ignore quit command and get sql with CLIENT_QUERY_ATTRIBUTES([#523](https://github.com/KindlingProject/kindling/pull/523))
@@ -77,7 +77,7 @@ In this release, we have a new contributor @llhhbc. Thanks and welcome! 🥳
 
 ## v0.7.0 - 2023-02-16
 ### New features
-- Add a new simplified chart to display the trace-profiling data. It mixes `span` with profiling and is more user-friendly. Try the demo now on the [website](http://kindling.harmonycloud.cn/).([#443](https://github.com/KindlingProject/kindling/pull/443))
+- Add a new simplified chart to display the trace-profiling data. It mixes `span` with profiling and is more user-friendly. Try the demo now on the [website](http://kindlingx.com/).([#443](https://github.com/KindlingProject/kindling/pull/443))
 - Add trace to cpuevents to display the payload of network flows. ([#442](https://github.com/KindlingProject/kindling/pull/442))
 - Support Attach Agent for NoAPM Java Application. ([#431](https://github.com/KindlingProject/kindling/pull/431))
 
@@ -126,7 +126,7 @@ In this release, we have a new contributor @llhhbc. Thanks and welcome! 🥳
 
 ## v0.5.0 - 2022-11-02
 ### New features
-- Add a new feature: Trace Profiling. See more details about it on our [website](http://kindling.harmonycloud.cn). ([#335](https://github.com/KindlingProject/kindling/pull/335))
+- Add a new feature: Trace Profiling. See more details about it on our [website](http://kindlingx.com). ([#335](https://github.com/KindlingProject/kindling/pull/335))
 
 ### Enhancements
 - Add request and response payload of `Redis` protocol message to `Span` data. ([#325](https://github.com/KindlingProject/kindling/pull/325))
@@ -199,7 +199,7 @@ In this release, we have a new contributor @llhhbc. Thanks and welcome! 🥳
 
 ## v0.2.0 - 2022-05-07
 ### Features
-- Provide a kindling Prometheus exporter that can support integration with Prometheus easily. See kindling's metrics from the kindling [website](http://kindling.harmonycloud.cn/docs/usage/prometheus-metric/).
+- Provide a kindling Prometheus exporter that can support integration with Prometheus easily. See kindling's metrics from the kindling [website](http://kindlingx.com/docs/usage/prometheus-metric/).
 - Support network performance, DNS performance, service network maps, and workload performance analysis.
 - Support HTTP, MySQL, and REDIS request analysis.
 - Provide a Grafana-plugin with four built-in dashboards to support basic analysis features.
