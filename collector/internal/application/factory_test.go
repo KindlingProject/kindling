@@ -8,12 +8,15 @@ import (
 
 	"github.com/Kindling-project/kindling/collector/pkg/component/analyzer/network"
 	"github.com/Kindling-project/kindling/collector/pkg/component/consumer/processor/k8sprocessor"
+	"github.com/Kindling-project/kindling/collector/pkg/component/receiver/cgoreceiver"
+	"github.com/Kindling-project/kindling/collector/pkg/metadata/kubernetes"
 )
 
 func TestConstructConfig(t *testing.T) {
 	factory := NewComponentsFactory()
 	factory.RegisterProcessor(k8sprocessor.K8sMetadata, k8sprocessor.NewKubernetesProcessor, &k8sprocessor.DefaultConfig)
 	factory.RegisterAnalyzer(network.Network.String(), network.NewNetworkAnalyzer, network.NewDefaultConfig())
+	factory.RegisterReceiver(cgoreceiver.Cgo, cgoreceiver.NewCgoReceiver, cgoreceiver.NewDefaultConfig())
 
 	// Construct the config from the yaml file
 	v := viper.New()
@@ -34,12 +37,18 @@ func TestConstructConfig(t *testing.T) {
 		KubeConfigDir:         "/opt/.kube/config",
 		GraceDeletePeriod:     30,
 		EnableFetchReplicaSet: true,
+		MetaDataProviderConfig: &kubernetes.MetaDataProviderConfig{
+			Enable:      false,
+			EnableTrace: false,
+			Endpoint:    "",
+		},
 	}
 	assert.Equal(t, expectedCfg, k8sCfg)
 
 	networkAnalyzerFactory := factory.Analyzers[network.Network.String()]
 	networkConfig := networkAnalyzerFactory.Config
 	expectedNetworkConfig := &network.Config{
+		EventChannelSize:      10000,
 		EnableTimeoutCheck:    true,
 		ConnectTimeout:        100,
 		FdReuseTimeout:        15,
@@ -61,8 +70,79 @@ func TestConstructConfig(t *testing.T) {
 			},
 		},
 		UrlClusteringMethod: "blank",
-		
-		IgnoreDnsRcode3Error: false,
+
+		IgnoreDnsRcode3Error: true,
 	}
 	assert.Equal(t, expectedNetworkConfig, networkConfig)
+
+	cgoreceiverFactory := factory.Receivers[cgoreceiver.Cgo]
+	cgoreceiverConfig := cgoreceiverFactory.Config
+	expectedCgoreceiverConfig := &cgoreceiver.Config{
+		SubscribeInfo: []cgoreceiver.SubEvent{
+			{
+				Name:     "syscall_exit-writev",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-readv",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-write",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-read",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-sendto",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-recvfrom",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-sendmsg",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-recvmsg",
+				Category: "net",
+			},
+			{
+				Name:     "syscall_exit-sendmmsg",
+				Category: "net",
+			},
+			{
+				Name: "kprobe-tcp_close",
+			},
+			{
+				Name: "kprobe-tcp_rcv_established",
+			},
+			{
+				Name: "kprobe-tcp_drop",
+			},
+			{
+				Name: "kprobe-tcp_retransmit_skb",
+			},
+			{
+				Name: "syscall_exit-connect",
+			},
+			{
+				Name: "kretprobe-tcp_connect",
+			},
+			{
+				Name: "kprobe-tcp_set_state",
+			},
+			{
+				Name: "tracepoint-procexit",
+			},
+		},
+		ProcessFilterInfo: cgoreceiver.ProcessFilter{
+			Comms: []string{"kindling-collec", "containerd", "dockerd", "containerd-shim", "filebeat", "java"},
+		},
+	}
+	assert.Equal(t, expectedCgoreceiverConfig, cgoreceiverConfig)
 }
