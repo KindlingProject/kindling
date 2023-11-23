@@ -76,10 +76,6 @@ func (c *Client) ListAndWatch(setup kubernetes.SetPreprocessingMetaDataCache) er
 			continue
 		}
 		c.apply(&resp)
-		if kubernetes.ReWatch {
-			kubernetes.ReWatch = false
-			break
-		}
 	}
 	return nil
 }

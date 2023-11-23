@@ -17,8 +17,6 @@ import (
 // AuthType describes the type of authentication to use for the K8s API
 type AuthType string
 
-var ReWatch bool
-
 const (
 	// AuthTypeNone means no auth is required
 	AuthTypeNone AuthType = "none"
@@ -110,16 +108,6 @@ func initWatcherFromMetadataProvider(k8sConfig config) error {
 	// Enable PodDeleteGrace
 	go podDeleteLoop(10*time.Second, k8sConfig.GraceDeletePeriod, stopCh)
 	go watchFromMPWithRetry(k8sConfig)
-
-	// rewatch from MP every 30 minute
-	ReWatch = false
-	go func() {
-		ticker := time.NewTicker(30 * time.Minute)
-		for range ticker.C {
-			clearK8sMap()
-			ReWatch = true
-		}
-	}()
 	return nil
 }
 
@@ -129,7 +117,6 @@ func watchFromMPWithRetry(k8sConfig config) {
 			if err := k8sConfig.listAndWatchFromProvider(SetupCache); err == nil {
 				i = 0
 				// receiver ReWatch signal , clear cache and rewatch from MP
-				// TODO logger
 				log.Printf("clear K8sCache and rewatch from MP")
 				continue
 			} else {
