@@ -210,21 +210,17 @@ func createRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	return authConf, nil
 }
 
-func clearK8sMap() {
-	GlobalPodInfo = newPodMap()
-	GlobalNodeInfo = newNodeMap()
-	GlobalRsInfo = newReplicaSetMap()
-	GlobalServiceInfo = newServiceMap()
-}
-
+// Huge Lock, only used when setup and check the reentrant lock before you call
 func RLockMetadataCache() {
 	MetaDataCache.cMut.RLock()
 	MetaDataCache.pMut.RLock()
 	MetaDataCache.sMut.RLock()
 	MetaDataCache.HostPortInfo.mutex.RLock()
+	podDeleteQueueMut.Lock()
 }
 
 func RUnlockMetadataCache() {
+	podDeleteQueueMut.Unlock()
 	MetaDataCache.HostPortInfo.mutex.RUnlock()
 	MetaDataCache.sMut.RUnlock()
 	MetaDataCache.pMut.RUnlock()

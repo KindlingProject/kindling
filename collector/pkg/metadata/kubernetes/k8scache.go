@@ -292,10 +292,21 @@ func (c *K8sMetaDataCache) GetNodeNameByIp(ip string) (string, bool) {
 }
 
 func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMap, rsMap *ReplicaSetMap) {
+	RLockMetadataCache()
+	defer RUnlockMetadataCache()
 	if cache != nil {
 		if cache.ContainerIdInfo != nil {
+			// Recalculate local cacheMap
+			localWorkloadMap = newWorkloadMap()
+			GlobalPodInfo = newPodMap()
 			for _, containersInfo := range cache.ContainerIdInfo {
-				GlobalPodInfo.add(containersInfo.RefPodInfo)
+				refPodInfo := containersInfo.RefPodInfo
+				localWorkloadMap.add(&workloadInfo{
+					Namespace:    refPodInfo.Namespace,
+					WorkloadName: refPodInfo.WorkloadName,
+					WorkloadKind: refPodInfo.WorkloadKind,
+				})
+				GlobalPodInfo.add(refPodInfo)
 			}
 			MetaDataCache.ContainerIdInfo = cache.ContainerIdInfo
 		}
@@ -318,4 +329,5 @@ func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMa
 	if GlobalRsInfo != nil {
 		GlobalRsInfo = rsMap
 	}
+	podDeleteQueue = make([]deleteRequest, 0)
 }
