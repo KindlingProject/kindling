@@ -149,6 +149,7 @@ processors:
     # that can reduce the pressure on API-server and transmitting less data 
     metadata_provider_config:
       # confirm that metedata_provider is deployed before you enable the configuration
+      # deploy metedata_provider by `kubectl create -f deploy/metadata-provider/metadata-provider-deploy.yml`
       enable: false
       # set `enable_trace` as true only if you need to debug the metadata from metadata_provider
       # each k8sMetadata fetched from metadata_provider will be printed into console
