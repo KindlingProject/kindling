@@ -62,17 +62,18 @@ func (s *ServiceMap) GetServiceMatchLabels(namespace string, labels map[string]s
 
 func (s *ServiceMap) add(info *K8sServiceInfo) {
 	s.mut.Lock()
+	defer s.mut.Unlock()
 	serviceNameMap, ok := s.ServiceMap[info.Namespace]
 	if !ok {
 		serviceNameMap = make(map[string]*K8sServiceInfo)
 	}
 	serviceNameMap[info.ServiceName] = info
 	s.ServiceMap[info.Namespace] = serviceNameMap
-	s.mut.Unlock()
 }
 
 func (s *ServiceMap) delete(namespace string, serviceName string) {
 	s.mut.Lock()
+	defer s.mut.Unlock()
 	serviceNameMap, ok := s.ServiceMap[namespace]
 	if ok {
 		serviceInfo, ok := serviceNameMap[serviceName]
@@ -86,7 +87,6 @@ func (s *ServiceMap) delete(namespace string, serviceName string) {
 			serviceInfo.emptySelf()
 		}
 	}
-	s.mut.Unlock()
 }
 
 func ServiceWatch(clientSet *kubernetes.Clientset, handler cache.ResourceEventHandler) {
@@ -169,10 +169,10 @@ func UpdateService(objOld interface{}, objNew interface{}) {
 		return
 	}
 	serviceUpdatedMutex.Lock()
+	defer serviceUpdatedMutex.Unlock()
 	// TODO: re-implement the updated logic to reduce computation
 	DeleteService(objOld)
 	AddService(objNew)
-	serviceUpdatedMutex.Unlock()
 }
 
 func DeleteService(obj interface{}) {

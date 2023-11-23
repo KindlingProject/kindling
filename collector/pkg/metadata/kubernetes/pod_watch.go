@@ -86,17 +86,18 @@ func newWorkloadMap() *workloadMap {
 
 func (m *podMap) add(info *K8sPodInfo) {
 	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	podInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
 		podInfoMap = make(map[string]*K8sPodInfo)
 	}
 	podInfoMap[info.PodName] = info
 	m.Info[info.Namespace] = podInfoMap
-	m.mutex.Unlock()
 }
 
 func (m *podMap) delete(namespace string, name string) (*K8sPodInfo, bool) {
 	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	podInfoMap, ok := m.Info[namespace]
 	var podInfo *K8sPodInfo
 	if !ok {
@@ -107,30 +108,27 @@ func (m *podMap) delete(namespace string, name string) (*K8sPodInfo, bool) {
 		return nil, false
 	}
 	delete(podInfoMap, name)
-	m.mutex.Unlock()
 	return podInfo, true
 }
 
 func (m *workloadMap) add(info *workloadInfo) {
 	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	workloadInfoMap, ok := m.Info[info.Namespace]
 	if !ok {
 		workloadInfoMap = make(map[string]*workloadInfo)
 	}
 	workloadInfoMap[info.WorkloadName] = info
 	m.Info[info.Namespace] = workloadInfoMap
-	m.mutex.Unlock()
-
 }
 
 func (m *workloadMap) delete(namespace string, name string) {
 	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	workloadInfoMap, ok := m.Info[namespace]
 	if ok {
 		delete(workloadInfoMap, name)
 	}
-	m.mutex.Unlock()
-
 }
 
 func (m *podMap) get(namespace string, name string) (*K8sPodInfo, bool) {
