@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"log"
 	"sync"
 	"time"
 )
@@ -63,8 +64,21 @@ func podDeleteLoop(interval time.Duration, gracePeriod time.Duration, stopCh cha
 func deletePodInfo(podInfo *deletedPodInfo) {
 	if podInfo.name != "" {
 		deletePodInfo, ok := GlobalPodInfo.delete(podInfo.namespace, podInfo.name)
-		if ok {
+		if ok && deletePodInfo != nil && localWorkloadMap != nil {
 			localWorkloadMap.delete(deletePodInfo.Namespace, deletePodInfo.WorkloadName)
+		} else if ok && (deletePodInfo == nil || localWorkloadMap == nil) {
+			// don't know why this happen , print more message to console
+			log.Println("unexpected error happened when delete PodInfo from cache, which could lead to a segmentation violation")
+			log.Println("detailed info print below:")
+			log.Printf("\tdeletedPodInfo: %+v", podInfo)
+			if deletePodInfo != nil {
+				log.Printf("\tmatchedPodInCache: %+v", *deletePodInfo)
+			}
+			if localWorkloadMap != nil {
+				log.Printf("\tlocalWorkloadMap is not nullptr")
+			} else {
+				log.Printf("\tlocalWorkloadMap is nullptr")
+			}
 		}
 	}
 	if len(podInfo.containerIds) != 0 {

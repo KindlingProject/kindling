@@ -143,6 +143,19 @@ processors:
     # The default value is false. It should be enabled if the ReplicaSet
     # is used to control pods in the third-party CRD except for Deployment.
     enable_fetch_replicaset: false
+    # metadata_provider is an independent program used to collect k8sMetadata from API-server and sync with every agent
+    # whether this configuration is enabled or not does not affect the output format
+    # once enabled, agent will fetch metadata from metadata_provider instead of communicate with API-server 
+    # that can reduce the pressure on API-server and transmitting less data 
+    metadata_provider_config:
+      # confirm that metedata_provider is deployed before you enable the configuration
+      # deploy metedata_provider by `kubectl create -f deploy/metadata-provider/metadata-provider-deploy.yml`
+      enable: false
+      # set `enable_trace` as true only if you need to debug the metadata from metadata_provider
+      # each k8sMetadata fetched from metadata_provider will be printed into console
+      enable_trace: false
+      # check service endpoint by `kubectl get endpoints metadata-provider  -n kindling``
+      endpoint: http://metadata-provider.kindling:9504
   aggregateprocessor:
     # Aggregation duration window size. The unit is second.
     ticker_interval: 5

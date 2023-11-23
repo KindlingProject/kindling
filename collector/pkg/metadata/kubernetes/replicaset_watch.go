@@ -108,10 +108,10 @@ func UpdateReplicaSet(objOld interface{}, objNew interface{}) {
 		return
 	}
 	rsUpdateMutex.Lock()
+	defer rsUpdateMutex.Unlock()
 	// TODO: re-implement the updated logic to reduce computation
 	DeleteReplicaSet(objOld)
 	AddReplicaSet(objNew)
-	rsUpdateMutex.Unlock()
 }
 
 func DeleteReplicaSet(obj interface{}) {

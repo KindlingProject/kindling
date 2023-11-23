@@ -92,14 +92,14 @@ func New() *K8sMetaDataCache {
 
 func (c *K8sMetaDataCache) AddByContainerId(containerId string, resource *K8sContainerInfo) {
 	c.cMut.Lock()
+	defer c.cMut.Unlock()
 	c.ContainerIdInfo[containerId] = resource
-	c.cMut.Unlock()
 }
 
 func (c *K8sMetaDataCache) GetByContainerId(containerId string) (*K8sContainerInfo, bool) {
 	c.cMut.RLock()
+	defer c.cMut.RUnlock()
 	res, ok := c.ContainerIdInfo[containerId]
-	c.cMut.RUnlock()
 	if ok {
 		return res, ok
 	}
@@ -108,8 +108,8 @@ func (c *K8sMetaDataCache) GetByContainerId(containerId string) (*K8sContainerIn
 
 func (c *K8sMetaDataCache) GetPodByContainerId(containerId string) (*K8sPodInfo, bool) {
 	c.cMut.RLock()
+	defer c.cMut.RUnlock()
 	containerInfo, ok := c.ContainerIdInfo[containerId]
-	c.cMut.RUnlock()
 	if ok {
 		return containerInfo.RefPodInfo, ok
 	}
@@ -118,8 +118,8 @@ func (c *K8sMetaDataCache) GetPodByContainerId(containerId string) (*K8sPodInfo,
 
 func (c *K8sMetaDataCache) DeleteByContainerId(containerId string) {
 	c.cMut.Lock()
+	defer c.cMut.Unlock()
 	delete(c.ContainerIdInfo, containerId)
-	c.cMut.Unlock()
 }
 
 func (c *K8sMetaDataCache) AddContainerByIpPort(ip string, port uint32, resource *K8sContainerInfo) {
@@ -141,8 +141,8 @@ func (c *K8sMetaDataCache) AddContainerByIpPort(ip string, port uint32, resource
 
 func (c *K8sMetaDataCache) GetContainerByIpPort(ip string, port uint32) (*K8sContainerInfo, bool) {
 	c.pMut.RLock()
-	portContainerInfo, ok := c.IpContainerInfo[ip]
 	defer c.pMut.RUnlock()
+	portContainerInfo, ok := c.IpContainerInfo[ip]
 	if !ok {
 		return nil, false
 	}
@@ -178,8 +178,8 @@ func (c *K8sMetaDataCache) GetPodByIpPort(ip string, port uint32) (*K8sPodInfo, 
 
 func (c *K8sMetaDataCache) GetPodByIp(ip string) (*K8sPodInfo, bool) {
 	c.pMut.RLock()
-	portContainerInfo, ok := c.IpContainerInfo[ip]
 	defer c.pMut.RUnlock()
+	portContainerInfo, ok := c.IpContainerInfo[ip]
 	if !ok {
 		return nil, false
 	}
@@ -292,10 +292,21 @@ func (c *K8sMetaDataCache) GetNodeNameByIp(ip string) (string, bool) {
 }
 
 func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMap, rsMap *ReplicaSetMap) {
+	RLockMetadataCache()
+	defer RUnlockMetadataCache()
 	if cache != nil {
 		if cache.ContainerIdInfo != nil {
+			// Recalculate local cacheMap
+			localWorkloadMap = newWorkloadMap()
+			GlobalPodInfo = newPodMap()
 			for _, containersInfo := range cache.ContainerIdInfo {
-				GlobalPodInfo.add(containersInfo.RefPodInfo)
+				refPodInfo := containersInfo.RefPodInfo
+				localWorkloadMap.add(&workloadInfo{
+					Namespace:    refPodInfo.Namespace,
+					WorkloadName: refPodInfo.WorkloadName,
+					WorkloadKind: refPodInfo.WorkloadKind,
+				})
+				GlobalPodInfo.add(refPodInfo)
 			}
 			MetaDataCache.ContainerIdInfo = cache.ContainerIdInfo
 		}
@@ -318,4 +329,5 @@ func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMa
 	if GlobalRsInfo != nil {
 		GlobalRsInfo = rsMap
 	}
+	podDeleteQueue = make([]deleteRequest, 0)
 }
