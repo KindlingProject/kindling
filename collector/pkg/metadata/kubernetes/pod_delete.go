@@ -71,8 +71,13 @@ func deletePodInfo(podInfo *deletedPodInfo) {
 			log.Println("unexpected error happened when delete PodInfo from cache, which could lead to a segmentation violation")
 			log.Println("detailed info print below:")
 			log.Printf("\tdeletedPodInfo: %+v", podInfo)
+			if deletePodInfo != nil {
+				log.Printf("\tmatchedPodInCache: %+v", *deletePodInfo)
+			}
 			if localWorkloadMap != nil {
-				log.Printf("\tlocalWorkloadMap: %+v", localWorkloadMap.Info)
+				log.Printf("\tlocalWorkloadMap is not nullptr")
+			} else {
+				log.Printf("\tlocalWorkloadMap is nullptr")
 			}
 		}
 	}
