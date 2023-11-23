@@ -64,7 +64,7 @@ func podDeleteLoop(interval time.Duration, gracePeriod time.Duration, stopCh cha
 func deletePodInfo(podInfo *deletedPodInfo) {
 	if podInfo.name != "" {
 		deletePodInfo, ok := GlobalPodInfo.delete(podInfo.namespace, podInfo.name)
-		if ok && deletePodInfo != nil && localWorkloadMap == nil {
+		if ok && deletePodInfo != nil && localWorkloadMap != nil {
 			localWorkloadMap.delete(deletePodInfo.Namespace, deletePodInfo.WorkloadName)
 		} else if ok && (deletePodInfo == nil || localWorkloadMap == nil) {
 			// don't know why this happen , print more message to console
