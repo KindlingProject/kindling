@@ -18,6 +18,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ${{ github.workspace }}/collector
-          file: ${{ github.workspace }}/collector/Dockerfile-metadata-provider
+          file: ${{ github.workspace }}/collector/docker/Dockerfile-metadata-provider
           push: true
           tags: kindlingproject/metadata-provider:${{ env.TAG }}
