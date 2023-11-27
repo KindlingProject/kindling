@@ -15,11 +15,6 @@ jobs:
       - name: Set RELEASE
         run: echo "RELEASE=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME}}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: retag latesttest
         run: |
           docker pull kindlingproject/kindling-agent:latesttest
