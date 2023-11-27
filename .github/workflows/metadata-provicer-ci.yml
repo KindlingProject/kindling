@@ -1,4 +1,4 @@
-name: Kindling-front-CI
+name: Metadata-provider-CI
 
 on:
   push:
