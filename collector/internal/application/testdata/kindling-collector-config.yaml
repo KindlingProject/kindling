@@ -33,3 +33,41 @@ processors:
     # is used to control pods in the third-party CRD except for Deployment.
     enable_fetch_replicaset: true
   nodemetricprocessor:
+receivers:
+  cgoreceiver:
+    subscribe:
+      - name: syscall_exit-writev
+        category: net
+      - name: syscall_exit-readv
+        category: net
+      - name: syscall_exit-write
+        category: net
+      - name: syscall_exit-read
+        category: net
+      - name: syscall_exit-sendto
+        category: net
+      - name: syscall_exit-recvfrom
+        category: net
+      - name: syscall_exit-sendmsg
+        category: net
+      - name: syscall_exit-recvmsg
+        category: net
+      - name: syscall_exit-sendmmsg
+        category: net
+      - name: kprobe-tcp_close
+      - name: kprobe-tcp_rcv_established
+      - name: kprobe-tcp_drop
+      - name: kprobe-tcp_retransmit_skb
+      - name: syscall_exit-connect
+      - name: kretprobe-tcp_connect
+      - name: kprobe-tcp_set_state
+      - name: tracepoint-procexit
+    process_filter:
+      # the length of a comm should be no more than 16
+      comms:
+        - "kindling-collec"
+        - "containerd"
+        - "dockerd"
+        - "containerd-shim"
+        - "filebeat"
+        - "java"
