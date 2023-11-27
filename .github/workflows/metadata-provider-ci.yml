@@ -1,4 +1,4 @@
-name: Kindling-front-CI
+name: Metadata-provider-CI
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 
 jobs:
   build-latest-test:
-    if: github.repository == 'KindlingProject/kindling'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -23,7 +22,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: ${{ github.workspace }}/camera-front
-          file: ${{ github.workspace }}/camera-front/Dockerfile
+          context: ${{ github.workspace }}/collector
+          file: ${{ github.workspace }}/collector/docker/Dockerfile-metadata-provider
           push: true
-          tags: kindlingproject/kindling-camera-front:${{ env.TAG }}
+          tags: kindlingproject/metadata-provider:${{ env.TAG }}
