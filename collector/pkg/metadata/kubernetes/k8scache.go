@@ -292,8 +292,8 @@ func (c *K8sMetaDataCache) GetNodeNameByIp(ip string) (string, bool) {
 }
 
 func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMap, rsMap *ReplicaSetMap) {
-	RLockDurningSetup()
-	defer RUnlockDurningSetup()
+	RLockForSetup()
+	defer RUnlockForSetup()
 	if cache != nil {
 		if cache.ContainerIdInfo != nil {
 			// Recalculate local cacheMap
