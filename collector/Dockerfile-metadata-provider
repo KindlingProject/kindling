@@ -2,7 +2,7 @@ FROM golang:1.20.2-bullseye AS builder
 WORKDIR /build
 
 ENV GOPROXY https://goproxy.cn
-COPY go.mod go.sum ./
+COPY go11.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY . .
