@@ -226,3 +226,17 @@ func RUnlockMetadataCache() {
 	MetaDataCache.pMut.RUnlock()
 	MetaDataCache.cMut.RUnlock()
 }
+
+func RLockForSetup() {
+	MetaDataCache.cMut.RLock()
+	MetaDataCache.pMut.RLock()
+	MetaDataCache.sMut.RLock()
+	podDeleteQueueMut.Lock()
+}
+
+func RUnlockForSetup() {
+	podDeleteQueueMut.Unlock()
+	MetaDataCache.sMut.RUnlock()
+	MetaDataCache.pMut.RUnlock()
+	MetaDataCache.cMut.RUnlock()
+}
