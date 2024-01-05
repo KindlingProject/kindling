@@ -216,27 +216,39 @@ func RLockMetadataCache() {
 	MetaDataCache.pMut.RLock()
 	MetaDataCache.sMut.RLock()
 	MetaDataCache.HostPortInfo.mutex.RLock()
+	GlobalNodeInfo.mutex.RLock()
+	GlobalPodInfo.mutex.RLock()
+	GlobalRsInfo.mut.RLock()
 	podDeleteQueueMut.Lock()
 }
 
 func RUnlockMetadataCache() {
 	podDeleteQueueMut.Unlock()
+	GlobalRsInfo.mut.RUnlock()
+	GlobalPodInfo.mutex.RUnlock()
+	GlobalNodeInfo.mutex.RUnlock()
 	MetaDataCache.HostPortInfo.mutex.RUnlock()
 	MetaDataCache.sMut.RUnlock()
 	MetaDataCache.pMut.RUnlock()
 	MetaDataCache.cMut.RUnlock()
 }
 
-func RLockForSetup() {
-	MetaDataCache.cMut.RLock()
-	MetaDataCache.pMut.RLock()
-	MetaDataCache.sMut.RLock()
+func LockMetadataCache() {
+	MetaDataCache.cMut.Lock()
+	MetaDataCache.pMut.Lock()
+	MetaDataCache.sMut.Lock()
+	GlobalNodeInfo.mutex.Lock()
+	GlobalPodInfo.mutex.Lock()
+	GlobalRsInfo.mut.Lock()
 	podDeleteQueueMut.Lock()
 }
 
-func RUnlockForSetup() {
+func UnlockMetadataCache() {
 	podDeleteQueueMut.Unlock()
-	MetaDataCache.sMut.RUnlock()
-	MetaDataCache.pMut.RUnlock()
-	MetaDataCache.cMut.RUnlock()
+	GlobalRsInfo.mut.Unlock()
+	GlobalPodInfo.mutex.Unlock()
+	GlobalNodeInfo.mutex.Unlock()
+	MetaDataCache.sMut.Unlock()
+	MetaDataCache.pMut.Unlock()
+	MetaDataCache.cMut.Unlock()
 }
