@@ -76,12 +76,10 @@ func NewMetaDataWrapper(config *Config) (*MetaDataWrapper, error) {
 						mp.ReceivedServiceEventCount.String(),
 					)
 
-					kubernetes.RLockMetadataCache()
 					log.Printf("Cached Resources Counts: Containers:%d, ReplicaSet: %d\n",
-						len(kubernetes.MetaDataCache.ContainerIdInfo),
-						len(kubernetes.GlobalRsInfo.Info),
+						kubernetes.MetaDataCache.GetCacheContainerIdInfoSize(),
+						kubernetes.GlobalRsInfo.GetSize(),
 					) // kubernetes.GlobalPodInfo.Info
-					kubernetes.RUnlockMetadataCache()
 				case <-mp.stopCh:
 					ticker.Stop()
 					return
@@ -214,6 +212,7 @@ func (s *MetaDataWrapper) ListWithSemaphore(ctx context.Context, f *ioutil.Write
 		return nil, err
 	}
 	defer sem.Release(1)
+
 	kubernetes.RLockMetadataCache()
 	defer kubernetes.RUnlockMetadataCache()
 	b, _ := s.list()

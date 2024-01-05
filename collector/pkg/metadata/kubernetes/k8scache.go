@@ -90,6 +90,12 @@ func New() *K8sMetaDataCache {
 	return c
 }
 
+func (c *K8sMetaDataCache) GetCacheContainerIdInfoSize() int {
+	c.cMut.RLock()
+	defer c.cMut.RUnlock()
+	return len(c.ContainerIdInfo)
+}
+
 func (c *K8sMetaDataCache) AddByContainerId(containerId string, resource *K8sContainerInfo) {
 	c.cMut.Lock()
 	defer c.cMut.Unlock()
@@ -292,26 +298,28 @@ func (c *K8sMetaDataCache) GetNodeNameByIp(ip string) (string, bool) {
 }
 
 func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMap, rsMap *ReplicaSetMap) {
-	RLockForSetup()
-	defer RUnlockForSetup()
+	LockMetadataCache()
+	defer UnlockMetadataCache()
 	if cache != nil {
 		if cache.ContainerIdInfo != nil {
 			// Recalculate local cacheMap
-			localWorkloadMap = newWorkloadMap()
-			GlobalPodInfo = newPodMap()
+			tmpLocalWorkloadMap := newWorkloadMap()
+			tmpGlobalPodInfo := newPodMap()
 			for _, containersInfo := range cache.ContainerIdInfo {
 				refPodInfo := containersInfo.RefPodInfo
-				localWorkloadMap.add(&workloadInfo{
+				tmpLocalWorkloadMap.add(&workloadInfo{
 					Namespace:    refPodInfo.Namespace,
 					WorkloadName: refPodInfo.WorkloadName,
 					WorkloadKind: refPodInfo.WorkloadKind,
 				})
-				GlobalPodInfo.add(refPodInfo)
+				tmpGlobalPodInfo.add(refPodInfo)
 			}
+			GlobalPodInfo.Info = tmpGlobalPodInfo.Info
+			localWorkloadMap.Info = tmpLocalWorkloadMap.Info
 			MetaDataCache.ContainerIdInfo = cache.ContainerIdInfo
 		}
 		if cache.HostPortInfo != nil {
-			MetaDataCache.HostPortInfo = cache.HostPortInfo
+			MetaDataCache.HostPortInfo.HostPortInfo = cache.HostPortInfo.HostPortInfo
 		}
 		if cache.IpContainerInfo != nil {
 			MetaDataCache.IpContainerInfo = cache.IpContainerInfo
@@ -321,13 +329,13 @@ func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMa
 		}
 	}
 	if nodeMap != nil {
-		GlobalNodeInfo = nodeMap
+		GlobalNodeInfo.Info = nodeMap.Info
 	}
 	if serviceMap != nil {
-		GlobalServiceInfo = serviceMap
+		GlobalServiceInfo.ServiceMap = serviceMap.ServiceMap
 	}
-	if GlobalRsInfo != nil {
-		GlobalRsInfo = rsMap
+	if rsMap != nil {
+		GlobalRsInfo.Info = rsMap.Info
 	}
 	podDeleteQueue = make([]deleteRequest, 0)
 }

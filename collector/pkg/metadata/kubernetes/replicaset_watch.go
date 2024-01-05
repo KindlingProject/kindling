@@ -39,6 +39,12 @@ func newReplicaSetMap() *ReplicaSetMap {
 	}
 }
 
+func (rs *ReplicaSetMap) GetSize() int {
+	rs.mut.RLock()
+	defer rs.mut.RUnlock()
+	return len(rs.Info)
+}
+
 func (rs *ReplicaSetMap) put(key string, owner Controller) {
 	rs.mut.Lock()
 	rs.Info[key] = owner
