@@ -3,10 +3,14 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
-## Unreleased
+## v0.9.0 - 2024-02-02
 ### Enhancements
-- Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours. Disabled by deafult. ([#577](https://github.com/KindlingProject/kindling/pull/577))
+- Add periodic memory cleanup for OtelExporter. This can slightly slow down the rate of memory growth. Users can configure the restart period in hours. Disabled by deafult. ([#577](https://github.com/KindlingProject/kindling/pull/577))
 - Added an extra application for collecting k8s metadata named metadata-provider,with an API that list/watch k8s metadata. More Detail at [readme of metaprovider](collector/pkg/metadata/metaprovider/readme.md) ([#580](https://github.com/KindlingProject/kindling/pull/580),[#595](https://github.com/KindlingProject/kindling/pull/595),[#596](https://github.com/KindlingProject/kindling/pull/596))
+
+### Bug fixes
+- Fix the bug that the agent writes a lot of kernel logs when using kernel module as the driver. ([#590](https://github.com/KindlingProject/kindling/pull/590))
+- Fix the bug that the `View Mode` and `Show Services` in the topology panel are not displayed. ([#579](https://github.com/KindlingProject/kindling/pull/579))
 
 ## v0.8.1 - 2023-09-01
 ### Enhancements
