@@ -6,6 +6,7 @@
 ## Unreleased
 ### Enhancements
 - Add periodic memory cleanup for OtelExporter. Users can configure the restart period in hours. Disabled by deafult. ([#577](https://github.com/KindlingProject/kindling/pull/577))
+- Added an extra application for collecting k8s metadata named metadata-provider,with an API that list/watch k8s metadata. More Detail at [readme of metaprovider](collector/pkg/metadata/metaprovider/readme.md) ([#580](https://github.com/KindlingProject/kindling/pull/580),[#595](https://github.com/KindlingProject/kindling/pull/595),[#596](https://github.com/KindlingProject/kindling/pull/596))
 
 ## v0.8.1 - 2023-09-01
 ### Enhancements
