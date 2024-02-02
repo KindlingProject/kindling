@@ -43,7 +43,7 @@ jobs:
         run: |
           sed -i 's#kindlingproject/kindling-agent:latest#kindlingproject/kindling-agent:${{ env.RELEASE }}#g' deploy/agent/kindling-deploy.yml
           sed -i 's#kindling-camera-front:latest#kindling-camera-front:${{ env.RELEASE }}#g' deploy/agent/kindling-deploy.yml
-          sed -i 's#kindling-grafana:latest#kindling-grafana:${{ env.RELEASE }}#g' deploy/grafana-with-plugins/kindling-grafana.yml
+          sed -i 's#kindling-grafana:latest#kindling-grafana:${{ env.RELEASE }}#g' deploy/grafana-with-plugins/kindling-grafana.yaml
           mv deploy kindling-${{ env.RELEASE }}-install
           tar -czvf kindling-${{ env.RELEASE }}-install.tar.gz  kindling-${{ env.RELEASE }}-install
       # - name: update OSS
