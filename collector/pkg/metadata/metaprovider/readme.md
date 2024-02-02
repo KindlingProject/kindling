@@ -33,14 +33,14 @@ Examples are as follows:
             enable: true
             #...
             metadata_provider_config:
-            # confirm that metedata_provider is deployed before you enable the configuration
-            # deploy metedata_provider by `kubectl create -f deploy/metadata-provider/metadata-provider-deploy.yml`
-            enable: true
-            # set `enable_trace` as true only if you need to debug the metadata from metadata_provider
-            # each k8sMetadata fetched from metadata_provider will be printed into console
-            enable_trace: false
-            # check service endpoint by `kubectl get endpoints metadata-provider  -n kindling``
-            endpoint: http://metadata-provider.kindling:9504
+                # confirm that metedata_provider is deployed before you enable the configuration
+                # deploy metedata_provider by `kubectl create -f deploy/metadata-provider/metadata-provider-deploy.yml`
+                enable: true
+                # set `enable_trace` as true only if you need to debug the metadata from metadata_provider
+                # each k8sMetadata fetched from metadata_provider will be printed into console
+                enable_trace: false
+                # check service endpoint by `kubectl get endpoints metadata-provider  -n kindling``
+                endpoint: http://metadata-provider.kindling:9504
 ```
 
 If you are modifying existing configmap resources, you need to restart all probes to apply the changes with command below:
