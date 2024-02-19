@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -47,8 +45,6 @@ const (
 )
 
 var serviceName string
-var expCounter int = 0
-var lastMetricsData string
 
 type OtelOutputExporters struct {
 	metricExporter exportmetric.Exporter
@@ -67,7 +63,6 @@ type OtelExporter struct {
 	exp                  *prometheus.Exporter
 	rs                   *resource.Resource
 	mu                   sync.Mutex
-	restart            bool
 
 	adapters []adapter.Adapter
 }
@@ -144,9 +139,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			instrumentFactory:    newInstrumentFactory(exp.MeterProvider().Meter(MeterName), telemetry, customLabels),
 			metricAggregationMap: cfg.MetricAggregationMap,
 			telemetry:            telemetry,
-			exp:                  exp, 
+			exp:                  exp,
 			rs:                   rs,
-			restart:            false,
 			adapters: []adapter.Adapter{
 				adapter.NewNetAdapter(customLabels, &adapter.NetAdapterConfig{
 					StoreTraceAsMetric: cfg.AdapterConfig.NeedTraceAsMetric,
@@ -166,56 +160,8 @@ func NewExporter(config interface{}, telemetry *component.TelemetryTools) export
 			}
 		}()
 
-		if cfg.MemCleanUpConfig != nil && cfg.MemCleanUpConfig.Enabled {
-			if cfg.MemCleanUpConfig.RestartPeriod != 0 {
-				ticker := time.NewTicker(time.Duration(cfg.MemCleanUpConfig.RestartPeriod) * time.Hour)
-				go func() {
-					for {
-						select {
-						case <-ticker.C:
-							otelexporter.restart = true
-						}
-					}
-				}()
-			}
-		
-			go func() {
-				metricsTicker := time.NewTicker(250 * time.Millisecond)
-				for {
-					<-metricsTicker.C
-					currentMetricsData, err := fetchMetricsFromEndpoint()
-					if err != nil {
-						fmt.Println("Error fetching metrics:", err)
-						continue
-					}
-		
-					if currentMetricsData != lastMetricsData {
-						lastMetricsData = currentMetricsData
-
-						if(otelexporter.restart == true){
-							otelexporter.NewMeter(otelexporter.telemetry)
-							otelexporter.restart = false
-							expCounter++
-						}
-					}
-				}
-			}()
-			
-			cfg.MemCleanUpConfig.RestartEveryNDays = 0
-			if cfg.MemCleanUpConfig.RestartEveryNDays != 0 {
-				go func() {
-					for {
-						now := time.Now()
-						next := now.Add(time.Duration(cfg.MemCleanUpConfig.RestartEveryNDays) * time.Hour * 24)
-						next = time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
-						duration := next.Sub(now)
-
-						time.Sleep(duration)
-
-						otelexporter.restart = true
-					}
-				}()
-			}
+		if cfg.PromCfg.MemCleanUpConfig != nil && cfg.PromCfg.MemCleanUpConfig.Enabled {
+			registerResetSchedule(cfg.PromCfg.MemCleanUpConfig, otelexporter)
 		}
 
 	} else {
@@ -402,22 +348,20 @@ func (e *OtelExporter) NewMeter(telemetry *component.TelemetryTools) error {
 			telemetry.Logger.Warn("error starting otelexporter prometheus server: ", zap.Error(err))
 		}
 	}()
-	
+
 	return nil
 }
 
-func fetchMetricsFromEndpoint() (string, error) {
-	resp, err := http.Get("http://127.0.0.1:9500/metrics")
-	if err != nil {
-		return "", err
+func registerResetSchedule(cfg *MemCleanUpConfig, exporter *OtelExporter) {
+	if cfg.RestartPeriod != 0 {
+		ticker := time.NewTicker(time.Duration(cfg.RestartPeriod) * time.Hour)
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					_ = exporter.NewMeter(exporter.telemetry)
+				}
+			}
+		}()
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(body), nil
 }
-

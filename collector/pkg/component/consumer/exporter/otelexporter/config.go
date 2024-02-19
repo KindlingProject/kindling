@@ -12,12 +12,12 @@ type Config struct {
 	CustomLabels         map[string]string                `mapstructure:"custom_labels"`
 	MetricAggregationMap map[string]MetricAggregationKind `mapstructure:"metric_aggregation_map"`
 	AdapterConfig        *AdapterConfig                   `mapstructure:"adapter_config"`
-	MemCleanUpConfig     *MemCleanUpConfig                `mapstructure:"memcleanup"`
 }
 
 type PrometheusConfig struct {
-	Port       string `mapstructure:"port,omitempty"`
-	WithMemory bool   `mapstructure:"with_memory,omitempty"`
+	Port             string            `mapstructure:"port,omitempty"`
+	WithMemory       bool              `mapstructure:"with_memory,omitempty"`
+	MemCleanUpConfig *MemCleanUpConfig `mapstructure:"memcleanup"`
 }
 
 type OtlpGrpcConfig struct {
@@ -36,8 +36,7 @@ type AdapterConfig struct {
 	StoreExternalSrcIP      bool `mapstructure:"store_external_src_ip"`
 }
 
-type MemCleanUpConfig struct{
-	Enabled bool `mapstructure:"enable,omitempty"`
-	RestartPeriod int `mapstructure:"restart_period,omitempty"`
-	RestartEveryNDays int `mapstructure:"restart_every_n_days,omitempty"`
+type MemCleanUpConfig struct {
+	Enabled       bool `mapstructure:"enable,omitempty"`
+	RestartPeriod int  `mapstructure:"restart_period,omitempty"`
 }

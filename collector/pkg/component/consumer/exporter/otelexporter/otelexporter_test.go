@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	_ "net/http/pprof"
+	"os"
 	"runtime"
 	"strconv"
 	"testing"
@@ -281,7 +281,7 @@ func BenchmarkOtelExporter_Consume(b *testing.B) {
 
 func BenchmarkMemTest(b *testing.B) {
 	testDuration := time.Minute
-	endTime := time.Now().Add(30*testDuration)
+	endTime := time.Now().Add(30 * testDuration)
 	metricCounter := 4
 	recordCounter := 0
 	memTicker := time.NewTicker(1 * time.Second)
@@ -289,7 +289,7 @@ func BenchmarkMemTest(b *testing.B) {
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
-	
+
 	go func() {
 		for range memTicker.C {
 			var m runtime.MemStats
@@ -304,18 +304,17 @@ func BenchmarkMemTest(b *testing.B) {
 	}()
 
 	cfg := &Config{
-		ExportKind:   PrometheusKindExporter, 
-		PromCfg:      &PrometheusConfig{
-			Port: ":9500", 
-			WithMemory: false, 
+		ExportKind: PrometheusKindExporter,
+		PromCfg: &PrometheusConfig{
+			Port:       ":9500",
+			WithMemory: false,
+			MemCleanUpConfig: &MemCleanUpConfig{
+				RestartPeriod: 12,
+			},
 		},
 		OtlpGrpcCfg:  &OtlpGrpcConfig{CollectPeriod: 15 * time.Second, Endpoint: "10.10.10.10:8080"},
 		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
 		CustomLabels: nil,
-		MemCleanUpConfig: &MemCleanUpConfig{
-			RestartPeriod: 12,
-			RestartEveryNDays: 12,
-		},
 
 		MetricAggregationMap: map[string]MetricAggregationKind{
 			"kindling_entity_request_total":                          MACounterKind,
@@ -357,7 +356,7 @@ func BenchmarkMemTest(b *testing.B) {
 		Labels:    model.NewAttributeMap(),
 		Timestamp: 19900909090,
 	}
-	
+
 	metricsGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
 	metricsGroup.Labels.AddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
 	metricsGroup.Labels.AddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
@@ -381,7 +380,7 @@ func BenchmarkMemTest(b *testing.B) {
 	// Topology data preferentially use D Nat Ip and D Nat Port
 	metricsGroup.Labels.AddStringValue(constlabels.DstIp, "test-DnatIp")
 
-	for time.Now().Before(endTime){
+	for time.Now().Before(endTime) {
 		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
 		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNamespace, "test-SrcNamespace"+strconv.Itoa(i))
 		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcPod, "test-SrcPod"+strconv.Itoa(i))
@@ -417,7 +416,7 @@ func BenchmarkMemTest(b *testing.B) {
 		_ = otelexporter.Consume(newMetricsGroup)
 		recordCounter++
 		i++
-		time.Sleep(time.Second)  //event amount control
+		time.Sleep(time.Second) //event amount control
 	}
 
 	log.Printf("Test Finished!")
@@ -425,7 +424,7 @@ func BenchmarkMemTest(b *testing.B) {
 
 func BenchmarkLabelTest(b *testing.B) {
 	testDuration := time.Minute
-	endTime := time.Now().Add(30*testDuration)
+	endTime := time.Now().Add(30 * testDuration)
 	metricCounter := 4
 	recordCounter := 0
 	memTicker := time.NewTicker(1 * time.Second)
@@ -448,18 +447,17 @@ func BenchmarkLabelTest(b *testing.B) {
 	}()
 
 	cfg := &Config{
-		ExportKind:   PrometheusKindExporter, 
-		PromCfg:      &PrometheusConfig{
-			Port: ":9500", 
-			WithMemory: false, 
+		ExportKind: PrometheusKindExporter,
+		PromCfg: &PrometheusConfig{
+			Port:       ":9500",
+			WithMemory: false,
+			MemCleanUpConfig: &MemCleanUpConfig{
+				RestartPeriod: 12,
+			},
 		},
 		OtlpGrpcCfg:  &OtlpGrpcConfig{CollectPeriod: 15 * time.Second, Endpoint: "10.10.10.10:8080"},
 		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
 		CustomLabels: nil,
-		MemCleanUpConfig: &MemCleanUpConfig{
-			RestartPeriod: 12,
-			RestartEveryNDays: 12,
-		},
 
 		MetricAggregationMap: map[string]MetricAggregationKind{
 			"kindling_entity_request_total":                          MACounterKind,
@@ -498,13 +496,11 @@ func BenchmarkLabelTest(b *testing.B) {
 		Labels:    model.NewAttributeMap(),
 		Timestamp: 19900909090,
 	}
-	
+
 	metricsGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
 
-
-	for time.Now().Before(endTime){
+	for time.Now().Before(endTime) {
 		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNode, "test-SrcNode"+strconv.Itoa(i))
-
 
 		newMetricsGroup := &model.DataGroup{
 			Name: constnames.AggregatedNetRequestMetricGroup,
@@ -518,24 +514,23 @@ func BenchmarkLabelTest(b *testing.B) {
 		_ = otelexporter.Consume(newMetricsGroup)
 		recordCounter++
 		i++
-		time.Sleep(time.Second)  //event amount control
+		time.Sleep(time.Second) //event amount control
 	}
 
 	log.Printf("Test Finished!")
 }
 
-
 func BenchmarkMetricTest(b *testing.B) {
 	testDuration := time.Minute
-	endTime := time.Now().Add(30*testDuration)
+	endTime := time.Now().Add(30 * testDuration)
 	metricCounter := 4
 	recordCounter := 0
 	memTicker := time.NewTicker(1 * time.Second)
-	
+
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
-	
+
 	go func() {
 		for range memTicker.C {
 			var m runtime.MemStats
@@ -550,18 +545,17 @@ func BenchmarkMetricTest(b *testing.B) {
 	}()
 
 	cfg := &Config{
-		ExportKind:   PrometheusKindExporter, 
-		PromCfg:      &PrometheusConfig{
-			Port: ":9500", 
-			WithMemory: false, 
+		ExportKind: PrometheusKindExporter,
+		PromCfg: &PrometheusConfig{
+			Port:       ":9500",
+			WithMemory: false,
+			MemCleanUpConfig: &MemCleanUpConfig{
+				RestartPeriod: 30,
+			},
 		},
 		OtlpGrpcCfg:  &OtlpGrpcConfig{CollectPeriod: 15 * time.Second, Endpoint: "10.10.10.10:8080"},
 		StdoutCfg:    &StdoutConfig{CollectPeriod: 15 * time.Second},
 		CustomLabels: nil,
-		MemCleanUpConfig: &MemCleanUpConfig{
-			RestartPeriod: 30,
-			RestartEveryNDays: 12,
-		},
 
 		MetricAggregationMap: map[string]MetricAggregationKind{
 			"kindling_entity_request_total":                          MACounterKind,
@@ -600,13 +594,11 @@ func BenchmarkMetricTest(b *testing.B) {
 		Labels:    model.NewAttributeMap(),
 		Timestamp: 19900909090,
 	}
-	
+
 	metricsGroup.Labels.AddStringValue(constlabels.SrcNode, "test-SrcNode")
 
-
-	for time.Now().Before(endTime){
+	for time.Now().Before(endTime) {
 		metricsGroup.Labels.UpdateAddStringValue(constlabels.SrcNode, "test-SrcNode")
-
 
 		newMetricsGroup := &model.DataGroup{
 			Name: constnames.AggregatedNetRequestMetricGroup,
@@ -620,7 +612,7 @@ func BenchmarkMetricTest(b *testing.B) {
 		_ = otelexporter.Consume(newMetricsGroup)
 		recordCounter++
 		i++
-		time.Sleep(time.Second)  //event amount control
+		time.Sleep(time.Second) //event amount control
 	}
 
 	log.Printf("Test Finished!")
