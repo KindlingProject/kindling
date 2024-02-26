@@ -3,6 +3,10 @@
 1. All notable changes to this project will be documented in this file.
 2. Records in this file are not identical to the title of their Pull Requests. A detailed description is necessary for understanding what changes are and why they are made.
 
+## v0.9.1 - 2024-02-26
+### Enhancements
+- Improved the garbage collection efficiency of the otelexporter component, resulting in a noticeable reduction in the CPU usage of the agent. [#623](https://github.com/KindlingProject/kindling/pull/623)
+
 ## v0.9.0 - 2024-02-02
 ### Enhancements
 - Add periodic memory cleanup for OtelExporter. This can slightly slow down the rate of memory growth. Users can configure the restart period in hours. Disabled by deafult. ([#577](https://github.com/KindlingProject/kindling/pull/577))
