@@ -33,15 +33,18 @@ require (
 	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/net v0.17.0
-	golang.org/x/sys v0.13.0
+	golang.org/x/net v0.23.0
+	golang.org/x/sys v0.18.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/api v0.21.5
 	k8s.io/apimachinery v0.21.5
 	k8s.io/client-go v0.21.5
 )
 
-require github.com/mitchellh/mapstructure v1.4.3
+require (
+	github.com/mitchellh/mapstructure v1.4.3
+	golang.org/x/sync v0.1.0
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -85,9 +88,8 @@ require (
 	go.opentelemetry.io/otel/internal/metric v0.25.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.10.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
