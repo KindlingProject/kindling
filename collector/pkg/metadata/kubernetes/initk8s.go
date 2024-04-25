@@ -58,6 +58,7 @@ func (c APIConfig) Validate() error {
 
 var (
 	MetaDataCache = New()
+	MyNodeName    string
 	once          sync.Once
 	IsInitSuccess = false
 )
@@ -65,6 +66,7 @@ var (
 func InitK8sHandler(options ...Option) error {
 	var retErr error
 	once.Do(func() {
+		MyNodeName = os.Getenv("MY_NODE_NAME")
 		k8sConfig := config{
 			KubeAuthType:          AuthTypeKubeConfig,
 			KubeConfigDir:         DefaultKubeConfigPath,

@@ -307,12 +307,15 @@ func SetupCache(cache *K8sMetaDataCache, nodeMap *NodeMap, serviceMap *ServiceMa
 			tmpGlobalPodInfo := newPodMap()
 			for _, containersInfo := range cache.ContainerIdInfo {
 				refPodInfo := containersInfo.RefPodInfo
-				tmpLocalWorkloadMap.add(&workloadInfo{
-					Namespace:    refPodInfo.Namespace,
-					WorkloadName: refPodInfo.WorkloadName,
-					WorkloadKind: refPodInfo.WorkloadKind,
-				})
 				tmpGlobalPodInfo.add(refPodInfo)
+				if refPodInfo.NodeName == MyNodeName {
+					// Recalculate local workloadMap
+					tmpLocalWorkloadMap.add(&workloadInfo{
+						Namespace:    refPodInfo.Namespace,
+						WorkloadName: refPodInfo.WorkloadName,
+						WorkloadKind: refPodInfo.WorkloadKind,
+					})
+				}
 			}
 			GlobalPodInfo.Info = tmpGlobalPodInfo.Info
 			localWorkloadMap.Info = tmpLocalWorkloadMap.Info
