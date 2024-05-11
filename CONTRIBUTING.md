@@ -33,7 +33,7 @@ The first step to starting to contribute to Kindling is finding something to wor
 
 + How to find documents improving issues? Kindling has a `documentation` label for issues that you can improve Kindling docs.
 
-If you are ready to contribute code changes, review the [developer guide](http://kindlingx.com/docs/developer-guide/build-kindling-container-image/) for how to set up your local environment.
+If you are ready to contribute code changes, review the [developer guide](http://kindling.harmonycloud.cn/docs/developer-guide/build-kindling-container-image/) for how to set up your local environment.
 When you want to submit your local changes, read about [create pull request](contribute/create_pull_request.md).
 
 ## Sign your commits
